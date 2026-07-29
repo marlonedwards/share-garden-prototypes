@@ -29,7 +29,7 @@ const CARDS: Card[] = [
     name: "Share Garden",
     kind: "the gardening bet",
     accent: "#7fb069",
-    thesis: "A market you tend. Plant to buy, harvest to sell, and a co-op field that quietly beats the hot crop.",
+    thesis: "One bed you tend. Go to market to plant crops, watch them grow together, harvest to sell. A co-op field quietly beats the hot crop.",
     proves: "The metaphor maps market structure, not labor. Cozy and sticky.",
     art: <GardenThumbs />,
   },
@@ -37,34 +37,32 @@ const CARDS: Card[] = [
     to: "/pulse",
     slot: "A",
     name: "Pulse",
-    kind: "no metaphor",
+    kind: "the whole market",
     accent: "#56c7ff",
-    thesis: "The market as itself. Stocks read as stocks, crypto as crypto. Live prices, buy and sell, the index line to beat.",
-    proves: "The honest baseline. What a straight, well-made trading sim feels like.",
+    thesis: "The entire market as one living map. Every tile is a company sized by its market cap, colored by how it is doing. Tap to buy.",
+    proves: "The market at a glance. A shock sweeps a whole sector red.",
     art: (
       <svg viewBox="0 0 120 70" className="w-32 h-20">
-        <polyline points="0,55 15,50 30,58 45,40 60,44 75,25 90,30 105,14 120,20" fill="none" stroke="#56c7ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <polyline points="0,60 30,54 60,46 90,36 120,26" fill="none" stroke="#7f8ba0" strokeWidth="1.5" strokeDasharray="4 4" />
+        {[["0","0","46","40","#2f9e5e"],["0","41","46","29","#d24a4a"],["47","0","34","28","#3fbf74"],["47","29","34","41","#7a3636"],["82","0","38","20","#d24a4a"],["82","21","38","26","#2f9e5e"],["82","48","38","22","#46b06a"]].map((r,i)=>(
+          <rect key={i} x={+r[0]+1} y={+r[1]+1} width={+r[2]-2} height={+r[3]-2} rx="1.5" fill={r[4]} />
+        ))}
       </svg>
     ),
   },
   {
-    to: "/flows",
+    to: "/prism",
     slot: "B",
-    name: "Flows",
-    kind: "the systems view",
+    name: "Prism",
+    kind: "the market as geometry",
     accent: "#9b8cff",
-    thesis: "Money as a living field. Sectors are nodes, capital streams between them, and you steer where your money flows.",
-    proves: "Diversification and correlation you can see. Structure, not soil.",
+    thesis: "The same market rebuilt from pure shapes. Hex towers sized by market cap, glowing by performance. Tap a tower to trade.",
+    proves: "Size and momentum you can feel. Structure as geometry.",
     art: (
       <svg viewBox="0 0 120 70" className="w-32 h-20">
-        <line x1="24" y1="20" x2="60" y2="38" stroke="#9b8cff" strokeWidth="1.5" strokeOpacity="0.6" />
-        <line x1="96" y1="18" x2="60" y2="38" stroke="#56c7ff" strokeWidth="1.5" strokeOpacity="0.6" />
-        <line x1="30" y1="56" x2="60" y2="38" stroke="#ffb454" strokeWidth="1.5" strokeOpacity="0.6" />
-        <line x1="92" y1="54" x2="60" y2="38" stroke="#7ee0c0" strokeWidth="1.5" strokeOpacity="0.6" />
-        <circle cx="24" cy="20" r="7" fill="#9b8cff" /><circle cx="96" cy="18" r="6" fill="#56c7ff" />
-        <circle cx="30" cy="56" r="6" fill="#ffb454" /><circle cx="92" cy="54" r="5" fill="#7ee0c0" />
-        <circle cx="60" cy="38" r="9" fill="#fff" fillOpacity="0.9" />
+        {[[34,44,16,"#46b06a"],[62,30,18,"#9b8cff"],[88,46,15,"#d24a4a"],[50,54,12,"#3fbf74"]].map(([cx,cy,r,c],i)=>{
+          const pts=[0,60,120,180,240,300].map(a=>{const rad=a*Math.PI/180;return `${(cx as number)+ (r as number)*Math.cos(rad)},${(cy as number)+(r as number)*Math.sin(rad)}`;}).join(" ");
+          return <polygon key={i} points={pts} fill={c as string} fillOpacity="0.92" stroke="#000" strokeOpacity="0.25" />;
+        })}
       </svg>
     ),
   },

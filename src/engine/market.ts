@@ -20,6 +20,7 @@ export interface AssetDef {
   beta: number;        // exposure to the market factor
   payout: Payout;      // dividends (income) vs capital gain (growth)
   yield: number;       // per-payout dividend fraction (income assets)
+  marketCap: number;   // $B, used to size the treemap / prism tiles
 }
 
 export interface Sector {
@@ -39,17 +40,45 @@ export const SECTORS: Sector[] = [
 ];
 
 // Fictional tickers / cultivars (never real companies, per spec).
+// The core set carries the Garden crops; each also has a marketCap.
 export const ASSETS: AssetDef[] = [
-  { id: "nova", symbol: "NOVA", crop: "Tomato",    sprite: "tomato",    name: "Nova Systems",   sector: "tech",     kind: "stock",  mu: 0.0011, sigma: 0.030, beta: 1.3, payout: "growth", yield: 0 },
-  { id: "pepr", symbol: "PEPR", crop: "Pepper",    sprite: "carrot",    name: "Pepr Labs",      sector: "tech",     kind: "stock",  mu: 0.0009, sigma: 0.028, beta: 1.2, payout: "growth", yield: 0 },
-  { id: "volt", symbol: "VOLT", crop: "Corn",      sprite: "corn",      name: "Volt Energy",    sector: "energy",   kind: "stock",  mu: 0.0006, sigma: 0.022, beta: 0.9, payout: "income", yield: 0.010 },
-  { id: "iron", symbol: "IRON", crop: "Pumpkin",   sprite: "pumpkin",   name: "Iron Works",     sector: "industry", kind: "stock",  mu: 0.0005, sigma: 0.019, beta: 0.8, payout: "income", yield: 0.008 },
-  { id: "cane", symbol: "CANE", crop: "Melon",     sprite: "blueberry", name: "Cane & Co",      sector: "consumer", kind: "stock",  mu: 0.0005, sigma: 0.017, beta: 0.7, payout: "income", yield: 0.009 },
-  { id: "aura", symbol: "AURA", crop: "Garlic",    sprite: "garlic",    name: "Aura Health",    sector: "health",   kind: "stock",  mu: 0.0006, sigma: 0.015, beta: 0.5, payout: "income", yield: 0.011 },
-  { id: "btx",  symbol: "BTX",  crop: "Sunflower", sprite: "blueberry", name: "Bitrix",         sector: "crypto",   kind: "crypto", mu: 0.0016, sigma: 0.060, beta: 1.8, payout: "growth", yield: 0 },
-  { id: "etna", symbol: "ETNA", crop: "Mushroom",  sprite: "garlic",    name: "Etna Chain",     sector: "crypto",   kind: "crypto", mu: 0.0014, sigma: 0.055, beta: 1.7, payout: "growth", yield: 0 },
-  { id: "coop", symbol: "CO-OP",crop: "Co-op Field",sprite: "coop-field",name: "Co-op Index Fund",sector: "index",  kind: "index",  mu: 0.0007, sigma: 0.008, beta: 1.0, payout: "income", yield: 0.004 },
+  { id: "nova", symbol: "NOVA", crop: "Tomato",    sprite: "tomato",    name: "Nova Systems",   sector: "tech",     kind: "stock",  mu: 0.0011, sigma: 0.030, beta: 1.3, payout: "growth", yield: 0,     marketCap: 1850 },
+  { id: "pepr", symbol: "PEPR", crop: "Pepper",    sprite: "carrot",    name: "Pepr Labs",      sector: "tech",     kind: "stock",  mu: 0.0009, sigma: 0.028, beta: 1.2, payout: "growth", yield: 0,     marketCap: 940 },
+  { id: "volt", symbol: "VOLT", crop: "Corn",      sprite: "corn",      name: "Volt Energy",    sector: "energy",   kind: "stock",  mu: 0.0006, sigma: 0.022, beta: 0.9, payout: "income", yield: 0.010, marketCap: 720 },
+  { id: "iron", symbol: "IRON", crop: "Pumpkin",   sprite: "pumpkin",   name: "Iron Works",     sector: "industry", kind: "stock",  mu: 0.0005, sigma: 0.019, beta: 0.8, payout: "income", yield: 0.008, marketCap: 560 },
+  { id: "cane", symbol: "CANE", crop: "Melon",     sprite: "blueberry", name: "Cane & Co",      sector: "consumer", kind: "stock",  mu: 0.0005, sigma: 0.017, beta: 0.7, payout: "income", yield: 0.009, marketCap: 680 },
+  { id: "aura", symbol: "AURA", crop: "Garlic",    sprite: "garlic",    name: "Aura Health",    sector: "health",   kind: "stock",  mu: 0.0006, sigma: 0.015, beta: 0.5, payout: "income", yield: 0.011, marketCap: 500 },
+  { id: "btx",  symbol: "BTX",  crop: "Sunflower", sprite: "blueberry", name: "Bitrix",         sector: "crypto",   kind: "crypto", mu: 0.0016, sigma: 0.060, beta: 1.8, payout: "growth", yield: 0,     marketCap: 1150 },
+  { id: "etna", symbol: "ETNA", crop: "Mushroom",  sprite: "garlic",    name: "Etna Chain",     sector: "crypto",   kind: "crypto", mu: 0.0014, sigma: 0.055, beta: 1.7, payout: "growth", yield: 0,     marketCap: 640 },
+  { id: "coop", symbol: "CO-OP",crop: "Co-op Field",sprite: "coop-field",name: "Co-op Index Fund",sector: "index",  kind: "index",  mu: 0.0007, sigma: 0.008, beta: 1.0, payout: "income", yield: 0.004, marketCap: 0 },
 ];
+
+// Expanded market universe for the market-cap views (Pulse treemap + Prism).
+// Params default by sector; per-asset idiosyncratic noise still differentiates them.
+const SP: Record<string, { mu: number; sigma: number; beta: number; payout: Payout; y: number; kind: Kind }> = {
+  tech:     { mu: 0.0010, sigma: 0.028, beta: 1.25, payout: "growth", y: 0,     kind: "stock" },
+  energy:   { mu: 0.0006, sigma: 0.023, beta: 0.95, payout: "income", y: 0.010, kind: "stock" },
+  industry: { mu: 0.0005, sigma: 0.020, beta: 0.85, payout: "income", y: 0.008, kind: "stock" },
+  consumer: { mu: 0.0005, sigma: 0.017, beta: 0.70, payout: "income", y: 0.009, kind: "stock" },
+  health:   { mu: 0.0006, sigma: 0.016, beta: 0.55, payout: "income", y: 0.011, kind: "stock" },
+  crypto:   { mu: 0.0015, sigma: 0.058, beta: 1.75, payout: "growth", y: 0,     kind: "crypto" },
+};
+function u(id: string, symbol: string, name: string, sector: string, cap: number): AssetDef {
+  const p = SP[sector];
+  return { id, symbol, crop: "", sprite: "", name, sector, kind: p.kind, mu: p.mu, sigma: p.sigma, beta: p.beta, payout: p.payout, yield: p.y, marketCap: cap };
+}
+const UNIVERSE: AssetDef[] = [
+  u("luma", "LUMA", "Lumascale", "tech", 1520), u("heli", "HELI", "Helion AI", "tech", 1240), u("qbit", "QBIT", "Qubit Foundry", "tech", 780), u("pixl", "PIXL", "Pixl Media", "tech", 430), u("crtx", "CRTX", "Cortex Labs", "tech", 990), u("nmbs", "NMBS", "Nimbus Cloud", "tech", 320),
+  u("sola", "SOLA", "Solara Power", "energy", 540), u("atls", "ATLS", "Atlas Oil", "energy", 810), u("embr", "EMBR", "Ember Gas", "energy", 270), u("terr", "TERR", "Terra Grid", "energy", 360),
+  u("grdr", "GRDR", "Girder Steel", "industry", 400), u("haul", "HAUL", "Haul Freight", "industry", 300), u("rvet", "RVET", "Rivet Machines", "industry", 210), u("cran", "CRAN", "Crane Systems", "industry", 150),
+  u("hrth", "HRTH", "Hearth Goods", "consumer", 630), u("crav", "CRAV", "Crave Foods", "consumer", 350), u("loom", "LOOM", "Loom Apparel", "consumer", 250), u("vlvt", "VLVT", "Velvet Retail", "consumer", 180),
+  u("mend", "MEND", "Mendwell", "health", 540), u("vitl", "VITL", "Vital Pharma", "health", 410), u("cura", "CURA", "Cura Bio", "health", 310), u("gnme", "GNME", "Genome Labs", "health", 720),
+  u("zeed", "ZEED", "Zed Protocol", "crypto", 380), u("orbt", "ORBT", "Orbit Coin", "crypto", 230),
+];
+// tradeable market map (everything except the index fund)
+export const MARKET: AssetDef[] = [...ASSETS.filter((a) => a.kind !== "index"), ...UNIVERSE];
+// every asset the engine simulates (core + universe)
+export const ALL_ASSETS: AssetDef[] = [...ASSETS, ...UNIVERSE];
 
 export interface MarketEvent {
   atStep: number;
@@ -107,7 +136,7 @@ export class Market {
     this.cash = startingCash;
     this.start = startingCash;
     this.feeDrag = feeDrag;
-    for (const a of ASSETS) {
+    for (const a of ALL_ASSETS) {
       const base = a.kind === "crypto" ? 40 + this.rand() * 30 : a.kind === "index" ? 100 : 20 + this.rand() * 80;
       this.prices[a.id] = round2(base);
       this.history[a.id] = [this.prices[a.id]];
@@ -145,7 +174,7 @@ export class Market {
       sectorShock[s.id] = sh;
     }
     const evVol = ev?.vol ?? 0;
-    for (const a of ASSETS) {
+    for (const a of ALL_ASSETS) {
       const idio = this.normal() * (a.sigma + evVol);
       const ret = a.mu + a.beta * marketShock + (sectorShock[a.sector] ?? 0) + idio;
       this.prices[a.id] = round2(Math.max(0.5, this.prices[a.id] * Math.exp(ret)));
@@ -171,7 +200,7 @@ export class Market {
 
   invested(): number {
     let v = 0;
-    for (const a of ASSETS) {
+    for (const a of ALL_ASSETS) {
       const h = this.holdings[a.id];
       if (h) v += h.shares * this.prices[a.id];
     }
@@ -182,7 +211,7 @@ export class Market {
 
   positions(): Position[] {
     const out: Position[] = [];
-    for (const a of ASSETS) {
+    for (const a of ALL_ASSETS) {
       const h = this.holdings[a.id];
       if (h && h.shares > 1e-6) {
         const value = h.shares * this.prices[a.id];
@@ -222,6 +251,14 @@ export class Market {
     const i = Math.max(0, h.length - 1 - lookback);
     if (h.length < 2) return 0;
     return (h[h.length - 1] - h[i]) / h[i];
+  }
+
+  // live market cap = base cap scaled by price move since t0 (drives tile size)
+  liveCap(assetId: string): number {
+    const a = ALL_ASSETS.find((x) => x.id === assetId);
+    const h = this.history[assetId];
+    if (!a || !h || !h.length) return 0;
+    return a.marketCap * (this.prices[assetId] / h[0]);
   }
 }
 

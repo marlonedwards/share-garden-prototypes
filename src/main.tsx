@@ -4,7 +4,7 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 import Landing from "./pages/Landing";
 import Pulse from "./pages/Pulse";
-import Flows from "./pages/Flows";
+import Prism from "./pages/Prism";
 import Garden from "./pages/Garden";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/pulse" element={<Pulse />} />
-        <Route path="/flows" element={<Flows />} />
+        <Route path="/prism" element={<Prism />} />
         <Route path="/garden" element={<Garden />} />
       </Routes>
     </HashRouter>
