@@ -1,0 +1,83 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-grotesk: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* Garden palette */
+  --color-cream: #f4efe1;
+  --color-parchment: #ece3cf;
+  --color-soil: #3e2f23;
+  --color-soil-dark: #2a2018;
+  --color-leaf: #5b8a4a;
+  --color-leaf-deep: #3f6b3a;
+  --color-tomato: #c7502f;
+  --color-wood: #8b5e3c;
+  --color-gold: #cf9d3f;
+  --color-sky: #cbe6ea;
+
+  /* Pulse palette (stark market) */
+  --color-void: #0a0d13;
+  --color-panel: #121926;
+  --color-panel-2: #1a2333;
+  --color-up: #33d17a;
+  --color-down: #ff5d6c;
+  --color-cyan: #56c7ff;
+  --color-violet: #9b8cff;
+  --color-amber: #ffb454;
+  --color-ink: #e7edf5;
+  --color-muted: #7f8ba0;
+
+  /* Flows palette */
+  --color-deep: #070f1c;
+  --color-capital: #ffd479;
+}
+
+:root { color-scheme: dark; }
+
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: #0a0d13;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* device frame used by prototype shells */
+.device {
+  position: relative;
+  border-radius: 34px;
+  box-shadow: 0 40px 90px -30px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+  overflow: hidden;
+  background: #000;
+}
+.device-portrait { width: 390px; height: 800px; }
+.device-landscape { width: 860px; height: 480px; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-38px); opacity: 0; }
+}
+.float-coin { animation: floatUp 1.1s ease-out forwards; }
+
+@keyframes popIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop-in { animation: popIn 0.35s cubic-bezier(.2,1.2,.3,1) both; }
+
+@keyframes sway {
+  0%,100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
