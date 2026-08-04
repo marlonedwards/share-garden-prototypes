@@ -132,8 +132,8 @@ export function Sparkline({ data, color, width = 96, height = 26 }: { data: numb
 }
 
 // your orb vs the benchmark over the whole run, smoothed, with time ticks
-export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels }:
-  { net: number[]; bench: number[]; width?: number; height?: number; benchLabel?: string; xLabels?: string[] }) {
+export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels, benchStroke = "url(#rb)" }:
+  { net: number[]; bench: number[]; width?: number; height?: number; benchLabel?: string; xLabels?: string[]; benchStroke?: string }) {
   if (net.length < 2) return null;
   const all = [...net, ...bench];
   const min = Math.min(...all), max = Math.max(...all);
@@ -163,7 +163,7 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
   return (
     <div>
       <svg width={width} height={height} style={{ display: "block" }}>
-        <path d={smooth(toPts(bench))} fill="none" stroke="url(#rb)" strokeWidth="1.8" strokeLinejoin="round" opacity="0.85" />
+        <path d={smooth(toPts(bench))} fill="none" stroke={benchStroke} strokeWidth="1.8" strokeLinejoin="round" opacity="0.85" />
         <path d={smooth(toPts(net))} fill="none" stroke="#1d1d1f" strokeWidth="1.8" strokeLinejoin="round" />
         <defs>
           <linearGradient id="rb" x1="0" y1="0" x2="1" y2="0">
@@ -178,7 +178,7 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
       )}
       <div className="flex gap-4 mt-1 text-[11.5px]" style={{ color: "#6e6e73" }}>
         <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: "#1d1d1f" }} />you</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: "linear-gradient(90deg,#ff9f0a,#bf5af2,#0a84ff)" }} />{benchLabel}</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: benchStroke === "url(#rb)" ? "linear-gradient(90deg,#ff9f0a,#bf5af2,#0a84ff)" : benchStroke }} />{benchLabel}</span>
       </div>
     </div>
   );
