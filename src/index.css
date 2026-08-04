@@ -85,3 +85,6 @@ body {
 
 /* garden sprites have a flat pale tile baked in; multiply melts it into light backgrounds */
 .sprite-blend { mix-blend-mode: multiply; }
+
+/* Pixelify Sans sets tight; a little tracking keeps C-a-s-h legible */
+.font-game { letter-spacing: 0.055em; }

@@ -393,6 +393,7 @@ export default function GardenGame() {
             {/* your plots: click to act */}
             <div className="absolute" style={{ left: "20%", bottom: 50 }}>
               <div className="relative" style={{ width: (5 + 4) * (TW / 2) + 40, height: (5 + 4) * (TH / 2) + 140 }}>
+                <div className="absolute pointer-events-none" style={{ left: "2%", right: "2%", bottom: -6, height: 90, background: "radial-gradient(ellipse at center, rgba(40,50,25,0.35), rgba(40,50,25,0) 70%)" }} />
                 {Array.from({ length: PLOT_COUNT }, (_, i) => {
                   const { x, y } = isoPos(i, 5, 4);
                   const occupied = lots.some((l) => l.plot === i);
@@ -401,8 +402,8 @@ export default function GardenGame() {
                     <button key={`plot${i}`} className="absolute" onClick={() => canAct && setSelPlot(selected ? null : i)}
                       style={{
                         left: x - TW / 2, top: y - TH / 2, width: TW, height: TH,
-                        background: selected ? "#e8d27a" : frosty ? "#9d9186" : occupied ? "#8f6f43" : "#a5804f",
-                        border: `1.5px solid ${selected ? "#b39322" : frosty ? "#7d7268" : "#7d5c33"}`,
+                        background: selected ? "rgba(232,210,122,0.95)" : frosty ? "rgba(140,132,122,0.85)" : occupied ? "rgba(122,92,55,0.92)" : "rgba(146,111,66,0.88)",
+                        border: `2px solid ${selected ? "#b39322" : frosty ? "#6e655c" : "#66492a"}`,
                         clipPath: "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)",
                         transition: "background 0.4s", cursor: canAct ? "pointer" : "default",
                       }} aria-label={`plot ${i + 1}`} />
@@ -470,13 +471,14 @@ export default function GardenGame() {
               <>
                 <div className="absolute" style={{ left: "60%", bottom: 50 }}>
                   <div className="relative" style={{ width: (5 + 4) * (TW / 2) + 40, height: (5 + 4) * (TH / 2) + 140 }}>
+                    <div className="absolute pointer-events-none" style={{ left: "2%", right: "2%", bottom: -6, height: 90, background: "radial-gradient(ellipse at center, rgba(40,50,25,0.35), rgba(40,50,25,0) 70%)" }} />
                     {Array.from({ length: 20 }, (_, i) => {
                       const { x, y } = isoPos(i, 5, 4);
                       return (
                         <div key={`cp${i}`} className="absolute" style={{
                           left: x - TW / 2, top: y - TH / 2, width: TW, height: TH,
-                          background: frosty ? "#9d9186" : "#8f9a63",
-                          border: `1.5px solid ${frosty ? "#7d7268" : "#71804a"}`,
+                          background: frosty ? "rgba(140,132,122,0.85)" : "rgba(124,136,78,0.9)",
+                          border: `2px solid ${frosty ? "#6e655c" : "#5c6a3a"}`,
                           clipPath: "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)", transition: "background 1s",
                         }} />
                       );
