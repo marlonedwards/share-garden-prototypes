@@ -102,6 +102,25 @@ function GChip({ children, onClick, disabled }: { children: ReactNode; onClick: 
   );
 }
 
+// a crop's history told in its own language: the plant at its last five weekly sizes
+function GrowthStrip({ history, sprite }: { history: number[]; sprite: string }) {
+  const pts: number[] = [];
+  for (let wk = 4; wk >= 0; wk--) {
+    const idx = Math.max(0, history.length - 1 - wk * 7);
+    pts.push(history[idx]);
+  }
+  return (
+    <div className="flex items-end gap-3 mt-2" style={{ height: 52 }}>
+      {pts.map((p, i) => (
+        <div key={i} className="flex flex-col items-center gap-0.5">
+          <img src={sprite} alt="" style={{ height: Math.max(10, Math.min(46, 8 + p * 0.22)), opacity: 0.45 + i * 0.14 }} />
+          <span className="text-[9px]" style={{ color: "#8a7355" }}>{i === 4 ? "today" : `${4 - i}w ago`}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ---- iso helpers ---------------------------------------------------------
 const TW = 62, TH = 31;
 const isoPos = (i: number, cols: number, rows: number) => {
@@ -324,10 +343,10 @@ export default function GardenGame() {
             style={{
               width: 1080, height: 500,
               border: `2px solid ${WOOD}`, boxShadow: "5px 5px 0 rgba(107,84,60,0.2)",
-              background: frosty
-                ? "linear-gradient(180deg, #cfd8de 0%, #c2ccd4 55%, #b4c0ca 100%)"
-                : "linear-gradient(180deg, #d3e5ad 0%, #c7dc9d 55%, #b7d08b 100%)",
+              background: "#c7dc9d",
             }}>
+            <img src={`${import.meta.env.BASE_URL}sprites/gpt/scene/backdrop.png`} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: frosty ? 0 : 1, transition: "opacity 1.5s" }} />
+            <img src={`${import.meta.env.BASE_URL}sprites/gpt/scene/backdrop-frost.png`} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: frosty ? 1 : 0, transition: "opacity 1.5s" }} />
             <div className="absolute left-6 top-5 z-20">
               <div className="text-[12px] font-semibold" style={{ color: SUB }}>Cash</div>
               <div className="flex flex-col items-start gap-1">
@@ -706,7 +725,7 @@ export default function GardenGame() {
                     <p className="text-[12.5px] mt-2" style={{ color: "#5a4a35" }}>{c.isLike}</p>
                     <p className="text-[12px] mt-0.5" style={{ color: SUB }}>{c.world}</p>
                     <p className="text-[12px] mt-0.5" style={{ color: SUB }}>{c.goal}</p>
-                    <div className="mt-2"><Sparkline width={200} height={36} data={m.history[c.id]} color={c.color} /></div>
+                    <GrowthStrip history={m.history[c.id]} sprite={dead ? SPR("plant-dead") : SP(c.sprite)} />
                     {!dead && (
                       <div className="flex items-center gap-2 mt-2">
                         <GChip disabled={affordable < 1 || free === null} onClick={() => plantAt(c.id, selPlot !== null && !selLot ? selPlot : (nextFreePlot() ?? 0))}>
