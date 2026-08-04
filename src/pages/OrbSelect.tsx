@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { SCENARIOS as ERAS } from "../lib/scenarios";
+import { useOrbName } from "../lib/orbIdentity";
 
 // Scenario select for the Orb. Each scenario is one lesson; the plain-language
 // objective is right on the card. Standards mapping lives in the one-pager.
@@ -35,6 +36,7 @@ const SCENARIOS = [
 ];
 
 export default function OrbSelect() {
+  const [orbName, setOrbName] = useOrbName();
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
       <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
@@ -52,6 +54,30 @@ export default function OrbSelect() {
           Everything you own lives in one glass orb. Each company is a color. The orb's size is what
           it's all worth right now. Pick a scenario.
         </p>
+
+        <div className="mt-6 rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex items-center gap-6">
+          <div className="w-24 h-24 rounded-full flex-shrink-0 relative"
+            style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(238,243,250,0.45) 58%, rgba(214,224,238,0.65))", boxShadow: "inset 0 0 0 1.5px rgba(30,45,80,0.12), 0 14px 28px -14px rgba(24,34,60,0.4)" }}>
+            <div className="absolute inset-4 rounded-full overflow-hidden" style={{ filter: "blur(7px)", opacity: 0.55 }}>
+              <div className="w-full h-full" style={{ background: "conic-gradient(from 200deg, #0a84ff, #30d158 30%, #ff9f0a 60%, #bf5af2 85%, #0a84ff)" }} />
+            </div>
+            <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>This is your orb</div>
+            <input
+              value={orbName}
+              onChange={(e) => setOrbName(e.target.value)}
+              placeholder="Give it a name"
+              maxLength={24}
+              className="text-[21px] font-semibold tracking-tight bg-transparent outline-none w-full border-b border-transparent focus:border-black/15 transition"
+            />
+            <p className="text-[12.5px] mt-1" style={{ color: "#6e6e73" }}>
+              It holds every investment you make, in every lesson. A crash can shrink it, but only
+              selling empties it. Its name stays on this computer and goes nowhere else.
+            </p>
+          </div>
+        </div>
 
         <div className="mt-8 flex flex-col gap-4">
           {SCENARIOS.map((s) => (

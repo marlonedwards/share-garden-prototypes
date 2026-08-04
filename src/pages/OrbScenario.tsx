@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fmtMoney } from "../engine/market";
-import { HistoryMarket } from "../engine/history";
+import { EraAsset, HistoryMarket } from "../engine/history";
 import { useSim } from "../lib/useSim";
 import { CompSlice, roundPcts, valueToRadius } from "../lib/orbModel";
 import { downloadOrbCard } from "../lib/orbCard";
-import { getScenario } from "../lib/scenarios";
+import { getOrbName } from "../lib/orbIdentity";
+import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
 import {
   Actions, Btn, Caption, Card, DeltaChip, Dot, FluidCycler, GhostBtn, GrowthChart,
@@ -17,10 +18,66 @@ import {
 // optional paydays), end. All eras run real prices; the rainbow orb is the
 // real S&P 500 total return.
 
-type Beat = "brief" | "run" | "payday" | "end";
+type Beat = "brief" | "run" | "payday" | "gate" | "end";
 
 const STAGE_W = 1080;
 const STAGE_H = 440;
+
+// Debrief bullets computed from the player's actual run: outcome vs the index,
+// panic sells priced against holding, money lost to names that went to zero.
+function runBullets(
+  m: HistoryMarket,
+  cfg: ScenarioConfig,
+  name: (ea: { name: string; real?: string }) => string,
+  holdings: { ea: EraAsset; value: number }[],
+  invested: number,
+  net: number,
+): { c: string; text: string }[] {
+  const out: { c: string; text: string }[] = [];
+  const bench = m.benchmark;
+  const start = cfg.dataset.months[0].split("-")[0];
+
+  let peak = 0;
+  const dd = m.bench.map((v) => { peak = Math.max(peak, v); return peak > 0 ? v / peak : 1; });
+  let panicSold = 0, panicNow = 0;
+  const deadIds = new Set(cfg.assets.filter((a) => m.prices[a.id] <= 0).map((a) => a.id));
+  let deadSpent = 0, deadBack = 0;
+  const deadHeld = new Set<string>();
+  for (const t of m.trades) {
+    if (t.side === "sell" && (dd[t.step] ?? 1) < 0.85) {
+      panicSold += t.dollars;
+      panicNow += t.shares * m.prices[t.id];
+    }
+    if (deadIds.has(t.id)) {
+      if (t.side === "buy") { deadSpent += t.dollars; deadHeld.add(t.id); }
+      else deadBack += t.dollars;
+    }
+  }
+  const deadLost = deadSpent - deadBack;
+  const bought = m.trades.some((t) => t.side === "buy");
+  const top = holdings.slice().sort((a, b) => b.value - a.value)[0];
+  const topW = top && invested > 0 ? top.value / invested : 0;
+  const deadOnMenu = cfg.assets.find((a) => m.prices[a.id] <= 0);
+
+  if (!bought) {
+    out.push({ c: "#ff9f0a", text: `You never bought anything. The rainbow orb turned the same money into ${fmtMoney(bench)} while your cash sat still. Sitting out is a choice with a price too.` });
+  } else if (net >= bench * 1.02 && topW > 0.5 && top) {
+    const corpse = deadOnMenu ? ` ${name(deadOnMenu)} sat on the same menu and went to zero. In ${start}, nobody could tell the winners from the corpses in advance.` : "";
+    out.push({ c: "#bf5af2", text: `Your big bet on ${name(top.ea)} won this run: you finished ${fmtMoney(net - bench)} ahead of the rainbow orb. That is luck wearing a genius costume.${corpse}` });
+  } else if (net <= bench * 0.98) {
+    out.push({ c: "#0a84ff", text: `The rainbow orb finished ${fmtMoney(bench - net)} ahead of you without making a single decision all era. Spreading out and staying put was the whole trick.` });
+  } else {
+    out.push({ c: "#30d158", text: `You finished within ${fmtMoney(Math.abs(net - bench))} of the rainbow orb. Matching the index is a result most professionals never manage.` });
+  }
+  if (panicSold > 1 && panicNow > panicSold * 1.05) {
+    out.push({ c: "#ff453a", text: `You sold ${fmtMoney(panicSold)} of shares while the market was deep underwater. Held to the end, those same shares would be worth ${fmtMoney(panicNow)}. That gap is what panic costs.` });
+  }
+  if (deadLost > 1) {
+    const names = cfg.assets.filter((a) => deadHeld.has(a.id)).map((a) => name(a)).join(" and ");
+    out.push({ c: "#5e5ce6", text: `${names} went to zero and took ${fmtMoney(deadLost)} of your money for good. Gone is different from down: down can come back.` });
+  }
+  return out;
+}
 
 const RAINBOW_COMP: CompSlice[] = [
   ["#ff453a", "#ff9d97"], ["#ff9f0a", "#ffcf7a"], ["#ffd60a", "#ffe97a"], ["#30d158", "#8ff0ae"],
@@ -45,7 +102,11 @@ export default function OrbScenario() {
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
   const [payMode, setPayMode] = useState<"unset" | "auto" | "ask">("unset");
   const [realNames, setRealNames] = useState(false);
+  const orbName = getOrbName();
   const name = (ea: { name: string; real?: string }) => (realNames && ea.real) || ea.name;
+  const [activeGate, setActiveGate] = useState<Gate | null>(null);
+  const [gateAnswers, setGateAnswers] = useState<{ title: string; choice: string }[]>([]);
+  const firedGates = useRef<Set<number>>(new Set());
   const sceneRef = useRef<OrbSceneHandle>(null);
   const endCardRef = useRef<HTMLDivElement>(null);
   const peakInvested = useRef(0);
@@ -105,6 +166,26 @@ export default function OrbScenario() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m.step, beat]);
 
+  // history gates: pause the tape at a real moment and ask for a commitment
+  useEffect(() => {
+    if (beat !== "run") return;
+    const g = cfg.gates.find((gg) => m.step >= gg.atStep && !firedGates.current.has(gg.atStep));
+    if (g) {
+      firedGates.current.add(g.atStep);
+      setSpeed(0);
+      setActiveGate(g);
+      setBeat("gate");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [m.step, beat]);
+
+  const answerGate = (choice: string) => {
+    if (activeGate) setGateAnswers((a) => [...a, { title: activeGate.title, choice }]);
+    setActiveGate(null);
+    setBeat("run");
+    setSpeed(1);
+  };
+
   useEffect(() => {
     if (beat === "end") setTimeout(() => endCardRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 350);
   }, [beat]);
@@ -149,6 +230,9 @@ export default function OrbScenario() {
     setBeat("brief");
     setTradeRow(null);
     setPayMode("unset");
+    setActiveGate(null);
+    setGateAnswers([]);
+    firedGates.current.clear();
     peakInvested.current = 0;
     crashSeen.current = false;
     lastPay.current = 0;
@@ -159,7 +243,7 @@ export default function OrbScenario() {
     downloadOrbCard({
       comp,
       value: net,
-      headline: "This is your orb.",
+      headline: orbName ? `This is ${orbName}.` : "This is your orb.",
       subline: cfg.cardSubline,
       index: { label: "The rainbow orb (real S&P 500)", value: m.benchmark },
       rows: [
@@ -173,6 +257,8 @@ export default function OrbScenario() {
 
   const running = beat === "run";
   const ev = m.lastEvent;
+  const smart = beat === "end" ? runBullets(m, cfg, name, holdings, invested, net) : [];
+  const endBullets = [...smart, ...cfg.bullets.slice(0, Math.max(1, 4 - smart.length))];
 
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
@@ -250,7 +336,7 @@ export default function OrbScenario() {
                 the high · {fmtMoney(peakInvested.current)}
               </div>
             )}
-            <StageLabel x={LAYOUT.playerX} title="Your orb" sub={invested > 0 ? fmtMoney(invested) : "empty"} />
+            <StageLabel x={LAYOUT.playerX} title={orbName || "Your orb"} sub={invested > 0 ? fmtMoney(invested) : "empty"} />
             {beat !== "brief" && (
               <StageLabel x={LAYOUT.indexX} title="The rainbow orb" sub={`${fmtMoney(m.benchmark)} · ${cfg.income ? "same income, all-in" : "$1,000 all-in day one"}`} />
             )}
@@ -279,6 +365,32 @@ export default function OrbScenario() {
             {beat === "run" && speed > 0 && m.step < 4 && cfg.income && (
               <Caption>Buy your first colors, then your income can follow them every month.</Caption>
             )}
+            {beat === "gate" && activeGate && (
+              <Card title={`${activeGate.title}. ${activeGate.question}`}>
+                {activeGate.context.map((p, i) => (
+                  <p key={i} className={i > 0 ? "mt-2" : ""}>{p}</p>
+                ))}
+                {activeGate.refs && activeGate.refs.length > 0 && (
+                  <p className="mt-2.5 text-[12.5px]">
+                    <span style={{ color: "#6e6e73" }}>Read more: </span>
+                    {activeGate.refs.map((r, i) => (
+                      <span key={r.url}>
+                        {i > 0 && <span style={{ color: "#6e6e73" }}> · </span>}
+                        <a href={r.url} target="_blank" rel="noopener noreferrer"
+                          style={{ color: "#0071e3", textDecoration: "none", borderBottom: "1px dotted #0071e3" }}>
+                          {r.label}
+                        </a>
+                      </span>
+                    ))}
+                  </p>
+                )}
+                <Actions>
+                  {activeGate.options.map((o) => (
+                    <GhostBtn key={o} onClick={() => answerGate(o)}>{o}</GhostBtn>
+                  ))}
+                </Actions>
+              </Card>
+            )}
             {beat === "payday" && (
               <Card title={`Payday. ${fmtMoney(cfg.income ?? 0)} arrived.`}>
                 <p>Invest it into your colors in their current mix, or keep it as cash.</p>
@@ -306,6 +418,14 @@ export default function OrbScenario() {
                     <div className="text-[24px] tracking-tight tnum" style={{ fontWeight: m.benchmark > net ? 700 : 600 }}>{fmtMoney(m.benchmark)}</div>
                   </div>
                 </div>
+                {gateAnswers.length > 0 && (
+                  <div className="mb-3 rounded-xl px-4 py-3" style={{ background: "#f5f5f7" }}>
+                    <div className="text-[12px] font-semibold mb-1" style={{ color: "#6e6e73" }}>At the crossroads, you said</div>
+                    {gateAnswers.map((a) => (
+                      <div key={a.title} className="text-[13px]">{a.title}: &ldquo;{a.choice}&rdquo;</div>
+                    ))}
+                  </div>
+                )}
                 {cfg.income && holdings.length > 0 && (() => {
                   const top = holdings.slice().sort((a, b) => b.value - a.value)[0];
                   const hh = m.holdings[top.ea.id];
@@ -319,7 +439,7 @@ export default function OrbScenario() {
                 })()}
                 <div className="mb-3"><GrowthChart net={m.net} bench={m.bench} width={990} height={130} xLabels={[m.monthLabel(0), m.monthLabel(Math.floor(lastStep / 3)), m.monthLabel(Math.floor((2 * lastStep) / 3)), m.monthLabel(lastStep)]} /></div>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
-                  {cfg.bullets.map((b, i) => (
+                  {endBullets.map((b, i) => (
                     <li key={i} className="flex gap-2"><Dot c={b.c} /><span>{b.text}</span></li>
                   ))}
                 </ul>
@@ -379,13 +499,14 @@ export default function OrbScenario() {
               <div className="text-[11.5px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
               {cfg.assets.filter((ea) => !holdings.some((h) => h.ea.id === ea.id)).map((ea) => {
                 const open = tradeRow === `add-${ea.id}`;
+                const dead = m.prices[ea.id] <= 0;
                 return (
-                  <div key={ea.id}>
+                  <div key={ea.id} style={dead ? { opacity: 0.55 } : undefined}>
                     <button className="w-full flex items-center gap-2.5 py-1.5 text-left" title={ea.desc}
                       onClick={() => setTradeRow(open ? null : `add-${ea.id}`)}>
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ea.color }} />
                       <span className="text-[13px] flex-1 truncate">{name(ea)}</span>
-                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtMoney(m.prices[ea.id])}</span>
+                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{dead ? "gone" : fmtMoney(m.prices[ea.id])}</span>
                     </button>
                     {open && (
                       <div className="ml-5 mb-1.5 pop-in">
@@ -393,7 +514,7 @@ export default function OrbScenario() {
                         <div className="mb-1.5"><Sparkline width={180} height={40} data={m.history[ea.id]} color={ea.color} /></div>
                         <div className="flex gap-1.5">
                           {[100, 250].map((a) => (
-                            <TradeChip key={a} disabled={fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1}
+                            <TradeChip key={a} disabled={dead || (fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
                               onClick={() => { buy(ea.id, Math.min(a, m.cash)); setTradeRow(null); }}>
                               Buy ${Math.min(a, Math.floor(m.cash))}
                             </TradeChip>

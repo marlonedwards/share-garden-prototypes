@@ -20,6 +20,14 @@ export interface HistoryDataset {
   series: Record<string, number[]>;
 }
 
+export interface Trade {
+  step: number;
+  id: string;
+  side: "buy" | "sell";
+  dollars: number;
+  shares: number;
+}
+
 export interface HistoryOpts {
   dataset: HistoryDataset;
   indexKey: string;
@@ -39,6 +47,7 @@ export class HistoryMarket {
   start: number;
   income: number;
   holdings: Record<string, Holding> = {};
+  trades: Trade[] = [];
   dividendsCollected = 0;
   benchmark: number;
   private benchShares: number;
@@ -118,6 +127,7 @@ export class HistoryMarket {
     h.shares += shares; h.cost += dollars;
     this.holdings[assetId] = h;
     this.cash -= dollars;
+    this.trades.push({ step: this.step, id: assetId, side: "buy", dollars, shares });
     return true;
   }
 
@@ -131,6 +141,7 @@ export class HistoryMarket {
     h.shares -= shares;
     this.cash += proceeds;
     if (h.shares < 1e-6) delete this.holdings[assetId];
+    this.trades.push({ step: this.step, id: assetId, side: "sell", dollars: proceeds, shares });
     return proceeds;
   }
 }

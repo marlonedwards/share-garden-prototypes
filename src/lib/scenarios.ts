@@ -7,6 +7,18 @@ import eraCrypto from "../data/eraCrypto.json";
 import { MarketEvent } from "../engine/market";
 import { EraAsset, HistoryDataset } from "../engine/history";
 
+// A gate pauses the tape at a real historical moment: a page of context the
+// player could have known at the time, a prediction they must commit to, and
+// references they can follow out. The debrief quotes their choice back.
+export interface Gate {
+  atStep: number;
+  title: string;
+  question: string;
+  context: string[];
+  options: string[];
+  refs?: { label: string; url: string }[];
+}
+
 export interface ScenarioConfig {
   id: string;
   lesson: string;
@@ -21,6 +33,7 @@ export interface ScenarioConfig {
   indexSub: string;          // rainbow orb card subtitle
   assets: EraAsset[];
   moments: MarketEvent[];
+  gates: Gate[];
   startCash: number;
   income?: number;
   fractionalDefault: boolean;
@@ -58,20 +71,50 @@ export const SCENARIOS: ScenarioConfig[] = [
       { id: "KO", real: "Coca-Cola",   name: "Classic Cola",         desc: "Sells the same fizzy drink in nearly every country.",                color: "#ff453a", glow: "#ff9d97" },
       { id: "JNJ", real: "Johnson & Johnson",  name: "Bandage & Balm",       desc: "Medicine, baby shampoo, and half your bathroom cabinet.",            color: "#30d158", glow: "#8ff0ae" },
       { id: "XOM", real: "ExxonMobil",  name: "Giant Oil",            desc: "Pumps, refines, and sells oil around the world.",                    color: "#8e8e93", glow: "#c7c7cc" },
+      { id: "WCOM", real: "WorldCom",   name: "The Phone Giant",      desc: "Wires phone calls and internet traffic across the country. A Wall Street favorite.", color: "#5e5ce6", glow: "#a8a5f5" },
+      { id: "ETYS", real: "eToys",      name: "The Online Toy Store", desc: "Sells toys on the internet. Growing fast, losing money faster.",     color: "#ff6482", glow: "#ffa8bb" },
     ],
     moments: [
       mom(0, 2, "Dot-com mania", "Internet stocks have gone vertical. Everyone has a hot tip."),
       mom(2, 4, "The bubble pops", "The internet dream meets its bill. Tech is falling, hard."),
       mom(20, 3, "September 2001", "Markets close for a week, then drop. Fear is everywhere."),
+      mom(30, 3, "The fraud", "The Phone Giant admits its profits were made up. It is not coming back."),
       mom(33, 3, "The bottom", "Three brutal years of falling prices. Most sellers are done."),
       mom(41, 4, "The climb back", "Quietly, prices are rising again."),
       mom(93, 3, "New highs", "After five years of recovery, the market sets a record."),
+    ],
+    gates: [
+      {
+        atStep: 1,
+        title: "February 2000",
+        question: "The internet party is at its loudest. Where does your $1,000 go?",
+        context: [
+          "Internet stocks have multiplied five times over in five years. Magazines say the old rules are dead. Companies with no profits are worth billions, because everyone believes someone will pay more tomorrow.",
+          "Nobody on this screen knows it yet, but within two years hundreds of internet companies will be gone, and the survivors will be down by half or more.",
+        ],
+        options: ["All-in on the hottest tech", "Spread across everything", "Wait in cash"],
+        refs: [{ label: "The dot-com bubble", url: "https://en.wikipedia.org/wiki/Dot-com_bubble" }],
+      },
+      {
+        atStep: 33,
+        title: "October 2002",
+        question: "Three years of falling prices. Do you believe the market comes back?",
+        context: [
+          "The index has been cut nearly in half. The Phone Giant is gone in the biggest bankruptcy in American history. People who bragged about stocks in 2000 now call the market a casino.",
+          "Every dollar invested this month buys almost twice the shares it did in 2000. It does not feel that way. It feels like catching a falling knife.",
+        ],
+        options: ["Buy while it's cheap", "Hold what I have", "Sell before it gets worse"],
+        refs: [
+          { label: "The 2002 downturn", url: "https://en.wikipedia.org/wiki/Stock_market_downturn_of_2002" },
+          { label: "The WorldCom scandal", url: "https://en.wikipedia.org/wiki/WorldCom_scandal" },
+        ],
+      },
     ],
     startCash: 1000,
     fractionalDefault: false,
     briefTitle: "January 2000. The internet party is as loud as it will ever get.",
     briefBody: [
-      "You have $1,000 and eight years. Every price is real. The names are made up; the companies were not.",
+      "You have $1,000 and eight years. Every price is real. The names are made up; the companies were not. Not every name on this menu makes it to 2008.",
       "The rainbow orb puts the same $1,000 all-in on the real S&P 500. Prices are the era's real quotes.",
     ],
     startLabel: "Start in 2000",
@@ -79,7 +122,7 @@ export const SCENARIOS: ScenarioConfig[] = [
     bullets: [
       { c: "#bf5af2", text: "The hottest tech names of 2000 all lost money over these eight years. The boring ones quietly won." },
       { c: "#ff9f0a", text: "The Everything Store fell hard, then ended the era up. Impatience gets punished before good businesses do." },
-      { c: "#30d158", text: "This menu only shows survivors. The real 2000 menu held thousands of names, and plenty went to zero. That trick has a name: survivorship bias." },
+      { c: "#30d158", text: "Two names on this menu went to zero and stayed there. The real 2000 menu held thousands more like them. Charts of the past only show the survivors: that trick is called survivorship bias." },
     ],
     cardSubline: "The dot-com era · Jan 2000 to Dec 2007 · real prices",
   },
@@ -107,6 +150,29 @@ export const SCENARIOS: ScenarioConfig[] = [
       mom(2, 4, "The bubble pops", "The internet dream meets its bill. Tech is falling, hard."),
       mom(33, 3, "The bottom", "Your $50 buys more shares than it ever has."),
       mom(93, 3, "New highs", "The market sets a record. Your steady months paid for it."),
+    ],
+    gates: [
+      {
+        atStep: 3,
+        title: "Spring 2000",
+        question: "Prices are falling. Your $50 arrives anyway. What is your plan?",
+        context: [
+          "Steady investors call this dollar cost averaging: the same money every month buys more shares when prices fall and fewer when they rise.",
+          "The hard part is that the plan feels worst exactly when it is working best.",
+        ],
+        options: ["Keep investing every month", "Pause until things calm down"],
+        refs: [{ label: "Dollar cost averaging", url: "https://en.wikipedia.org/wiki/Dollar_cost_averaging" }],
+      },
+      {
+        atStep: 33,
+        title: "October 2002",
+        question: "The market is at its lowest in five years. Your $50 buys more shares than ever. Stick to the plan?",
+        context: [
+          "Nobody rings a bell at the bottom. The people who kept buying through 2002 bought their cheapest shares of the decade this month, and none of them knew it at the time.",
+        ],
+        options: ["Stick to the plan", "Skip this month"],
+        refs: [{ label: "Dollar cost averaging", url: "https://en.wikipedia.org/wiki/Dollar_cost_averaging" }],
+      },
     ],
     startCash: 100,
     income: 50,
@@ -147,6 +213,7 @@ export const SCENARIOS: ScenarioConfig[] = [
       { id: "AAPL", real: "Apple", name: "Fruit Computers",     desc: "Just launched a phone.",                                   color: "#0a84ff", glow: "#7cc0ff" },
       { id: "XOM", real: "ExxonMobil",  name: "Giant Oil",           desc: "Pumps, refines, and sells oil around the world.",          color: "#8e8e93", glow: "#c7c7cc" },
       { id: "AMZN", real: "Amazon", name: "The Everything Store", desc: "The online store that survived the last crash.",          color: "#ff9f0a", glow: "#ffcf7a" },
+      { id: "LEH", real: "Lehman Brothers", name: "The Old Bank", desc: "A 158-year-old investment bank at the center of Wall Street.", color: "#5e5ce6", glow: "#a8a5f5" },
     ],
     moments: [
       mom(9, 3, "The top", "Stocks set a record. Houses only go up, people say."),
@@ -155,11 +222,34 @@ export const SCENARIOS: ScenarioConfig[] = [
       mom(62, 3, "Quiet recovery", "Slowly, prices heal."),
       mom(74, 3, "New highs", "The market passes its 2007 record."),
     ],
+    gates: [
+      {
+        atStep: 20,
+        title: "September 2008",
+        question: "A 158-year-old bank just died overnight. What do you do before tomorrow's open?",
+        context: [
+          "The Old Bank survived the Civil War, two world wars, and the Great Depression. This weekend it ran out of money and nobody saved it. It is the largest bankruptcy in American history.",
+          "Banks will not lend to each other. The evening news says the word crisis every night. Nobody knows which giant falls next.",
+        ],
+        options: ["Sell everything", "Hold and ride it out", "Buy while everyone is scared"],
+        refs: [{ label: "The Lehman bankruptcy", url: "https://en.wikipedia.org/wiki/Bankruptcy_of_Lehman_Brothers" }],
+      },
+      {
+        atStep: 26,
+        title: "March 2009",
+        question: "Stocks are half price. Everyone says the system is broken. Do you believe the recovery?",
+        context: [
+          "The index has fallen by more than half from its 2007 record. Magazines ask whether capitalism is finished. This month turns out to be the exact bottom, and nobody calls it at the time.",
+        ],
+        options: ["Buy", "Hold", "Stay out"],
+        refs: [{ label: "The 2008 financial crisis", url: "https://en.wikipedia.org/wiki/2007%E2%80%932008_financial_crisis" }],
+      },
+    ],
     startCash: 1000,
     fractionalDefault: false,
     briefTitle: "January 2007. Everything is going up, especially houses.",
     briefBody: [
-      "You have $1,000 and nine years. Every price is real. One of these giants will nearly die.",
+      "You have $1,000 and nine years. Every price is real. Some of these giants will nearly die. One will not make it.",
       "The rainbow orb puts the same $1,000 all-in on the real S&P 500.",
     ],
     startLabel: "Start in 2007",
@@ -189,20 +279,46 @@ export const SCENARIOS: ScenarioConfig[] = [
       { id: "LTC-USD", real: "Litecoin",  name: "Coin Gamma",    desc: "A faster copy of the first one.",               color: "#8e8e93", glow: "#c7c7cc" },
       { id: "XRP-USD", real: "XRP",  name: "Coin Delta",    desc: "A coin that wants banks as customers.",         color: "#64d2ff", glow: "#b0e8ff" },
       { id: "DOGE-USD", real: "Dogecoin", name: "The Joke Coin", desc: "Started as a joke. Kept going anyway.",         color: "#ffd60a", glow: "#ffe97a" },
+      { id: "BCC", real: "BitConnect", name: "The Promise Coin", desc: "Promises 1% a day, guaranteed, forever.",       color: "#ff375f", glow: "#ff8fa3" },
     ],
     moments: [
       mom(0, 3, "The hangover", "Coins just fell 60% from their peak. Winter one."),
+      mom(1, 2, "The Promise Coin shuts down", "The coin that guaranteed riches is gone overnight."),
       mom(26, 3, "The covid crash", "Everything falls at once. Coins fall hardest."),
       mom(46, 3, "Coin mania", "Coins hit records. Your barber has a coin tip."),
       mom(58, 3, "Winter two", "Down three quarters from the top. Again."),
       mom(74, 3, "Records again", "The survivors set new highs."),
+    ],
+    gates: [
+      {
+        atStep: 46,
+        title: "November 2021",
+        question: "Coins are at all-time records and your barber has a tip. Do you add more?",
+        context: [
+          "Coin Alpha has multiplied thirty times over in three years. Stadiums are being renamed after coin companies. People post screenshots of life-changing profits every day.",
+          "The rule of every mania so far: the louder the party, the closer the exit.",
+        ],
+        options: ["Buy more coins", "Take some profits", "Change nothing"],
+        refs: [{ label: "The 2021 crypto bubble", url: "https://en.wikipedia.org/wiki/Cryptocurrency_bubble" }],
+      },
+      {
+        atStep: 58,
+        title: "November 2022",
+        question: "Coins are down three quarters. Again. Was the first winter a lesson or a fluke?",
+        context: [
+          "A giant coin exchange just collapsed with its customers' money inside. This is the second 75 percent winter in five years. The boring stock index is down about a fifth.",
+          "Position size is the difference between an investor who can wait and one who has to sell.",
+        ],
+        options: ["Sell what's left", "Hold", "Buy the winter"],
+        refs: [{ label: "The FTX collapse", url: "https://en.wikipedia.org/wiki/Bankruptcy_of_FTX" }],
+      },
     ],
     startCash: 1000,
     fractionalDefault: true,
     lastStep: 83,
     briefTitle: "January 2018. Coins just crashed, and true believers are buying.",
     briefBody: [
-      "You have $1,000 and seven wild years. Every price is real.",
+      "You have $1,000 and seven wild years. Every price is real. One of these coins is a scam.",
       "The rainbow orb skips the coins entirely and holds the boring stock market.",
     ],
     startLabel: "Start in 2018",

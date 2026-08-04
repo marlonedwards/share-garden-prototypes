@@ -6,6 +6,7 @@ import { useSim } from "../lib/useSim";
 import { CompSlice, FREE_ASSETS, roundPcts, valueToRadius } from "../lib/orbModel";
 import { getScenario } from "../lib/scenarios";
 import { downloadOrbCard } from "../lib/orbCard";
+import { getOrbName } from "../lib/orbIdentity";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
 import {
   Btn, Dot, FluidCycler, GhostBtn, GrowthChart, RAINBOW_DOT, Sparkline,
@@ -68,6 +69,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const [realNames, setRealNames] = useState(false);
+  const orbName = getOrbName();
   const sceneRef = useRef<OrbSceneHandle>(null);
   const peakInvested = useRef(0);
   const crashSeen = useRef(false);
@@ -197,7 +199,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
                 {Math.abs(net - 1000) >= 1 && <DeltaLine net={net} bench={m.benchmark} />}
               </div>
             </div>
-            <StageLabel x={LAYOUT.playerX} title="Your orb" sub={invested > 0 ? fmtMoney(invested) : "empty"} />
+            <StageLabel x={LAYOUT.playerX} title={orbName || "Your orb"} sub={invested > 0 ? fmtMoney(invested) : "empty"} />
             <StageLabel x={LAYOUT.indexX} title="The rainbow orb"
               sub={`${fmtMoney(m.benchmark)} · ${era ? "the real S&P 500, $1,000 day one" : "$1,000 all-in day one"}`} />
             <StageLabel x={LAYOUT.resX} title="Cash" sub={fmtMoney(m.cash)} />
@@ -225,7 +227,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
                   <Btn onClick={() => downloadOrbCard({
                     comp,
                     value: net,
-                    headline: "This is your orb.",
+                    headline: orbName ? `This is ${orbName}.` : "This is your orb.",
                     subline: era ? `Freeplay · ${era.cardSubline}` : `Freeplay · day ${m.step}`,
                     index: { label: "The rainbow orb", value: m.benchmark },
                     rows: [
@@ -286,19 +288,20 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
               <div className="text-[11.5px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
               {cast.filter((c) => !holdings.some((h) => h.c.id === c.id)).map((c) => {
                 const open = tradeRow === `add-${c.id}`;
+                const dead = m.prices[c.id] <= 0;
                 return (
-                  <div key={c.id}>
+                  <div key={c.id} style={dead ? { opacity: 0.55 } : undefined}>
                     <button className="w-full flex items-center gap-2.5 py-1.5 text-left"
                       onClick={() => setTradeRow(open ? null : `add-${c.id}`)}>
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
                       <span className="text-[13px] flex-1 truncate">{c.name}</span>
-                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtMoney(m.prices[c.id])}</span>
+                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{dead ? "gone" : fmtMoney(m.prices[c.id])}</span>
                     </button>
                     {open && (
                       <div className="ml-5 mb-1.5 flex flex-wrap gap-1.5 pop-in">
                         <div className="w-full"><Sparkline width={180} height={40} data={m.history[c.id]} color={c.color} /></div>
                         {[100, 250].map((a) => (
-                          <TradeChip key={a} disabled={m.cash < 1} onClick={() => { buy(c.id, a); setTradeRow(null); }}>
+                          <TradeChip key={a} disabled={dead || m.cash < 1} onClick={() => { buy(c.id, a); setTradeRow(null); }}>
                             Buy ${Math.min(a, Math.floor(m.cash))}
                           </TradeChip>
                         ))}

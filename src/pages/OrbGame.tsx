@@ -5,6 +5,7 @@ import { useSim } from "../lib/useSim";
 import { CompSlice, ORB_ASSETS, RAINBOW, orbAsset, roundPcts, valueToRadius } from "../lib/orbModel";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
 import { downloadOrbCard } from "../lib/orbCard";
+import { getOrbName } from "../lib/orbIdentity";
 import {
   Actions, Btn, Caption, Card, DeltaChip, Dot, FluidCycler, GhostBtn, GrowthChart,
   RAINBOW_DOT, Sparkline, SpeedBtn, StageLabel, TradeChip, useFluidPref,
@@ -36,6 +37,7 @@ const RAINBOW_COMP: CompSlice[] = RAINBOW.map((c) => ({ key: c.id, color: c.colo
 const AMOUNTS = [100, 250, 500];
 
 export default function OrbGame() {
+  const orbName = getOrbName();
   const { m, speed, setSpeed, done, reset, act } = useSim({ cash: 1000, maxStep: END_STEP, events: ORB_EVENTS });
   const [beat, setBeat] = useState<Beat>("intro");
   const [choice, setChoice] = useState<"hold" | "sold" | null>(null);
@@ -239,7 +241,7 @@ export default function OrbGame() {
               </div>
             )}
             {/* labels pinned to scene anchors */}
-            <StageLabel x={LAYOUT.playerX} title="Your orb" sub={invested > 0 ? fmtMoney(invested) : "empty"} highlight={beat === "intro"} />
+            <StageLabel x={LAYOUT.playerX} title={orbName || "Your orb"} sub={invested > 0 ? fmtMoney(invested) : "empty"} highlight={beat === "intro"} />
             {showIndex && (
               <StageLabel x={LAYOUT.indexX} title="The rainbow orb" sub={`${fmtMoney(m.benchmark)} · $1,000 all-in day one`} />
             )}
@@ -385,7 +387,7 @@ export default function OrbGame() {
                   <Btn onClick={() => downloadOrbCard({
                     comp,
                     value: net,
-                    headline: "This is your orb.",
+                    headline: orbName ? `This is ${orbName}.` : "This is your orb.",
                     subline: choice === "sold" ? "Lesson 1 · sold in the crash" : "Lesson 1 · held through the crash",
                     index: { label: "The rainbow orb", value: m.benchmark },
                     rows: [
