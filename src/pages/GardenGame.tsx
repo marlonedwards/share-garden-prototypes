@@ -122,7 +122,7 @@ function GrowthStrip({ history, sprite }: { history: number[]; sprite: string })
 }
 
 // ---- field grid: side-on rows over the tilled-soil sprite ----------------
-const FIELD_W = 430, FIELD_H = 229;
+
 const isoPos = (i: number, cols: number, rows: number) => {
   const c = i % cols, r = Math.floor(i / cols);
   const x = FIELD_W * (0.14 + (c / (cols - 1)) * 0.72);
@@ -344,10 +344,10 @@ export default function GardenGame() {
             style={{
               width: 1080, height: 500,
               border: `2px solid ${WOOD}`, boxShadow: "5px 5px 0 rgba(107,84,60,0.2)",
-              background: "#c7dc9d",
+              background: frosty
+                ? "linear-gradient(180deg, #dbe3e9 0%, #cdd6de 55%, #bfcad3 100%)"
+                : "linear-gradient(180deg, #f4eeda 0%, #e3e8c3 45%, #cfdda6 100%)",
             }}>
-            <img src={`${import.meta.env.BASE_URL}sprites/gpt/scene/backdrop.png`} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: frosty ? 0 : 1, transition: "opacity 1.5s" }} />
-            <img src={`${import.meta.env.BASE_URL}sprites/gpt/scene/backdrop-frost.png`} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: frosty ? 1 : 0, transition: "opacity 1.5s" }} />
             <div className="absolute left-6 top-5 z-20">
               <div className="text-[12px] font-semibold" style={{ color: SUB }}>Cash</div>
               <div className="flex flex-col items-start gap-1">
@@ -392,21 +392,20 @@ export default function GardenGame() {
             <FieldTag x="9%" title="Cash" sub={fmtMoney(m.cash)} />
 
             {/* your plots: click to act */}
-            <div className="absolute" style={{ left: "20%", bottom: 60 }}>
-              <div className="relative" style={{ width: FIELD_W, height: FIELD_H }}>
-                <img src={`${import.meta.env.BASE_URL}sprites/gpt/scene/field-soil.png`} alt=""
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                  style={{ imageRendering: "pixelated", filter: frosty ? "saturate(0.7) brightness(0.95)" : "none", transition: "filter 1s" }} />
+            <div className="absolute" style={{ left: "20%", bottom: 50 }}>
+              <div className="relative" style={{ width: (5 + 4) * (TW / 2) + 40, height: (5 + 4) * (TH / 2) + 140 }}>
                 {Array.from({ length: PLOT_COUNT }, (_, i) => {
                   const { x, y } = isoPos(i, 5, 4);
+                  const occupied = lots.some((l) => l.plot === i);
                   const selected = selPlot === i;
                   return (
                     <button key={`plot${i}`} className="absolute" onClick={() => canAct && setSelPlot(selected ? null : i)}
                       style={{
-                        left: x - 44, top: y - 30, width: 88, height: 52,
-                        background: "transparent",
-                        outline: selected ? "3px dashed #e8d27a" : "none", outlineOffset: -3, borderRadius: 8,
-                        cursor: canAct ? "pointer" : "default",
+                        left: x - TW / 2, top: y - TH / 2, width: TW, height: TH,
+                        background: selected ? "#e8d27a" : frosty ? "#9d9186" : occupied ? "#8f6f43" : "#a5804f",
+                        border: `1.5px solid ${selected ? "#b39322" : frosty ? "#7d7268" : "#7d5c33"}`,
+                        clipPath: "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)",
+                        transition: "background 0.4s", cursor: canAct ? "pointer" : "default",
                       }} aria-label={`plot ${i + 1}`} />
                   );
                 })}
@@ -418,7 +417,7 @@ export default function GardenGame() {
                     <img key={`lot${lot.plot}`} src={dead ? SPR("plant-dead") : SP(cropById(lot.crop).sprite)} alt=""
                       className="absolute pointer-events-none"
                       style={{
-                        left: x, top: y + 10 - h, height: h, zIndex: z + 1, transform: "translateX(-50%)",
+                        left: x, top: y + 4 - h, height: h, zIndex: z + 1, transform: "translateX(-50%)",
                         transition: "height 0.7s cubic-bezier(.3,1.1,.4,1), top 0.7s cubic-bezier(.3,1.1,.4,1)",
                         filter: frosty && !dead ? "saturate(0.65) brightness(0.94)" : "none",
                       }} />
@@ -429,7 +428,7 @@ export default function GardenGame() {
                   return (
                     <button key={b.key} className="absolute pop-in" onClick={() => setBaskets((bs) => bs.filter((x2) => x2.key !== b.key))}
                       title={`Harvest basket · +${fmtMoney(b.amount)} already in your cash`}
-                      style={{ left: x + 16, top: y - 26, zIndex: z + 30 }}>
+                      style={{ left: x + 8, top: y - 34, zIndex: z + 30 }}>
                       <img src={SPR("basket-full")} alt="harvest basket" style={{ height: 42 }} />
                     </button>
                   );
@@ -470,11 +469,19 @@ export default function GardenGame() {
             {/* co-op field */}
             {(!inTutorial || phase === "meetCoop") && (
               <>
-                <div className="absolute" style={{ left: "63%", bottom: 60 }}>
-                  <div className="relative" style={{ width: FIELD_W, height: FIELD_H }}>
-                    <img src={`${import.meta.env.BASE_URL}sprites/gpt/scene/field-soil.png`} alt=""
-                      className="absolute inset-0 w-full h-full pointer-events-none"
-                      style={{ imageRendering: "pixelated", filter: frosty ? "saturate(0.7) brightness(0.95)" : "none", transition: "filter 1s" }} />
+                <div className="absolute" style={{ left: "60%", bottom: 50 }}>
+                  <div className="relative" style={{ width: (5 + 4) * (TW / 2) + 40, height: (5 + 4) * (TH / 2) + 140 }}>
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const { x, y } = isoPos(i, 5, 4);
+                      return (
+                        <div key={`cp${i}`} className="absolute" style={{
+                          left: x - TW / 2, top: y - TH / 2, width: TW, height: TH,
+                          background: frosty ? "#9d9186" : "#8f9a63",
+                          border: `1.5px solid ${frosty ? "#7d7268" : "#71804a"}`,
+                          clipPath: "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)", transition: "background 1s",
+                        }} />
+                      );
+                    })}
                     {coopPlants.map((p, i) => {
                       const { x, y, z } = isoPos(i, 5, 4);
                       return (
