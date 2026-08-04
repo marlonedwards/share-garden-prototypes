@@ -67,6 +67,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
   const [fluid, setFluid] = useFluidPref();
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
+  const [realNames, setRealNames] = useState(false);
   const sceneRef = useRef<OrbSceneHandle>(null);
   const peakInvested = useRef(0);
   const crashSeen = useRef(false);
@@ -75,11 +76,11 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
   const cast = useMemo(
     () =>
       era
-        ? era.assets.map((a) => ({ id: a.id, name: a.name, color: a.color, glow: a.glow }))
+        ? era.assets.map((a) => ({ id: a.id, name: (realNames && a.real) || a.name, color: a.color, glow: a.glow }))
         : FREE_ASSETS.map((oa) => ({
             id: oa.id, name: ASSETS.find((a) => a.id === oa.id)!.name, color: oa.color, glow: oa.glow,
           })),
-    [era]
+    [era, realNames]
   );
 
   const when = era ? (m as HistoryMarket).monthLabel() : `Day ${m.step}`;
@@ -182,6 +183,13 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
               radiusScale={radiusScale}
             />
             <FluidCycler fluid={fluid} setFluid={setFluid} />
+            {era && (
+              <button onClick={() => setRealNames(!realNames)}
+                className="absolute right-4 top-14 text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
+                style={{ color: realNames ? "#0071e3" : "#6e6e73" }}>
+                {realNames ? "Real names: on" : "Real names"}
+              </button>
+            )}
             <div className="absolute left-6 top-5">
               <div className="text-[12px] font-medium" style={{ color: "#6e6e73" }}>Net worth</div>
               <div className="flex flex-col items-start gap-1">

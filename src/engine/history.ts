@@ -9,6 +9,7 @@ import { Holding, MarketEvent } from "./market";
 export interface EraAsset {
   id: string;        // data series key
   name: string;      // abstracted name
+  real?: string;     // the actual company name, shown when real names are on
   desc: string;      // honest description of the real company
   color: string;
   glow: string;

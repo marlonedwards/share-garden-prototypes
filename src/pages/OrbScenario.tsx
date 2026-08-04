@@ -44,6 +44,8 @@ export default function OrbScenario() {
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
   const [payMode, setPayMode] = useState<"unset" | "auto" | "ask">("unset");
+  const [realNames, setRealNames] = useState(false);
+  const name = (ea: { name: string; real?: string }) => (realNames && ea.real) || ea.name;
   const sceneRef = useRef<OrbSceneHandle>(null);
   const endCardRef = useRef<HTMLDivElement>(null);
   const peakInvested = useRef(0);
@@ -162,7 +164,7 @@ export default function OrbScenario() {
       index: { label: "The rainbow orb (real S&P 500)", value: m.benchmark },
       rows: [
         ...holdings.slice().sort((a, b) => b.value - a.value).slice(0, 4)
-          .map((h) => ({ color: h.ea.color, label: h.ea.name, right: fmtMoney(h.value) })),
+          .map((h) => ({ color: h.ea.color, label: name(h.ea), right: fmtMoney(h.value) })),
         { color: "#bfe6cc", label: "Cash", right: fmtMoney(m.cash) },
       ],
       footer: "Share Garden · The Orb",
@@ -220,6 +222,11 @@ export default function OrbScenario() {
               className="absolute right-4 top-14 text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
               style={{ color: "#6e6e73" }}>
               {fractional ? "Fractional shares: on" : "Whole shares"}
+            </button>
+            <button onClick={() => setRealNames(!realNames)}
+              className="absolute right-4 top-[5.9rem] text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
+              style={{ color: realNames ? "#0071e3" : "#6e6e73" }}>
+              {realNames ? "Real names: on" : "Real names"}
             </button>
             <div className="absolute left-6 top-5">
               <div className="text-[12px] font-medium" style={{ color: "#6e6e73" }}>Net worth</div>
@@ -305,7 +312,7 @@ export default function OrbScenario() {
                   const avg = hh && hh.shares > 0 ? (hh.cost > 0 ? hh.cost / hh.shares : 0) : 0;
                   return avg > 0 ? (
                     <p className="mb-3 text-[13px]" style={{ color: "#6e6e73" }}>
-                      Your average cost for {top.ea.name}: <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(avg)}</strong> a share.
+                      Your average cost for {name(top.ea)}: <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(avg)}</strong> a share.
                       It closes at <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(m.prices[top.ea.id])}</strong>. Steady months bought the dips for you.
                     </p>
                   ) : null;
@@ -341,7 +348,7 @@ export default function OrbScenario() {
                   <button className="w-full flex items-center gap-3 text-left" onClick={() => setTradeRow(open ? null : h.ea.id)}>
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.ea.color, boxShadow: `0 0 0 3px ${h.ea.color}22` }} />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{h.ea.name}</div>
+                      <div className="text-sm font-medium truncate">{name(h.ea)}</div>
                       <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fractional ? h.shares.toFixed(1) : Math.round(h.shares)} shares</div>
                     </div>
                     <div className="text-right">
@@ -377,7 +384,7 @@ export default function OrbScenario() {
                     <button className="w-full flex items-center gap-2.5 py-1.5 text-left" title={ea.desc}
                       onClick={() => setTradeRow(open ? null : `add-${ea.id}`)}>
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ea.color }} />
-                      <span className="text-[13px] flex-1 truncate">{ea.name}</span>
+                      <span className="text-[13px] flex-1 truncate">{name(ea)}</span>
                       <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtMoney(m.prices[ea.id])}</span>
                     </button>
                     {open && (
