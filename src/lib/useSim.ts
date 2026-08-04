@@ -8,6 +8,7 @@ export interface SimOpts {
   autoplay?: boolean;
   maxStep?: number;
   events?: MarketEvent[];
+  baseMs?: number;      // wall-clock ms per day at 1x speed
 }
 
 // Drives a market-like instance on a wall-clock interval with pause/play/speed.
@@ -16,7 +17,7 @@ export interface SimOpts {
 export interface Tickable { step: number; tick(): void; }
 
 export function useSim<T extends Tickable = Market>(opts: SimOpts & { make?: () => T } = {}) {
-  const { seed = 12345, cash = 1000, feeDrag = 0, autoplay = false, maxStep = 150, events = EVENTS } = opts;
+  const { seed = 12345, cash = 1000, feeDrag = 0, autoplay = false, maxStep = 150, events = EVENTS, baseMs = 620 } = opts;
   const make = (opts.make ?? (() => new Market(seed, cash, feeDrag, events) as unknown as T)) as () => T;
   const marketRef = useRef<T>(make());
   const [, force] = useState(0);
@@ -30,7 +31,7 @@ export function useSim<T extends Tickable = Market>(opts: SimOpts & { make?: () 
 
   useEffect(() => {
     if (speed === 0) return;
-    const base = 620; // ms per day at 1x
+    const base = baseMs; // ms per day at 1x
     const id = setInterval(() => {
       const m = marketRef.current;
       if (m.step >= maxStep) { setDone(true); setSpeed(0); return; }
@@ -38,7 +39,7 @@ export function useSim<T extends Tickable = Market>(opts: SimOpts & { make?: () 
       render();
     }, base / speed);
     return () => clearInterval(id);
-  }, [speed, maxStep, render]);
+  }, [speed, maxStep, baseMs, render]);
 
   const reset = useCallback(() => {
     marketRef.current = make();

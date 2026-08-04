@@ -131,6 +131,13 @@ export class Market {
   lastEvent: MarketEvent | null = null;
   feeDrag: number;          // annualized-ish fee skim on idle mistakes (garden weeds), 0 by default
   events: MarketEvent[];    // scenario event season, EVENTS by default
+  dead = new Set<string>(); // delisted assets: price pinned near zero, the single-stock-risk lesson
+
+  // company death: the ticker is gone; holders keep worthless shares
+  kill(assetId: string): void {
+    this.dead.add(assetId);
+    this.prices[assetId] = 0.01;
+  }
 
   constructor(seed = 12345, startingCash = 1000, feeDrag = 0, events: MarketEvent[] = EVENTS) {
     this.rand = mulberry32(seed);
@@ -177,6 +184,11 @@ export class Market {
     }
     const evVol = ev?.vol ?? 0;
     for (const a of ALL_ASSETS) {
+      if (this.dead.has(a.id)) {
+        this.prices[a.id] = 0.01;
+        this.history[a.id].push(0.01);
+        continue;
+      }
       const idio = this.normal() * (a.sigma + evVol);
       const ret = a.mu + a.beta * marketShock + (sectorShock[a.sector] ?? 0) + idio;
       this.prices[a.id] = round2(Math.max(0.5, this.prices[a.id] * Math.exp(ret)));
