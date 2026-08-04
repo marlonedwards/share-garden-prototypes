@@ -281,8 +281,8 @@ export default function GardenGame() {
   const canAct = phase === "idle" || phase === "fork" || phase === "firstBuy" || phase === "meetCoop";
   const selLot = selPlot !== null ? lots.find((l) => l.plot === selPlot) : undefined;
 
-  // co-op field plants: one of every crop at town sizes; dead crops wither
-  const coopPlants = Array.from({ length: 12 }, (_, i) => {
+  // co-op field plants: five of every crop at town sizes; dead crops wither
+  const coopPlants = Array.from({ length: 20 }, (_, i) => {
     const c = CROPS[i % 4];
     const dead = m.dead.has(c.id);
     return { sprite: dead ? SPR("plant-dead") : SP(c.sprite), h: dead ? 34 : plantH(m.prices[c.id]) * 0.85, key: `coop-${i}` };
@@ -327,12 +327,10 @@ export default function GardenGame() {
                 : "linear-gradient(180deg, #d3e5ad 0%, #c7dc9d 55%, #b7d08b 100%)",
             }}>
             <div className="absolute left-6 top-5 z-20">
-              <div className="text-[12px] font-semibold" style={{ color: SUB }}>Net worth</div>
+              <div className="text-[12px] font-semibold" style={{ color: SUB }}>Coins</div>
               <div className="flex flex-col items-start gap-1">
-                <span className="font-game text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(net)}</span>
-                {phase === "fork"
-                  ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={{ background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(drawdown * 100).toFixed(1)}% from the high</span>
-                  : phase === "end"
+                <span className="font-game text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(m.cash)}</span>
+                {phase === "end"
                   ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= m.benchmark ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= m.benchmark ? "+$" : "-$") + Math.round(Math.abs(net - m.benchmark)).toLocaleString("en-US")} vs the co-op field</span>
                   : null}
               </div>
@@ -415,7 +413,7 @@ export default function GardenGame() {
                 })}
               </div>
             </div>
-            <FieldTag x="38%" title="Your garden" sub={lots.length > 0 ? `${fmtMoney(invested - coopValue)} · ${lots.length} ${lots.length === 1 ? "plant" : "plants"}` : "empty and ready"} />
+            <FieldTag x="38%" title="Your garden" sub={lots.length > 0 ? `${lots.length} ${lots.length === 1 ? "plant" : "plants"} growing` : "empty and ready"} />
 
             {/* plot popover */}
             {selPlot !== null && canAct && (
@@ -449,10 +447,10 @@ export default function GardenGame() {
             {/* co-op field */}
             {(!inTutorial || phase === "meetCoop") && (
               <>
-                <div className="absolute" style={{ left: "66%", bottom: 66 }}>
-                  <div className="relative" style={{ width: (4 + 3) * (TW / 2) + 40, height: (4 + 3) * (TH / 2) + 140 }}>
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const { x, y } = isoPos(i, 4, 3);
+                <div className="absolute" style={{ left: "60%", bottom: 50 }}>
+                  <div className="relative" style={{ width: (5 + 4) * (TW / 2) + 40, height: (5 + 4) * (TH / 2) + 140 }}>
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const { x, y } = isoPos(i, 5, 4);
                       return (
                         <div key={`cp${i}`} className="absolute" style={{
                           left: x - TW / 2, top: y - TH / 2, width: TW, height: TH,
@@ -463,7 +461,7 @@ export default function GardenGame() {
                       );
                     })}
                     {coopPlants.map((p, i) => {
-                      const { x, y, z } = isoPos(i, 4, 3);
+                      const { x, y, z } = isoPos(i, 5, 4);
                       return (
                         <img key={p.key} src={p.sprite} alt="" className="absolute pointer-events-none"
                           style={{ left: x - p.h * 0.42, top: y + 4 - p.h, height: p.h, zIndex: z + 1, transition: "height 0.7s", filter: frosty ? "saturate(0.65) brightness(0.94)" : "none" }} />
@@ -542,9 +540,10 @@ export default function GardenGame() {
                     : "Check your plots, visit the market, collect any baskets. Start the next week when you're ready."}
                 </p>
                 {week > 0 && (
-                  <div className="mt-2 flex gap-4 text-[12.5px] tnum" style={{ color: SUB }}>
-                    <span>You: {fmtMoney(weekStart.current.net)} to <strong style={{ color: net >= weekStart.current.net ? GREEN : "#a13a2a" }}>{fmtMoney(net)}</strong></span>
-                    <span>Co-op field: {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong></span>
+                  <div className="mt-2 flex flex-col gap-0.5 text-[12.5px] tnum" style={{ color: SUB }}>
+                    <span>Coins in your pouch: <strong style={{ color: INK }}>{fmtMoney(m.cash)}</strong></span>
+                    {lots.length + coopStrips > 0 && <span>If you sold everything today, it would fetch <strong style={{ color: INK }}>{fmtMoney(invested)}</strong>. You will not know for sure until you sell.</span>}
+                    <span>The co-op field, left alone: {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong></span>
                   </div>
                 )}
                 <div className="flex gap-2.5 mt-3">
@@ -562,8 +561,9 @@ export default function GardenGame() {
             {phase === "fork" && (
               <GCard title="The frost is here.">
                 <p>
-                  Every plant in town got smaller at once. You're down <strong className="tnum">{Math.abs(drawdown * 100).toFixed(0)}%</strong> from the top.
-                  Count your plots: you still own every plant you had.
+                  Every plant in town got smaller at once. Sold today, your garden would fetch about{" "}
+                  <strong className="tnum">{Math.abs(drawdown * 100).toFixed(0)}%</strong> less than at the top.
+                  But count your plots: you still own every plant, and your coins never moved.
                 </p>
                 <p className="mt-2 font-semibold">The cold hasn't broken. What do you do?</p>
                 <div className="flex gap-2.5 mt-3">
@@ -583,7 +583,7 @@ export default function GardenGame() {
               <GCard title={choice === "sold" ? "Season's end, and your beds were empty." : "Season's end."} wide>
                 <div className="flex gap-3 my-3">
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: net >= m.benchmark ? "#e9f2dc" : "#fffdf4", border: `2px solid ${net >= m.benchmark ? "#7ba36f" : WOOD}` }}>
-                    <div className="text-[12px] font-semibold" style={{ color: SUB }}>You finished with</div>
+                    <div className="text-[12px] font-semibold" style={{ color: SUB }}>Your coins, plus plants at closing prices</div>
                     <div className="font-game text-[24px] font-bold tnum">{fmtMoney(net)}</div>
                   </div>
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: m.benchmark > net ? "#e9f2dc" : "#fffdf4", border: `2px solid ${m.benchmark > net ? "#7ba36f" : WOOD}` }}>
@@ -681,7 +681,7 @@ export default function GardenGame() {
               </div>
               <GGhost onClick={() => setStallOpen(false)}>Close</GGhost>
             </div>
-            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+            <div className="flex flex-col gap-2.5 mt-4 overflow-y-auto pr-1" style={{ maxHeight: "62vh" }}>
               {CROPS.map((c) => {
                 const price = m.prices[c.id];
                 const dead = m.dead.has(c.id);
@@ -715,7 +715,7 @@ export default function GardenGame() {
                   </div>
                 );
               })}
-              <div className="rounded-xl p-4 sm:col-span-2" style={{ background: "#f2f6e4", border: `2px solid ${GREEN}` }}>
+              <div className="rounded-xl p-4 order-first" style={{ background: "#f2f6e4", border: `2px solid ${GREEN}` }}>
                 <div className="flex items-center gap-3">
                   <img src={SG("coop-field")} alt="" style={{ height: 46 }} />
                   <div className="min-w-0 flex-1">
