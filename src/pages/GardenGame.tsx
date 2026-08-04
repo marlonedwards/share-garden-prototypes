@@ -121,13 +121,12 @@ function GrowthStrip({ history, sprite }: { history: number[]; sprite: string })
   );
 }
 
-// ---- field grid: side-on rows over the tilled-soil sprite ----------------
-
+// ---- iso helpers ---------------------------------------------------------
+const TW = 62, TH = 31;
 const isoPos = (i: number, cols: number, rows: number) => {
   const c = i % cols, r = Math.floor(i / cols);
-  const x = FIELD_W * (0.14 + (c / (cols - 1)) * 0.72);
-  const y = FIELD_H * (0.30 + (r / (rows - 1)) * 0.58);
-  return { x, y, z: r * 10 + c };
+  const ox = rows * (TW / 2) + 20;
+  return { x: ox + (c - r) * (TW / 2), y: 128 + (c + r) * (TH / 2), z: c + r };
 };
 
 type Lot = { plot: number; crop: string; paid: number; week: number };
