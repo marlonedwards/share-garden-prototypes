@@ -8,11 +8,11 @@ export default function Landing() {
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
       <main className="max-w-4xl mx-auto px-6 pt-16 pb-20">
-        <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Share Garden</h1>
+        <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Financial literacy games</h1>
         <p className="mt-3 text-[17px] max-w-2xl" style={{ color: "#6e6e73" }}>
-          Two games that teach what the market really is: what a share means, where your money
-          goes when you buy one, and why a crash takes the price but not the plant. Same lesson,
-          two rival metaphors. Testers decide which one sticks.
+          Investing concepts and fundamentals, taught through visually beautiful games. Each one
+          turns the market into something you can see and play with: shares, prices, crashes,
+          and what it takes to hold through them.
         </p>
 
         <div className="mt-10 grid sm:grid-cols-2 gap-5">
@@ -31,7 +31,8 @@ export default function Landing() {
             <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
               Your portfolio as one glass marble. Companies are colors, the sealed rainbow orb is
               the index, and crashes deflate prices, never your shares. Six scenarios, four on
-              real market history.
+              real market history, pointing toward a core curriculum that teaches the history of
+              the stock market era by era.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#0071e3" }}>Play the Orb</div>
           </Link>
