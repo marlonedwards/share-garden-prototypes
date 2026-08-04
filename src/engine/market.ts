@@ -130,9 +130,11 @@ export class Market {
   bench: number[] = [];     // benchmark history
   lastEvent: MarketEvent | null = null;
   feeDrag: number;          // annualized-ish fee skim on idle mistakes (garden weeds), 0 by default
+  events: MarketEvent[];    // scenario event season, EVENTS by default
 
-  constructor(seed = 12345, startingCash = 1000, feeDrag = 0) {
+  constructor(seed = 12345, startingCash = 1000, feeDrag = 0, events: MarketEvent[] = EVENTS) {
     this.rand = mulberry32(seed);
+    this.events = events;
     this.cash = startingCash;
     this.start = startingCash;
     this.feeDrag = feeDrag;
@@ -155,7 +157,7 @@ export class Market {
   }
 
   activeEvent(): MarketEvent | null {
-    for (const e of EVENTS) {
+    for (const e of this.events) {
       if (this.step >= e.atStep && this.step < e.atStep + e.days) return e;
     }
     return null;

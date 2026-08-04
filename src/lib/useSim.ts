@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Market } from "../engine/market";
+import { Market, MarketEvent, EVENTS } from "../engine/market";
 
 export interface SimOpts {
   seed?: number;
@@ -7,13 +7,18 @@ export interface SimOpts {
   feeDrag?: number;
   autoplay?: boolean;
   maxStep?: number;
+  events?: MarketEvent[];
 }
 
-// Drives a Market instance on a wall-clock interval with pause/play/speed.
-// The Market mutates in place; we bump a counter to re-render.
-export function useSim(opts: SimOpts = {}) {
-  const { seed = 12345, cash = 1000, feeDrag = 0, autoplay = false, maxStep = 150 } = opts;
-  const marketRef = useRef<Market>(new Market(seed, cash, feeDrag));
+// Drives a market-like instance on a wall-clock interval with pause/play/speed.
+// The market mutates in place; we bump a counter to re-render. Pass `make` to
+// drive something other than the seeded Market (e.g. the history replay).
+export interface Tickable { step: number; tick(): void; }
+
+export function useSim<T extends Tickable = Market>(opts: SimOpts & { make?: () => T } = {}) {
+  const { seed = 12345, cash = 1000, feeDrag = 0, autoplay = false, maxStep = 150, events = EVENTS } = opts;
+  const make = (opts.make ?? (() => new Market(seed, cash, feeDrag, events) as unknown as T)) as () => T;
+  const marketRef = useRef<T>(make());
   const [, force] = useState(0);
   const [speed, setSpeed] = useState(0); // 0 = paused, 1 = play, 2 = fast, 4 = faster
   const [done, setDone] = useState(false);
@@ -36,13 +41,14 @@ export function useSim(opts: SimOpts = {}) {
   }, [speed, maxStep, render]);
 
   const reset = useCallback(() => {
-    marketRef.current = new Market(seed, cash, feeDrag);
+    marketRef.current = make();
     setDone(false);
     setSpeed(0);
     render();
-  }, [seed, cash, feeDrag, render]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, cash, feeDrag, events, render]);
 
-  const act = useCallback((fn: (m: Market) => void) => {
+  const act = useCallback((fn: (m: T) => void) => {
     fn(marketRef.current);
     render();
   }, [render]);

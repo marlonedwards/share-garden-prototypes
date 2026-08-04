@@ -1,113 +1,77 @@
 import { Link } from "react-router-dom";
-import { useSpriteUrls, spriteUrl } from "../lib/sprites";
 
-function GardenThumbs() {
-  const urls = useSpriteUrls(["tomato", "corn"]);
-  return (
-    <div className="flex items-end gap-1">
-      <img src={urls["tomato"] || spriteUrl("tomato")} className="h-28 drop-shadow-xl" style={{ imageRendering: "pixelated" }} alt="" />
-      <img src={urls["corn"] || spriteUrl("corn")} className="h-24 drop-shadow-xl" style={{ imageRendering: "pixelated" }} alt="" />
-    </div>
-  );
-}
+// The demo's front door: two games, one curriculum, one honest engine.
 
-interface Card {
-  to: string;
-  slot: string;
-  name: string;
-  kind: string;
-  accent: string;
-  thesis: string;
-  proves: string;
-  art: JSX.Element;
-}
-
-const CARDS: Card[] = [
-  {
-    to: "/garden",
-    slot: "C",
-    name: "Share Garden",
-    kind: "the gardening bet",
-    accent: "#7fb069",
-    thesis: "One bed you tend. Go to market to plant crops, watch them grow together, harvest to sell. A co-op field quietly beats the hot crop.",
-    proves: "The metaphor maps market structure, not labor. Cozy and sticky.",
-    art: <GardenThumbs />,
-  },
-  {
-    to: "/pulse",
-    slot: "A",
-    name: "Pulse",
-    kind: "the whole market",
-    accent: "#56c7ff",
-    thesis: "The entire market as one living map. Every tile is a company sized by its market cap, colored by how it is doing. Tap to buy.",
-    proves: "The market at a glance. A shock sweeps a whole sector red.",
-    art: (
-      <svg viewBox="0 0 120 70" className="w-32 h-20">
-        {[["0","0","46","40","#2f9e5e"],["0","41","46","29","#d24a4a"],["47","0","34","28","#3fbf74"],["47","29","34","41","#7a3636"],["82","0","38","20","#d24a4a"],["82","21","38","26","#2f9e5e"],["82","48","38","22","#46b06a"]].map((r,i)=>(
-          <rect key={i} x={+r[0]+1} y={+r[1]+1} width={+r[2]-2} height={+r[3]-2} rx="1.5" fill={r[4]} />
-        ))}
-      </svg>
-    ),
-  },
-  {
-    to: "/prism",
-    slot: "B",
-    name: "Prism",
-    kind: "the market as geometry",
-    accent: "#9b8cff",
-    thesis: "The same market rebuilt from pure shapes. Hex towers sized by market cap, glowing by performance. Tap a tower to trade.",
-    proves: "Size and momentum you can feel. Structure as geometry.",
-    art: (
-      <svg viewBox="0 0 120 70" className="w-32 h-20">
-        {[[34,44,16,"#46b06a"],[62,30,18,"#9b8cff"],[88,46,15,"#d24a4a"],[50,54,12,"#3fbf74"]].map(([cx,cy,r,c],i)=>{
-          const pts=[0,60,120,180,240,300].map(a=>{const rad=a*Math.PI/180;return `${(cx as number)+ (r as number)*Math.cos(rad)},${(cy as number)+(r as number)*Math.sin(rad)}`;}).join(" ");
-          return <polygon key={i} points={pts} fill={c as string} fillOpacity="0.92" stroke="#000" strokeOpacity="0.25" />;
-        })}
-      </svg>
-    ),
-  },
-];
+const S = (name: string) => `${import.meta.env.BASE_URL}sprites/t/${name}.png`;
 
 export default function Landing() {
   return (
-    <div className="min-h-full" style={{ background: "radial-gradient(1100px 600px at 50% -5%, #182234, #0a0d13 55%)" }}>
-      <div className="max-w-6xl mx-auto px-6 py-14 sm:py-20">
-        <div className="text-[11px] tracking-[0.03em] font-medium text-white/35 mb-5">Share Garden / metaphor study</div>
-        <h1 className="font-display text-4xl sm:text-6xl font-semibold tracking-tight text-white leading-[1.02] max-w-3xl">
-          One market. Three ways to feel it.
-        </h1>
-        <p className="mt-6 text-white/60 text-lg max-w-2xl leading-relaxed">
-          The teaching goal is fixed: time in the market beats timing it, and a diversified index quietly wins.
-          The open question is which world carries that lesson. Each prototype below runs the
-          same deterministic market underneath. Same seed, same season, three lenses. Play them and pick the one that clicks.
+    <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
+      <main className="max-w-4xl mx-auto px-6 pt-16 pb-20">
+        <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Share Garden</h1>
+        <p className="mt-3 text-[17px] max-w-2xl" style={{ color: "#6e6e73" }}>
+          Two games that teach what the market really is: what a share means, where your money
+          goes when you buy one, and why a crash takes the price but not the plant. Same lesson,
+          two rival metaphors. Testers decide which one sticks.
         </p>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {CARDS.map((c) => (
-            <Link key={c.to} to={c.to}
-              className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-6 flex flex-col hover:border-white/25 hover:bg-white/[0.05] transition overflow-hidden">
-              <div className="absolute -top-8 -right-6 text-[120px] font-display font-semibold leading-none select-none pointer-events-none opacity-[0.06]">{c.slot}</div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: c.accent + "22", color: c.accent }}>{c.slot}</span>
-                <span className="text-[11px] tracking-[0.03em] font-medium text-white/35">{c.kind}</span>
+        <div className="mt-10 grid sm:grid-cols-2 gap-5">
+          <Link to="/orb" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <div className="w-24 h-24 rounded-full relative"
+                style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(238,243,250,0.4) 55%, rgba(214,224,238,0.65))", boxShadow: "inset 0 0 0 1.5px rgba(30,45,80,0.12), 0 14px 28px -14px rgba(24,34,60,0.4)" }}>
+                <div className="absolute inset-2.5 rounded-full overflow-hidden" style={{ filter: "blur(6px)" }}>
+                  <div className="w-full h-full" style={{ background: "conic-gradient(from 220deg, #0a84ff, #bf5af2 40%, #ff9f0a 75%, #0a84ff)" }} />
+                </div>
+                <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
               </div>
-              <div className="font-display text-2xl font-semibold text-white mb-3">{c.name}</div>
-              <div className="h-24 flex items-center">{c.art}</div>
-              <p className="mt-3 text-sm text-white/65 leading-relaxed">{c.thesis}</p>
-              <div className="mt-4 pt-4 border-t border-white/8 text-xs text-white/45 leading-relaxed">{c.proves}</div>
-              <div className="mt-4 text-sm font-medium flex items-center gap-1.5 transition group-hover:gap-2.5" style={{ color: c.accent }}>
-                play it
-                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4.5 2 L8.5 6 L4.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </div>
-            </Link>
-          ))}
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>Game one</div>
+            <div className="text-[22px] font-semibold tracking-tight">The Orb</div>
+            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+              Your portfolio as one glass marble. Companies are colors, the sealed rainbow orb is
+              the index, and crashes deflate prices, never your shares. Six scenarios, four on
+              real market history.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#0071e3" }}>Play the Orb</div>
+          </Link>
+
+          <Link to="/garden" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <img src={S("pumpkin")} alt="" style={{ height: 104 }} />
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: "#3f6b3a" }}>Game two</div>
+            <div className="text-[22px] font-semibold tracking-tight">Share Garden</div>
+            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+              The same first lesson in a garden. Plant size is the market price, selling is
+              transplanting to another gardener, the co-op field is the index, and frost is the
+              crash you tend through.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#3f6b3a" }}>Play Share Garden</div>
+          </Link>
         </div>
 
-        <div className="mt-16 text-xs text-white/30 max-w-2xl leading-relaxed">
-          Prototype study, not the product. The real Share Garden is a native build. These exist to settle the
-          metaphor before the art and engine get committed. Best viewed on a laptop.
+        <div className="mt-6 grid sm:grid-cols-2 gap-5">
+          <Link to="/objectives" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
+            <div className="text-[15px] font-semibold tracking-tight">Learning objectives</div>
+            <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
+              Every unit mapped to CEE and Jump$tart standards, with the misconception it busts
+              and its assessment hook. Printable.
+            </p>
+          </Link>
+          <Link to="/archive" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
+            <div className="text-[15px] font-semibold tracking-tight">First-week prototypes</div>
+            <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
+              The earlier explorations, kept for reference.
+            </p>
+          </Link>
         </div>
-      </div>
+
+        <p className="mt-10 text-[12.5px]" style={{ color: "#a1a1a6" }}>
+          Free and open source. No accounts, no logins. Runs in a browser on a Chromebook.
+          Deterministic simulation engine plus real historical market data, every number inspectable.
+        </p>
+      </main>
     </div>
   );
 }

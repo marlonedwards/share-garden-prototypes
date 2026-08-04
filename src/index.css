@@ -81,3 +81,6 @@ body {
   0%,100% { transform: rotate(-1.5deg); }
   50% { transform: rotate(1.5deg); }
 }
+
+/* garden sprites have a flat pale tile baked in; multiply melts it into light backgrounds */
+.sprite-blend { mix-blend-mode: multiply; }
