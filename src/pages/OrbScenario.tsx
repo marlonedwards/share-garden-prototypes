@@ -299,6 +299,17 @@ export default function OrbScenario() {
                     <div className="text-[24px] tracking-tight tnum" style={{ fontWeight: m.benchmark > net ? 700 : 600 }}>{fmtMoney(m.benchmark)}</div>
                   </div>
                 </div>
+                {cfg.income && holdings.length > 0 && (() => {
+                  const top = holdings.slice().sort((a, b) => b.value - a.value)[0];
+                  const hh = m.holdings[top.ea.id];
+                  const avg = hh && hh.shares > 0 ? (hh.cost > 0 ? hh.cost / hh.shares : 0) : 0;
+                  return avg > 0 ? (
+                    <p className="mb-3 text-[13px]" style={{ color: "#6e6e73" }}>
+                      Your average cost for {top.ea.name}: <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(avg)}</strong> a share.
+                      It closes at <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(m.prices[top.ea.id])}</strong>. Steady months bought the dips for you.
+                    </p>
+                  ) : null;
+                })()}
                 <div className="mb-3"><GrowthChart net={m.net} bench={m.bench} width={990} height={130} xLabels={[m.monthLabel(0), m.monthLabel(Math.floor(lastStep / 3)), m.monthLabel(Math.floor((2 * lastStep) / 3)), m.monthLabel(lastStep)]} /></div>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
                   {cfg.bullets.map((b, i) => (

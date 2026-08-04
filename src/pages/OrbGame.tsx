@@ -74,8 +74,8 @@ export default function OrbGame() {
     if (!q || q === "intro") return;
     if (q === "shop") { setBeat("shop"); return; }
     act((mm) => {
-      mm.buy("nova", 450);
-      mm.buy("btx", 350);
+      mm.buy("nova", Math.floor(450 / mm.prices["nova"]) * mm.prices["nova"]);
+      mm.buy("btx", Math.floor(350 / mm.prices["btx"]) * mm.prices["btx"]);
       const target = q === "mid" ? 30 : 55;
       while (mm.step < target) mm.tick();
       if (q === "endsold") for (const a of ORB_ASSETS) mm.sellFraction(a.id, 1);
@@ -126,7 +126,10 @@ export default function OrbGame() {
 
   const buy = (id: string, dollars: number) => {
     const oa = orbAsset(id)!;
-    act((mm) => { mm.buy(id, dollars); });
+    act((mm) => {
+      const n = Math.floor(Math.min(dollars, mm.cash) / mm.prices[id]);
+      if (n >= 1) mm.buy(id, n * mm.prices[id]);
+    });
     sceneRef.current?.pour({ kind: "buy", color: oa.color, glow: oa.glow });
     setSelected(null);
   };
@@ -296,7 +299,7 @@ export default function OrbGame() {
                       </button>
                     ))}
                     <span className="text-[12px] ml-1 tnum" style={{ color: "#6e6e73" }}>
-                      ≈ {(Math.min(amount, m.cash) / m.prices[selected]).toFixed(1)} shares
+                      {Math.floor(Math.min(amount, m.cash) / m.prices[selected])} whole shares
                     </span>
                     <div className="flex-1" />
                     <Btn onClick={() => buy(selected, Math.min(amount, m.cash))} disabled={m.cash < 1}>Pour it in</Btn>
@@ -376,6 +379,7 @@ export default function OrbGame() {
             <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
                   <li className="flex gap-2"><Dot c="#0a84ff" /><span>Where did the money go in the crash? <strong>Nowhere.</strong> A price is what a buyer would pay today, not money stored in a box.</span></li>
                   <li className="flex gap-2"><Dot c="#bf5af2" /><span>One color falls hard when its industry stumbles. The rainbow orb barely flinches. That's why it's so hard to beat.</span></li>
+              <li className="flex gap-2"><Dot c="#30d158" /><span>And the money you spent on shares went to the investors who sold them to you. The companies got nothing. Prices are trades between people.</span></li>
                 </ul>
                 <Actions>
                   <Btn onClick={() => downloadOrbCard({
@@ -420,7 +424,7 @@ export default function OrbGame() {
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.oa.color, boxShadow: `0 0 0 3px ${h.oa.color}22` }} />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{h.asset.name}</div>
-                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{h.shares.toFixed(1)} shares</div>
+                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{Math.round(h.shares)} {Math.round(h.shares) === 1 ? "share" : "shares"}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold tnum">{fmtMoney(h.value)}</div>

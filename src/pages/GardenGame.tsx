@@ -42,7 +42,9 @@ const GARDEN_EVENTS: MarketEvent[] = [
   { atStep: 26, days: 5,  drift: 0.012,  vol: 0.010, scope: "tech",     label: "Tomato craze",  blurb: "Everyone in town wants tomato plants. Prices are running hot." },
   { atStep: 48, days: 7,  drift: -0.055, vol: 0.038, scope: "market",   label: "A hard frost",  blurb: "A deep frost settles over every garden at once." },
   { atStep: 74, days: 6,  drift: -0.028, vol: 0.018, scope: "consumer", label: "Berry glut",    blurb: "Too many berries this season. Prices sag." },
+  { atStep: 84, days: 6,  drift: -0.030, vol: 0.015, scope: "industry", label: "Pumpkin rot",   blurb: "A wet month. Pumpkins are struggling everywhere." },
   { atStep: 96, days: 6,  drift: -0.030, vol: 0.015, scope: "tech",     label: "Tomato blight", blurb: "A blight spreads through the tomato rows." },
+  { atStep: 104, days: 5, drift: -0.025, vol: 0.012, scope: "energy",   label: "Corn dry spell", blurb: "No rain for the corn rows." },
   { atStep: 116, days: 16, drift: 0.022, vol: 0.010, scope: "market",   label: "Warm spell",    blurb: "Warm weeks. Every garden is filling back in." },
 ];
 
@@ -102,8 +104,8 @@ function GToast({ children }: { children: ReactNode }) {
 // ---- isometric field -----------------------------------------------------
 const TW = 62, TH = 31;
 
-function IsoField({ cols, rows, plants, frosty, label }: {
-  cols: number; rows: number; frosty: boolean; label: string;
+function IsoField({ cols, rows, plants, frosty, label, soil = "#a5804f" }: {
+  cols: number; rows: number; frosty: boolean; label: string; soil?: string;
   plants: { sprite: string; h: number; key: string }[];
 }) {
   const W = (cols + rows) * (TW / 2) + 40;
@@ -119,7 +121,7 @@ function IsoField({ cols, rows, plants, frosty, label }: {
         return (
           <div key={`p${i}`} className="absolute" style={{
             left: x - TW / 2, top: y - TH / 2, width: TW, height: TH,
-            background: frosty ? "#9d9186" : "#a5804f",
+            background: frosty ? "#9d9186" : soil,
             border: `1.5px solid ${frosty ? "#7d7268" : "#7d5c33"}`,
             clipPath: "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)",
             transition: "background 1s",
@@ -222,19 +224,20 @@ export default function GardenGame() {
     });
     if (proceeds > 0) {
       setCartFx({ sprite: crop.sprite, proceeds, key: Date.now() });
-      setTimeout(() => setCartFx(null), 1400);
+      setTimeout(() => setCartFx(null), 2300);
     }
   };
 
-  const keepTending = () => { setChoice("held"); setBeat("run2"); setSpeed(4); };
+  const keepTending = () => { if (choice) return; setChoice("held"); setBeat("run2"); setSpeed(4); };
   const transplantAll = () => {
+    if (choice) return;
     setChoice("sold");
     const top = holdings.slice().sort((a, b) => b.value - a.value)[0];
     const total = invested;
     act((mm) => { for (const c of CROPS) mm.sellFraction(c.id, 1); });
     if (top) {
       setCartFx({ sprite: top.c.sprite, proceeds: total, key: Date.now() });
-      setTimeout(() => setCartFx(null), 1400);
+      setTimeout(() => setCartFx(null), 2300);
     }
     setTimeout(() => { setBeat("run2"); setSpeed(4); }, 1200);
   };
@@ -309,6 +312,8 @@ export default function GardenGame() {
                 <span className="font-display text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(net)}</span>
                 {beat === "frost"
                   ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={{ background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(drawdown * 100).toFixed(1)}% from the high</span>
+                  : beat === "end"
+                  ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= m.benchmark ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= m.benchmark ? "+$" : "-$") + Math.round(Math.abs(net - m.benchmark)).toLocaleString("en-US")} vs the co-op field</span>
                   : Math.abs(net - 1000) >= 1 && <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= 1000 ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= 1000 ? "+" : "") + ((net - 1000) / 10).toFixed(1)}%</span>}
               </div>
             </div>
@@ -349,12 +354,12 @@ export default function GardenGame() {
             <div className="absolute" style={{ left: "20%", bottom: 50 }}>
               <IsoField cols={5} rows={4} frosty={frosty} label="your garden" plants={myPlants} />
             </div>
-            <FieldTag x="38%" title="Your garden" sub={invested > 0 ? fmtMoney(invested) : "empty and ready"} />
+            <FieldTag x="38%" title="Your garden" sub={invested > 0 ? `${fmtMoney(invested)} · ${myPlants.length} ${myPlants.length === 1 ? "plant" : "plants"}` : "empty and ready"} />
 
             {beat !== "intro" && beat !== "coins" && beat !== "plant" && (
               <>
                 <div className="absolute" style={{ left: "66%", bottom: 66 }}>
-                  <IsoField cols={4} rows={3} frosty={frosty} label="the co-op field" plants={coopPlants} />
+                  <IsoField cols={4} rows={3} frosty={frosty} label="the co-op field" plants={coopPlants} soil="#8f9a63" />
                 </div>
                 <FieldTag x="79%" title="The co-op field" sub={`${fmtMoney(m.benchmark)} · every crop, tended together`} />
               </>
@@ -373,7 +378,7 @@ export default function GardenGame() {
             )}
 
             {cartFx && (
-              <div key={cartFx.key} className="absolute pointer-events-none z-20" style={{ left: "44%", bottom: 110, animation: "cartAway 1.3s ease-in forwards" }}>
+              <div key={cartFx.key} className="absolute pointer-events-none z-20" style={{ left: "44%", bottom: 110, animation: "cartAway 2.2s ease-in forwards" }}>
                 <div className="relative" style={{ width: 120 }}>
                   <img src={SG("cart")} alt="" style={{ width: 96 }} />
                   <img src={SP(cartFx.sprite)} alt="" style={{ position: "absolute", left: 24, bottom: 32, height: 52, transform: "rotate(-4deg)" }} />
@@ -382,8 +387,8 @@ export default function GardenGame() {
             )}
             {cartFx && (
               <div key={`c${cartFx.key}`} className="absolute pointer-events-none float-coin text-[14px] font-bold tnum z-20"
-                style={{ left: "9%", bottom: 170, color: GREEN, transform: "translateX(-50%)" }}>
-                +{fmtMoney(cartFx.proceeds)}
+                style={{ left: "9%", bottom: 170, color: WOOD, transform: "translateX(-50%)" }}>
+                sold · +{fmtMoney(cartFx.proceeds)}
               </div>
             )}
             <style>{`@keyframes cartAway { 0% { transform: translateX(0); opacity: 1; } 15% { transform: translateX(40px) rotate(1deg); } 100% { transform: translateX(560px); opacity: 0; } }`}</style>
@@ -481,8 +486,17 @@ export default function GardenGame() {
                 </div>
                 <div className="mb-3"><GrowthChart net={m.net} bench={m.bench} width={990} height={130} benchLabel="the co-op field" benchStroke={GREEN} xLabels={["Day 0", "Day 48", "Day 96", `Day ${m.step}`]} /></div>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#5a4a35" }}>
-                  <li className="flex gap-2"><Bullet c="#ff9f0a" /><span>Transplanted plants live on in someone else's garden. The coins moved gardener to gardener. The farm never saw them.</span></li>
-                  <li className="flex gap-2"><Bullet c={GREEN} /><span>The frost shrank every plant in town, then the warm spell grew them back. Plant count never changed. Only the price did.</span></li>
+                  {choice === "sold" ? (
+                    <>
+                      <li className="flex gap-2"><Bullet c="#ff9f0a" /><span>Your plants live on in other gardens now. The coins moved gardener to gardener. The farm never saw them.</span></li>
+                      <li className="flex gap-2"><Bullet c={GREEN} /><span>The warm spell grew every plant in town back. Yours too, just in someone else's rows.</span></li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex gap-2"><Bullet c="#ff9f0a" /><span>When you buy or sell a plant, the coins move gardener to gardener. The farm never sees them.</span></li>
+                      <li className="flex gap-2"><Bullet c={GREEN} /><span>The frost shrank every plant in town, then the warm spell grew them back. Your plant count never changed. Only the price did.</span></li>
+                    </>
+                  )}
                   <li className="flex gap-2"><Bullet c={WOOD} /><span>The co-op field grows every crop, so no single blight can ruin it. That is why it is so hard to beat.</span></li>
                 </ul>
                 <div className="flex gap-2.5 mt-3 items-center">
@@ -515,7 +529,7 @@ export default function GardenGame() {
                     <img src={SP(h.c.sprite)} alt="" style={{ height: 30 }} />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold truncate">{h.c.crop}</div>
-                      <div className="text-[12px] tnum" style={{ color: SUB }}>{Math.round(h.plants)} plants · paid {fmtMoney(h.cost / Math.max(1, Math.round(h.plants)))} each</div>
+                      <div className="text-[12px] tnum" style={{ color: SUB }}>{Math.round(h.plants)} {Math.round(h.plants) === 1 ? "plant" : "plants"} · paid {fmtMoney(h.cost / Math.max(1, Math.round(h.plants)))} each</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-bold tnum">{fmtMoney(h.value)}</div>

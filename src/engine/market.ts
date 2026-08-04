@@ -195,6 +195,12 @@ export class Market {
     // fee drag (garden weeds / expense ratio): skim from cash-equivalent slowly
     if (this.feeDrag > 0) this.cash = Math.max(0, this.cash - this.invested() * this.feeDrag);
 
+    // the buy-and-hold benchmark reinvests the index fund's own dividends
+    if (this.step % 12 === 0) {
+      const coop = ALL_ASSETS.find((a) => a.id === "coop")!;
+      this.benchShares *= 1 + coop.yield;
+    }
+
     this.benchmark = round2(this.benchShares * this.prices["coop"]);
     this.net.push(round2(this.netWorth()));
     this.bench.push(this.benchmark);

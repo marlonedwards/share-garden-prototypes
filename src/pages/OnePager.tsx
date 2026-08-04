@@ -82,7 +82,7 @@ const UNITS: Unit[] = [
     ),
     misconceptions: ["you need to time the market"],
     assessment:
-      "Skip a contribution to wait for a better price and the debrief prints your average cost per share next to the automatic plan. The gap is the score.",
+      "The debrief prints your average cost per share next to the closing price, showing how the cheap months lowered it. The rainbow orb runs the same plan on the index beside you.",
     cites: [
       { src: "CEE", code: "Investing 8-7, 8-7c", gloss: "compounding rewards regular investing; future value of a regular series" },
       { src: "CEE", code: "Saving 8-1", gloss: "reasons people save for the future" },
@@ -147,7 +147,7 @@ const UNITS: Unit[] = [
       "money lost in a crash went somewhere",
     ],
     assessment:
-      "Try to buy seeds after the IPO window closes and the market screen shows that only existing gardeners can sell you a plant. Same item bank as Orb Lesson 1, so two metaphors are scored against one truth and testers decide which transfers.",
+      "Transplant everything away during the frost and the debrief prices the choice against the co-op field. The market card teaches that plants come from other gardeners, and your coins go to the seller, never the farm. Same item bank as Orb Lesson 1, so two metaphors are scored against one truth.",
     cites: [
       { src: "CEE", code: "Investing 8-4", gloss: "stock buyers become part-owners of a business" },
       { src: "CEE", code: "Investing 8-2b", gloss: "find the current prices of stocks and funds" },
