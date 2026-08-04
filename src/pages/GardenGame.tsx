@@ -327,7 +327,7 @@ export default function GardenGame() {
                 : "linear-gradient(180deg, #d3e5ad 0%, #c7dc9d 55%, #b7d08b 100%)",
             }}>
             <div className="absolute left-6 top-5 z-20">
-              <div className="text-[12px] font-semibold" style={{ color: SUB }}>Coins</div>
+              <div className="text-[12px] font-semibold" style={{ color: SUB }}>Cash</div>
               <div className="flex flex-col items-start gap-1">
                 <span className="font-game text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(m.cash)}</span>
                 {phase === "end"
@@ -405,7 +405,7 @@ export default function GardenGame() {
                   const { x, y, z } = isoPos(b.plot, 5, 4);
                   return (
                     <button key={b.key} className="absolute pop-in" onClick={() => setBaskets((bs) => bs.filter((x2) => x2.key !== b.key))}
-                      title={`Harvest basket · +${fmtMoney(b.amount)} already in your pouch`}
+                      title={`Harvest basket · +${fmtMoney(b.amount)} already in your cash`}
                       style={{ left: x + 8, top: y - 34, zIndex: z + 30 }}>
                       <img src={SPR("basket-full")} alt="harvest basket" style={{ height: 30 }} />
                     </button>
@@ -507,14 +507,14 @@ export default function GardenGame() {
             )}
             {phase === "coins" && (
               <GCard title="And this is your money.">
-                <p>$1,000 in coins. Coins in a pouch never grow. Plants can.</p>
+                <p>You have $1,000 in cash. Cash sitting still never grows. Plants can.</p>
                 <div className="flex gap-2.5 mt-3"><GBtn onClick={() => { setPhase("firstBuy"); setStallOpen(true); }}>Visit the market</GBtn></div>
               </GCard>
             )}
             {phase === "firstBuy" && !stallOpen && (
               <GCard title={lots.length === 0 ? "The market is open." : "Good planting."}>
                 {lots.length === 0
-                  ? <p>Pick your first plant. It comes from another gardener, and your coins go to them.</p>
+                  ? <p>Pick your first plant. It comes from another gardener, and your money goes to them.</p>
                   : <p>Your plant is in the ground. You can buy more, or move on.</p>}
                 <div className="flex gap-2.5 mt-3">
                   <GBtn onClick={() => setStallOpen(true)}>Open the market</GBtn>
@@ -541,8 +541,8 @@ export default function GardenGame() {
                 </p>
                 {week > 0 && (
                   <div className="mt-2 flex flex-col gap-0.5 text-[12.5px] tnum" style={{ color: SUB }}>
-                    <span>Coins in your pouch: <strong style={{ color: INK }}>{fmtMoney(m.cash)}</strong></span>
-                    {lots.length + coopStrips > 0 && <span>If you sold everything today, it would fetch <strong style={{ color: INK }}>{fmtMoney(invested)}</strong>. You will not know for sure until you sell.</span>}
+                    <span>Cash on hand: <strong style={{ color: INK }}>{fmtMoney(m.cash)}</strong></span>
+                    {lots.length + coopStrips > 0 && <span>If you sold everything today, it would sell for <strong style={{ color: INK }}>{fmtMoney(invested)}</strong>. You will not know for sure until you sell.</span>}
                     <span>The co-op field, left alone: {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong></span>
                   </div>
                 )}
@@ -561,9 +561,9 @@ export default function GardenGame() {
             {phase === "fork" && (
               <GCard title="The frost is here.">
                 <p>
-                  Every plant in town got smaller at once. Sold today, your garden would fetch about{" "}
+                  Every plant in town got smaller at once. Sold today, your garden would sell for about{" "}
                   <strong className="tnum">{Math.abs(drawdown * 100).toFixed(0)}%</strong> less than at the top.
-                  But count your plots: you still own every plant, and your coins never moved.
+                  But count your plots: you still own every plant, and your cash never moved.
                 </p>
                 <p className="mt-2 font-semibold">The cold hasn't broken. What do you do?</p>
                 <div className="flex gap-2.5 mt-3">
@@ -583,7 +583,7 @@ export default function GardenGame() {
               <GCard title={choice === "sold" ? "Season's end, and your beds were empty." : "Season's end."} wide>
                 <div className="flex gap-3 my-3">
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: net >= m.benchmark ? "#e9f2dc" : "#fffdf4", border: `2px solid ${net >= m.benchmark ? "#7ba36f" : WOOD}` }}>
-                    <div className="text-[12px] font-semibold" style={{ color: SUB }}>Your coins, plus plants at closing prices</div>
+                    <div className="text-[12px] font-semibold" style={{ color: SUB }}>Your cash, plus plants at closing prices</div>
                     <div className="font-game text-[24px] font-bold tnum">{fmtMoney(net)}</div>
                   </div>
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: m.benchmark > net ? "#e9f2dc" : "#fffdf4", border: `2px solid ${m.benchmark > net ? "#7ba36f" : WOOD}` }}>
@@ -599,7 +599,7 @@ export default function GardenGame() {
                   ) : (
                     <li className="flex gap-2"><Bullet c={GREEN} /><span>The frost shrank every plant, then the warm spell grew them back. Your plant count never changed. Only prices did.</span></li>
                   )}
-                  <li className="flex gap-2"><Bullet c={WOOD} /><span>Every coin you spent or received moved gardener to gardener. The farms never saw it.</span></li>
+                  <li className="flex gap-2"><Bullet c={WOOD} /><span>Every dollar you spent or received moved gardener to gardener. The farms never saw it.</span></li>
                 </ul>
                 <div className="flex gap-2.5 mt-3 items-center">
                   <GBtn onClick={restart}>Play again</GBtn>
@@ -676,7 +676,7 @@ export default function GardenGame() {
                 <div className="text-[13px]" style={{ color: SUB }}>Different goals, different crops: fast growth, steady baskets, or a calm garden.</div>
               </div>
               <div className="text-right">
-                <div className="text-[12px] font-semibold" style={{ color: SUB }}>In your pouch</div>
+                <div className="text-[12px] font-semibold" style={{ color: SUB }}>Your cash</div>
                 <div className="font-game text-[18px] font-bold tnum">{fmtMoney(m.cash)}</div>
               </div>
               <GGhost onClick={() => setStallOpen(false)}>Close</GGhost>
@@ -708,7 +708,7 @@ export default function GardenGame() {
                           Plant one · {fmtMoney(price)}
                         </GChip>
                         <span className="text-[11.5px] tnum" style={{ color: SUB }}>
-                          {affordable >= 1 ? `your coins buy ${affordable}` : "not enough coins"}
+                          {affordable >= 1 ? `your cash buys ${affordable}` : "not enough cash"}
                         </span>
                       </div>
                     )}
