@@ -206,9 +206,11 @@ export default function GardenGame() {
   }, [phase]);
 
   const weekStart = useRef({ net: 1000, bench: 1000 });
+  const weekDivStart = useRef(0);
   const startWeek = () => {
     weekStart.current = { net, bench: m.benchmark };
-    setBaskets([]); setSelPlot(null); setStallOpen(false); setPhase("running"); setSpeed(1);
+    weekDivStart.current = m.dividendsCollected;
+    setSelPlot(null); setStallOpen(false); setPhase("running"); setSpeed(1);
   };
 
   const plantAt = (cropId: string, plot: number) => {
@@ -395,7 +397,7 @@ export default function GardenGame() {
                     <img key={`lot${lot.plot}`} src={dead ? SPR("plant-dead") : SP(cropById(lot.crop).sprite)} alt=""
                       className="absolute pointer-events-none"
                       style={{
-                        left: x - h * 0.42, top: y + 4 - h, height: h, zIndex: z + 1,
+                        left: x, top: y + 4 - h, height: h, zIndex: z + 1, transform: "translateX(-50%)",
                         transition: "height 0.7s cubic-bezier(.3,1.1,.4,1), top 0.7s cubic-bezier(.3,1.1,.4,1)",
                         filter: frosty && !dead ? "saturate(0.65) brightness(0.94)" : "none",
                       }} />
@@ -407,7 +409,7 @@ export default function GardenGame() {
                     <button key={b.key} className="absolute pop-in" onClick={() => setBaskets((bs) => bs.filter((x2) => x2.key !== b.key))}
                       title={`Harvest basket · +${fmtMoney(b.amount)} already in your cash`}
                       style={{ left: x + 8, top: y - 34, zIndex: z + 30 }}>
-                      <img src={SPR("basket-full")} alt="harvest basket" style={{ height: 30 }} />
+                      <img src={SPR("basket-full")} alt="harvest basket" style={{ height: 42 }} />
                     </button>
                   );
                 })}
@@ -432,7 +434,7 @@ export default function GardenGame() {
                     </div>
                     {m.dead.has(selLot.crop)
                       ? <div className="text-[12px]" style={{ color: "#a13a2a" }}>The blight took this cultivar. No one will buy it.</div>
-                      : <GChip onClick={() => transplantPlot(selPlot)}>Transplant away · {fmtMoney(m.prices[selLot.crop])}</GChip>}
+                      : <GChip onClick={() => transplantPlot(selPlot)}>Sell this plant to another gardener · {fmtMoney(m.prices[selLot.crop])}</GChip>}
                   </>
                 ) : (
                   <>
@@ -524,7 +526,7 @@ export default function GardenGame() {
             )}
             {phase === "meetCoop" && (
               <GCard title="Meet the co-op field.">
-                <p>It holds every crop at once, so one bad crop cannot sink the whole field. You can buy a strip of it, and a strip is a slice of everything.</p>
+                <p>It grows every crop at once, so one bad crop cannot ruin the whole harvest. You can buy a strip of it, and a strip is a slice of everything.</p>
                 <div className="flex gap-2.5 mt-3">
                   <GBtn onClick={buyStrip} disabled={m.cash < m.prices["coop"]}>Buy one strip · {fmtMoney(m.prices["coop"])}</GBtn>
                   <GGhost onClick={() => setPhase("idle")}>{coopStrips > 0 ? "Done" : "Not yet"}</GGhost>
@@ -542,6 +544,9 @@ export default function GardenGame() {
                 {week > 0 && (
                   <div className="mt-2 flex flex-col gap-0.5 text-[12.5px] tnum" style={{ color: SUB }}>
                     <span>Cash on hand: <strong style={{ color: INK }}>{fmtMoney(m.cash)}</strong></span>
+                    {m.dividendsCollected - weekDivStart.current > 0.5 && (
+                      <span>Harvest baskets this week paid you <strong style={{ color: GREEN }}>+{fmtMoney(m.dividendsCollected - weekDivStart.current)}</strong>. Click the baskets on your plots.</span>
+                    )}
                     {lots.length + coopStrips > 0 && <span>If you sold everything today, it would sell for <strong style={{ color: INK }}>{fmtMoney(invested)}</strong>. You will not know for sure until you sell.</span>}
                     <span>The co-op field, left alone: {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong></span>
                   </div>
@@ -568,7 +573,7 @@ export default function GardenGame() {
                 <p className="mt-2 font-semibold">The cold hasn't broken. What do you do?</p>
                 <div className="flex gap-2.5 mt-3">
                   <GGhost onClick={keepTending}>Keep tending</GGhost>
-                  <GGhost onClick={transplantAll}>Transplant everything away</GGhost>
+                  <GGhost onClick={transplantAll}>Sell everything to other gardeners</GGhost>
                 </div>
               </GCard>
             )}
@@ -725,7 +730,7 @@ export default function GardenGame() {
                   {coopStrips > 0 && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>you own {coopStrips}</span>}
                 </div>
                 <p className="text-[12.5px] mt-2" style={{ color: "#5a4a35" }}>A strip is like an index fund: one slice of every crop in town, in one buy.</p>
-                <p className="text-[12px] mt-0.5" style={{ color: SUB }}>One bad crop cannot sink it, and it pays harvest baskets too. You cannot pull a single crop out.</p>
+                <p className="text-[12px] mt-0.5" style={{ color: SUB }}>One bad crop cannot ruin the whole harvest, and it pays harvest baskets too. You cannot pull a single crop out.</p>
                 <div className="flex items-center gap-2 mt-2">
                   <GChip disabled={m.cash < m.prices["coop"]} onClick={buyStrip}>Buy a strip · {fmtMoney(m.prices["coop"])}</GChip>
                   {coopStrips > 0 && <GChip onClick={sellStrip}>Sell a strip · {fmtMoney(m.prices["coop"])}</GChip>}
