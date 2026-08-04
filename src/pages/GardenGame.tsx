@@ -69,7 +69,7 @@ const cardStyle = { background: PARCH, border: `2px solid ${WOOD}`, boxShadow: "
 function GCard({ title, children, wide }: { title: string; children: ReactNode; wide?: boolean }) {
   return (
     <div className={`pop-in rounded-xl p-5 ${wide ? "w-full" : ""}`} style={cardStyle}>
-      <div className="font-display text-[18px] font-bold mb-1.5" style={{ color: INK }}>{title}</div>
+      <div className="font-game text-[18px] font-bold mb-1.5" style={{ color: INK }}>{title}</div>
       <div className="text-sm leading-relaxed" style={{ color: "#5a4a35" }}>{children}</div>
     </div>
   );
@@ -205,7 +205,11 @@ export default function GardenGame() {
     if (phase === "end") setTimeout(() => endCardRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 350);
   }, [phase]);
 
-  const startWeek = () => { setBaskets([]); setSelPlot(null); setStallOpen(false); setPhase("running"); setSpeed(1); };
+  const weekStart = useRef({ net: 1000, bench: 1000 });
+  const startWeek = () => {
+    weekStart.current = { net, bench: m.benchmark };
+    setBaskets([]); setSelPlot(null); setStallOpen(false); setPhase("running"); setSpeed(1);
+  };
 
   const plantAt = (cropId: string, plot: number) => {
     const price = m.prices[cropId];
@@ -231,7 +235,7 @@ export default function GardenGame() {
     setLots((ls) => ls.filter((l) => l !== lot));
     setSelPlot(null);
     setReceipt({ crop: crop.crop, paid: lot.paid, sold, key: Date.now() });
-    setCartFx({ produce: crop.produce, key: Date.now() });
+    setCartFx({ produce: crop.produce, key: Date.now() + 1 });
     setTimeout(() => setCartFx(null), 2300);
     setTimeout(() => setReceipt(null), 5200);
   };
@@ -259,7 +263,7 @@ export default function GardenGame() {
     act((mm) => { for (const c of CROPS) mm.sellFraction(c.id, 1); });
     setLots([]);
     if (top) {
-      setCartFx({ produce: top.crop.produce, key: Date.now() });
+      setCartFx({ produce: top.crop.produce, key: Date.now() + 1 });
       setTimeout(() => setCartFx(null), 2300);
     }
     setPhase("idle");
@@ -293,7 +297,7 @@ export default function GardenGame() {
         </Link>
         <div className="h-5 w-px" style={{ background: "rgba(107,84,60,0.3)" }} />
         <div className="flex items-baseline gap-3">
-          <span className="font-display text-xl font-bold" style={{ color: GREEN }}>Share Garden</span>
+          <span className="font-game text-xl font-bold" style={{ color: GREEN }}>Share Garden</span>
           <span className="text-[13px] hidden sm:inline" style={{ color: SUB }}>your money, growing in the ground</span>
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -312,7 +316,7 @@ export default function GardenGame() {
         </div>
       </header>
 
-      <main className="px-4 sm:px-8 pb-4 flex flex-col xl:flex-row gap-6 items-center xl:items-start justify-center">
+      <main className="px-4 sm:px-8 pb-4 flex flex-col 2xl:flex-row gap-6 items-center 2xl:items-start justify-center">
         <div className="flex flex-col items-center gap-5">
           <div className="relative rounded-2xl overflow-hidden transition-all duration-1000"
             style={{
@@ -325,12 +329,12 @@ export default function GardenGame() {
             <div className="absolute left-6 top-5 z-20">
               <div className="text-[12px] font-semibold" style={{ color: SUB }}>Net worth</div>
               <div className="flex flex-col items-start gap-1">
-                <span className="font-display text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(net)}</span>
+                <span className="font-game text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(net)}</span>
                 {phase === "fork"
                   ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={{ background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(drawdown * 100).toFixed(1)}% from the high</span>
                   : phase === "end"
                   ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= m.benchmark ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= m.benchmark ? "+$" : "-$") + Math.round(Math.abs(net - m.benchmark)).toLocaleString("en-US")} vs the co-op field</span>
-                  : Math.abs(net - 1000) >= 1 && <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= 1000 ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= 1000 ? "+" : "") + ((net - 1000) / 10).toFixed(1)}%</span>}
+                  : null}
               </div>
             </div>
 
@@ -418,7 +422,7 @@ export default function GardenGame() {
               <div className="absolute z-30 rounded-xl p-3 pop-in" style={{ ...cardStyle, left: "42%", bottom: 180, width: 260 }}>
                 {selLot ? (
                   <>
-                    <div className="font-display text-[14px] font-bold">{cropById(selLot.crop).crop}</div>
+                    <div className="font-game text-[14px] font-bold">{cropById(selLot.crop).crop}</div>
                     <div className="text-[12px] tnum mb-1" style={{ color: SUB }}>
                       planted week {selLot.week} · you paid {fmtMoney(selLot.paid)}
                     </div>
@@ -434,7 +438,7 @@ export default function GardenGame() {
                   </>
                 ) : (
                   <>
-                    <div className="font-display text-[14px] font-bold">Empty plot</div>
+                    <div className="font-game text-[14px] font-bold">Empty plot</div>
                     <div className="text-[12px] mb-2" style={{ color: SUB }}>Pick a plant at the market and it will grow here.</div>
                     <GChip onClick={() => setStallOpen(true)}>Open the market</GChip>
                   </>
@@ -537,6 +541,12 @@ export default function GardenGame() {
                     ? "Each week you choose, then the market answers. Nothing moves until you say so."
                     : "Check your plots, visit the market, collect any baskets. Start the next week when you're ready."}
                 </p>
+                {week > 0 && (
+                  <div className="mt-2 flex gap-4 text-[12.5px] tnum" style={{ color: SUB }}>
+                    <span>You: {fmtMoney(weekStart.current.net)} to <strong style={{ color: net >= weekStart.current.net ? GREEN : "#a13a2a" }}>{fmtMoney(net)}</strong></span>
+                    <span>Co-op field: {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong></span>
+                  </div>
+                )}
                 <div className="flex gap-2.5 mt-3">
                   <GBtn onClick={startWeek}>Start week {week + 1}</GBtn>
                   <GGhost onClick={() => setStallOpen(true)}>Market</GGhost>
@@ -574,14 +584,14 @@ export default function GardenGame() {
                 <div className="flex gap-3 my-3">
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: net >= m.benchmark ? "#e9f2dc" : "#fffdf4", border: `2px solid ${net >= m.benchmark ? "#7ba36f" : WOOD}` }}>
                     <div className="text-[12px] font-semibold" style={{ color: SUB }}>You finished with</div>
-                    <div className="font-display text-[24px] font-bold tnum">{fmtMoney(net)}</div>
+                    <div className="font-game text-[24px] font-bold tnum">{fmtMoney(net)}</div>
                   </div>
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: m.benchmark > net ? "#e9f2dc" : "#fffdf4", border: `2px solid ${m.benchmark > net ? "#7ba36f" : WOOD}` }}>
                     <div className="text-[12px] font-semibold" style={{ color: SUB }}>The co-op field, left alone</div>
-                    <div className="font-display text-[24px] font-bold tnum">{fmtMoney(m.benchmark)}</div>
+                    <div className="font-game text-[24px] font-bold tnum">{fmtMoney(m.benchmark)}</div>
                   </div>
                 </div>
-                <div className="mb-3"><GrowthChart net={m.net} bench={m.bench} width={990} height={130} benchLabel="the co-op field" benchStroke={GREEN} xLabels={["Week 1", "Week 8", "Week 14", "Week 20"]} /></div>
+                <div className="mb-3"><GrowthChart net={m.net.filter((_, i) => i % 7 === 0 || i === m.net.length - 1)} bench={m.bench.filter((_, i) => i % 7 === 0 || i === m.bench.length - 1)} width={990} height={130} benchLabel="the co-op field" benchStroke={GREEN} xLabels={["Week 1", "Week 8", "Week 14", "Week 20"]} /></div>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#5a4a35" }}>
                   <li className="flex gap-2"><Bullet c="#ff453a" /><span>The tomato cultivar died and never came back. One crop is never a plan. The co-op field shrugged it off.</span></li>
                   {choice === "sold" ? (
@@ -605,7 +615,7 @@ export default function GardenGame() {
         {/* right rail: read-only summary */}
         <div className="w-full max-w-xs flex flex-col gap-4">
           <div className="rounded-xl p-5" style={cardStyle}>
-            <div className="font-display text-[15px] font-bold mb-3" style={{ color: INK }}>In your garden</div>
+            <div className="font-game text-[15px] font-bold mb-3" style={{ color: INK }}>In your garden</div>
             {holdings.length === 0 && coopStrips === 0 && (
               <div className="text-sm py-1" style={{ color: SUB }}>Nothing planted yet.</div>
             )}
@@ -651,12 +661,7 @@ export default function GardenGame() {
               </div>
             </div>
           )}
-          {!inTutorial && m.net.length > 10 && phase !== "end" && (
-            <div className="rounded-xl p-5" style={cardStyle}>
-              <div className="font-display text-[15px] font-bold mb-2" style={{ color: INK }}>Growth</div>
-              <GrowthChart net={m.net} bench={m.bench} width={272} height={80} benchLabel="the co-op field" benchStroke={GREEN} xLabels={["Day 0", `Day ${m.step}`]} />
-            </div>
-          )}
+
         </div>
       </main>
 
@@ -667,12 +672,12 @@ export default function GardenGame() {
             <div className="flex items-center gap-4 mb-1">
               <img src={SG("market-stall")} alt="" style={{ height: 56 }} />
               <div className="flex-1">
-                <div className="font-display text-[22px] font-bold" style={{ color: INK }}>The market</div>
+                <div className="font-game text-[22px] font-bold" style={{ color: INK }}>The market</div>
                 <div className="text-[13px]" style={{ color: SUB }}>Different goals, different crops: fast growth, steady baskets, or a calm garden.</div>
               </div>
               <div className="text-right">
                 <div className="text-[12px] font-semibold" style={{ color: SUB }}>In your pouch</div>
-                <div className="font-display text-[18px] font-bold tnum">{fmtMoney(m.cash)}</div>
+                <div className="font-game text-[18px] font-bold tnum">{fmtMoney(m.cash)}</div>
               </div>
               <GGhost onClick={() => setStallOpen(false)}>Close</GGhost>
             </div>
@@ -688,7 +693,7 @@ export default function GardenGame() {
                     <div className="flex items-center gap-3">
                       <img src={dead ? SPR("plant-dead") : SP(c.sprite)} alt="" style={{ height: 46 }} />
                       <div className="min-w-0 flex-1">
-                        <div className="font-display text-[16px] font-bold">{c.crop}</div>
+                        <div className="font-game text-[16px] font-bold">{c.crop}</div>
                         <div className="text-[13px] tnum font-semibold" style={{ color: dead ? "#a13a2a" : INK }}>{dead ? "extinct" : `${fmtMoney(price)} per plant`}</div>
                       </div>
                       {owned > 0 && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>you own {owned}</span>}
@@ -714,7 +719,7 @@ export default function GardenGame() {
                 <div className="flex items-center gap-3">
                   <img src={SG("coop-field")} alt="" style={{ height: 46 }} />
                   <div className="min-w-0 flex-1">
-                    <div className="font-display text-[16px] font-bold">A strip of the co-op field</div>
+                    <div className="font-game text-[16px] font-bold">A strip of the co-op field</div>
                     <div className="text-[13px] tnum font-semibold">{fmtMoney(m.prices["coop"])} per strip</div>
                   </div>
                   {coopStrips > 0 && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>you own {coopStrips}</span>}
@@ -741,7 +746,7 @@ function Bullet({ c }: { c: string }) {
 function FieldTag({ x, title, sub }: { x: string; title: string; sub: string }) {
   return (
     <div className="absolute text-center -translate-x-1/2 z-20" style={{ left: x, bottom: 12 }}>
-      <div className="font-display text-[14px] font-bold">{title}</div>
+      <div className="font-game text-[14px] font-bold">{title}</div>
       <div className="text-[12px] tnum" style={{ color: "#6b5a44" }}>{sub}</div>
     </div>
   );

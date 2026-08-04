@@ -196,7 +196,7 @@ export default function OrbGame() {
         </div>
       </header>
 
-      <main className="px-4 sm:px-8 pb-10 flex flex-col xl:flex-row gap-6 items-center xl:items-start justify-center">
+      <main className="px-4 sm:px-8 pb-10 flex flex-col 2xl:flex-row gap-6 items-center 2xl:items-start justify-center">
         <div className="flex flex-col items-center gap-5">
           {/* stage */}
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"

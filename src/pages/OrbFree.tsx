@@ -114,7 +114,7 @@ export default function OrbFree() {
         </div>
       </header>
 
-      <main className="px-4 sm:px-8 pb-4 flex flex-col xl:flex-row gap-6 items-center xl:items-start justify-center">
+      <main className="px-4 sm:px-8 pb-4 flex flex-col 2xl:flex-row gap-6 items-center 2xl:items-start justify-center">
         <div className="flex flex-col items-center gap-5">
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
             style={{ width: STAGE_W, height: STAGE_H, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)" }}>
