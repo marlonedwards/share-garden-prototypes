@@ -27,7 +27,7 @@ const SCENARIOS = [
     to: "/orb/free",
     lesson: "Freeplay",
     title: "The sandbox",
-    line: "A toy market, every color, no script. Finish whenever you like.",
+    line: "A toy market or a real era, no script. Finish whenever you like.",
     learn: "Whatever you try. The rainbow orb is watching.",
     dots: ["#0a84ff", "#bf5af2", "#ff9f0a", "#30d158", "#64d2ff", "#ffd60a", "#ff453a", "#a2845e"],
     time: "open ended",
