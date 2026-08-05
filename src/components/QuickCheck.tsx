@@ -7,10 +7,11 @@ import { CheckItem, saveCheckResult } from "../lib/checkpoints";
 
 const SUB = "#6e6e73";
 
-export default function QuickCheck({ scenario, items, gateMs }: {
+export default function QuickCheck({ scenario, items, gateMs, onFocus }: {
   scenario: string;
   items: CheckItem[];
   gateMs: number[];
+  onFocus?: (step: number | null) => void;
 }) {
   const [idx, setIdx] = useState(0);
   const [choice, setChoice] = useState<number | null>(null);
@@ -18,6 +19,13 @@ export default function QuickCheck({ scenario, items, gateMs }: {
 
   const done = idx >= items.length;
   const score = answers.filter((a) => a.correct).length;
+
+  // rewind the scene to the moment this question is about
+  useEffect(() => {
+    if (!onFocus) return;
+    onFocus(!done && items[idx]?.focus !== undefined ? items[idx].focus! : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, done]);
 
   useEffect(() => {
     if (done && answers.length === items.length && items.length > 0) {

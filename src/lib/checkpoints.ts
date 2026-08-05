@@ -13,6 +13,7 @@ export interface CheckItem {
   options: string[];
   answer: number;      // index into options
   explain: string;     // shown after answering, right or wrong
+  focus?: number;      // step the rewind scrubber snaps to while this item is up
 }
 
 export interface CheckResult {
@@ -28,6 +29,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
   dotcom: [
     {
       id: "dotcom-recovery",
+      focus: 93,
       prompt: "The index peaked in early 2000, then crashed. How long until it reached a new high?",
       options: ["About one year", "About three years", "About seven years", "It never did"],
       answer: 2,
@@ -35,6 +37,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "dotcom-pricedin",
+      focus: 1,
       prompt: "Everyone in 2000 agreed the internet would change the world. They were right. So why did internet stocks still crash?",
       options: [
         "The internet actually failed",
@@ -47,6 +50,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "dotcom-survivors",
+      focus: 30,
       prompt: "What happened to most of the internet companies that existed in 2000?",
       options: [
         "They recovered within a few years",
@@ -61,6 +65,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
   payday: [
     {
       id: "payday-bestbuys",
+      focus: 33,
       prompt: "You invested $50 every month from 2000 to 2007, through a huge crash. Which months bought your best-value shares?",
       options: [
         "The confident months at the start",
@@ -73,6 +78,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "payday-dca",
+      focus: 3,
       prompt: "What is a steady monthly plan actually doing?",
       options: [
         "Guessing the best moment to buy",
@@ -85,6 +91,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "payday-bell",
+      focus: 33,
       prompt: "October 2002 turned out to be the bottom of the market. Who knew that at the time?",
       options: ["Experienced investors", "The people on TV", "Nobody. Bottoms are only visible afterward", "The companies themselves"],
       answer: 2,
@@ -94,6 +101,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
   gfc: [
     {
       id: "gfc-arc",
+      focus: 20,
       prompt: "In September 2008, a 158-year-old bank vanished overnight. What did the whole index do over the following seven years?",
       options: [
         "Stayed down for decades",
@@ -106,6 +114,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "gfc-safe",
+      focus: 26,
       prompt: "Mega Bank and The Insurance Giant were among the biggest companies on earth in 2007. What does their collapse say about 'big means safe'?",
       options: [
         "Big usually does mean safe",
@@ -118,6 +127,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "gfc-bottom",
+      focus: 26,
       prompt: "March 2009 was the exact bottom. What did it feel like to people living through it?",
       options: [
         "Obviously a great time to buy",
@@ -132,6 +142,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
   crypto: [
     {
       id: "crypto-size",
+      focus: 58,
       prompt: "Coin Alpha fell 75% twice in seven years and still ended higher. What did a holder need to actually survive both winters?",
       options: [
         "Perfect timing on the way out",
@@ -144,6 +155,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "crypto-promise",
+      focus: 1,
       prompt: "The Promise Coin guaranteed 1% every day. What was the giveaway?",
       options: [
         "The name was too silly",
@@ -156,6 +168,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     },
     {
       id: "crypto-boring",
+      focus: 46,
       prompt: "Over the same seven years, what did the boring stock index do?",
       options: [
         "Also crashed 75% twice",
@@ -179,7 +192,7 @@ function runItems(
 
   let peak = 0;
   const dd = m.bench.map((v) => { peak = Math.max(peak, v); return peak > 0 ? v / peak : 1; });
-  let panicSold = 0, panicNow = 0;
+  let panicSold = 0, panicNow = 0, firstPanicStep: number | undefined;
   const deadIds = new Set(cfg.assets.filter((a) => m.prices[a.id] <= 0).map((a) => a.id));
   let deadSpent = 0, deadBack = 0;
   const deadHeld = new Set<string>();
@@ -187,6 +200,7 @@ function runItems(
     if (t.side === "sell" && (dd[t.step] ?? 1) < 0.85) {
       panicSold += t.dollars;
       panicNow += t.shares * m.prices[t.id];
+      firstPanicStep = firstPanicStep ?? t.step;
     }
     if (deadIds.has(t.id)) {
       if (t.side === "buy") { deadSpent += t.dollars; deadHeld.add(t.id); }
@@ -201,6 +215,7 @@ function runItems(
     const answer = opts.indexOf(Math.round(panicNow));
     out.push({
       id: "run-panic",
+      focus: firstPanicStep,
       prompt: `During the crash you sold shares for ${fmtMoney(panicSold)}. Held to the end of the era, what would those same shares be worth?`,
       options: opts.map((v) => fmtMoney(v)),
       answer,
@@ -211,8 +226,11 @@ function runItems(
   const deadLost = deadSpent - deadBack;
   if (deadLost > 1) {
     const deadName = cfg.assets.filter((a) => deadHeld.has(a.id)).map((a) => name(a)).join(" and ");
+    const firstDeadId = [...deadHeld][0];
+    const deathStep = firstDeadId ? Math.max(0, (m.history[firstDeadId] ?? []).findIndex((p) => p <= 0)) : undefined;
     out.push({
       id: "run-dead",
+      focus: deathStep,
       prompt: `You put money into ${deadName}, which went to zero. How much of it comes back if you wait long enough?`,
       options: [
         "None. Zero is forever",

@@ -132,8 +132,22 @@ export function Sparkline({ data, color, width = 96, height = 26 }: { data: numb
 }
 
 // your orb vs the benchmark over the whole run, smoothed, with time ticks
-export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels, benchStroke = "url(#rb)" }:
-  { net: number[]; bench: number[]; width?: number; height?: number; benchLabel?: string; xLabels?: string[]; benchStroke?: string }) {
+export interface ChartMarker {
+  step: number;
+  kind: "buy" | "sell" | "gate" | "event";
+  label: string;
+}
+
+const MARKER_STYLE: Record<ChartMarker["kind"], { fill: string; shape: "up" | "down" | "diamond" | "dot" }> = {
+  buy:   { fill: "#0071e3", shape: "up" },
+  sell:  { fill: "#d70015", shape: "down" },
+  gate:  { fill: "#bf5af2", shape: "diamond" },
+  event: { fill: "#a1a1a6", shape: "dot" },
+};
+
+export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels, benchStroke = "url(#rb)", markers, cursorStep, onScrub }:
+  { net: number[]; bench: number[]; width?: number; height?: number; benchLabel?: string; xLabels?: string[]; benchStroke?: string;
+    markers?: ChartMarker[]; cursorStep?: number | null; onScrub?: (step: number | null) => void }) {
   if (net.length < 2) return null;
   const all = [...net, ...bench];
   const min = Math.min(...all), max = Math.max(...all);
@@ -160,11 +174,56 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
     d += ` L ${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
     return d;
   };
+  const lastStep = net.length - 1;
+  const stepToX = (s: number) => (s / lastStep) * (width - 4) + 2;
+  const xToStep = (x: number) => Math.max(0, Math.min(lastStep, Math.round(((x - 2) / (width - 4)) * lastStep)));
+  const SNAP_PX = 7;
+  const scrubAt = (clientX: number, el: SVGSVGElement) => {
+    if (!onScrub) return;
+    const x = clientX - el.getBoundingClientRect().left;
+    let step = xToStep(x);
+    if (markers) {
+      let best: number | null = null, bestD = SNAP_PX + 1;
+      for (const mk of markers) {
+        const d = Math.abs(stepToX(mk.step) - x);
+        if (d < bestD) { bestD = d; best = mk.step; }
+      }
+      if (best !== null) step = best;
+    }
+    onScrub(step);
+  };
+  const glyph = (mk: ChartMarker, i: number) => {
+    const x = stepToX(mk.step), y = height - 5;
+    const s = MARKER_STYLE[mk.kind];
+    const active = cursorStep === mk.step;
+    const common = { fill: s.fill, opacity: active ? 1 : 0.75 } as const;
+    return (
+      <g key={`${mk.kind}-${mk.step}-${i}`}>
+        <title>{mk.label}</title>
+        {s.shape === "up" && <path d={`M ${x} ${y - 3.5} L ${x + 3.2} ${y + 2.5} L ${x - 3.2} ${y + 2.5} Z`} {...common} />}
+        {s.shape === "down" && <path d={`M ${x} ${y + 2.5} L ${x + 3.2} ${y - 3.5} L ${x - 3.2} ${y - 3.5} Z`} {...common} />}
+        {s.shape === "diamond" && <path d={`M ${x} ${y - 3.5} L ${x + 3} ${y - 0.5} L ${x} ${y + 2.5} L ${x - 3} ${y - 0.5} Z`} {...common} />}
+        {s.shape === "dot" && <circle cx={x} cy={y - 0.5} r={2.4} {...common} />}
+      </g>
+    );
+  };
   return (
     <div>
-      <svg width={width} height={height} style={{ display: "block" }}>
+      <svg width={width} height={height} style={{ display: "block", cursor: onScrub ? "col-resize" : undefined, touchAction: "none" }}
+        onMouseMove={onScrub ? (e) => scrubAt(e.clientX, e.currentTarget) : undefined}
+        onMouseLeave={onScrub ? () => onScrub(null) : undefined}
+        onPointerDown={onScrub ? (e) => scrubAt(e.clientX, e.currentTarget) : undefined}>
+        {cursorStep != null && cursorStep < lastStep && (
+          <rect x={stepToX(cursorStep)} y={0} width={width - 2 - stepToX(cursorStep)} height={height}
+            fill="rgba(245,245,247,0.72)" pointerEvents="none" />
+        )}
         <path d={smooth(toPts(bench))} fill="none" stroke={benchStroke} strokeWidth="1.8" strokeLinejoin="round" opacity="0.85" />
         <path d={smooth(toPts(net))} fill="none" stroke="#1d1d1f" strokeWidth="1.8" strokeLinejoin="round" />
+        {markers && markers.map(glyph)}
+        {cursorStep != null && (
+          <line x1={stepToX(cursorStep)} y1={2} x2={stepToX(cursorStep)} y2={height - 2}
+            stroke="#0071e3" strokeWidth="1.2" strokeDasharray="3 2.5" pointerEvents="none" />
+        )}
         <defs>
           <linearGradient id="rb" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#ff9f0a" /><stop offset="0.5" stopColor="#bf5af2" /><stop offset="1" stopColor="#0a84ff" />

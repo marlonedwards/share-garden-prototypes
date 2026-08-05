@@ -11,7 +11,7 @@ import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
 import {
-  Actions, Btn, Caption, Card, DeltaChip, Dot, FluidCycler, GhostBtn, GrowthChart,
+  Actions, Btn, Caption, Card, ChartMarker, DeltaChip, Dot, FluidCycler, GhostBtn, GrowthChart,
   RAINBOW_DOT, Sparkline, SpeedBtn, StageLabel, TradeChip, useFluidPref,
 } from "../components/OrbUI";
 
@@ -86,6 +86,27 @@ const RAINBOW_COMP: CompSlice[] = [
   ["#64d2ff", "#b0e8ff"], ["#0a84ff", "#7cc0ff"], ["#bf5af2", "#e0a9ff"],
 ].map(([color, glow], i) => ({ key: `r${i}`, color, glow, frac: 1 / 7 }));
 
+// Rebuilds what the player held at any month from the trade log, so the
+// end-game chart can rewind the whole scene. Strictly a rewind of what
+// happened, never a prediction.
+function stateAt(m: HistoryMarket, cfg: ScenarioConfig, t: number) {
+  const shares: Record<string, number> = {};
+  let cash = cfg.startCash + (cfg.income ?? 0) * t;
+  for (const tr of m.trades) {
+    if (tr.step > t) continue;
+    if (tr.side === "buy") { shares[tr.id] = (shares[tr.id] ?? 0) + tr.shares; cash -= tr.dollars; }
+    else { shares[tr.id] = (shares[tr.id] ?? 0) - tr.shares; cash += tr.dollars; }
+  }
+  const held = cfg.assets
+    .map((ea) => ({ ea, value: (shares[ea.id] ?? 0) * (m.history[ea.id]?.[t] ?? 0) }))
+    .filter((h) => h.value > 0.01);
+  const invested = held.reduce((s, h) => s + h.value, 0);
+  const comp: CompSlice[] = held.map((h) => ({
+    key: h.ea.id, color: h.ea.color, glow: h.ea.glow, frac: invested > 0 ? h.value / invested : 0,
+  }));
+  return { comp, invested, cash: Math.max(0, cash), bench: m.bench[t] ?? m.benchmark };
+}
+
 export default function OrbScenario() {
   const { id } = useParams();
   const cfg = getScenario(id);
@@ -106,6 +127,9 @@ export default function OrbScenario() {
   const [realNames, setRealNames] = useState(false);
   const orbName = getOrbName();
   const name = (ea: { name: string; real?: string }) => (realNames && ea.real) || ea.name;
+  const [hoverStep, setHoverStep] = useState<number | null>(null);
+  const [quizFocus, setQuizFocus] = useState<number | null>(null);
+  const reviewStep = hoverStep ?? quizFocus;
   const [activeGate, setActiveGate] = useState<Gate | null>(null);
   const [gateAnswers, setGateAnswers] = useState<{ title: string; choice: string; ms: number }[]>([]);
   const firedGates = useRef<Set<number>>(new Set());
@@ -239,6 +263,8 @@ export default function OrbScenario() {
     setPayMode("unset");
     setActiveGate(null);
     setGateAnswers([]);
+    setHoverStep(null);
+    setQuizFocus(null);
     firedGates.current.clear();
     peakInvested.current = 0;
     crashSeen.current = false;
@@ -270,6 +296,31 @@ export default function OrbScenario() {
     () => (beat === "end" ? buildCheck(m, cfg, name) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [beat]
+  );
+
+  // rewind scrubber: hover or quiz focus rewinds the scene to that month
+  const review = beat === "end" && reviewStep !== null && reviewStep < lastStep
+    ? stateAt(m, cfg, reviewStep)
+    : null;
+  const dInvested = review ? review.invested : invested;
+  const dCash = review ? review.cash : m.cash;
+  const dBench = review ? review.bench : m.benchmark;
+  const dNet = review ? review.cash + review.invested : net;
+  const markers: ChartMarker[] = useMemo(
+    () =>
+      beat !== "end"
+        ? []
+        : [
+            ...cfg.moments.map((mo) => ({ step: mo.atStep, kind: "event" as const, label: `${mo.label} · ${m.monthLabel(mo.atStep)}` })),
+            ...cfg.gates.map((g) => ({ step: g.atStep, kind: "gate" as const, label: `Crossroads: ${g.title}` })),
+            ...m.trades.map((t) => ({
+              step: t.step,
+              kind: t.side,
+              label: `${t.side === "buy" ? "Bought" : "Sold"} ${fmtMoney(t.dollars)} of ${name(cfg.assets.find((a) => a.id === t.id) ?? { name: t.id })} · ${m.monthLabel(t.step)}`,
+            })),
+          ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [beat, realNames]
   );
 
   return (
@@ -306,9 +357,9 @@ export default function OrbScenario() {
               ref={sceneRef}
               width={STAGE_W}
               height={STAGE_H}
-              player={{ value: invested, comp }}
-              index={{ value: m.benchmark, comp: RAINBOW_COMP }}
-              cash={m.cash}
+              player={{ value: dInvested, comp: review ? review.comp : comp }}
+              index={{ value: dBench, comp: RAINBOW_COMP }}
+              cash={dCash}
               cashMax={Math.max(cfg.startCash, 1000)}
               showIndex={beat !== "brief"}
               ghostR={crashSeen.current ? valueToRadius(peakInvested.current) * radiusScale : 0}
@@ -329,8 +380,13 @@ export default function OrbScenario() {
             <div className="absolute left-6 top-5">
               <div className="text-[12px] font-medium" style={{ color: "#6e6e73" }}>Net worth</div>
               <div className="flex flex-col items-start gap-1">
-                <span className="text-[34px] leading-tight font-semibold tracking-tight tnum">{fmtMoney(net)}</span>
-                {beat === "end"
+                <span className="text-[34px] leading-tight font-semibold tracking-tight tnum">{fmtMoney(dNet)}</span>
+                {review && reviewStep !== null
+                  ? <span className="text-[12px] font-semibold tnum px-2 py-0.5 rounded-full"
+                      style={{ color: "#0057b8", background: "#e8f3ff" }}>
+                      {m.monthLabel(reviewStep)} · rewind
+                    </span>
+                  : beat === "end"
                   ? <span className="text-[12px] font-semibold tnum px-2 py-0.5 rounded-full"
                       style={net >= m.benchmark
                         ? { color: "#248a3d", background: "rgba(52,199,89,0.12)" }
@@ -348,11 +404,11 @@ export default function OrbScenario() {
                 the high · {fmtMoney(peakInvested.current)}
               </div>
             )}
-            <StageLabel x={LAYOUT.playerX} title={orbName || "Your orb"} sub={invested > 0 ? fmtMoney(invested) : "empty"} />
+            <StageLabel x={LAYOUT.playerX} title={orbName || "Your orb"} sub={dInvested > 0 ? fmtMoney(dInvested) : "empty"} />
             {beat !== "brief" && (
-              <StageLabel x={LAYOUT.indexX} title="The rainbow orb" sub={`${fmtMoney(m.benchmark)} · ${cfg.income ? "same income, all-in" : "$1,000 all-in day one"}`} />
+              <StageLabel x={LAYOUT.indexX} title="The rainbow orb" sub={`${fmtMoney(dBench)} · ${cfg.income ? "same income, all-in" : "$1,000 all-in day one"}`} />
             )}
-            <StageLabel x={LAYOUT.resX} title="Cash" sub={fmtMoney(m.cash)} />
+            <StageLabel x={LAYOUT.resX} title="Cash" sub={fmtMoney(dCash)} />
             {running && ev && (
               <div className="absolute left-1/2 -translate-x-1/2 top-5 px-4 py-2 rounded-full text-[13px] shadow-md pop-in border border-black/5"
                 style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(10px)", color: "#1d1d1f" }}>
@@ -449,7 +505,16 @@ export default function OrbScenario() {
                     </p>
                   ) : null;
                 })()}
-                <div className="mb-3"><GrowthChart net={m.net} bench={m.bench} width={990} height={130} xLabels={[m.monthLabel(0), m.monthLabel(Math.floor(lastStep / 3)), m.monthLabel(Math.floor((2 * lastStep) / 3)), m.monthLabel(lastStep)]} /></div>
+                <div className="mb-1">
+                  <GrowthChart net={m.net} bench={m.bench} width={990} height={130}
+                    xLabels={[m.monthLabel(0), m.monthLabel(Math.floor(lastStep / 3)), m.monthLabel(Math.floor((2 * lastStep) / 3)), m.monthLabel(lastStep)]}
+                    markers={markers} cursorStep={reviewStep} onScrub={setHoverStep} />
+                </div>
+                <p className="mb-3 t-xs text-[11.5px]" style={{ color: "#6e6e73" }}>
+                  Drag across the chart to rewind the scene above to any month. Triangles are your
+                  trades, diamonds are the crossroads, dots are the era's real moments. It only
+                  looks backward: knowing this chart never tells you the next one.
+                </p>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
                   {endBullets.map((b, i) => (
                     <li key={i} className="flex gap-2"><Dot c={b.c} /><span>{b.text}</span></li>
@@ -459,7 +524,8 @@ export default function OrbScenario() {
                   <Btn onClick={saveCard}>Save your orb</Btn>
                   <GhostBtn onClick={restart}>Play again</GhostBtn>
                 </Actions>
-                <QuickCheck scenario={cfg.id} items={checkItems} gateMs={gateAnswers.map((a) => a.ms)} />
+                <QuickCheck scenario={cfg.id} items={checkItems} gateMs={gateAnswers.map((a) => a.ms)}
+                  onFocus={setQuizFocus} />
               </Card>
             )}
           </div>
