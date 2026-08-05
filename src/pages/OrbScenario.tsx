@@ -7,6 +7,8 @@ import { CompSlice, roundPcts, valueToRadius } from "../lib/orbModel";
 import { downloadOrbCard } from "../lib/orbCard";
 import { getOrbName } from "../lib/orbIdentity";
 import { unlockEntry } from "../lib/fieldGuide";
+import { clippingAt } from "../lib/headlines";
+import { ClippingCard, Ticker, TickerItem } from "../components/NewsBits";
 import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
@@ -324,6 +326,17 @@ export default function OrbScenario() {
 
   const running = beat === "run";
   const ev = m.lastEvent;
+  const clip = running ? clippingAt(cfg.id, m.step) : null;
+  const tickerItems: TickerItem[] = useMemo(
+    () =>
+      cfg.assets.map((ea) => {
+        const p = m.prices[ea.id] ?? 0;
+        const prev = m.history[ea.id]?.[Math.max(0, m.step - 1)] ?? p;
+        return { name: name(ea), price: p, delta: prev > 0 ? (p - prev) / prev : 0, dead: p <= 0 };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [m.step, realNames]
+  );
   const smart = beat === "end" ? runBullets(m, cfg, name, holdings, invested, net) : [];
   const endBullets = [...smart, ...cfg.bullets.slice(0, Math.max(1, 4 - smart.length))];
   const checkItems = useMemo(
@@ -444,13 +457,15 @@ export default function OrbScenario() {
               <StageLabel x={LAYOUT.indexX} title="The rainbow orb" sub={`${fmtMoney(dBench)} · ${cfg.income ? "same income, all-in" : "$1,000 all-in day one"}`} />
             )}
             <StageLabel x={LAYOUT.resX} title="Cash" sub={fmtMoney(dCash)} />
-            {running && ev && (
+            {running && clip && <ClippingCard clip={clip} />}
+            {running && !clip && ev && (
               <div className="absolute left-1/2 -translate-x-1/2 top-5 px-4 py-2 rounded-full text-[13px] shadow-md pop-in border border-black/5"
                 style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(10px)", color: "#1d1d1f" }}>
                 <span className="font-semibold">{ev.label}</span>
                 <span style={{ color: "#6e6e73" }}> · {ev.blurb}</span>
               </div>
             )}
+            {running && <Ticker items={tickerItems} />}
           </div>
 
           <div ref={endCardRef} className={`z-20 ${beat === "end" ? "w-[min(1080px,96vw)]" : "w-[min(620px,92vw)]"}`}>
