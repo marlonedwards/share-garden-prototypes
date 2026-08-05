@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Orb, index fund representations</title>
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --ink2: #6e6e73;
+    --bg: #f5f5f7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header.top { margin-bottom: 34px; }
+  h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 8px; }
+  .sub { font-size: 15px; color: var(--ink2); max-width: 720px; line-height: 1.55; margin: 0; }
+  .secthead {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    margin: 42px 0 16px;
+  }
+  .secthead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .secthead .why { font-size: 13.5px; color: var(--ink2); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 16px 18px 18px;
+  }
+  .stage {
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 100%);
+    display: flex; justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  canvas { display: block; }
+  .cname { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; margin: 13px 0 5px; }
+  .cnote { font-size: 13px; line-height: 1.55; color: #3a3a3c; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    font-size: 11.5px; font-weight: 500; color: var(--ink2);
+    background: rgba(0,0,0,0.045); border-radius: 999px; padding: 3px 9px;
+  }
+  .tag.eff { color: #1d1d1f; background: rgba(0,113,227,0.10); }
+  .legend { display: flex; gap: 14px; align-items: center; margin-top: 11px; font-size: 12px; color: var(--ink2); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+  .rain { background: conic-gradient(#ff453a, #ff9f0a, #ffd60a, #30d158, #64d2ff, #0a84ff, #bf5af2, #ff453a); }
+  .bar { display: flex; gap: 10px; align-items: center; margin: 0 0 4px; }
+  button.pill {
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button.pill:hover { background: rgba(0,0,0,0.05); }
+  button.pill.primary { background: #0071e3; color: #fff; border-color: transparent; }
+  button.pill.primary:hover { filter: brightness(1.08); }
+  .hint { font-size: 12.5px; color: var(--ink2); }
+  footer.note { margin-top: 44px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; }
+  @media (max-width: 1080px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 760px) { .grid3, .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>The Orb, index fund representations</h1>
+    <p class="sub">
+      Nine live mocks at the game's own fidelity, drawn with the same glass shell, contact shadow and speculars as
+      OrbScene. Part 1 asks how the sealed index orb should read on its own. Part 2 asks what an index fund looks like
+      inside the player's orb, sitting next to a single company's color. Click any orb to test the seal.
+    </p>
+  </header>
+
+  <div class="secthead">
+    <h2>Part 1 &middot; The sealed index orb</h2>
+    <span class="why">Goal: hundreds of companies, one of everything, fused shut. Not seven slices of pie.</span>
+  </div>
+  <div class="bar">
+    <button class="pill primary" id="tryOpen">Try to open the seal</button>
+    <span class="hint">Every variant carries the same weld ring, rivets and refusal animation, so judge the interior only.</span>
+  </div>
+  <div class="grid3" id="part1" style="margin-top:14px"></div>
+
+  <div class="secthead">
+    <h2>Part 2 &middot; The fund inside the player's own orb</h2>
+    <span class="why">Holding: Nova Systems 45%, an index fund 35%, Bitrix 20%. The fund's share must read as "that part is everything at once".</span>
+  </div>
+  <div class="grid2" id="part2"></div>
+
+  <footer class="note">
+    All rendering is 2D canvas, no external assets. Effort estimates assume the existing OrbScene draw pipeline:
+    the interior fills plug in exactly where fillWaves and fillBlobs already live, and the seal treatment extends the
+    existing sealed branch.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var TAU = Math.PI * 2;
+
+  // ---- color -------------------------------------------------------------
+  function toRgb(hex) { var n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerpRgb(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+  function rgba(c, a) { return "rgba(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + "," + a + ")"; }
+
+  // the game's RAINBOW cast, color plus glow partner
+  var RAINBOW = [
+    ["#ff453a", "#ff9d97"], ["#ff9f0a", "#ffcf7a"], ["#ffd60a", "#ffe97a"],
+    ["#30d158", "#8ff0ae"], ["#64d2ff", "#b0e8ff"], ["#0a84ff", "#7cc0ff"],
+    ["#bf5af2", "#e0a9ff"]
+  ].map(function (p) { return { c: toRgb(p[0]), g: toRgb(p[1]) }; });
+
+  // cyclic walk through the seven families; spectrum(0) === spectrum(1)
+  function spectrum(u) {
+    var n = RAINBOW.length, x = (((u % 1) + 1) % 1) * n, i = Math.floor(x), f = x - i;
+    var a = RAINBOW[i % n], b = RAINBOW[(i + 1) % n];
+    return { c: lerpRgb(a.c, b.c, f), g: lerpRgb(a.g, b.g, f) };
+  }
+
+  var NOVA = { c: toRgb("#0a84ff"), g: toRgb("#7cc0ff") };
+  var BITRIX = { c: toRgb("#bf5af2"), g: toRgb("#e0a9ff") };
+
+  // ---- deterministic noise ----------------------------------------------
+  function hash32(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function prand(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---- offscreen layers --------------------------------------------------
+  function prerender(size, fn) {
+    var s = 2, c = document.createElement("canvas");
+    c.width = Math.ceil(size * s); c.height = Math.ceil(size * s);
+    var x = c.getContext("2d"); x.scale(s, s); fn(x, size);
+    return c;
+  }
+  function blitDisk(ctx, layer, cx, cy, core, rot) {
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(rot || 0);
+    ctx.drawImage(layer, -core, -core, core * 2, core * 2);
+    ctx.restore();
+  }
+
+  // moving glass sweep, sells "there is a curved surface over this"
+  function sweep(ctx, cx, cy, core, t, speed, alpha) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.filter = "blur(" + Math.max(4, core * 0.07) + "px)";
+    var p = ((t * (speed || 0.1)) % 1) * 3 - 1.1;
+    var x0 = cx + p * core;
+    var g = ctx.createLinearGradient(x0 - core * 0.45, cy - core, x0 + core * 0.45, cy + core);
+    g.addColorStop(0, "rgba(255,255,255,0)");
+    g.addColorStop(0.5, "rgba(255,255,255," + (alpha || 0.4) + ")");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+  }
+
+  // =======================================================================
+  //  PART 1 interiors
+  // =======================================================================
+
+  // 1. Grain field ---------------------------------------------------------
+  function grainLayer(core) {
+    return prerender(core * 2, function (x) {
+      var cx = core, cy = core, rnd = prand(hash32("grain"));
+      // blurred back layer for depth
+      x.save(); x.filter = "blur(" + core * 0.045 + "px)"; x.globalAlpha = 0.62;
+      for (var i = 0; i < 260; i++) {
+        var a = rnd() * TAU, rad = core * Math.sqrt(rnd()) * 0.95;
+        var col = spectrum(rnd());
+        x.fillStyle = rgba(col.c, 0.8);
+        x.beginPath(); x.arc(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, core * (0.022 + 0.022 * rnd()), 0, TAU); x.fill();
+      }
+      x.restore();
+      // crisp foreground grains
+      for (var j = 0; j < 760; j++) {
+        var a2 = rnd() * TAU, rad2 = core * Math.sqrt(rnd()) * 0.965;
+        var px = cx + Math.cos(a2) * rad2, py = cy + Math.sin(a2) * rad2;
+        var s = core * (0.017 + 0.017 * rnd());
+        var col2 = spectrum(rnd());
+        var depth = 0.7 + 0.3 * rnd();
+        x.fillStyle = rgba(col2.c, 0.72 + 0.28 * depth);
+        x.beginPath(); x.arc(px, py, s * depth, 0, TAU); x.fill();
+        if (rnd() > 0.65) {
+          x.fillStyle = rgba(col2.g, 0.95);
+          x.beginPath(); x.arc(px - s * 0.28, py - s * 0.28, s * 0.36, 0, TAU); x.fill();
+        }
+      }
+    });
+  }
+  function innerGrains(ctx, cx, cy, core, t, st) {
+    ctx.fillStyle = "rgba(233,241,250,0.85)";
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    if (!st.layer) st.layer = grainLayer(core);
+    blitDisk(ctx, st.layer, cx, cy, core, t * 0.035);
+    blitDisk(ctx, st.layer, cx, cy, core * 0.66, -t * 0.09);
+    // a few live sparks so the suspension breathes
+    var rnd = prand(hash32("spark"));
+    for (var i = 0; i < 26; i++) {
+      var a = rnd() * TAU + t * (0.05 + rnd() * 0.06);
+      var rad = core * Math.sqrt(rnd()) * 0.9;
+      var col = spectrum(rnd());
+      var pulse = 0.35 + 0.65 * Math.abs(Math.sin(t * 0.9 + i));
+      ctx.fillStyle = rgba(col.g, 0.85 * pulse);
+      ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, core * 0.016, 0, TAU); ctx.fill();
+    }
+    sweep(ctx, cx, cy, core, t, 0.07, 0.33);
+  }
+
+  // 2. Mosaic --------------------------------------------------------------
+  function mosaicLayer(core) {
+    return prerender(core * 2, function (x) {
+      var cx = core, cy = core, s = core * 0.088, rnd = prand(hash32("mosaic"));
+      var w = Math.sqrt(3) * s, h = 1.5 * s;
+      for (var r = -14; r <= 14; r++) {
+        for (var q = -16; q <= 16; q++) {
+          var px = cx + w * (q + r / 2), py = cy + h * r;
+          var d = Math.hypot(px - cx, py - cy);
+          if (d > core * 0.985) continue;
+          var col = spectrum(rnd());
+          var lightFall = 1 - 0.35 * (d / core);
+          var top = lerpRgb(col.c, col.g, 0.12 + 0.28 * lightFall);
+          x.beginPath();
+          for (var k = 0; k < 6; k++) {
+            var a = -Math.PI / 2 + k * TAU / 6;
+            var rr = s * 0.975;
+            var vx = px + Math.cos(a) * rr, vy = py + Math.sin(a) * rr;
+            if (k === 0) x.moveTo(vx, vy); else x.lineTo(vx, vy);
+          }
+          x.closePath();
+          var g = x.createLinearGradient(px - s, py - s, px + s, py + s);
+          g.addColorStop(0, rgba(top, 1));
+          g.addColorStop(1, rgba(lerpRgb(col.c, [20, 32, 62], 0.12), 1));
+          x.fillStyle = g; x.fill();
+          x.strokeStyle = "rgba(255,255,255,0.62)"; x.lineWidth = core * 0.009; x.stroke();
+        }
+      }
+    });
+  }
+  function innerMosaic(ctx, cx, cy, core, t, st) {
+    ctx.fillStyle = "rgba(244,248,253,0.9)";
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    if (!st.layer) st.layer = mosaicLayer(core);
+    ctx.save();
+    ctx.filter = "blur(" + core * 0.012 + "px)";
+    blitDisk(ctx, st.layer, cx, cy, core, 0);
+    ctx.restore();
+    // dome shading so the tiles read as curved glass, not a flat decal
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    var d = ctx.createRadialGradient(cx - core * 0.3, cy - core * 0.35, core * 0.1, cx, cy, core * 1.05);
+    d.addColorStop(0, "rgba(255,255,255,0.35)");
+    d.addColorStop(0.55, "rgba(255,255,255,0.03)");
+    d.addColorStop(1, "rgba(18,30,58,0.16)");
+    ctx.fillStyle = d; ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.09, 0.45);
+  }
+
+  // 3. Marbled swirl -------------------------------------------------------
+  function innerMarble(ctx, cx, cy, core, t) {
+    ctx.fillStyle = "rgba(250,252,255,0.95)";
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    ctx.save();
+    ctx.filter = "blur(" + Math.max(3, core * 0.045) + "px)";
+    var rings = 26;
+    for (var k = rings; k >= 1; k--) {
+      var u = k / rings;
+      var rr = core * (0.05 + 0.95 * u);
+      var twist = 3.4 * (1 - u) + t * 0.09;
+      var g = ctx.createConicGradient ? ctx.createConicGradient(twist, cx, cy) : null;
+      if (g) {
+        for (var i = 0; i <= 14; i++) { var c = spectrum(i / 14); g.addColorStop(i / 14, rgba(c.c, 1)); }
+        ctx.strokeStyle = g;
+      } else {
+        ctx.strokeStyle = rgba(spectrum(u).c, 1);
+      }
+      ctx.lineWidth = (core / rings) * 2.1;
+      ctx.beginPath();
+      var N = 64;
+      for (var p = 0; p <= N; p++) {
+        var a = (p / N) * TAU;
+        var wob = 1 + 0.085 * Math.sin(a * 3 + u * 7.5 + t * 0.35) + 0.05 * Math.sin(a * 5 - u * 4 - t * 0.22);
+        var px = cx + Math.cos(a) * rr * wob, py = cy + Math.sin(a) * rr * wob;
+        if (p === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.stroke();
+    }
+    ctx.restore();
+    // pale veins, the stirred-paint tell
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.filter = "blur(" + core * 0.03 + "px)";
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    for (var v = 0; v < 5; v++) {
+      ctx.lineWidth = core * 0.035;
+      ctx.beginPath();
+      for (var q = 0; q <= 40; q++) {
+        var aa = (q / 40) * TAU;
+        var rad = core * (0.2 + 0.75 * (q / 40)) * (1 + 0.12 * Math.sin(aa * 2 + v));
+        var ang = aa * 0.85 + v * 1.25 + t * 0.09;
+        var xx = cx + Math.cos(ang) * rad, yy = cy + Math.sin(ang) * rad;
+        if (q === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.08, 0.35);
+  }
+
+  // 4. A thousand marbles --------------------------------------------------
+  function microLayer(core) {
+    return prerender(core * 2, function (x) {
+      var cx = core, cy = core, N = 205, rnd = prand(hash32("micro"));
+      var rr = (core * 0.95) / Math.sqrt(N) * 0.7;
+      for (var i = 0; i < N; i++) {
+        var a = i * 2.39996, rad = core * 0.93 * Math.sqrt((i + 0.6) / N);
+        var px = cx + Math.cos(a) * rad, py = cy + Math.sin(a) * rad;
+        var col = spectrum(rnd());
+        var s = rr * (0.85 + rnd() * 0.4);
+        x.fillStyle = "rgba(20,32,62,0.10)";
+        x.beginPath(); x.arc(px + s * 0.16, py + s * 0.2, s, 0, TAU); x.fill();
+        var g = x.createRadialGradient(px - s * 0.32, py - s * 0.36, s * 0.08, px, py, s);
+        g.addColorStop(0, rgba(col.g, 1));
+        g.addColorStop(0.6, rgba(col.c, 0.98));
+        g.addColorStop(1, rgba(lerpRgb(col.c, [20, 32, 62], 0.25), 0.95));
+        x.fillStyle = g;
+        x.beginPath(); x.arc(px, py, s, 0, TAU); x.fill();
+        x.fillStyle = "rgba(255,255,255,0.85)";
+        x.beginPath(); x.ellipse(px - s * 0.33, py - s * 0.4, s * 0.24, s * 0.16, -0.6, 0, TAU); x.fill();
+      }
+    });
+  }
+  function innerMicro(ctx, cx, cy, core, t, st) {
+    ctx.fillStyle = "rgba(236,242,250,0.75)";
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    if (!st.layer) st.layer = microLayer(core);
+    var bob = Math.sin(t * 0.5) * core * 0.012;
+    ctx.save(); ctx.translate(0, bob);
+    blitDisk(ctx, st.layer, cx, cy, core, t * 0.045);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    var d = ctx.createRadialGradient(cx, cy, core * 0.45, cx, cy, core);
+    d.addColorStop(0, "rgba(18,30,58,0)");
+    d.addColorStop(1, "rgba(18,30,58,0.13)");
+    ctx.fillStyle = d; ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.06, 0.4);
+  }
+
+  // 5. Opal ----------------------------------------------------------------
+  function innerOpal(ctx, cx, cy, core, t) { opalPaint(ctx, cx, cy, core, t, 0.55); }
+  function opalPaint(ctx, cx, cy, core, t, chroma) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.fillStyle = "rgba(252,253,255,1)";
+    ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.filter = "blur(" + core * 0.14 + "px)";
+    // two counter-rotating pastel conics; the interference kills any pinwheel read
+    for (var pass = 0; pass < 2; pass++) {
+      var dir = pass === 0 ? 1 : -0.55;
+      var g = ctx.createConicGradient ? ctx.createConicGradient(t * 0.16 * dir + pass * 1.3, cx, cy) : null;
+      if (!g) break;
+      for (var i = 0; i <= 14; i++) {
+        var c = spectrum(i / 14 + pass * 0.31);
+        g.addColorStop(i / 14, rgba(lerpRgb(c.g, c.c, chroma), 1));
+      }
+      ctx.globalAlpha = pass === 0 ? 1 : 0.34;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(t * 0.3 + pass * 2) * core * 0.1, cy + Math.sin(t * 0.24 + pass) * core * 0.1, core * 1.1, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // milky heart
+    var m = ctx.createRadialGradient(cx - core * 0.15, cy - core * 0.2, 0, cx, cy, core * 0.95);
+    m.addColorStop(0, "rgba(255,255,255," + (0.62 - chroma * 0.4) + ")");
+    m.addColorStop(0.5, "rgba(255,255,255,0.1)");
+    m.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = m; ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    // oilslick sheen band
+    ctx.filter = "blur(" + core * 0.06 + "px)";
+    var p = ((t * 0.09) % 1) * 2.6 - 0.9;
+    var x0 = cx + p * core;
+    var sg = ctx.createLinearGradient(x0 - core * 0.6, cy - core, x0 + core * 0.6, cy + core);
+    var stops = [[0, [255, 255, 255], 0], [0.25, spectrum(0.62).g, 0.5], [0.5, spectrum(0.85).g, 0.55], [0.72, spectrum(0.18).g, 0.45], [1, [255, 255, 255], 0]];
+    stops.forEach(function (s) { sg.addColorStop(s[0], rgba(s[1], s[2])); });
+    ctx.fillStyle = sg; ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+    // glitter flecks, opal's fire
+    var rnd = prand(hash32("opal"));
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core * 0.96, 0, TAU); ctx.clip();
+    for (var k = 0; k < 44; k++) {
+      var a = rnd() * TAU, rad = core * Math.sqrt(rnd()) * 0.92;
+      var ph = rnd() * TAU;
+      var pulse = Math.max(0, Math.sin(t * 1.1 + ph));
+      if (pulse < 0.2) continue;
+      var col = spectrum(rnd());
+      ctx.fillStyle = rgba(col.g, 0.75 * pulse);
+      ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, core * 0.012, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // 6. Woven -------------------------------------------------------------
+  function weaveLayer(core) {
+    return prerender(core * 2, function (x) {
+      var n = 9, bw = (core * 2) / n;
+      function strand(x0, y0, w, h, col, vertical) {
+        var g = vertical
+          ? x.createLinearGradient(x0, 0, x0 + w, 0)
+          : x.createLinearGradient(0, y0, 0, y0 + h);
+        g.addColorStop(0, rgba(lerpRgb(col.c, [20, 32, 62], 0.22), 1));
+        g.addColorStop(0.35, rgba(col.g, 1));
+        g.addColorStop(0.62, rgba(col.c, 1));
+        g.addColorStop(1, rgba(lerpRgb(col.c, [20, 32, 62], 0.3), 1));
+        x.fillStyle = g;
+        x.fillRect(x0, y0, w, h);
+      }
+      var rnd = prand(hash32("weave"));
+      var hCols = [], vCols = [];
+      for (var i = 0; i < n; i++) { hCols.push(spectrum(rnd())); vCols.push(spectrum(rnd())); }
+      for (var i2 = 0; i2 < n; i2++) strand(0, i2 * bw, core * 2, bw, hCols[i2], false);
+      for (var j = 0; j < n; j++) {
+        for (var i3 = 0; i3 < n; i3++) {
+          if ((i3 + j) % 2 !== 0) continue;
+          x.save();
+          x.beginPath(); x.rect(j * bw, i3 * bw, bw, bw); x.clip();
+          strand(j * bw, 0, bw, core * 2, vCols[j], true);
+          // contact shadow of the strand passing over
+          x.fillStyle = "rgba(20,32,62,0.13)";
+          x.fillRect(j * bw, i3 * bw, bw, bw * 0.16);
+          x.fillRect(j * bw, i3 * bw + bw * 0.84, bw, bw * 0.16);
+          x.restore();
+        }
+      }
+    });
+  }
+  function innerWeave(ctx, cx, cy, core, t, st) {
+    if (!st.layer) st.layer = weaveLayer(core);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.translate(cx, cy); ctx.rotate(-0.22);
+    ctx.drawImage(st.layer, -core * 1.15, -core * 1.15, core * 2.3, core * 2.3);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    var d = ctx.createRadialGradient(cx - core * 0.28, cy - core * 0.32, core * 0.05, cx, cy, core * 1.02);
+    d.addColorStop(0, "rgba(255,255,255,0.4)");
+    d.addColorStop(0.5, "rgba(255,255,255,0.02)");
+    d.addColorStop(1, "rgba(18,30,58,0.24)");
+    ctx.fillStyle = d; ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.08, 0.42);
+  }
+
+  // =======================================================================
+  //  PART 2 interiors: the fund living beside single company colors
+  // =======================================================================
+
+  // ported from OrbScene fillWaves: proportional sectors with rippling borders
+  function sectorPath(ctx, cx, cy, core, comp, i, t, turb) {
+    var n = comp.length;
+    var start = -Math.PI / 2 + t * 0.05 * turb;
+    var bounds = [], cum = 0, s;
+    for (var k = 0; k < n; k++) { bounds.push(start + cum * TAU); cum += comp[k].frac; }
+    bounds.push(start + TAU);
+    var amp = 0.21 * Math.min(2.2, turb);
+    function wv(rho, k) {
+      var u = rho / core, kk = k % n;
+      return (Math.sin(u * 3.1 + t * (0.6 + 0.12 * kk) * turb + kk * 2.4) * amp
+        + Math.sin(u * 6.7 + t * (0.9 + 0.07 * kk) * turb + kk * 1.3) * amp * 0.45) * u;
+    }
+    var a0 = bounds[i], a1 = bounds[i + 1], STEPS = 18, RIM = 16;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    for (var p = 1; p <= STEPS; p++) {
+      var rho = (core * p) / STEPS, ang = a0 + wv(rho, i);
+      ctx.lineTo(cx + Math.cos(ang) * rho, cy + Math.sin(ang) * rho);
+    }
+    var e0 = a0 + wv(core, i), e1 = a1 + wv(core, i + 1);
+    for (var q = 1; q <= RIM; q++) {
+      var ang2 = e0 + ((e1 - e0) * q) / RIM;
+      ctx.lineTo(cx + Math.cos(ang2) * core, cy + Math.sin(ang2) * core);
+    }
+    for (var r = STEPS - 1; r >= 1; r--) {
+      var rho2 = (core * r) / STEPS, ang3 = a1 + wv(rho2, i + 1);
+      ctx.lineTo(cx + Math.cos(ang3) * rho2, cy + Math.sin(ang3) * rho2);
+    }
+    ctx.closePath();
+  }
+
+  function plainSlice(ctx, cx, cy, core, slice) {
+    var g = ctx.createRadialGradient(cx, cy, core * 0.1, cx, cy, core);
+    g.addColorStop(0, rgba(lerpRgb(slice.col.c, slice.col.g, 0.35), 1));
+    g.addColorStop(1, rgba(slice.col.c, 1));
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+
+  // shared base: draw every slice, hand the fund slice to a painter
+  function drawMix(ctx, cx, cy, core, comp, t, fundPainter) {
+    ctx.fillStyle = "rgba(238,244,251,0.6)";
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    for (var i = 0; i < comp.length; i++) {
+      var slice = comp[i];
+      if (slice.fund && fundPainter) {
+        ctx.save();
+        sectorPath(ctx, cx, cy, core, comp, i, t, 1);
+        ctx.clip();
+        fundPainter(ctx, cx, cy, core, t);
+        ctx.restore();
+        // an immiscible skin so the fund never bleeds into its neighbors
+        ctx.save();
+        sectorPath(ctx, cx, cy, core, comp, i, t, 1);
+        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.lineWidth = Math.max(1.4, core * 0.018);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.filter = "blur(" + Math.max(4, core * 0.09) + "px)";
+        ctx.globalAlpha = 0.9;
+        sectorPath(ctx, cx, cy, core, comp, i, t, 1);
+        plainSlice(ctx, cx, cy, core, slice);
+        ctx.restore();
+      }
+    }
+  }
+
+  function mixComp() {
+    return [
+      { col: NOVA, frac: 0.45 },
+      { col: null, frac: 0.35, fund: true },
+      { col: BITRIX, frac: 0.20 }
+    ];
+  }
+
+  // A. Opal slice
+  function innerFundOpal(ctx, cx, cy, core, t, st) {
+    drawMix(ctx, cx, cy, core, mixComp(), t, function (c, x, y, r) {
+      opalPaint(c, x, y, r, t, 0.85);
+    });
+    sweep(ctx, cx, cy, core, t, 0.08, 0.3);
+  }
+
+  // B. Confetti suspension
+  function confettiLayer(core) {
+    return prerender(core * 2, function (x) {
+      var cx = core, cy = core, rnd = prand(hash32("confetti"));
+      for (var i = 0; i < 760; i++) {
+        var a = rnd() * TAU, rad = core * Math.sqrt(rnd()) * 0.99;
+        var px = cx + Math.cos(a) * rad, py = cy + Math.sin(a) * rad;
+        var col = spectrum(rnd());
+        var s = core * (0.016 + 0.014 * rnd());
+        x.save();
+        x.translate(px, py); x.rotate(rnd() * TAU);
+        x.fillStyle = rgba(col.c, 0.92);
+        x.fillRect(-s, -s * 0.42, s * 2, s * 0.84);
+        x.fillStyle = rgba(col.g, 0.8);
+        x.fillRect(-s, -s * 0.42, s * 2, s * 0.3);
+        x.restore();
+      }
+    });
+  }
+  function innerFundConfetti(ctx, cx, cy, core, t, st) {
+    if (!st.layer) st.layer = confettiLayer(core);
+    drawMix(ctx, cx, cy, core, mixComp(), t, function (c, x, y, r) {
+      c.fillStyle = "rgba(230,240,250,0.95)";
+      c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+      blitDisk(c, st.layer, x, y, r, t * 0.05);
+      blitDisk(c, st.layer, x, y, r * 0.7, -t * 0.08);
+    });
+    sweep(ctx, cx, cy, core, t, 0.08, 0.3);
+  }
+
+  // C. Sealed mini orb floating inside
+  function innerFundMini(ctx, cx, cy, core, t, st) {
+    var comp = [{ col: NOVA, frac: 0.45 / 0.65 }, { col: BITRIX, frac: 0.20 / 0.65 }];
+    drawMix(ctx, cx, cy, core, comp, t, null);
+    var mr = core * Math.sqrt(0.35);
+    var mx = cx + Math.sin(t * 0.35) * core * 0.05;
+    var my = cy - core * 0.04 + Math.sin(t * 0.5 + 1) * core * 0.04;
+    // shadow the little orb casts through the liquid
+    ctx.save();
+    ctx.filter = "blur(" + mr * 0.2 + "px)";
+    ctx.fillStyle = "rgba(20,32,62,0.16)";
+    ctx.beginPath(); ctx.ellipse(mx + mr * 0.1, my + mr * 0.22, mr * 0.95, mr * 0.85, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, TAU); ctx.clip();
+    innerGrains(ctx, mx, my, mr * 0.97, t, st);
+    var sh = ctx.createRadialGradient(mx - mr * 0.3, my - mr * 0.35, mr * 0.05, mx, my, mr);
+    sh.addColorStop(0, "rgba(255,255,255,0.5)");
+    sh.addColorStop(0.5, "rgba(255,255,255,0.05)");
+    sh.addColorStop(1, "rgba(18,30,58,0.2)");
+    ctx.fillStyle = sh; ctx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+    ctx.restore();
+    // frosted seal on the little one, same language as the big sealed orb
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = Math.max(1.4, mr * 0.05);
+    ctx.beginPath(); ctx.arc(mx, my, mr * 0.97, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = "rgba(20,32,62,0.14)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, TAU); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.beginPath(); ctx.ellipse(mx - mr * 0.34, my - mr * 0.42, mr * 0.16, mr * 0.1, -0.6, 0, TAU); ctx.fill();
+    for (var i = 0; i < 8; i++) {
+      var a = -Math.PI / 2 + i * TAU / 8;
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.beginPath(); ctx.arc(mx + Math.cos(a) * mr * 0.97, my + Math.sin(a) * mr * 0.97, Math.max(1, mr * 0.035), 0, TAU); ctx.fill();
+    }
+    sweep(ctx, cx, cy, core, t, 0.08, 0.3);
+  }
+
+  // D. Rainbow band that refuses to blend
+  function bandHalfWidth(core, frac) {
+    var lo = 0, hi = 1;
+    for (var i = 0; i < 30; i++) {
+      var k = (lo + hi) / 2;
+      var area = (2 / Math.PI) * (Math.asin(k) + k * Math.sqrt(Math.max(0, 1 - k * k)));
+      if (area < frac) lo = k; else hi = k;
+    }
+    return core * (lo + hi) / 2;
+  }
+  function innerFundBand(ctx, cx, cy, core, t) {
+    ctx.fillStyle = "rgba(238,244,251,0.6)";
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    var hw = bandHalfWidth(core, 0.35);
+    var tilt = 0.12 * Math.sin(t * 0.3);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(tilt); ctx.translate(-cx, -cy);
+    function side(x0, x1, col) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0, cy - core * 2, x1 - x0, core * 4); ctx.clip();
+      ctx.filter = "blur(" + core * 0.08 + "px)";
+      var g = ctx.createRadialGradient(cx, cy, core * 0.1, cx, cy, core * 1.2);
+      g.addColorStop(0, rgba(lerpRgb(col.c, col.g, 0.4), 0.95));
+      g.addColorStop(1, rgba(col.c, 0.95));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, core * 1.4, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    side(cx - core * 2, cx - hw, NOVA);
+    side(cx + hw, cx + core * 2, BITRIX);
+    // the band itself: stripes of every color, no gradient into the neighbors
+    ctx.save();
+    var span = core * 2.4, top = cy - span / 2;
+    ctx.beginPath(); ctx.rect(cx - hw, top, hw * 2, span); ctx.clip();
+    var n = 14, h = span / n;
+    for (var i = 0; i <= n; i++) {
+      var col = spectrum(i / n + t * 0.02);
+      var y0 = top + i * h + ((t * 12) % h);
+      var g2 = ctx.createLinearGradient(0, y0 - h, 0, y0);
+      g2.addColorStop(0, rgba(lerpRgb(col.c, col.g, 0.45), 1));
+      g2.addColorStop(0.55, rgba(col.c, 1));
+      g2.addColorStop(1, rgba(lerpRgb(col.c, [20, 32, 62], 0.1), 1));
+      ctx.fillStyle = g2;
+      ctx.fillRect(cx - hw, y0 - h, hw * 2, h + 1);
+    }
+    // vertical shaping so the band reads as a curved sheet inside glass
+    var sh = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0);
+    sh.addColorStop(0, "rgba(18,30,58,0.18)");
+    sh.addColorStop(0.32, "rgba(255,255,255,0.20)");
+    sh.addColorStop(1, "rgba(18,30,58,0.18)");
+    ctx.fillStyle = sh;
+    ctx.fillRect(cx - hw, top, hw * 2, span);
+    ctx.restore();
+    // immiscible skin plus beads that refuse to mix
+    [-1, 1].forEach(function (s) {
+      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.lineWidth = Math.max(1.5, core * 0.02);
+      ctx.beginPath(); ctx.moveTo(cx + s * hw, cy - core * 1.4); ctx.lineTo(cx + s * hw, cy + core * 1.4); ctx.stroke();
+      for (var b = 0; b < 7; b++) {
+        var yy = cy - core * 0.85 + b * core * 0.28 + Math.sin(t * 0.8 + b + s) * core * 0.04;
+        var rr = core * (0.018 + 0.012 * ((b % 3) / 2));
+        var cc = spectrum(b / 7 + 0.2);
+        ctx.fillStyle = rgba(cc.g, 0.9);
+        ctx.beginPath(); ctx.arc(cx + s * (hw + rr * 1.7), yy, rr, 0, TAU); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.08, 0.3);
+  }
+
+  // =======================================================================
+  //  Glass shell, ported from OrbScene.drawOrb
+  // =======================================================================
+  function drawGlassOrb(ctx, cx, groundY, r, opts) {
+    var cy = groundY - r;
+    var dom = opts.dom || [180, 200, 230];
+    var t = opts.t, resist = opts.resist || 0;
+
+    var sh = ctx.createRadialGradient(cx, groundY + r * 0.05, 0, cx, groundY + r * 0.05, r * 0.95);
+    sh.addColorStop(0, "rgba(24, 34, 60, 0.22)");
+    sh.addColorStop(1, "rgba(24, 34, 60, 0)");
+    ctx.fillStyle = sh;
+    ctx.beginPath(); ctx.ellipse(cx, groundY + r * 0.05, r * 0.95, r * 0.17, 0, 0, TAU); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, groundY + r * 0.05, r * 0.62, r * 0.09, 0, 0, TAU); ctx.clip();
+    var caust = ctx.createRadialGradient(cx, groundY + r * 0.05, 0, cx, groundY + r * 0.05, r * 0.62);
+    caust.addColorStop(0, "rgba(255,255,255,0.5)");
+    caust.addColorStop(0.45, rgba(dom, 0.18));
+    caust.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = caust;
+    ctx.fillRect(cx - r, groundY - r * 0.1, r * 2, r * 0.3);
+    ctx.restore();
+
+    ctx.save();
+    // refusal shake
+    if (resist > 0.01) {
+      ctx.translate(cx, groundY);
+      var w = resist * 0.03 * Math.sin(t * 34);
+      ctx.rotate(Math.sin(t * 30) * resist * 0.02);
+      ctx.scale(1 + w, 1 - w);
+      ctx.translate(-cx, -groundY);
+    }
+
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+
+    var base = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r * 1.05);
+    base.addColorStop(0, "rgba(255,255,255,0.55)");
+    base.addColorStop(0.55, "rgba(238,243,250,0.35)");
+    base.addColorStop(1, "rgba(214,224,238,0.5)");
+    ctx.fillStyle = base;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    var core = r * 0.84;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    opts.inner(ctx, cx, cy, core, t, opts.st);
+    var sheen = ctx.createRadialGradient(cx - core * 0.35, cy - core * 0.45, 0, cx - core * 0.35, cy - core * 0.45, core * 0.95);
+    sheen.addColorStop(0, "rgba(255,255,255,0.30)");
+    sheen.addColorStop(0.45, "rgba(255,255,255,0.08)");
+    sheen.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = sheen;
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    var shell = ctx.createRadialGradient(cx, cy, r * 0.7, cx, cy, r * 0.96);
+    shell.addColorStop(0, "rgba(255,255,255,0)");
+    shell.addColorStop(0.55, "rgba(255,255,255,0.22)");
+    shell.addColorStop(1, "rgba(255,255,255,0.04)");
+    ctx.fillStyle = shell;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+
+    var bg = ctx.createRadialGradient(cx, cy + r * 0.6, 0, cx, cy + r * 0.6, r * 0.55);
+    bg.addColorStop(0, rgba(dom, 0.22));
+    bg.addColorStop(1, rgba(dom, 0));
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.6, r * 0.55, r * 0.28, 0, 0, TAU); ctx.fill();
+
+    var rim = ctx.createRadialGradient(cx, cy - r * 0.08, r * 0.55, cx, cy, r);
+    rim.addColorStop(0, "rgba(18,30,58,0)");
+    rim.addColorStop(0.82, "rgba(18,30,58,0.05)");
+    rim.addColorStop(0.97, "rgba(18,30,58,0.17)");
+    rim.addColorStop(1, "rgba(18,30,58,0.08)");
+    ctx.fillStyle = rim;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(20, 32, 62, 0.085)";
+    ctx.lineWidth = r * 0.05;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.93, Math.PI * 0.3, Math.PI * 0.7); ctx.stroke();
+    ctx.restore();
+
+    var fl = ctx.createRadialGradient(cx, cy + r * 0.95, 0, cx, cy + r * 0.95, r * 0.75);
+    fl.addColorStop(0, "rgba(255,255,255,0.4)");
+    fl.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = fl;
+    ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.93, r * 0.75, r * 0.2, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    // speculars
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+    var spec = ctx.createRadialGradient(cx - r * 0.38, cy - r * 0.48, 0, cx - r * 0.38, cy - r * 0.48, r * 0.55);
+    spec.addColorStop(0, "rgba(255,255,255,0.6)");
+    spec.addColorStop(0.5, "rgba(255,255,255,0.12)");
+    spec.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = spec;
+    ctx.save();
+    ctx.translate(cx - r * 0.38, cy - r * 0.48); ctx.rotate(-0.5); ctx.scale(1, 0.62);
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.beginPath(); ctx.ellipse(cx - r * 0.18, cy - r * 0.66, r * 0.075, r * 0.045, -0.5, 0, TAU); ctx.fill();
+    ctx.save();
+    ctx.translate(cx + r * 0.42, cy + r * 0.38); ctx.rotate(0.6);
+    var bounce = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.34);
+    bounce.addColorStop(0, "rgba(255,255,255,0.20)");
+    bounce.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = bounce; ctx.scale(1, 0.55);
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.34, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.lineWidth = Math.max(1.5, r * 0.02);
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.985, 0, TAU); ctx.stroke();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = Math.max(1.4, r * 0.018);
+    ctx.beginPath(); ctx.arc(cx, cy, r - ctx.lineWidth, Math.PI * 1.05, Math.PI * 1.6); ctx.stroke();
+
+    if (opts.sealed) {
+      var frost = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r);
+      frost.addColorStop(0, "rgba(255,255,255,0.03)");
+      frost.addColorStop(0.85, "rgba(255,255,255,0.10)");
+      frost.addColorStop(1, "rgba(255,255,255,0.24)");
+      ctx.fillStyle = frost;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      ctx.lineWidth = Math.max(1.2, r * 0.014);
+      ctx.beginPath(); ctx.arc(cx, cy, r * 0.955, 0, TAU); ctx.stroke();
+      sealRing(ctx, cx, cy, r, t, resist);
+    }
+
+    ctx.strokeStyle = "rgba(30,45,80,0.12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, r + 0.5, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+
+  // the seal affordance: a welded band, rivets, and a refusal
+  function sealRing(ctx, cx, cy, r, t, resist) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = Math.max(1, r * 0.012);
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.9, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = "rgba(20,32,62,0.07)";
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.882, 0, TAU); ctx.stroke();
+    for (var i = 0; i < 12; i++) {
+      var a = -Math.PI / 2 + i * TAU / 12;
+      var px = cx + Math.cos(a) * r * 0.9, py = cy + Math.sin(a) * r * 0.9;
+      ctx.fillStyle = "rgba(255,255,255," + (0.6 + 0.35 * resist) + ")";
+      ctx.beginPath(); ctx.arc(px, py, Math.max(1.1, r * 0.014), 0, TAU); ctx.fill();
+      ctx.strokeStyle = "rgba(20,32,62,0.12)"; ctx.lineWidth = 0.7; ctx.stroke();
+    }
+    if (resist > 0.01) {
+      var k = 1 - resist;
+      ctx.strokeStyle = "rgba(255,255,255," + 0.65 * resist + ")";
+      ctx.lineWidth = Math.max(1.5, r * 0.02);
+      ctx.beginPath(); ctx.arc(cx, cy, r * (1 + k * 0.28), 0, TAU); ctx.stroke();
+      // padlock glyph fades in while it refuses
+      var ly = cy + r * 0.62, s = r * 0.13, al = 0.9 * resist;
+      var halo = ctx.createRadialGradient(cx, ly - s * 0.2, 0, cx, ly - s * 0.2, s * 2.4);
+      halo.addColorStop(0, "rgba(255,255,255," + 0.8 * resist + ")");
+      halo.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(cx, ly - s * 0.2, s * 2.4, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "rgba(29,29,31," + al * 0.55 + ")";
+      ctx.lineWidth = Math.max(1.4, s * 0.26);
+      ctx.beginPath(); ctx.arc(cx, ly - s * 0.55, s * 0.42, Math.PI, TAU); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255," + al + ")";
+      roundRect(ctx, cx - s * 0.62, ly - s * 0.5, s * 1.24, s * 1.05, s * 0.28);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(29,29,31," + al * 0.4 + ")";
+      ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // =======================================================================
+  //  cards
+  // =======================================================================
+  var live = [];
+
+  function makeCard(host, spec, W, H, R, GYF) {
+    var card = document.createElement("div");
+    card.className = "card";
+    var stage = document.createElement("div");
+    stage.className = "stage";
+    var cv = document.createElement("canvas");
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    stage.appendChild(cv);
+    card.appendChild(stage);
+
+    var name = document.createElement("div");
+    name.className = "cname"; name.textContent = spec.name;
+    var note = document.createElement("div");
+    note.className = "cnote"; note.textContent = spec.note;
+    card.appendChild(name); card.appendChild(note);
+
+    if (spec.legend) {
+      var lg = document.createElement("div");
+      lg.className = "legend";
+      lg.innerHTML =
+        '<span><i class="dot" style="background:#0a84ff"></i>Nova 45%</span>' +
+        '<span><i class="dot rain"></i>Index fund 35%</span>' +
+        '<span><i class="dot" style="background:#bf5af2"></i>Bitrix 20%</span>';
+      card.appendChild(lg);
+    }
+
+    var tags = document.createElement("div");
+    tags.className = "tags";
+    (spec.tags || []).forEach(function (tg, i) {
+      var el = document.createElement("span");
+      el.className = "tag" + (i === 0 ? " eff" : "");
+      el.textContent = tg;
+      tags.appendChild(el);
+    });
+    card.appendChild(tags);
+    host.appendChild(card);
+
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr;
+    var ctx = cv.getContext("2d");
+    var st = { resist: 0 };
+    stage.addEventListener("click", function () { st.resist = 1; });
+
+    live.push({
+      st: st,
+      render: function (t, dt) {
+        st.resist = Math.max(0, st.resist - dt * 0.62);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        drawGlassOrb(ctx, W / 2, H * GYF, R, {
+          inner: spec.inner, sealed: spec.sealed !== false, dom: spec.dom || [200, 210, 230],
+          t: t, st: st, resist: st.resist
+        });
+      }
+    });
+  }
+
+  var PART1 = [
+    {
+      name: "Grain field",
+      inner: innerGrains,
+      dom: [190, 205, 235],
+      note: "Hundreds of colored grains hang in clear liquid: the count itself is the lesson, and no single grain is big enough to matter. It costs a little legibility at small sizes, where the grains blur toward gray, so the orb needs to stay above roughly 60px radius. Effort is low, one prerendered disk plus a slow rotation, no per-frame particle math.",
+      tags: ["Effort: low", "Reads as: hundreds", "Risk: grays out when small"]
+    },
+    {
+      name: "Mosaic tiles",
+      inner: innerMosaic,
+      dom: [200, 205, 225],
+      note: "About 180 hex tiles, one company each, grouted into a single pane so the whole surface is visibly built from parts. It is the clearest countable answer to how many, and it holds up at small sizes better than grains. Effort is low to medium: a static prerendered tile pass, plus dome shading so it curves instead of reading as a flat decal.",
+      tags: ["Effort: low to medium", "Reads as: countable parts", "Risk: can look craft-y"]
+    },
+    {
+      name: "Marbled swirl",
+      inner: innerMarble,
+      dom: [210, 200, 230],
+      note: "Every color stirred into one body, warped rings that never resolve into wedges, so the eye cannot find a boundary to pull apart. It is the most beautiful of the six and the most on-message about inseparability, but it says stirred more than it says hundreds. Effort is medium, 26 conic-gradient strokes per frame, the only variant with a real per-frame cost.",
+      tags: ["Effort: medium", "Reads as: inseparable", "Risk: count is implied, not shown"]
+    },
+    {
+      name: "A thousand marbles",
+      inner: innerMicro,
+      dom: [195, 205, 230],
+      note: "Two hundred tiny orbs packed inside the big orb, each with its own highlight, so the game's own visual grammar recurses: one orb equals one holding. A 12-year-old gets the joke instantly, and it makes buying the index feel like buying the whole shelf. Effort is low, prerendered once and rotated, though the packing looks slightly regular up close.",
+      tags: ["Effort: low", "Reads as: one of everything", "Risk: visible spiral packing"]
+    },
+    {
+      name: "Opal",
+      inner: innerOpal,
+      dom: [215, 210, 235],
+      note: "One smooth iridescent substance whose color changes with the light, no parts at all. It is the most premium and the best match for the Apple side of the brief, and it pairs beautifully as an inside-the-orb treatment. It teaches inseparable but not hundreds, so on its own it undersells the basket.",
+      tags: ["Effort: medium", "Reads as: one shifting whole", "Risk: no sense of count"]
+    },
+    {
+      name: "Woven",
+      inner: innerWeave,
+      dom: [200, 200, 225],
+      note: "Strands of every color woven over and under, the one representation a kid can name without help: you cannot pull one thread out. It is the strongest seal metaphor of the six, but the weave is a flat textile idea living inside a very glassy game. Effort is low, one prerendered layer, and the read holds down to small sizes.",
+      tags: ["Effort: low", "Reads as: cannot unpick", "Risk: off-register with the glass look"]
+    }
+  ];
+
+  var PART2 = [
+    {
+      name: "Opal slice",
+      inner: innerFundOpal, legend: true, sealed: false, dom: [140, 170, 230],
+      note: "The fund's share keeps the same wavy sector shape as Nova and Bitrix but is filled with shifting iridescence instead of one color, so it reads as the not-one-color slice. Neighbor colors stay perfectly legible and the exact percentages still work in the side panel. Effort is medium: one extra painter inside fillWaves, no new geometry.",
+      tags: ["Effort: medium", "Best legibility", "Risk: pretty, but vague about hundreds"]
+    },
+    {
+      name: "Confetti suspension",
+      inner: innerFundConfetti, legend: true, sealed: false, dom: [140, 170, 230],
+      note: "Inside its slice the fund is clear liquid full of hundreds of tiny colored flecks, next to Nova's single solid blue. The contrast does the teaching in one glance: one color versus everything, in the same orb. Effort is medium, a prerendered fleck disk clipped to the sector, though the flecks lose the plot below about 80px radius.",
+      tags: ["Effort: medium", "Teaches the contrast", "Risk: needs size to read"]
+    },
+    {
+      name: "Sealed marble inside",
+      inner: innerFundMini, legend: true, sealed: false, dom: [140, 170, 230],
+      note: "The fund is a whole sealed orb floating in the player's liquid, sized so its area is its true share of value. It recurses the game's core object, makes the sealed rule visible in the player's own hands, and survives any number of neighbor colors without turning into a pie. Effort is medium to high: a second glass pass, plus collision and buoyancy rules if the player holds two funds.",
+      tags: ["Effort: medium to high", "Strongest metaphor", "Risk: second glass pass to maintain"]
+    },
+    {
+      name: "Band that refuses",
+      inner: innerFundBand, legend: true, sealed: false, dom: [140, 170, 230],
+      note: "The fund becomes a rainbow-striped sheet cutting straight across the orb with a hard white skin, and beads of color bounce off it rather than mixing. The refusal to blend is unmissable and the area is still exactly its share of value. Effort is medium, but it breaks the wavy-sector system, so a portfolio with several funds needs a different layout rule.",
+      tags: ["Effort: medium", "Most explicit refusal", "Risk: does not generalize to many funds"]
+    }
+  ];
+
+  var host1 = document.getElementById("part1");
+  PART1.forEach(function (s) { makeCard(host1, s, 340, 300, 111, 0.85); });
+  var host2 = document.getElementById("part2");
+  PART2.forEach(function (s) { makeCard(host2, s, 420, 340, 124, 0.88); });
+
+  document.getElementById("tryOpen").addEventListener("click", function () {
+    live.slice(0, PART1.length).forEach(function (l, i) {
+      setTimeout(function () { l.st.resist = 1; }, i * 70);
+    });
+  });
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    var t = now / 1000;
+    for (var i = 0; i < live.length; i++) live[i].render(t, dt);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__orbLabReady = true;
+})();
+</script>
+</body>
+</html>

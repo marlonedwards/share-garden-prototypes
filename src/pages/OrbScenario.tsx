@@ -7,6 +7,8 @@ import { CompSlice, roundPcts, valueToRadius } from "../lib/orbModel";
 import { downloadOrbCard } from "../lib/orbCard";
 import { getOrbName } from "../lib/orbIdentity";
 import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
+import { buildCheck } from "../lib/checkpoints";
+import QuickCheck from "../components/QuickCheck";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
 import {
   Actions, Btn, Caption, Card, DeltaChip, Dot, FluidCycler, GhostBtn, GrowthChart,
@@ -105,8 +107,9 @@ export default function OrbScenario() {
   const orbName = getOrbName();
   const name = (ea: { name: string; real?: string }) => (realNames && ea.real) || ea.name;
   const [activeGate, setActiveGate] = useState<Gate | null>(null);
-  const [gateAnswers, setGateAnswers] = useState<{ title: string; choice: string }[]>([]);
+  const [gateAnswers, setGateAnswers] = useState<{ title: string; choice: string; ms: number }[]>([]);
   const firedGates = useRef<Set<number>>(new Set());
+  const gateShownAt = useRef(0);
   const sceneRef = useRef<OrbSceneHandle>(null);
   const endCardRef = useRef<HTMLDivElement>(null);
   const peakInvested = useRef(0);
@@ -172,6 +175,7 @@ export default function OrbScenario() {
     const g = cfg.gates.find((gg) => m.step >= gg.atStep && !firedGates.current.has(gg.atStep));
     if (g) {
       firedGates.current.add(g.atStep);
+      gateShownAt.current = performance.now();
       setSpeed(0);
       setActiveGate(g);
       setBeat("gate");
@@ -180,7 +184,10 @@ export default function OrbScenario() {
   }, [m.step, beat]);
 
   const answerGate = (choice: string) => {
-    if (activeGate) setGateAnswers((a) => [...a, { title: activeGate.title, choice }]);
+    if (activeGate) {
+      const ms = Math.round(performance.now() - gateShownAt.current);
+      setGateAnswers((a) => [...a, { title: activeGate.title, choice, ms }]);
+    }
     setActiveGate(null);
     setBeat("run");
     setSpeed(1);
@@ -259,6 +266,11 @@ export default function OrbScenario() {
   const ev = m.lastEvent;
   const smart = beat === "end" ? runBullets(m, cfg, name, holdings, invested, net) : [];
   const endBullets = [...smart, ...cfg.bullets.slice(0, Math.max(1, 4 - smart.length))];
+  const checkItems = useMemo(
+    () => (beat === "end" ? buildCheck(m, cfg, name) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [beat]
+  );
 
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
@@ -447,6 +459,7 @@ export default function OrbScenario() {
                   <Btn onClick={saveCard}>Save your orb</Btn>
                   <GhostBtn onClick={restart}>Play again</GhostBtn>
                 </Actions>
+                <QuickCheck scenario={cfg.id} items={checkItems} gateMs={gateAnswers.map((a) => a.ms)} />
               </Card>
             )}
           </div>
