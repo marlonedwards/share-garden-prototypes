@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckItem, saveCheckResult } from "../lib/checkpoints";
+import { markCheck } from "../lib/fieldGuide";
 
 // The beta quick check: one item at a time, immediate explanation, and a
 // results panel the tester can screenshot. Framed as testing the game, not
@@ -48,6 +49,7 @@ export default function QuickCheck({ scenario, items, gateMs, onFocus }: {
     const item = items[idx];
     setChoice(i);
     setAnswers((a) => [...a, { id: item.id, choice: i, correct: i === item.answer }]);
+    if (item.concept) markCheck(item.concept, i === item.answer);
   };
 
   return (

@@ -15,7 +15,9 @@ export interface Gate {
   title: string;
   question: string;
   context: string[];
-  options: string[];
+  // act: choosing this option pauses the tape so the player can actually make
+  // the move they just committed to, instead of watching it resume without them
+  options: { label: string; act?: boolean }[];
   refs?: { label: string; url: string }[];
 }
 
@@ -92,7 +94,7 @@ export const SCENARIOS: ScenarioConfig[] = [
           "Internet stocks have multiplied five times over in five years. Magazines say the old rules are dead. Companies with no profits are worth billions, because everyone believes someone will pay more tomorrow.",
           "Nobody on this screen knows it yet, but within two years hundreds of internet companies will be gone, and the survivors will be down by half or more.",
         ],
-        options: ["All-in on the hottest tech", "Spread across everything", "Wait in cash"],
+        options: [{ label: "All-in on the hottest tech", act: true }, { label: "Spread across everything", act: true }, { label: "Wait in cash" }],
         refs: [{ label: "The dot-com bubble", url: "https://en.wikipedia.org/wiki/Dot-com_bubble" }],
       },
       {
@@ -103,7 +105,7 @@ export const SCENARIOS: ScenarioConfig[] = [
           "The index has been cut nearly in half. The Phone Giant is gone in the biggest bankruptcy in American history. People who bragged about stocks in 2000 now call the market a casino.",
           "Every dollar invested this month buys almost twice the shares it did in 2000. It does not feel that way. It feels like catching a falling knife.",
         ],
-        options: ["Buy while it's cheap", "Hold what I have", "Sell before it gets worse"],
+        options: [{ label: "Buy while it's cheap", act: true }, { label: "Hold what I have" }, { label: "Sell before it gets worse", act: true }],
         refs: [
           { label: "The 2002 downturn", url: "https://en.wikipedia.org/wiki/Stock_market_downturn_of_2002" },
           { label: "The WorldCom scandal", url: "https://en.wikipedia.org/wiki/WorldCom_scandal" },
@@ -160,7 +162,7 @@ export const SCENARIOS: ScenarioConfig[] = [
           "Steady investors call this dollar cost averaging: the same money every month buys more shares when prices fall and fewer when they rise.",
           "The hard part is that the plan feels worst exactly when it is working best.",
         ],
-        options: ["Keep investing every month", "Pause until things calm down"],
+        options: [{ label: "Keep investing every month" }, { label: "Pause until things calm down" }],
         refs: [{ label: "Dollar cost averaging", url: "https://en.wikipedia.org/wiki/Dollar_cost_averaging" }],
       },
       {
@@ -170,7 +172,7 @@ export const SCENARIOS: ScenarioConfig[] = [
         context: [
           "Nobody rings a bell at the bottom. The people who kept buying through 2002 bought their cheapest shares of the decade this month, and none of them knew it at the time.",
         ],
-        options: ["Stick to the plan", "Skip this month"],
+        options: [{ label: "Stick to the plan" }, { label: "Skip this month" }],
         refs: [{ label: "Dollar cost averaging", url: "https://en.wikipedia.org/wiki/Dollar_cost_averaging" }],
       },
     ],
@@ -231,7 +233,7 @@ export const SCENARIOS: ScenarioConfig[] = [
           "The Old Bank survived the Civil War, two world wars, and the Great Depression. This weekend it ran out of money and nobody saved it. It is the largest bankruptcy in American history.",
           "Banks will not lend to each other. The evening news says the word crisis every night. Nobody knows which giant falls next.",
         ],
-        options: ["Sell everything", "Hold and ride it out", "Buy while everyone is scared"],
+        options: [{ label: "Sell everything", act: true }, { label: "Hold and ride it out" }, { label: "Buy while everyone is scared", act: true }],
         refs: [{ label: "The Lehman bankruptcy", url: "https://en.wikipedia.org/wiki/Bankruptcy_of_Lehman_Brothers" }],
       },
       {
@@ -241,7 +243,7 @@ export const SCENARIOS: ScenarioConfig[] = [
         context: [
           "The index has fallen by more than half from its 2007 record. Magazines ask whether capitalism is finished. This month turns out to be the exact bottom, and nobody calls it at the time.",
         ],
-        options: ["Buy", "Hold", "Stay out"],
+        options: [{ label: "Buy", act: true }, { label: "Hold" }, { label: "Stay out" }],
         refs: [{ label: "The 2008 financial crisis", url: "https://en.wikipedia.org/wiki/2007%E2%80%932008_financial_crisis" }],
       },
     ],
@@ -298,7 +300,7 @@ export const SCENARIOS: ScenarioConfig[] = [
           "Coin Alpha has multiplied thirty times over in three years. Stadiums are being renamed after coin companies. People post screenshots of life-changing profits every day.",
           "The rule of every mania so far: the louder the party, the closer the exit.",
         ],
-        options: ["Buy more coins", "Take some profits", "Change nothing"],
+        options: [{ label: "Buy more coins", act: true }, { label: "Take some profits", act: true }, { label: "Change nothing" }],
         refs: [{ label: "The 2021 crypto bubble", url: "https://en.wikipedia.org/wiki/Cryptocurrency_bubble" }],
       },
       {
@@ -309,7 +311,7 @@ export const SCENARIOS: ScenarioConfig[] = [
           "A giant coin exchange just collapsed with its customers' money inside. This is the second 75 percent winter in five years. The boring stock index is down about a fifth.",
           "Position size is the difference between an investor who can wait and one who has to sell.",
         ],
-        options: ["Sell what's left", "Hold", "Buy the winter"],
+        options: [{ label: "Sell what's left", act: true }, { label: "Hold" }, { label: "Buy the winter", act: true }],
         refs: [{ label: "The FTX collapse", url: "https://en.wikipedia.org/wiki/Bankruptcy_of_FTX" }],
       },
     ],

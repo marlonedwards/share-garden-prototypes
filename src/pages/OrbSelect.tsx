@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { SCENARIOS as ERAS } from "../lib/scenarios";
 import { useOrbName } from "../lib/orbIdentity";
+import { FIELD_ENTRIES, guideState, marbleState } from "../lib/fieldGuide";
 
 // Scenario select for the Orb. Each scenario is one lesson; the plain-language
 // objective is right on the card. Standards mapping lives in the one-pager.
@@ -37,6 +38,8 @@ const SCENARIOS = [
 
 export default function OrbSelect() {
   const [orbName, setOrbName] = useOrbName();
+  const gs = guideState();
+  const proved = FIELD_ENTRIES.filter((e) => marbleState(e.id, gs) === "cleared").length;
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
       <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
@@ -77,6 +80,10 @@ export default function OrbSelect() {
               selling empties it. Its name stays on this computer and goes nowhere else.
             </p>
           </div>
+          <Link to="/orb/guide" className="flex-shrink-0 text-right group">
+            <div className="text-[13px] font-medium" style={{ color: "#0071e3" }}>Field guide</div>
+            <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{proved} of {FIELD_ENTRIES.length} marbles</div>
+          </Link>
         </div>
 
         <div className="mt-8 flex flex-col gap-4">

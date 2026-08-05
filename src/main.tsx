@@ -10,6 +10,7 @@ import GardenGame from "./pages/GardenGame";
 import OrbGame from "./pages/OrbGame";
 import OrbScenario from "./pages/OrbScenario";
 import OrbFree from "./pages/OrbFree";
+import FieldGuidePage from "./pages/FieldGuidePage";
 import OnePager from "./pages/OnePager";
 import OrbSelect from "./pages/OrbSelect";
 import Archive from "./pages/Archive";
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/era" element={<ScenarioRoute />} />
         <Route path="/orb/s/:id" element={<ScenarioRoute />} />
         <Route path="/orb/free" element={<OrbFree />} />
+        <Route path="/orb/guide" element={<FieldGuidePage />} />
         <Route path="/objectives" element={<OnePager />} />
         <Route path="/archive" element={<Archive />} />
       </Routes>

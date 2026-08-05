@@ -145,9 +145,10 @@ const MARKER_STYLE: Record<ChartMarker["kind"], { fill: string; shape: "up" | "d
   event: { fill: "#a1a1a6", shape: "dot" },
 };
 
-export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels, benchStroke = "url(#rb)", markers, cursorStep, onScrub }:
+export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels, benchStroke = "url(#rb)", markers, cursorStep, onScrub, onLock, locked, tipFor }:
   { net: number[]; bench: number[]; width?: number; height?: number; benchLabel?: string; xLabels?: string[]; benchStroke?: string;
-    markers?: ChartMarker[]; cursorStep?: number | null; onScrub?: (step: number | null) => void }) {
+    markers?: ChartMarker[]; cursorStep?: number | null; onScrub?: (step: number | null) => void;
+    onLock?: (step: number) => void; locked?: boolean; tipFor?: (step: number) => string }) {
   if (net.length < 2) return null;
   const all = [...net, ...bench];
   const min = Math.min(...all), max = Math.max(...all);
@@ -178,8 +179,7 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
   const stepToX = (s: number) => (s / lastStep) * (width - 4) + 2;
   const xToStep = (x: number) => Math.max(0, Math.min(lastStep, Math.round(((x - 2) / (width - 4)) * lastStep)));
   const SNAP_PX = 7;
-  const scrubAt = (clientX: number, el: SVGSVGElement) => {
-    if (!onScrub) return;
+  const snappedStep = (clientX: number, el: SVGSVGElement) => {
     const x = clientX - el.getBoundingClientRect().left;
     let step = xToStep(x);
     if (markers) {
@@ -190,8 +190,12 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
       }
       if (best !== null) step = best;
     }
-    onScrub(step);
+    return step;
   };
+  const scrubAt = (clientX: number, el: SVGSVGElement) => {
+    if (onScrub) onScrub(snappedStep(clientX, el));
+  };
+  const cursorLabels = cursorStep != null && markers ? markers.filter((mk) => mk.step === cursorStep).map((mk) => mk.label) : [];
   const glyph = (mk: ChartMarker, i: number) => {
     const x = stepToX(mk.step), y = height - 5;
     const s = MARKER_STYLE[mk.kind];
@@ -208,11 +212,39 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
     );
   };
   return (
-    <div>
+    <div style={{ position: "relative" }}>
+      {cursorStep != null && tipFor && (
+        <div className="tnum" style={{
+          position: "absolute",
+          left: Math.max(4, Math.min(width - 190, stepToX(cursorStep) + 8)),
+          top: -6,
+          transform: "translateY(-100%)",
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(0,0,0,0.1)",
+          borderRadius: 10,
+          boxShadow: "0 8px 20px -10px rgba(24,34,60,0.35)",
+          padding: "6px 10px",
+          fontSize: 11.5,
+          lineHeight: 1.4,
+          color: "#1d1d1f",
+          pointerEvents: "none",
+          zIndex: 5,
+          maxWidth: 200,
+        }}>
+          <div className="font-semibold">{tipFor(cursorStep)}{locked ? " · pinned" : ""}</div>
+          {cursorLabels.map((l) => (
+            <div key={l} style={{ color: "#6e6e73" }}>{l}</div>
+          ))}
+          {!locked && onLock && cursorLabels.length === 0 && (
+            <div style={{ color: "#a1a1a6" }}>click to pin</div>
+          )}
+        </div>
+      )}
       <svg width={width} height={height} style={{ display: "block", cursor: onScrub ? "col-resize" : undefined, touchAction: "none" }}
         onMouseMove={onScrub ? (e) => scrubAt(e.clientX, e.currentTarget) : undefined}
         onMouseLeave={onScrub ? () => onScrub(null) : undefined}
-        onPointerDown={onScrub ? (e) => scrubAt(e.clientX, e.currentTarget) : undefined}>
+        onClick={onLock ? (e) => onLock(snappedStep(e.clientX, e.currentTarget)) : undefined}
+        onPointerDown={onScrub && !onLock ? (e) => scrubAt(e.clientX, e.currentTarget) : undefined}>
         {cursorStep != null && cursorStep < lastStep && (
           <rect x={stepToX(cursorStep)} y={0} width={width - 2 - stepToX(cursorStep)} height={height}
             fill="rgba(245,245,247,0.72)" pointerEvents="none" />
@@ -222,7 +254,7 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
         {markers && markers.map(glyph)}
         {cursorStep != null && (
           <line x1={stepToX(cursorStep)} y1={2} x2={stepToX(cursorStep)} y2={height - 2}
-            stroke="#0071e3" strokeWidth="1.2" strokeDasharray="3 2.5" pointerEvents="none" />
+            stroke="#0071e3" strokeWidth={locked ? 1.6 : 1.2} strokeDasharray={locked ? undefined : "3 2.5"} pointerEvents="none" />
         )}
         <defs>
           <linearGradient id="rb" x1="0" y1="0" x2="1" y2="0">

@@ -6,6 +6,7 @@ import { useSim } from "../lib/useSim";
 import { CompSlice, roundPcts, valueToRadius } from "../lib/orbModel";
 import { downloadOrbCard } from "../lib/orbCard";
 import { getOrbName } from "../lib/orbIdentity";
+import { unlockEntry } from "../lib/fieldGuide";
 import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
@@ -127,9 +128,12 @@ export default function OrbScenario() {
   const [realNames, setRealNames] = useState(false);
   const orbName = getOrbName();
   const name = (ea: { name: string; real?: string }) => (realNames && ea.real) || ea.name;
+  const [runId, setRunId] = useState(0);
+  const [pausedForMove, setPausedForMove] = useState(false);
   const [hoverStep, setHoverStep] = useState<number | null>(null);
+  const [lockedStep, setLockedStep] = useState<number | null>(null);
   const [quizFocus, setQuizFocus] = useState<number | null>(null);
-  const reviewStep = hoverStep ?? quizFocus;
+  const reviewStep = hoverStep ?? lockedStep ?? quizFocus;
   const [activeGate, setActiveGate] = useState<Gate | null>(null);
   const [gateAnswers, setGateAnswers] = useState<{ title: string; choice: string; ms: number }[]>([]);
   const firedGates = useRef<Set<number>>(new Set());
@@ -193,6 +197,24 @@ export default function OrbScenario() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m.step, beat]);
 
+  // pressing play clears the make-your-move affordance
+  useEffect(() => {
+    if (speed > 0) setPausedForMove(false);
+  }, [speed]);
+
+  // field-guide cards open the first time a concept appears in play
+  useEffect(() => {
+    if (beat === "brief") return;
+    unlockEntry("index-fund");
+    if (inCrash) unlockEntry("crash");
+    if (/mania/i.test(m.lastEvent?.label ?? "")) unlockEntry("bubble");
+    if (holdings.length >= 3) unlockEntry("diversification");
+    if (invested > 0 && holdings.some((h) => h.value / invested > 0.5)) unlockEntry("position-size");
+    if (cfg.assets.some((a) => m.prices[a.id] <= 0)) unlockEntry("survivorship");
+    if (cfg.id === "crypto" && (m.prices["BCC"] ?? 1) <= 0) unlockEntry("ponzi");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [m.step, beat]);
+
   // history gates: pause the tape at a real moment and ask for a commitment
   useEffect(() => {
     if (beat !== "run") return;
@@ -207,14 +229,20 @@ export default function OrbScenario() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m.step, beat]);
 
-  const answerGate = (choice: string) => {
+  const answerGate = (choice: string, act?: boolean) => {
     if (activeGate) {
       const ms = Math.round(performance.now() - gateShownAt.current);
       setGateAnswers((a) => [...a, { title: activeGate.title, choice, ms }]);
+      if (cfg.income) unlockEntry("dca");
     }
     setActiveGate(null);
     setBeat("run");
-    setSpeed(1);
+    if (act) {
+      setSpeed(0);
+      setPausedForMove(true);
+    } else {
+      setSpeed(1);
+    }
   };
 
   useEffect(() => {
@@ -242,6 +270,8 @@ export default function OrbScenario() {
       spend = n * m.prices[assetId];
     }
     act((mm) => { mm.buy(assetId, spend); });
+    unlockEntry("share");
+    unlockEntry("market-price");
     sceneRef.current?.pour({ kind: "buy", color: ea.color, glow: ea.glow });
   };
   const sellFrac = (assetId: string, frac: number) => {
@@ -253,6 +283,7 @@ export default function OrbScenario() {
       else f = Math.max(1, Math.floor(h.shares * frac + 1e-9)) / h.shares;
     }
     act((mm) => { mm.sellFraction(assetId, f); });
+    if (inCrash) unlockEntry("panic-selling");
     sceneRef.current?.pour({ kind: "sell", color: ea.color, glow: ea.glow });
   };
 
@@ -264,7 +295,10 @@ export default function OrbScenario() {
     setActiveGate(null);
     setGateAnswers([]);
     setHoverStep(null);
+    setLockedStep(null);
     setQuizFocus(null);
+    setPausedForMove(false);
+    setRunId((r) => r + 1);
     firedGates.current.clear();
     peakInvested.current = 0;
     crashSeen.current = false;
@@ -354,6 +388,7 @@ export default function OrbScenario() {
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
             style={{ width: STAGE_W, height: STAGE_H, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)" }}>
             <OrbScene
+              key={runId}
               ref={sceneRef}
               width={STAGE_W}
               height={STAGE_H}
@@ -427,6 +462,9 @@ export default function OrbScenario() {
                 <Actions><Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn></Actions>
               </Card>
             )}
+            {beat === "run" && pausedForMove && speed === 0 && (
+              <Caption>Paused for your move. Trade on the right, then press Play when you are ready.</Caption>
+            )}
             {beat === "run" && speed > 0 && m.step < 4 && !cfg.income && (
               <Caption>Pause anytime to trade. The tape runs to the end either way.</Caption>
             )}
@@ -454,7 +492,7 @@ export default function OrbScenario() {
                 )}
                 <Actions>
                   {activeGate.options.map((o) => (
-                    <GhostBtn key={o} onClick={() => answerGate(o)}>{o}</GhostBtn>
+                    <GhostBtn key={o.label} onClick={() => answerGate(o.label, o.act)}>{o.label}</GhostBtn>
                   ))}
                 </Actions>
               </Card>
@@ -508,12 +546,14 @@ export default function OrbScenario() {
                 <div className="mb-1">
                   <GrowthChart net={m.net} bench={m.bench} width={990} height={130}
                     xLabels={[m.monthLabel(0), m.monthLabel(Math.floor(lastStep / 3)), m.monthLabel(Math.floor((2 * lastStep) / 3)), m.monthLabel(lastStep)]}
-                    markers={markers} cursorStep={reviewStep} onScrub={setHoverStep} />
+                    markers={markers} cursorStep={reviewStep} onScrub={setHoverStep}
+                    onLock={(s) => setLockedStep((prev) => (prev === s ? null : s))}
+                    locked={lockedStep !== null && hoverStep === null}
+                    tipFor={(s) => `${m.monthLabel(s)} · you ${fmtMoney(m.net[s] ?? 0)} · index ${fmtMoney(m.bench[s] ?? 0)}`} />
                 </div>
                 <p className="mb-3 t-xs text-[11.5px]" style={{ color: "#6e6e73" }}>
-                  Drag across the chart to rewind the scene above to any month. Triangles are your
-                  trades, diamonds are the crossroads, dots are the era's real moments. It only
-                  looks backward: knowing this chart never tells you the next one.
+                  Drag to rewind the scene above. Click to pin a month. It only looks backward:
+                  knowing this chart never tells you the next one.
                 </p>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
                   {endBullets.map((b, i) => (

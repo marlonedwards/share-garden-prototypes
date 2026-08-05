@@ -14,6 +14,7 @@ export interface CheckItem {
   answer: number;      // index into options
   explain: string;     // shown after answering, right or wrong
   focus?: number;      // step the rewind scrubber snaps to while this item is up
+  concept?: string;    // field-guide marble this item can clear
 }
 
 export interface CheckResult {
@@ -30,6 +31,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "dotcom-recovery",
       focus: 93,
+      concept: "crash",
       prompt: "The index peaked in early 2000, then crashed. How long until it reached a new high?",
       options: ["About one year", "About three years", "About seven years", "It never did"],
       answer: 2,
@@ -38,6 +40,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "dotcom-pricedin",
       focus: 1,
+      concept: "bubble",
       prompt: "Everyone in 2000 agreed the internet would change the world. They were right. So why did internet stocks still crash?",
       options: [
         "The internet actually failed",
@@ -51,6 +54,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "dotcom-survivors",
       focus: 30,
+      concept: "survivorship",
       prompt: "What happened to most of the internet companies that existed in 2000?",
       options: [
         "They recovered within a few years",
@@ -66,6 +70,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "payday-bestbuys",
       focus: 33,
+      concept: "dca",
       prompt: "You invested $50 every month from 2000 to 2007, through a huge crash. Which months bought your best-value shares?",
       options: [
         "The confident months at the start",
@@ -79,6 +84,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "payday-dca",
       focus: 3,
+      concept: "dca",
       prompt: "What is a steady monthly plan actually doing?",
       options: [
         "Guessing the best moment to buy",
@@ -92,6 +98,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "payday-bell",
       focus: 33,
+      concept: "dca",
       prompt: "October 2002 turned out to be the bottom of the market. Who knew that at the time?",
       options: ["Experienced investors", "The people on TV", "Nobody. Bottoms are only visible afterward", "The companies themselves"],
       answer: 2,
@@ -102,6 +109,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "gfc-arc",
       focus: 20,
+      concept: "crash",
       prompt: "In September 2008, a 158-year-old bank vanished overnight. What did the whole index do over the following seven years?",
       options: [
         "Stayed down for decades",
@@ -115,6 +123,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "gfc-safe",
       focus: 26,
+      concept: "diversification",
       prompt: "Mega Bank and The Insurance Giant were among the biggest companies on earth in 2007. What does their collapse say about 'big means safe'?",
       options: [
         "Big usually does mean safe",
@@ -128,6 +137,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "gfc-bottom",
       focus: 26,
+      concept: "panic-selling",
       prompt: "March 2009 was the exact bottom. What did it feel like to people living through it?",
       options: [
         "Obviously a great time to buy",
@@ -143,6 +153,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "crypto-size",
       focus: 58,
+      concept: "position-size",
       prompt: "Coin Alpha fell 75% twice in seven years and still ended higher. What did a holder need to actually survive both winters?",
       options: [
         "Perfect timing on the way out",
@@ -156,6 +167,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "crypto-promise",
       focus: 1,
+      concept: "ponzi",
       prompt: "The Promise Coin guaranteed 1% every day. What was the giveaway?",
       options: [
         "The name was too silly",
@@ -169,6 +181,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       id: "crypto-boring",
       focus: 46,
+      concept: "index-fund",
       prompt: "Over the same seven years, what did the boring stock index do?",
       options: [
         "Also crashed 75% twice",
@@ -216,6 +229,7 @@ function runItems(
     out.push({
       id: "run-panic",
       focus: firstPanicStep,
+      concept: "panic-selling",
       prompt: `During the crash you sold shares for ${fmtMoney(panicSold)}. Held to the end of the era, what would those same shares be worth?`,
       options: opts.map((v) => fmtMoney(v)),
       answer,
@@ -231,6 +245,7 @@ function runItems(
     out.push({
       id: "run-dead",
       focus: deathStep,
+      concept: "survivorship",
       prompt: `You put money into ${deadName}, which went to zero. How much of it comes back if you wait long enough?`,
       options: [
         "None. Zero is forever",
@@ -247,6 +262,7 @@ function runItems(
     const gain = m.benchmark - m.bench[0];
     out.push({
       id: "run-index",
+      concept: "index-fund",
       prompt: `The rainbow orb finished this era at ${fmtMoney(m.benchmark)} without a single trade after day one. What was its whole strategy?`,
       options: [
         "A secret formula",
