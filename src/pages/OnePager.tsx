@@ -61,7 +61,7 @@ const UNITS: Unit[] = [
     ),
     misconceptions: ["a famous hot company is a safe bet"],
     assessment:
-      "The run ends with concentrated versus index side by side. The debrief names survivorship bias and asks the student to account for the companies that are missing from the chart because they did not survive.",
+      "The run ends with concentrated versus index side by side. Two names on the 2000 menu go to zero mid-run, so survivorship bias is felt rather than just named, and the debrief prices the student's own choices against the index.",
     cites: [
       { src: "CEE", code: "Investing 8-5b", gloss: "diversified fund versus individual stocks and bonds" },
       { src: "CEE", code: "Investing 8-6a", gloss: "compare rates of return, order investments by risk" },
@@ -384,9 +384,12 @@ export default function OnePager() {
             <div className="sg-card bg-white rounded-2xl border border-black/8 p-4">
               <div className="t-sm font-semibold mb-1">How outcomes are measured</div>
               <div className="t-xs" style={{ color: SUB }}>
-                Each unit carries a short pre and post check written from the CEE learning outcome
-                verbs. The in-game fail state doubles as the formative assessment, so the teacher
-                sees the misconception fire before the student names it.
+                Each unit ends with a short quick check written from the CEE outcome verbs:
+                history questions plus items built from the student's own run, like pricing the
+                shares they sold in a panic. History gates pause the tape at real moments, record
+                the student's commitment and how long it took, and the debrief quotes it back.
+                The in-game fail state doubles as the formative assessment. Results stay on the
+                device.
               </div>
             </div>
             <div className="sg-card bg-white rounded-2xl border border-black/8 p-4">
@@ -403,6 +406,8 @@ export default function OnePager() {
           <div className="sg-block t-xs pt-1" style={{ color: SUB }}>
             Built on a deterministic simulation engine plus real historical market data, including
             S&P 500 total return and 2000 to 2015 era datasets. Same seed, same run, every time.
+            Era menus include companies that did not survive; those delisted price series, like
+            WorldCom and Lehman Brothers, are reconstructed from the documented record.
             Every number in the games is inspectable, and the curriculum, the engine, and the data
             are in one public repository.
           </div>
