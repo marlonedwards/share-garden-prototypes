@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Orb, field guide and the marble journey</title>
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --ink2: #6e6e73;
+    --ink3: #86868b;
+    --bg: #f5f5f7;
+    --accent: #0071e3;
+    --line: rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 44px 32px 90px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  h1 { font-size: 32px; line-height: 1.08; letter-spacing: -0.022em; font-weight: 600; margin: 0 0 9px; }
+  .sub { font-size: 15.5px; color: var(--ink2); max-width: 780px; line-height: 1.55; margin: 0; }
+  .kicker { font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: 0.01em; margin-bottom: 5px; }
+
+  .secthead { margin: 56px 0 18px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .secthead h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.018em; margin: 6px 0 6px; }
+  .secthead .why { font-size: 14px; color: var(--ink2); max-width: 760px; line-height: 1.55; margin: 0; }
+  .secthead .num { font-size: 12px; font-weight: 600; color: var(--accent); }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.06), 0 2px 6px rgba(20,30,60,0.04);
+  }
+
+  /* ---- field guide ---- */
+  .fg-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+  .fg { padding: 18px 18px 16px; display: flex; flex-direction: column; }
+  .fg .top { display: flex; align-items: flex-start; gap: 13px; }
+  .fg canvas { display: block; flex-shrink: 0; }
+  .fg .name { font-size: 16.5px; font-weight: 600; letter-spacing: -0.012em; margin-top: 5px; }
+  .fg .fam { font-size: 11.5px; color: var(--ink3); margin-top: 2px; }
+  .fg .body { font-size: 13.5px; line-height: 1.55; color: #3a3a3c; margin-top: 12px; flex: 1; }
+  .fg .trig {
+    margin-top: 13px; padding: 9px 11px; border-radius: 12px;
+    background: rgba(0,113,227,0.06); font-size: 12.5px; line-height: 1.45; color: #1d1d1f;
+  }
+  .fg .trig b { color: #0057b8; font-weight: 600; }
+  .fg .more { margin-top: 11px; font-size: 12.5px; }
+  .fg .more a { color: var(--accent); text-decoration: none; }
+  .fg .more a:hover { text-decoration: underline; }
+
+  /* ---- storyboard ---- */
+  .sb-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+  .frame { padding: 0 0 15px; overflow: hidden; }
+  .frame .stage {
+    height: 168px; border-radius: 22px 22px 0 0;
+    background: linear-gradient(180deg, #fbfbfd 0%, #eef1f6 100%);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .frame .fn { font-size: 11.5px; font-weight: 600; color: var(--accent); margin: 12px 16px 0; }
+  .frame .ft { font-size: 15px; font-weight: 600; letter-spacing: -0.012em; margin: 3px 16px 0; }
+  .frame .row { margin: 9px 16px 0; font-size: 12.5px; line-height: 1.5; }
+  .frame .row .lb { color: var(--ink3); font-weight: 600; }
+  .frame .row.does { color: #1d1d1f; }
+  .frame .row.shows { color: var(--ink2); }
+
+  .ml-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 16px; }
+  .ml { padding: 17px 18px 16px; }
+  .ml .t { font-size: 16px; font-weight: 600; letter-spacing: -0.012em; }
+  .ml .mis { font-size: 13px; line-height: 1.5; color: #a33; margin-top: 8px; }
+  .ml .beats { margin: 11px 0 0; padding: 0; list-style: none; }
+  .ml .beats li { font-size: 12.5px; line-height: 1.5; color: #3a3a3c; padding: 5px 0 5px 22px; position: relative; border-top: 1px solid rgba(0,0,0,0.05); }
+  .ml .beats li:first-child { border-top: 0; }
+  .ml .beats li span.n {
+    position: absolute; left: 0; top: 6px; width: 15px; height: 15px; border-radius: 999px;
+    background: rgba(0,113,227,0.1); color: #0057b8; font-size: 9.5px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .std { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.06); font-size: 11.5px; line-height: 1.45; color: var(--ink2); }
+  .std b { color: var(--accent); font-weight: 600; }
+
+  /* ---- shelf ---- */
+  .shelfwrap { padding: 26px 28px 22px; }
+  .identity { display: flex; align-items: center; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .identity .who { min-width: 0; }
+  .identity .lbl { font-size: 12px; font-weight: 600; color: var(--accent); }
+  .identity .nm { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-top: 1px; }
+  .identity .ds { font-size: 12.5px; color: var(--ink2); margin-top: 4px; max-width: 430px; line-height: 1.5; }
+  .identity .tally { margin-left: auto; text-align: right; flex-shrink: 0; }
+  .identity .tally .big { font-size: 27px; font-weight: 600; letter-spacing: -0.02em; }
+  .identity .tally .sm { font-size: 11.5px; color: var(--ink2); margin-top: 1px; }
+
+  .rowhead { margin: 22px 0 0; display: flex; align-items: baseline; gap: 10px; }
+  .rowhead .rt { font-size: 15px; font-weight: 600; letter-spacing: -0.012em; }
+  .rowhead .rn { font-size: 11.5px; color: var(--ink3); }
+  .rail { display: flex; gap: 4px; align-items: flex-start; margin-top: 6px; padding-bottom: 10px; position: relative; width: max-content; max-width: 100%; }
+  .rail::after {
+    content: ""; position: absolute; left: 2px; right: 2px; top: 87px; height: 1px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.13) 10%, rgba(0,0,0,0.13) 90%, rgba(0,0,0,0.02));
+  }
+  .slot {
+    width: 108px; padding-bottom: 4px; text-align: center; cursor: pointer;
+    border-radius: 16px; transition: background 0.16s ease;
+    border: 0; background: none; font: inherit; color: inherit;
+  }
+  .slot:hover { background: rgba(0,0,0,0.035); }
+  .slot.sel { background: rgba(0,113,227,0.08); }
+  .slot canvas { display: block; margin: 0 auto; }
+  .slot .sn { font-size: 11.5px; line-height: 1.3; font-weight: 500; margin-top: 5px; }
+  .slot .ss { font-size: 10.5px; margin-top: 2px; }
+  .slot.clear .sn { color: var(--ink); }
+  .slot.clear .ss { color: #1a8a3a; }
+  .slot.cloudy .sn { color: #5a5a5f; }
+  .slot.cloudy .ss { color: #9a7a1a; }
+  .slot.empty .sn { color: var(--ink3); }
+  .slot.empty .ss { color: var(--ink3); }
+  .empty-ring { display: flex; align-items: flex-end; justify-content: center; }
+
+  .detail { margin-top: 20px; border-radius: 18px; background: #fbfbfd; border: 1px solid var(--line); padding: 17px 19px; display: flex; gap: 17px; }
+  .detail canvas { flex-shrink: 0; }
+  .detail .dt { font-size: 17px; font-weight: 600; letter-spacing: -0.014em; }
+  .detail .dstate { font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .detail .dbody { font-size: 13.5px; line-height: 1.55; color: #3a3a3c; margin-top: 9px; max-width: 640px; }
+  .detail .dproof { font-size: 12.5px; line-height: 1.5; color: var(--ink2); margin-top: 9px; max-width: 640px; }
+  .detail .dproof b { color: var(--ink); font-weight: 600; }
+
+  .rules { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-top: 18px; }
+  .rule { padding: 15px 17px 14px; }
+  .rule .rh { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .rule .rb { font-size: 12.5px; line-height: 1.55; color: #3a3a3c; margin-top: 5px; }
+  .rule.warn { background: #fff8ec; border-color: rgba(160,110,20,0.16); }
+  .rule.warn .rh { color: #8a5a10; }
+
+  .note {
+    margin-top: 20px; font-size: 12.5px; line-height: 1.6; color: var(--ink2);
+    background: rgba(0,0,0,0.03); border-radius: 14px; padding: 13px 16px;
+  }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  footer.end { margin-top: 46px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; }
+
+  @media (max-width: 1080px) {
+    .fg-grid, .sb-grid, .ml-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  @media (max-width: 720px) {
+    .fg-grid, .sb-grid, .ml-grid, .rules { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">The Orb, design mock</div>
+    <h1>The field guide, the mini-lessons, and the marble journey</h1>
+    <p class="sub">
+      Three connected systems, drawn at the game's own fidelity. A codex that fills as concepts are met in play,
+      four short vignettes that teach one asset type each before an era begins, and a shelf of glass marbles that
+      records what the player has actually proved. Nothing here is a streak, a badge, or a point.
+    </p>
+  </header>
+
+  <!-- =========================== 1. FIELD GUIDE =========================== -->
+  <div class="secthead">
+    <div class="num">One</div>
+    <h2>The field guide</h2>
+    <p class="why">
+      Twelve cards. A card is added the first time the player meets the concept in play, never by reading a menu.
+      The card is free. The marble on it is not. Tap the marble to open its card, so the codex and the shelf are
+      one screen and not two competing collections.
+    </p>
+  </div>
+
+  <div class="fg-grid" id="fgGrid"></div>
+
+  <div class="note">
+    <b>Why the trigger matters.</b> Every unlock fires on something the player did or watched, not on a menu visit.
+    That keeps the codex an honest record of the run. If a player never holds three colors at once, they never get
+    the diversification card, and the shelf shows it.
+  </div>
+
+  <!-- =========================== 2. MINI-LESSONS =========================== -->
+  <div class="secthead">
+    <div class="num">Two</div>
+    <h2>Mini-lessons, two to three minutes each</h2>
+    <p class="why">
+      One asset type per vignette, played before the era that leans on it. Each one busts exactly one misconception
+      and ends with a single quick-check item. Storyboard below is the first one, frame by frame. The other three
+      are compressed to their beats.
+    </p>
+  </div>
+
+  <div class="sb-grid" id="sbGrid"></div>
+
+  <div class="ml-grid" id="mlGrid"></div>
+
+  <!-- =========================== 3. MARBLE JOURNEY =========================== -->
+  <div class="secthead">
+    <div class="num">Three</div>
+    <h2>The marble journey</h2>
+    <p class="why">
+      A marble is one concept the player has proved, not one era they sat through. It clears when the quick-check
+      item tagged to that concept is answered right. Three rails, twelve marbles, all slots visible from the first
+      minute so the collection has an end.
+    </p>
+  </div>
+
+  <div class="card shelfwrap">
+    <div class="identity">
+      <canvas id="heroOrb"></canvas>
+      <div class="who">
+        <div class="lbl">This is your orb</div>
+        <div class="nm">Bluebell</div>
+        <div class="ds">
+          Your orb is what you are playing with right now. Your marbles are what you have proved.
+          The orb can shrink in a crash. A marble never goes back to cloudy.
+        </div>
+      </div>
+      <div class="tally">
+        <div class="big">7 of 12</div>
+        <div class="sm">marbles cleared</div>
+      </div>
+    </div>
+
+    <div id="shelf"></div>
+
+    <div class="detail" id="detail"></div>
+  </div>
+
+  <div class="rules" id="rules"></div>
+
+  <div class="note">
+    <b>One gap worth naming.</b> The cash mini-lesson has nowhere to land on this shelf, because inflation is not one
+    of the twelve. Recommendation: add <b>Inflation</b> as the thirteenth card and marble. The reserved slot is drawn
+    at the end of the third rail so the shelf still has a visible edge.
+  </div>
+
+  <footer class="end">
+    All marbles are drawn on 2D canvas with the same shell, contact shadow, and speculars as OrbScene, so a marble is
+    literally a small orb. Colors come from the game's existing palette. No external assets, no fonts loaded, no network.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var TAU = Math.PI * 2;
+
+  /* ------------------------------ color utils ------------------------------ */
+  function toRgb(hex) { var n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerpRgb(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+  function rgba(c, a) { return "rgba(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + "," + a + ")"; }
+
+  var RAINBOW = [
+    ["#ff453a", "#ff9d97"], ["#ff9f0a", "#ffcf7a"], ["#ffd60a", "#ffe97a"],
+    ["#30d158", "#8ff0ae"], ["#64d2ff", "#b0e8ff"], ["#0a84ff", "#7cc0ff"],
+    ["#bf5af2", "#e0a9ff"]
+  ].map(function (p) { return { c: toRgb(p[0]), g: toRgb(p[1]) }; });
+
+  function spectrum(u) {
+    var n = RAINBOW.length, x = (((u % 1) + 1) % 1) * n, i = Math.floor(x), f = x - i;
+    var a = RAINBOW[i % n], b = RAINBOW[(i + 1) % n];
+    return { c: lerpRgb(a.c, b.c, f), g: lerpRgb(a.g, b.g, f) };
+  }
+
+  function hash32(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function prand(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function sweep(ctx, cx, cy, core, t, speed, alpha) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.filter = "blur(" + Math.max(3, core * 0.08) + "px)";
+    var p = ((t * (speed || 0.1)) % 1) * 3 - 1.1;
+    var x0 = cx + p * core;
+    var g = ctx.createLinearGradient(x0 - core * 0.45, cy - core, x0 + core * 0.45, cy + core);
+    g.addColorStop(0, "rgba(255,255,255,0)");
+    g.addColorStop(0.5, "rgba(255,255,255," + (alpha || 0.4) + ")");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+  }
+
+  /* ------------------------------ marble interiors ------------------------- */
+  // Each concept gets one of five interiors. They are meant to be told apart at
+  // 44px, so each is a single strong idea and not a busy illustration.
+
+  function wash(ctx, cx, cy, core, col, amt) {
+    ctx.fillStyle = rgba(lerpRgb(col, [255, 255, 255], amt), 1);
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+  }
+
+  // 1. swirl: stirred ribbons of two tones. the default marble.
+  function paintSwirl(ctx, cx, cy, core, t, st) {
+    var A = st.cA, B = st.cB;
+    wash(ctx, cx, cy, core, A, 0.52);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.filter = "blur(" + Math.max(2, core * 0.085) + "px)";
+    var rnd = prand(hash32(st.seed));
+    for (var k = 0; k < 6; k++) {
+      ctx.strokeStyle = rgba(k % 2 ? B : A, 0.9);
+      ctx.lineWidth = core * (0.15 + rnd() * 0.12);
+      var ph = rnd() * TAU, amp = 0.16 + rnd() * 0.2, rad = core * (0.18 + 0.13 * k);
+      ctx.beginPath();
+      for (var p = 0; p <= 48; p++) {
+        var a = (p / 48) * TAU;
+        var rr = rad * (1 + amp * Math.sin(a * 2 + ph + t * 0.22) + 0.1 * Math.sin(a * 3 - ph - t * 0.16));
+        var x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+        if (p) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      }
+      ctx.closePath(); ctx.stroke();
+    }
+    ctx.filter = "blur(" + core * 0.05 + "px)";
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = core * 0.09;
+    ctx.beginPath();
+    for (var q = 0; q <= 40; q++) {
+      var aa = (q / 40) * TAU * 1.1 + t * 0.08;
+      var rd = core * (0.24 + 0.6 * (q / 40));
+      var xx = cx + Math.cos(aa) * rd, yy = cy + Math.sin(aa) * rd * 0.92;
+      if (q) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy);
+    }
+    ctx.stroke();
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.07, 0.34);
+  }
+
+  // 2. spectral: hundreds of tiny colors, one of everything. the index family.
+  function paintSpectral(ctx, cx, cy, core, t, st) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.fillStyle = "rgba(252,253,255,1)";
+    ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    var rnd = prand(hash32(st.seed));
+    ctx.filter = "blur(" + Math.max(1, core * 0.03) + "px)";
+    var N = st.coarse ? 26 : 150;
+    var rr = (core * 0.98) / Math.sqrt(N) * 0.78;
+    for (var i = 0; i < N; i++) {
+      var a = rnd() * TAU, rad = core * Math.sqrt(rnd()) * 0.93;
+      var col = st.coarse ? spectrum(Math.floor(rnd() * 5) / 5) : spectrum(rnd());
+      var x = cx + Math.cos(a + t * 0.05) * rad, y = cy + Math.sin(a + t * 0.05) * rad;
+      var g = ctx.createRadialGradient(x - rr * 0.3, y - rr * 0.35, 0, x, y, rr);
+      g.addColorStop(0, rgba(col.g, 1)); g.addColorStop(1, rgba(col.c, 1));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, rr * (st.coarse ? 1.5 : 1), 0, TAU); ctx.fill();
+    }
+    ctx.filter = "none";
+    var m = ctx.createRadialGradient(cx - core * 0.2, cy - core * 0.25, 0, cx, cy, core);
+    m.addColorStop(0, "rgba(255,255,255,0.34)");
+    m.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = m; ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.08, 0.4);
+  }
+
+  // 3. bands: level stripes, the steady or the stepped-down interior.
+  function paintBands(ctx, cx, cy, core, t, st) {
+    var A = st.cA, B = st.cB;
+    wash(ctx, cx, cy, core, B, 0.5);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.filter = "blur(" + Math.max(2, core * 0.055) + "px)";
+    var tilt = st.steep ? -0.42 : 0;
+    var n = st.steep ? 4 : 5;
+    for (var i = 0; i < n; i++) {
+      var u = i / (n - 1);
+      var y = cy - core * 0.72 + core * 1.44 * u;
+      var drop = st.falling ? Math.sin(t * 0.5 + i) * core * 0.05 : 0;
+      ctx.fillStyle = rgba(lerpRgb(A, B, st.steep ? 1 - u : u), st.falling ? 0.85 : 0.7 + 0.25 * (1 - u));
+      var h = core * (st.falling ? 0.13 + 0.09 * u : 0.16) * (st.steep ? 1.35 : 1);
+      ctx.beginPath();
+      ctx.ellipse(cx, y + drop, core * 1.15, h, tilt, 0, TAU);
+      ctx.fill();
+    }
+    if (st.falling) {
+      var g = ctx.createLinearGradient(cx, cy - core, cx, cy + core);
+      g.addColorStop(0, "rgba(255,255,255,0.5)");
+      g.addColorStop(1, rgba(A, 0.45));
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - core, cy - core, core * 2, core * 2);
+    }
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.07, 0.36);
+  }
+
+  // 4. bubbles: rising spheres that pop at the top. mania and the false promise.
+  function paintBubbles(ctx, cx, cy, core, t, st) {
+    wash(ctx, cx, cy, core, st.cA, 0.58);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    var rnd = prand(hash32(st.seed));
+    for (var i = 0; i < 13; i++) {
+      var px = cx + (rnd() * 1.7 - 0.85) * core;
+      var speed = 0.09 + rnd() * 0.12;
+      var ph = rnd();
+      var u = ((t * speed + ph) % 1);
+      var py = st.down ? cy - core * 0.95 + u * core * 1.95 : cy + core * 0.95 - u * core * 1.95;
+      var rr = core * (0.07 + rnd() * 0.15) * (0.55 + u * 0.75);
+      var fade = u > 0.82 ? Math.max(0, 1 - (u - 0.82) / 0.18) : 1;
+      var col = st.cB;
+      var g = ctx.createRadialGradient(px - rr * 0.35, py - rr * 0.4, 0, px, py, rr);
+      g.addColorStop(0, "rgba(255,255,255," + 0.85 * fade + ")");
+      g.addColorStop(0.6, rgba(col, 0.55 * fade));
+      g.addColorStop(1, rgba(st.cA, 0.35 * fade));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, rr, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255," + 0.5 * fade + ")";
+      ctx.lineWidth = Math.max(0.6, core * 0.012);
+      ctx.stroke();
+    }
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.07, 0.34);
+  }
+
+  // 5. ghost: full shapes on one side, hollow outlines on the other. the ones
+  //    that were quietly deleted from the chart.
+  function paintGhost(ctx, cx, cy, core, t, st) {
+    wash(ctx, cx, cy, core, st.cA, 0.66);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    var rnd = prand(hash32(st.seed));
+    for (var i = 0; i < 16; i++) {
+      var a = rnd() * TAU, rad = core * Math.sqrt(rnd()) * 0.86;
+      var x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+      var rr = core * (0.09 + rnd() * 0.07);
+      var alive = x < cx + core * 0.1;
+      var fl = 0.5 + 0.5 * Math.sin(t * 0.7 + i);
+      if (alive) {
+        var col = spectrum(rnd());
+        var g = ctx.createRadialGradient(x - rr * 0.3, y - rr * 0.35, 0, x, y, rr);
+        g.addColorStop(0, rgba(col.g, 1)); g.addColorStop(1, rgba(col.c, 1));
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill();
+      } else {
+        ctx.strokeStyle = "rgba(120,130,150," + (0.22 + 0.2 * fl) + ")";
+        ctx.lineWidth = Math.max(0.8, core * 0.022);
+        ctx.setLineDash([core * 0.09, core * 0.07]);
+        ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    ctx.restore();
+    sweep(ctx, cx, cy, core, t, 0.06, 0.3);
+  }
+
+  var PAINT = { swirl: paintSwirl, spectral: paintSpectral, bands: paintBands, bubbles: paintBubbles, ghost: paintGhost };
+
+  /* ------------------------------ glass shell ------------------------------ */
+  // ported from OrbScene.drawOrb via tools/lab/index-variants.html
+  function drawGlassOrb(ctx, cx, groundY, r, opts) {
+    var cy = groundY - r;
+    var dom = opts.dom || [180, 200, 230];
+    var t = opts.t;
+    var cloudy = opts.cloudy ? 1 : 0;
+
+    var sh = ctx.createRadialGradient(cx, groundY + r * 0.05, 0, cx, groundY + r * 0.05, r * 0.95);
+    sh.addColorStop(0, "rgba(24, 34, 60, " + (cloudy ? 0.13 : 0.2) + ")");
+    sh.addColorStop(1, "rgba(24, 34, 60, 0)");
+    ctx.fillStyle = sh;
+    ctx.beginPath(); ctx.ellipse(cx, groundY + r * 0.05, r * 0.95, r * 0.17, 0, 0, TAU); ctx.fill();
+    if (!cloudy) {
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(cx, groundY + r * 0.05, r * 0.62, r * 0.09, 0, 0, TAU); ctx.clip();
+      var caust = ctx.createRadialGradient(cx, groundY + r * 0.05, 0, cx, groundY + r * 0.05, r * 0.62);
+      caust.addColorStop(0, "rgba(255,255,255,0.5)");
+      caust.addColorStop(0.45, rgba(dom, 0.18));
+      caust.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = caust;
+      ctx.fillRect(cx - r, groundY - r * 0.1, r * 2, r * 0.3);
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+
+    var base = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r * 1.05);
+    base.addColorStop(0, "rgba(255,255,255,0.55)");
+    base.addColorStop(0.55, "rgba(238,243,250,0.35)");
+    base.addColorStop(1, "rgba(214,224,238,0.5)");
+    ctx.fillStyle = base;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    var core = r * 0.84;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.clip();
+    ctx.globalAlpha = cloudy ? 0.6 : 1;
+    opts.inner(ctx, cx, cy, core, t, opts.st);
+    ctx.globalAlpha = 1;
+    if (cloudy) {
+      // still setting. milk, not a lock. the color still shows through.
+      var milk = ctx.createRadialGradient(cx - core * 0.2, cy - core * 0.28, 0, cx, cy, core);
+      milk.addColorStop(0, "rgba(255,255,255,0.66)");
+      milk.addColorStop(0.6, "rgba(247,249,252,0.56)");
+      milk.addColorStop(1, "rgba(228,233,241,0.6)");
+      ctx.fillStyle = milk;
+      ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    }
+    // volume. without this the interior reads as a flat disc under glass.
+    var occ = ctx.createRadialGradient(cx - core * 0.3, cy - core * 0.34, core * 0.05, cx - core * 0.04, cy - core * 0.04, core * 1.04);
+    occ.addColorStop(0, "rgba(255,255,255,0.22)");
+    occ.addColorStop(0.42, "rgba(255,255,255,0.05)");
+    occ.addColorStop(0.66, "rgba(28,40,68,0.02)");
+    occ.addColorStop(0.88, "rgba(28,40,68,0.15)");
+    occ.addColorStop(1, "rgba(20,30,56,0.34)");
+    ctx.fillStyle = occ;
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    var sheen = ctx.createRadialGradient(cx - core * 0.35, cy - core * 0.45, 0, cx - core * 0.35, cy - core * 0.45, core * 0.95);
+    sheen.addColorStop(0, "rgba(255,255,255,0.30)");
+    sheen.addColorStop(0.45, "rgba(255,255,255,0.08)");
+    sheen.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = sheen;
+    ctx.beginPath(); ctx.arc(cx, cy, core, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    var shell = ctx.createRadialGradient(cx, cy, r * 0.7, cx, cy, r * 0.96);
+    shell.addColorStop(0, "rgba(255,255,255,0)");
+    shell.addColorStop(0.55, "rgba(255,255,255,0.22)");
+    shell.addColorStop(1, "rgba(255,255,255,0.04)");
+    ctx.fillStyle = shell;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+
+    var bg = ctx.createRadialGradient(cx, cy + r * 0.6, 0, cx, cy + r * 0.6, r * 0.55);
+    bg.addColorStop(0, rgba(dom, cloudy ? 0.08 : 0.22));
+    bg.addColorStop(1, rgba(dom, 0));
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.6, r * 0.55, r * 0.28, 0, 0, TAU); ctx.fill();
+
+    var rim = ctx.createRadialGradient(cx, cy - r * 0.08, r * 0.55, cx, cy, r);
+    rim.addColorStop(0, "rgba(18,30,58,0)");
+    rim.addColorStop(0.82, "rgba(18,30,58,0.05)");
+    rim.addColorStop(0.97, "rgba(18,30,58,0.17)");
+    rim.addColorStop(1, "rgba(18,30,58,0.08)");
+    ctx.fillStyle = rim;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(20, 32, 62, 0.085)";
+    ctx.lineWidth = r * 0.05;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.93, Math.PI * 0.3, Math.PI * 0.7); ctx.stroke();
+    ctx.restore();
+
+    var fl = ctx.createRadialGradient(cx, cy + r * 0.95, 0, cx, cy + r * 0.95, r * 0.75);
+    fl.addColorStop(0, "rgba(255,255,255,0.4)");
+    fl.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = fl;
+    ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.93, r * 0.75, r * 0.2, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    // speculars
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+    var spec = ctx.createRadialGradient(cx - r * 0.38, cy - r * 0.48, 0, cx - r * 0.38, cy - r * 0.48, r * 0.55);
+    spec.addColorStop(0, "rgba(255,255,255,0.6)");
+    spec.addColorStop(0.5, "rgba(255,255,255,0.12)");
+    spec.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = spec;
+    ctx.save();
+    ctx.translate(cx - r * 0.38, cy - r * 0.48); ctx.rotate(-0.5); ctx.scale(1, 0.62);
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255," + (cloudy ? 0.7 : 0.9) + ")";
+    ctx.beginPath(); ctx.ellipse(cx - r * 0.18, cy - r * 0.66, r * 0.075, r * 0.045, -0.5, 0, TAU); ctx.fill();
+    ctx.save();
+    ctx.translate(cx + r * 0.42, cy + r * 0.38); ctx.rotate(0.6);
+    var bounce = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.34);
+    bounce.addColorStop(0, "rgba(255,255,255,0.20)");
+    bounce.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = bounce; ctx.scale(1, 0.55);
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.34, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.lineWidth = Math.max(1.2, r * 0.02);
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.985, 0, TAU); ctx.stroke();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = Math.max(1.1, r * 0.018);
+    ctx.beginPath(); ctx.arc(cx, cy, r - ctx.lineWidth, Math.PI * 1.05, Math.PI * 1.6); ctx.stroke();
+
+    ctx.strokeStyle = "rgba(30,45,80," + (cloudy ? 0.1 : 0.12) + ")";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, r + 0.5, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ------------------------------ canvas plumbing -------------------------- */
+  var live = [];
+  function makeMarble(host, entry, r, opts) {
+    opts = opts || {};
+    var pad = Math.round(r * 0.28);
+    var W = Math.round(r * 2 + pad * 2), H = Math.round(r * 2 + pad * 2.1);
+    var c = document.createElement("canvas");
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    c.width = W * dpr; c.height = H * dpr;
+    c.style.width = W + "px"; c.style.height = H + "px";
+    var ctx = c.getContext("2d");
+    ctx.scale(dpr, dpr);
+    host.appendChild(c);
+
+    var st = {
+      seed: entry.id,
+      cA: toRgb(entry.a),
+      cB: toRgb(entry.b),
+      coarse: !!entry.coarse,
+      falling: !!entry.falling,
+      steep: !!entry.steep,
+      down: !!entry.down
+    };
+    var rec = {
+      ctx: ctx, W: W, H: H, r: r, st: st,
+      inner: PAINT[entry.style] || paintSwirl,
+      dom: toRgb(entry.a),
+      cloudy: !!opts.cloudy,
+      canvas: c,
+      draw: function (t) {
+        ctx.clearRect(0, 0, W, H);
+        drawGlassOrb(ctx, W / 2, H - pad * 0.9, r, {
+          t: t, inner: rec.inner, st: rec.st, dom: rec.dom, cloudy: rec.cloudy
+        });
+      }
+    };
+    if (opts.animate) live.push(rec); else rec.draw(opts.frozen == null ? 1.4 : opts.frozen);
+    return rec;
+  }
+
+  /* ============================ CONTENT: FIELD GUIDE ======================== */
+  var ENTRIES = [
+    {
+      id: "share", name: "Share", fam: "What you own",
+      a: "#0a84ff", b: "#7cc0ff", style: "swirl",
+      body: "A share is one small piece of a real company, and buying one makes that piece yours. You own a slice of everything it earns and everything it loses. Your money goes to the person who owned the share before you, not to the company.",
+      trigger: "First time the player buys any single company, in Lesson 1.",
+      url: "https://en.wikipedia.org/wiki/Share_(finance)"
+    },
+    {
+      id: "price", name: "Market price", fam: "What you own",
+      a: "#64d2ff", b: "#b0e8ff", style: "swirl",
+      body: "The price is just what the last person paid. It changes every time somebody new decides a share is worth more or less than that. Nobody in charge sets it, and it can be too high or too low for years.",
+      trigger: "First tape step after the first buy, when a price the player owns moves on its own.",
+      url: "https://en.wikipedia.org/wiki/Market_price"
+    },
+    {
+      id: "dividend", name: "Dividend", fam: "What you own",
+      a: "#30d158", b: "#8ff0ae", style: "bubbles", down: true,
+      body: "Some companies hand out part of their profit to their owners in cash, a few times a year. You get it whether the price went up or down. Spend it, or buy more shares with it and let the pile grow itself.",
+      trigger: "First dividend payment lands in the player's dish.",
+      url: "https://en.wikipedia.org/wiki/Dividend"
+    },
+    {
+      id: "index", name: "Index fund", fam: "How you spread it",
+      a: "#0a84ff", b: "#bf5af2", style: "spectral",
+      body: "An index fund is one purchase that buys a tiny piece of hundreds of companies at once. You never pick the winner, and you never miss it either. That is the rainbow orb, sealed shut so no single color can be pulled back out.",
+      trigger: "First time the rainbow orb is introduced on screen, in the Lesson 1 brief.",
+      url: "https://en.wikipedia.org/wiki/Index_fund"
+    },
+    {
+      id: "diversify", name: "Diversification", fam: "How you spread it",
+      a: "#ff9f0a", b: "#30d158", style: "spectral", coarse: true,
+      body: "Spreading your money over many different things so one bad one cannot sink you. It will never make you the biggest winner in the room. It is what keeps you in the game long enough to have a winner at all.",
+      trigger: "First moment the orb holds three or more colors at the same time.",
+      url: "https://en.wikipedia.org/wiki/Diversification_(finance)"
+    },
+    {
+      id: "dca", name: "Dollar cost averaging", fam: "How you spread it",
+      a: "#0a84ff", b: "#30d158", style: "bands",
+      body: "Putting in the same amount on a schedule, no matter what prices are doing. When prices fall, that same money buys more shares. You never have to pick the right day, because every day on the list is your day.",
+      trigger: "The Spring 2000 gate in Pay Yourself First, the first time the words appear in a gate.",
+      url: "https://en.wikipedia.org/wiki/Dollar_cost_averaging"
+    },
+    {
+      id: "size", name: "Position size", fam: "How you spread it",
+      a: "#ffd60a", b: "#ff9f0a", style: "swirl",
+      body: "Position size is how much of your money one thing gets. Being right about it matters less than being small enough to wait it out. A drop of three quarters is a story if it was a tenth of your orb, and a disaster if it was all of it.",
+      trigger: "First time one color passes half the orb's value in the composition ring.",
+      url: "https://en.wikipedia.org/wiki/Position_(finance)"
+    },
+    {
+      id: "crash", name: "Crash and drawdown", fam: "What can go wrong",
+      a: "#ff453a", b: "#ff9d97", style: "bands", falling: true,
+      body: "A crash is prices falling fast, with almost everything falling together. Drawdown is the measuring stick: how far below your best day you are right now. Your share count does not change in a crash, only what people will pay for them.",
+      trigger: "First falling market moment that reaches the player's orb, such as the bubble popping or the panic.",
+      url: "https://en.wikipedia.org/wiki/Stock_market_crash"
+    },
+    {
+      id: "panic", name: "Panic selling", fam: "What can go wrong",
+      a: "#ff375f", b: "#ffd60a", style: "bands", falling: true, steep: true,
+      body: "Selling because the falling scares you, not because anything about the company changed. It turns a loss on paper into a real one, and it usually happens closest to the bottom. The hard part is that it feels like the smart move at the time.",
+      trigger: "First sell placed while the orb is more than fifteen percent below its own high, or the first sell option chosen at a gate.",
+      url: "https://en.wikipedia.org/wiki/Panic_selling"
+    },
+    {
+      id: "bubble", name: "Bubble", fam: "What can go wrong",
+      a: "#bf5af2", b: "#e0a9ff", style: "bubbles",
+      body: "A bubble is when the price runs far ahead of the actual business, because everyone believes somebody will pay more tomorrow. It feels like free money and everyone has a tip. It ends when the last buyer runs out.",
+      trigger: "First mania moment card, dot-com mania in 2000 or coin mania in 2021.",
+      url: "https://en.wikipedia.org/wiki/Economic_bubble"
+    },
+    {
+      id: "survivor", name: "Survivorship bias", fam: "What can go wrong",
+      a: "#8e8e93", b: "#c7c7cc", style: "ghost",
+      body: "Old charts only show the companies that made it. The ones that went to zero got quietly deleted, so the past always looks safer than it was. Two names on the 2000 menu never came back, and nobody at the time knew which two.",
+      trigger: "First time a company the player can see on the menu is delisted mid-run.",
+      url: "https://en.wikipedia.org/wiki/Survivorship_bias"
+    },
+    {
+      id: "ponzi", name: "The Ponzi promise", fam: "What can go wrong",
+      a: "#ff9f0a", b: "#ffd60a", style: "bubbles",
+      body: "If something promises a big return, guaranteed, every single day, the payouts are coming from new customers and not from a business. It works perfectly until new customers stop arriving, and then it is gone overnight. Guaranteed and high do not go together.",
+      trigger: "First tap on The Promise Coin's card, or the moment it shuts down on the tape.",
+      url: "https://en.wikipedia.org/wiki/Ponzi_scheme"
+    }
+  ];
+  var BY_ID = {};
+  ENTRIES.forEach(function (e) { BY_ID[e.id] = e; });
+
+  var fgGrid = document.getElementById("fgGrid");
+  ENTRIES.forEach(function (e) {
+    var card = document.createElement("div");
+    card.className = "card fg";
+    var top = document.createElement("div"); top.className = "top";
+    var mh = document.createElement("div");
+    top.appendChild(mh);
+    var meta = document.createElement("div");
+    meta.innerHTML = '<div class="name"></div><div class="fam"></div>';
+    meta.querySelector(".name").textContent = e.name;
+    meta.querySelector(".fam").textContent = e.fam;
+    top.appendChild(meta);
+    card.appendChild(top);
+
+    var body = document.createElement("div"); body.className = "body"; body.textContent = e.body;
+    card.appendChild(body);
+
+    var trig = document.createElement("div"); trig.className = "trig";
+    trig.innerHTML = "<b>Unlocks: </b>";
+    trig.appendChild(document.createTextNode(e.trigger));
+    card.appendChild(trig);
+
+    var more = document.createElement("div"); more.className = "more";
+    var a = document.createElement("a");
+    a.href = e.url; a.target = "_blank"; a.rel = "noreferrer";
+    a.textContent = "Read more on Wikipedia";
+    more.appendChild(a);
+    card.appendChild(more);
+
+    fgGrid.appendChild(card);
+    makeMarble(mh, e, 33, { animate: false, frozen: 1.9 });
+  });
+
+  /* ============================ CONTENT: STORYBOARD ======================== */
+  // "What a share is", six frames. Scenes are inline SVG sketches at the game's
+  // palette so the storyboard reads at the same fidelity as the cards.
+  var C_RED = "#ff453a", C_BLUE = "#0a84ff", C_GREEN = "#30d158", C_GREY = "#c7c7cc";
+
+  function svgWrap(inner, w, h) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" xmlns="http://www.w3.org/2000/svg">' + inner + '</svg>';
+  }
+  function dotGrid(hi, opts) {
+    opts = opts || {};
+    var s = "", n = 10, gap = 13, r = 4.1, x0 = 34, y0 = 12;
+    for (var i = 0; i < n * n; i++) {
+      var cx = x0 + (i % n) * gap, cy = y0 + Math.floor(i / n) * gap;
+      var isHi = hi.indexOf(i) >= 0;
+      s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + (isHi ? C_RED : "rgba(255,69,58,0.16)") + '"'
+        + (isHi ? ' stroke="#fff" stroke-width="1.6"' : '') + ' />';
+      if (isHi && opts.halo) {
+        s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r + 4.5) + '" fill="none" stroke="' + C_BLUE + '" stroke-width="1.6" />';
+      }
+    }
+    return s;
+  }
+
+  // a storyboard orb: glass shell with a pool of one color inside it
+  var orbSeq = 0;
+  function svgOrb(cx, cy, r, col) {
+    var k = "o" + (orbSeq++);
+    return '<defs>' +
+      '<radialGradient id="g' + k + '" cx="34%" cy="27%">' +
+      '<stop offset="0" stop-color="rgba(255,255,255,0.96)"/>' +
+      '<stop offset="0.6" stop-color="rgba(238,243,250,0.5)"/>' +
+      '<stop offset="1" stop-color="rgba(203,215,233,0.9)"/></radialGradient>' +
+      '<clipPath id="c' + k + '"><circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.84) + '"/></clipPath>' +
+      '<filter id="b' + k + '" x="-60%" y="-60%" width="220%" height="220%">' +
+      '<feGaussianBlur stdDeviation="' + (r * 0.13).toFixed(2) + '"/></filter>' +
+      '<radialGradient id="v' + k + '" cx="32%" cy="28%">' +
+      '<stop offset="0.55" stop-color="rgba(28,40,68,0)"/>' +
+      '<stop offset="1" stop-color="rgba(20,30,56,0.3)"/></radialGradient>' +
+      '</defs>' +
+      '<ellipse cx="' + cx + '" cy="' + (cy + r + 4) + '" rx="' + (r * 0.9) + '" ry="' + (r * 0.15) + '" fill="rgba(24,34,60,0.15)"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="url(#g' + k + ')"/>' +
+      '<g clip-path="url(#c' + k + ')" filter="url(#b' + k + ')">' +
+      '<ellipse cx="' + (cx - r * 0.12) + '" cy="' + (cy + r * 0.2) + '" rx="' + (r * 0.6) + '" ry="' + (r * 0.48) + '" fill="' + col + '" opacity="0.82"/>' +
+      '<ellipse cx="' + (cx + r * 0.3) + '" cy="' + (cy - r * 0.2) + '" rx="' + (r * 0.3) + '" ry="' + (r * 0.24) + '" fill="' + col + '" opacity="0.45"/>' +
+      '</g>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.84) + '" fill="url(#v' + k + ')"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(30,45,80,0.16)"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - 1.4) + '" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6"/>' +
+      '<ellipse cx="' + (cx - r * 0.3) + '" cy="' + (cy - r * 0.44) + '" rx="' + (r * 0.19) + '" ry="' + (r * 0.11) + '" fill="rgba(255,255,255,0.92)" transform="rotate(-25 ' + (cx - r * 0.3) + ' ' + (cy - r * 0.44) + ')"/>';
+  }
+
+  var FRAMES = [
+    {
+      n: "Frame 1", t: "One whole thing",
+      does: "Taps a single company card, Classic Cola, then taps Cut it up.",
+      shows: "One big glass disc labelled the whole company splits into a hundred identical little ones, filling a tray.",
+      svg: svgWrap(
+        '<defs><radialGradient id="g1" cx="35%" cy="30%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="' + C_RED + '"/></radialGradient></defs>' +
+        '<ellipse cx="78" cy="128" rx="46" ry="7" fill="rgba(24,34,60,0.13)"/>' +
+        '<circle cx="78" cy="74" r="50" fill="url(#g1)" stroke="rgba(30,45,80,0.14)"/>' +
+        '<ellipse cx="60" cy="52" rx="14" ry="8" fill="rgba(255,255,255,0.85)" transform="rotate(-25 60 52)"/>' +
+        '<text x="78" y="152" font-size="11" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">the whole company</text>' +
+        '<path d="M140 74 L170 74 M162 66 L170 74 L162 82" stroke="#86868b" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+        '<g transform="translate(180,10)">' + dotGrid([]) + '</g>', 340, 168)
+    },
+    {
+      n: "Frame 2", t: "Buy one",
+      does: "Drags a single piece from the tray into their own orb.",
+      shows: "The orb picks up a red thread. A counter under it reads you own 1 of 100.",
+      svg: svgWrap(
+        '<g transform="translate(-10,4)">' + dotGrid([44], { halo: true }) + '</g>' +
+        '<path d="M152 74 L186 74 M178 66 L186 74 L178 82" stroke="#86868b" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+        svgOrb(258, 76, 42, C_RED) +
+        '<text x="258" y="148" font-size="12" font-weight="600" fill="#1d1d1f" text-anchor="middle" font-family="-apple-system,sans-serif">you own 1 of 100</text>', 340, 168)
+    },
+    {
+      n: "Frame 3", t: "Where the money went",
+      does: "Answers one question. Who did your ten dollars go to, the company or the person who held that piece before you?",
+      shows: "Pick the company and the coin bounces off a shut door. Pick the last owner and it slides through. This is the bust.",
+      svg: svgWrap(
+        '<rect x="24" y="30" width="112" height="98" rx="14" fill="#fff" stroke="rgba(0,0,0,0.12)"/>' +
+        '<text x="80" y="60" font-size="11.5" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">the company</text>' +
+        '<circle cx="80" cy="92" r="20" fill="rgba(255,69,58,0.1)" stroke="' + C_RED + '" stroke-width="2"/>' +
+        '<path d="M71 83 L89 101 M89 83 L71 101" stroke="' + C_RED + '" stroke-width="2.4" stroke-linecap="round"/>' +
+        '<rect x="204" y="30" width="112" height="98" rx="14" fill="#fff" stroke="rgba(48,209,88,0.5)"/>' +
+        '<text x="260" y="60" font-size="11.5" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">the last owner</text>' +
+        '<circle cx="260" cy="92" r="20" fill="rgba(48,209,88,0.12)" stroke="' + C_GREEN + '" stroke-width="2"/>' +
+        '<path d="M251 92 L258 100 L270 85" stroke="' + C_GREEN + '" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<circle cx="170" cy="79" r="15" fill="#ffd60a" stroke="rgba(160,120,0,0.35)" stroke-width="1.5"/>' +
+        '<text x="170" y="84" font-size="11" font-weight="700" fill="#7a5a00" text-anchor="middle" font-family="-apple-system,sans-serif">$10</text>' +
+        '<path d="M188 79 L200 79" stroke="' + C_GREEN + '" stroke-width="2" stroke-linecap="round"/>' +
+        '<path d="M152 79 L140 79" stroke="rgba(0,0,0,0.15)" stroke-width="2" stroke-dasharray="3 3" stroke-linecap="round"/>', 340, 168)
+    },
+    {
+      n: "Frame 4", t: "What you actually own",
+      does: "Watches one quarter of the company's year go by, hands off.",
+      shows: "Profit flows out of the business and one hundredth of the stream lands in the player's piece. The other ninety nine go to other owners.",
+      svg: svgWrap(
+        '<rect x="24" y="42" width="86" height="72" rx="12" fill="rgba(255,69,58,0.09)" stroke="rgba(255,69,58,0.32)"/>' +
+        '<text x="67" y="72" font-size="11" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">it earns</text>' +
+        '<text x="67" y="94" font-size="17" font-weight="600" fill="#1d1d1f" text-anchor="middle" font-family="-apple-system,sans-serif">$100</text>' +
+        '<path d="M118 78 C 150 78, 156 78, 186 78" stroke="' + C_GREEN + '" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.55"/>' +
+        '<g transform="translate(150,10) scale(0.86)">' + dotGrid([44], { halo: true }) + '</g>' +
+        '<circle cx="200" cy="140" r="9" fill="' + C_GREEN + '"/>' +
+        '<text x="216" y="145" font-size="12" font-weight="600" fill="#1d1d1f" font-family="-apple-system,sans-serif">$1 is yours</text>', 340, 168)
+    },
+    {
+      n: "Frame 5", t: "Price moves, count does not",
+      does: "Drags a price slider from ten dollars down to four and back up again.",
+      shows: "The orb shrinks and grows the whole time. The counter under it never leaves 1 of 100. Nothing was taken.",
+      svg: svgWrap(
+        svgOrb(82, 70, 38, C_RED) +
+        '<text x="82" y="132" font-size="11.5" font-weight="600" fill="#1d1d1f" text-anchor="middle" font-family="-apple-system,sans-serif">1 of 100</text>' +
+        '<text x="82" y="148" font-size="11" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">$10</text>' +
+        '<path d="M132 74 L162 74" stroke="#c7c7cc" stroke-width="2" stroke-dasharray="4 4"/>' +
+        svgOrb(204, 84, 24, C_RED) +
+        '<text x="204" y="132" font-size="11.5" font-weight="600" fill="#1d1d1f" text-anchor="middle" font-family="-apple-system,sans-serif">1 of 100</text>' +
+        '<text x="204" y="148" font-size="11" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">$4</text>' +
+        '<rect x="248" y="40" width="66" height="86" rx="12" fill="rgba(10,132,255,0.07)" stroke="rgba(10,132,255,0.25)"/>' +
+        '<text x="281" y="72" font-size="10.5" fill="#0057b8" text-anchor="middle" font-family="-apple-system,sans-serif">shares</text>' +
+        '<text x="281" y="94" font-size="20" font-weight="600" fill="#0057b8" text-anchor="middle" font-family="-apple-system,sans-serif">1</text>' +
+        '<text x="281" y="112" font-size="10" fill="#6e6e73" text-anchor="middle" font-family="-apple-system,sans-serif">unchanged</text>', 340, 168)
+    },
+    {
+      n: "Frame 6", t: "One question, one marble",
+      does: "Answers the single quick-check item. You paid ten dollars and the price fell to four. How many shares do you own now?",
+      shows: "Right answer, and the Share marble clears from cloudy to glass over about a second and rolls onto the shelf. Wrong answer costs nothing and the marble stays cloudy.",
+      svg: svgWrap(
+        '<rect x="20" y="26" width="192" height="112" rx="16" fill="#fff" stroke="rgba(0,0,0,0.1)"/>' +
+        '<text x="36" y="50" font-size="10.5" font-weight="600" fill="#0071e3" font-family="-apple-system,sans-serif">Quick check</text>' +
+        '<text x="36" y="70" font-size="11.5" fill="#1d1d1f" font-family="-apple-system,sans-serif">How many shares do you own?</text>' +
+        '<rect x="36" y="80" width="160" height="22" rx="11" fill="rgba(48,209,88,0.12)" stroke="' + C_GREEN + '"/>' +
+        '<text x="48" y="95" font-size="11" font-weight="600" fill="#12703a" font-family="-apple-system,sans-serif">One. It never changed.</text>' +
+        '<rect x="36" y="108" width="160" height="22" rx="11" fill="rgba(0,0,0,0.035)"/>' +
+        '<text x="48" y="123" font-size="11" fill="#6e6e73" font-family="-apple-system,sans-serif">Less than one now.</text>' +
+        '<path d="M226 82 L252 82 M244 74 L252 82 L244 90" stroke="#86868b" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+        '<g id="frameMarble" transform="translate(296,82)"></g>', 340, 168)
+    }
+  ];
+
+  var sbGrid = document.getElementById("sbGrid");
+  FRAMES.forEach(function (f) {
+    var el = document.createElement("div");
+    el.className = "card frame";
+    el.innerHTML =
+      '<div class="stage">' + f.svg + '</div>' +
+      '<div class="fn"></div><div class="ft"></div>' +
+      '<div class="row does"><span class="lb">Player </span><span class="dv"></span></div>' +
+      '<div class="row shows"><span class="lb">Scene </span><span class="sv"></span></div>';
+    el.querySelector(".fn").textContent = f.n;
+    el.querySelector(".ft").textContent = f.t;
+    el.querySelector(".dv").textContent = f.does;
+    el.querySelector(".sv").textContent = f.shows;
+    sbGrid.appendChild(el);
+  });
+  // drop a real glass marble into the last frame's stage
+  (function () {
+    var last = sbGrid.lastChild.querySelector(".stage");
+    var holder = document.createElement("div");
+    holder.style.position = "absolute";
+    last.style.position = "relative";
+    holder.style.right = "18px"; holder.style.top = "38px";
+    last.appendChild(holder);
+    makeMarble(holder, BY_ID.share, 26, { animate: true });
+  })();
+
+  /* --------------------------- other three lessons ------------------------- */
+  var LESSONS = [
+    {
+      t: "What a fund is",
+      mis: "A fund is just one more thing to pick, and picking the best company beats buying all of them.",
+      beats: [
+        "Player is handed eight company marbles and told to pick next year's winner. They pick one.",
+        "The year runs. Their pick lands somewhere in the middle of the pack, and one name they skipped triples.",
+        "Replay button. Same year, but this time one fused marble holds all eight. Player drops it in.",
+        "The fused marble tracks the middle of all eight. Tapping it to pull a color out does nothing, and the seal shivers.",
+        "Reveal. Real funds hold hundreds, not eight. The eight dissolve into a spectral haze of tiny colors.",
+        "One item. Which one costs you the biggest winner, and which one saves you from the worst loser? Clears the Index fund marble."
+      ],
+      std: "CEE Investing 8-5b, a diversified fund compared with individual stocks and bonds. Cross-reference Jump$tart Investing Std 2, grade 8 c."
+    },
+    {
+      t: "What cash does",
+      mis: "Cash is the safe choice, because the number in the jar never goes down.",
+      beats: [
+        "Player pours one hundred dollars into a glass jar labelled cash. The number reads 100.",
+        "Player drags a year slider forward eight years. The number stays exactly 100 the whole way. Safe, right?",
+        "The scene switches to a shelf of real things. A pair of sneakers costs fifty dollars in year one.",
+        "Player drags the same slider again. The sneakers climb to sixty two dollars. The jar still says 100, but the pairs it buys drop from two to one.",
+        "Player picks what changed, my money shrank or prices grew. Both buttons produce the same animation, because it is one event with two names.",
+        "One item. Your number never fell. Did you lose anything? Clears the Inflation marble, the recommended thirteenth."
+      ],
+      std: "CEE Investing 12-4, real versus nominal return, reached down from the 9 to 12 ladder. Grade 8 hooks are Saving 8-1 and Investing 8-6a. Confirm the exact grade-8 inflation benchmark before print."
+    },
+    {
+      t: "What a coin is",
+      mis: "A coin is basically a share, and if lots of people want it, it must be worth something.",
+      beats: [
+        "Two cards face down. Player flips both. The share card opens onto a business with customers, a product, and profit.",
+        "The coin card opens onto the coin. Nothing behind it. A share owns a business, a coin owns a place in line.",
+        "Player sets the coin's price by dragging. The only number that moves it is what the next buyer will pay.",
+        "The real 2021 to 2022 tape runs. Down three quarters, twice as fast as anything in the stock era.",
+        "Player runs the same drop three times at three sizes, all of it, a quarter, a twentieth, and watches their orb each time.",
+        "One item. Which of the three could you have waited out? Clears the Position size marble."
+      ],
+      std: "CEE Investing 12-2c, which names cryptocurrencies as speculative, with the grade 8 hook at Investing 8-6a, order investments by risk."
+    }
+  ];
+  var mlGrid = document.getElementById("mlGrid");
+  LESSONS.forEach(function (l) {
+    var el = document.createElement("div");
+    el.className = "card ml";
+    var beats = l.beats.map(function (b, i) {
+      var li = document.createElement("li");
+      var sp = document.createElement("span"); sp.className = "n"; sp.textContent = String(i + 1);
+      li.appendChild(sp); li.appendChild(document.createTextNode(b));
+      return li;
+    });
+    el.innerHTML = '<div class="t"></div><div class="mis"></div><ul class="beats"></ul><div class="std"><b>Standard. </b><span class="sv"></span></div>';
+    el.querySelector(".t").textContent = l.t;
+    el.querySelector(".mis").textContent = "Busts: " + l.mis;
+    var ul = el.querySelector(".beats");
+    beats.forEach(function (b) { ul.appendChild(b); });
+    el.querySelector(".sv").textContent = l.std;
+    mlGrid.appendChild(el);
+  });
+
+  /* ============================ CONTENT: THE SHELF ========================== */
+  var STATE = {
+    share: "clear", price: "clear", dividend: "cloudy",
+    index: "clear", diversify: "clear", dca: "cloudy", size: "empty",
+    crash: "clear", panic: "clear", bubble: "cloudy", survivor: "empty", ponzi: "clear"
+  };
+  var PROOF = {
+    share: "Lesson 1 quick check, item 2. You bought at $10, the price fell to $4. How many shares do you own? Answered right on the first pass.",
+    price: "Lesson 1 quick check, item 1. Who decides what a share is worth today? Answered right on the first pass.",
+    dividend: "Waiting on the dividend item in Lesson 4. The card is yours, the marble is not yet.",
+    index: "Lesson 2 quick check, item 4. What does the rainbow orb hold? Answered right.",
+    diversify: "Lesson 4 quick check, item 3. Mega Bank fell ninety percent and the index made new highs. Why? Answered right.",
+    dca: "Pay Yourself First, item 5. Your average cost per share came out below the average price. Answered wrong once. Still setting.",
+    size: "Not met yet. No color in your orb has passed half its value, so the card has not been added.",
+    crash: "Lesson 4 quick check, item 1. During the panic, what happened to your share count? Answered right.",
+    panic: "Lesson 4 quick check, item 2. You sold in March 2009. What did that choice cost against the index? Answered right, using your own run.",
+    bubble: "Crypto Winters, item 2. Answered wrong once. Any later quick check with a bubble item clears it.",
+    survivor: "Not met yet. Play the dot-com era to the WorldCom moment and the card is added.",
+    ponzi: "Crypto Winters, item 6. The Promise Coin guaranteed one percent a day. Where was that money coming from? Answered right."
+  };
+  var ROWS = [
+    { title: "What you own", ids: ["share", "price", "dividend"] },
+    { title: "How you spread it", ids: ["index", "diversify", "dca", "size"] },
+    { title: "What can go wrong", ids: ["crash", "panic", "bubble", "survivor", "ponzi"], reserve: true }
+  ];
+  var STATE_LABEL = { clear: "cleared", cloudy: "still setting", empty: "not met yet" };
+
+  var shelf = document.getElementById("shelf");
+  var detail = document.getElementById("detail");
+  var slots = {};
+
+  ROWS.forEach(function (row) {
+    var head = document.createElement("div");
+    head.className = "rowhead";
+    var cleared = row.ids.filter(function (id) { return STATE[id] === "clear"; }).length;
+    head.innerHTML = '<div class="rt"></div><div class="rn"></div>';
+    head.querySelector(".rt").textContent = row.title;
+    head.querySelector(".rn").textContent = cleared + " of " + row.ids.length + " cleared";
+    shelf.appendChild(head);
+
+    var rail = document.createElement("div");
+    rail.className = "rail";
+    shelf.appendChild(rail);
+
+    row.ids.forEach(function (id) {
+      var e = BY_ID[id], stt = STATE[id];
+      var b = document.createElement("button");
+      b.className = "slot " + stt;
+      b.type = "button";
+      var mh = document.createElement("div");
+      b.appendChild(mh);
+      var nm = document.createElement("div"); nm.className = "sn"; nm.textContent = e.name;
+      var ss = document.createElement("div"); ss.className = "ss"; ss.textContent = STATE_LABEL[stt];
+      b.appendChild(nm); b.appendChild(ss);
+      rail.appendChild(b);
+      slots[id] = b;
+
+      if (stt === "empty") {
+        mh.className = "empty-ring";
+        mh.innerHTML = svgWrap(
+          '<circle cx="46" cy="54" r="27" fill="rgba(0,0,0,0.02)" stroke="rgba(0,0,0,0.16)" stroke-width="1.4" stroke-dasharray="4 5"/>' +
+          '<ellipse cx="46" cy="84" rx="21" ry="3.4" fill="rgba(0,0,0,0.05)"/>', 92, 93);
+      } else {
+        makeMarble(mh, e, 34, { animate: true, cloudy: stt === "cloudy" });
+      }
+      b.addEventListener("click", function () { select(id); });
+    });
+
+    if (row.reserve) {
+      var res = document.createElement("div");
+      res.className = "slot empty";
+      res.innerHTML =
+        '<div class="empty-ring">' + svgWrap(
+          '<circle cx="46" cy="54" r="27" fill="none" stroke="rgba(0,113,227,0.25)" stroke-width="1.4" stroke-dasharray="2 6"/>' +
+          '<ellipse cx="46" cy="84" rx="21" ry="3.4" fill="rgba(0,0,0,0.04)"/>', 92, 93) + '</div>' +
+        '<div class="sn">Inflation</div><div class="ss">reserved, slot 13</div>';
+      rail.appendChild(res);
+    }
+  });
+
+  var selected = null;
+  function select(id) {
+    if (selected && slots[selected]) slots[selected].classList.remove("sel");
+    selected = id;
+    slots[id].classList.add("sel");
+    var e = BY_ID[id], stt = STATE[id];
+    detail.innerHTML = "";
+    var mh = document.createElement("div");
+    detail.appendChild(mh);
+    var txt = document.createElement("div");
+    var stateColor = stt === "clear" ? "#12703a" : stt === "cloudy" ? "#8a6a10" : "#86868b";
+    txt.innerHTML =
+      '<div class="dt"></div>' +
+      '<div class="dstate" style="color:' + stateColor + '"></div>' +
+      '<div class="dbody"></div>' +
+      '<div class="dproof"><b>How it was earned. </b><span class="pv"></span></div>';
+    txt.querySelector(".dt").textContent = e.name;
+    txt.querySelector(".dstate").textContent =
+      stt === "clear" ? "Cleared. You proved this one."
+        : stt === "cloudy" ? "Still setting. Answer its question right once and it clears."
+          : "Not met yet. Play forward and the card arrives on its own.";
+    txt.querySelector(".dbody").textContent = e.body;
+    txt.querySelector(".pv").textContent = PROOF[id];
+    detail.appendChild(txt);
+    if (stt === "empty") {
+      mh.innerHTML = svgWrap(
+        '<circle cx="40" cy="42" r="27" fill="rgba(0,0,0,0.02)" stroke="rgba(0,0,0,0.16)" stroke-width="1.4" stroke-dasharray="4 5"/>', 80, 78);
+    } else {
+      makeMarble(mh, e, 36, { animate: true, cloudy: stt === "cloudy" });
+    }
+  }
+
+  /* hero orb, the named identity next to the shelf */
+  (function () {
+    var host = document.getElementById("heroOrb").parentNode;
+    var old = document.getElementById("heroOrb");
+    var holder = document.createElement("div");
+    host.replaceChild(holder, old);
+    makeMarble(holder, { id: "hero", a: "#0a84ff", b: "#bf5af2", style: "spectral" }, 44, { animate: true });
+  })();
+
+  /* ------------------------------- the rules ------------------------------- */
+  var RULES = [
+    {
+      h: "A marble is one concept, not one era",
+      b: "Twelve marbles for twelve ideas. Eras are already the lesson list on the select screen, and asset colors are already inside the orb. The only thing missing a home was understanding, so that is what the shelf holds."
+    },
+    {
+      h: "The card is free, the marble is not",
+      b: "Meeting a concept in play adds its card. That costs nothing and cannot be failed. Clearing the marble takes the quick-check item tagged to that concept, answered right. Finishing the tape earns you exactly zero marbles."
+    },
+    {
+      h: "Three states, and none of them is a lock",
+      b: "Cleared glass, cloudy glass, and an empty ring on the rail. Cloudy means the card is yours and the question is still open. A padlock says you are shut out. Cloudy says it is still setting."
+    },
+    {
+      h: "Nothing is ever taken back",
+      b: "No decay, no streaks, no daily anything. A wrong answer costs nothing but time and leaves the marble cloudy. Any later quick check with that item can clear it, and each card carries a two-item retry."
+    },
+    {
+      h: "Marbles do not unlock content",
+      b: "Every lesson is open on day one. A marble buys no power, no speed, no cosmetic, no bonus. All it buys is the sentence on the back of its card. If it changed the game, players would farm it instead of learning it."
+    },
+    {
+      h: "The shelf is a standards report",
+      b: "Each marble maps one to one to an item bank tagged to a CEE or Jump$tart benchmark. Twelve cleared marbles is a printable line for a teacher, which is why the collection cannot be padded with cosmetics."
+    },
+    {
+      h: "The unlock is quiet",
+      b: "At the end of a quick check the concept name appears, the glass clears over about nine hundred milliseconds with one sweep of highlight, and the marble rolls into its slot with a soft contact shadow and one low glass tone. One line of copy, you proved this one. Then it stops."
+    },
+    {
+      h: "The collection has an end",
+      b: "All twelve slots are drawn from the first minute, empty rings included, so a player can see the whole journey and how much is left. No infinite tail, no seasons. At twelve of twelve the shelf can fuse into one sealed rainbow marble, which is the same object the game has been pointing at the entire time."
+    },
+    {
+      h: "It sits under the named orb, not beside it",
+      cls: "warn",
+      b: "The orb keeps the identity, the name, and the money. The shelf is the record underneath it. Two collectibles competing for the same attention is exactly the trap Nick warned about, so the codex and the shelf are one screen: the marble is the cover of its card."
+    },
+    {
+      h: "What would make this cheap",
+      cls: "warn",
+      b: "A marble for logging in. A marble for playing five days in a row. A marble for finishing an era regardless of what was understood. A counter that goes up forever. Any of those and the shelf stops meaning anything, so none of them exist."
+    }
+  ];
+  var rulesEl = document.getElementById("rules");
+  RULES.forEach(function (r) {
+    var el = document.createElement("div");
+    el.className = "card rule" + (r.cls ? " " + r.cls : "");
+    el.innerHTML = '<div class="rh"></div><div class="rb"></div>';
+    el.querySelector(".rh").textContent = r.h;
+    el.querySelector(".rb").textContent = r.b;
+    rulesEl.appendChild(el);
+  });
+
+  select("panic");
+
+  /* --------------------------------- loop ---------------------------------- */
+  var t0 = performance.now();
+  function frame(now) {
+    var t = (now - t0) / 1000;
+    for (var i = 0; i < live.length; i++) live[i].draw(t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

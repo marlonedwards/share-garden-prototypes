@@ -1,7 +1,9 @@
+import { useEffect, useReducer } from "react";
 import { Link } from "react-router-dom";
 import { SCENARIOS as ERAS } from "../lib/scenarios";
 import { useOrbName } from "../lib/orbIdentity";
-import { FIELD_ENTRIES, guideState, marbleState } from "../lib/fieldGuide";
+import { FIELD_ENTRIES, MarbleState, guideState, marbleState } from "../lib/fieldGuide";
+import { LESSON_LADDER } from "../lessons";
 
 // Scenario select for the Orb. Each scenario is one lesson; the plain-language
 // objective is right on the card. Standards mapping lives in the one-pager.
@@ -36,8 +38,37 @@ const SCENARIOS = [
   },
 ];
 
+// A small marble that shows a lesson's quick-check state on the Start-here
+// strip: cleared glass, cloudy glass, or an empty dashed ring.
+function LessonMarble({ state, color }: { state: MarbleState; color: string }) {
+  const base: React.CSSProperties = { width: 32, height: 32, borderRadius: "50%", position: "relative" };
+  if (state === "cleared") {
+    base.background = `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.92), ${color}55 55%, ${color}bb)`;
+    base.boxShadow = `inset 0 0 0 1px rgba(30,45,80,0.14), 0 6px 12px -6px ${color}99`;
+  } else if (state === "cloudy") {
+    base.background = "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(228,230,236,0.7) 55%, rgba(206,210,220,0.85))";
+    base.boxShadow = "inset 0 0 0 1px rgba(30,45,80,0.10)";
+  } else {
+    base.background = "transparent";
+    base.border = "1.5px dashed rgba(0,0,0,0.18)";
+  }
+  return (
+    <span style={base} aria-hidden="true">
+      {state !== "empty" && (
+        <span style={{ position: "absolute", left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", borderRadius: "50%", transform: "rotate(-25deg)" }} />
+      )}
+    </span>
+  );
+}
+
 export default function OrbSelect() {
   const [orbName, setOrbName] = useOrbName();
+  // re-read the field guide whenever a check clears a marble elsewhere
+  const [, bump] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => {
+    window.addEventListener("field-guide-change", bump);
+    return () => window.removeEventListener("field-guide-change", bump);
+  }, []);
   const gs = guideState();
   const proved = FIELD_ENTRIES.filter((e) => marbleState(e.id, gs) === "cleared").length;
   return (
@@ -89,23 +120,27 @@ export default function OrbSelect() {
         <div className="mt-6 rounded-2xl bg-white border border-black/8 shadow-sm p-5">
           <div className="flex items-baseline gap-2">
             <div className="text-[15px] font-semibold tracking-tight">Start here: the basics</div>
-            <div className="text-[12px]" style={{ color: "#6e6e73" }}>about two minutes each, one marble each</div>
+            <div className="text-[12px]" style={{ color: "#6e6e73" }}>Five short lessons run in order, and each one clears a marble.</div>
           </div>
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {([
-              ["share", "What a share is", "#0a84ff"],
-              ["fund", "What a fund is", "#bf5af2"],
-              ["cash", "What cash does", "#8e8e93"],
-              ["coin", "What a coin is", "#ff9f0a"],
-            ] as const).map(([id, label, c]) => (
-              <Link key={id} to={`/orb/mini/${id}`}
-                className="rounded-xl border border-black/8 p-3 flex flex-col items-start gap-2 transition hover:shadow-md hover:-translate-y-0.5"
-                style={{ background: "#fafafc" }}>
-                <span className="w-8 h-8 rounded-full"
-                  style={{ background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${c}55 55%, ${c}bb)`, boxShadow: "inset 0 0 0 1px rgba(30,45,80,0.1)" }} />
-                <span className="text-[12.5px] font-medium leading-tight">{label}</span>
-              </Link>
-            ))}
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {LESSON_LADDER.map((l, i) => {
+              const st = marbleState(l.marble.concept, gs);
+              return (
+                <Link key={l.id} to={`/orb/learn/${l.id}`}
+                  className="rounded-xl border border-black/8 p-3 flex flex-col items-start gap-2 transition hover:shadow-md hover:-translate-y-0.5"
+                  style={{ background: "#fafafc" }}
+                  title={st === "cleared" ? "This marble is cleared." : st === "cloudy" ? "This marble is still setting." : "This marble is not earned yet."}>
+                  <div className="flex items-center gap-2 w-full">
+                    <LessonMarble state={st} color={l.marble.color} />
+                    <span className="ml-auto text-[11px] tnum" style={{ color: "#a1a1a6" }}>{i + 1} of {LESSON_LADDER.length}</span>
+                  </div>
+                  <span className="text-[12.5px] font-medium leading-tight">{l.title}</span>
+                  <span className="text-[11px] leading-tight" style={{ color: "#6e6e73" }}>
+                    {st === "cleared" ? "The marble is cleared." : st === "cloudy" ? "The marble is still setting." : "The marble is waiting."}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
 

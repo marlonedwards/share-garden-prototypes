@@ -5,6 +5,7 @@
 // Everything stays on this computer: results go to localStorage only.
 import { HistoryMarket } from "../engine/history";
 import { fmtMoney } from "../engine/market";
+import { markCheck } from "./fieldGuide";
 import { ScenarioConfig } from "./scenarios";
 
 export interface CheckItem {
@@ -17,13 +18,43 @@ export interface CheckItem {
   concept?: string;    // field-guide marble this item can clear
 }
 
+// One answered item, in the shape CheckResult stores.
+export interface AnsweredItem {
+  id: string;
+  choice: number;
+  correct: boolean;
+}
+
 export interface CheckResult {
   scenario: string;
   when: string;        // ISO date
   score: number;
   total: number;
-  items: { id: string; choice: number; correct: boolean }[];
+  items: AnsweredItem[];
   gateMs: number[];    // how long each history gate took to answer
+}
+
+// The single scoring-and-marking code path for every check renderer
+// (QuickCheck in the era debriefs, LessonCheck in the stepped lessons):
+// grade the tap, move the field-guide marble, and hand back the result row.
+export function gradeCheckAnswer(item: CheckItem, choice: number): AnsweredItem {
+  const correct = choice === item.answer;
+  if (item.concept) markCheck(item.concept, correct);
+  return { id: item.id, choice, correct };
+}
+
+// The single result-row writer: score the answered items and store one
+// aggregated CheckResult. No-op on an empty run.
+export function saveAnsweredRun(scenario: string, items: AnsweredItem[], gateMs: number[] = []): void {
+  if (items.length === 0) return;
+  saveCheckResult({
+    scenario,
+    when: new Date().toISOString(),
+    score: items.filter((it) => it.correct).length,
+    total: items.length,
+    items,
+    gateMs,
+  });
 }
 
 const STATIC_ITEMS: Record<string, CheckItem[]> = {

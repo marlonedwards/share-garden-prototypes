@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckItem, saveCheckResult } from "../lib/checkpoints";
-import { markCheck } from "../lib/fieldGuide";
+import { AnsweredItem, CheckItem, gradeCheckAnswer, saveAnsweredRun } from "../lib/checkpoints";
 
 // The beta quick check: one item at a time, immediate explanation, and a
 // results panel the tester can screenshot. Framed as testing the game, not
@@ -8,15 +7,16 @@ import { markCheck } from "../lib/fieldGuide";
 
 const SUB = "#6e6e73";
 
-export default function QuickCheck({ scenario, items, gateMs, onFocus }: {
+export default function QuickCheck({ scenario, items, gateMs, onFocus, onAnswered }: {
   scenario: string;
   items: CheckItem[];
   gateMs: number[];
   onFocus?: (step: number | null) => void;
+  onAnswered?: (correct: boolean) => void;   // fires per item, on the tap
 }) {
   const [idx, setIdx] = useState(0);
   const [choice, setChoice] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<{ id: string; choice: number; correct: boolean }[]>([]);
+  const [answers, setAnswers] = useState<AnsweredItem[]>([]);
 
   const done = idx >= items.length;
   const score = answers.filter((a) => a.correct).length;
@@ -29,15 +29,8 @@ export default function QuickCheck({ scenario, items, gateMs, onFocus }: {
   }, [idx, done]);
 
   useEffect(() => {
-    if (done && answers.length === items.length && items.length > 0) {
-      saveCheckResult({
-        scenario,
-        when: new Date().toISOString(),
-        score,
-        total: items.length,
-        items: answers,
-        gateMs,
-      });
+    if (done && answers.length === items.length) {
+      saveAnsweredRun(scenario, answers, gateMs);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
@@ -46,10 +39,10 @@ export default function QuickCheck({ scenario, items, gateMs, onFocus }: {
 
   const pick = (i: number) => {
     if (choice !== null) return;
-    const item = items[idx];
+    const row = gradeCheckAnswer(items[idx], i);
     setChoice(i);
-    setAnswers((a) => [...a, { id: item.id, choice: i, correct: i === item.answer }]);
-    if (item.concept) markCheck(item.concept, i === item.answer);
+    setAnswers((a) => [...a, row]);
+    onAnswered?.(row.correct);
   };
 
   return (

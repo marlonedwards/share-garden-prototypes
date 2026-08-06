@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter, Routes, Route, useParams } from "react-router-dom";
+import { HashRouter, Navigate, Routes, Route, useParams } from "react-router-dom";
 import "./index.css";
 import Landing from "./pages/Landing";
 import Pulse from "./pages/Pulse";
@@ -11,7 +11,7 @@ import OrbGame from "./pages/OrbGame";
 import OrbScenario from "./pages/OrbScenario";
 import OrbFree from "./pages/OrbFree";
 import FieldGuidePage from "./pages/FieldGuidePage";
-import MiniLesson from "./pages/MiniLesson";
+import LessonPage from "./pages/LessonPage";
 import OnePager from "./pages/OnePager";
 import OrbSelect from "./pages/OrbSelect";
 import Archive from "./pages/Archive";
@@ -21,6 +21,13 @@ import Archive from "./pages/Archive";
 function ScenarioRoute() {
   const { id } = useParams();
   return <OrbScenario key={id ?? "era"} />;
+}
+
+// remount the lesson page whenever the lesson id changes, so step state never
+// carries from one lesson into another
+function LessonRoute() {
+  const { id } = useParams();
+  return <LessonPage key={id ?? "lesson"} />;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -38,9 +45,15 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/s/:id" element={<ScenarioRoute />} />
         <Route path="/orb/free" element={<OrbFree />} />
         <Route path="/orb/guide" element={<FieldGuidePage />} />
-        <Route path="/orb/mini/:id" element={<MiniLesson />} />
+        <Route path="/orb/learn/:id" element={<LessonRoute />} />
+        <Route path="/orb/mini/:id" element={<LessonRoute />} />
+        {/* id-less lesson paths land on the first rung of the ladder */}
+        <Route path="/orb/learn" element={<Navigate to="/orb/learn/cash" replace />} />
+        <Route path="/orb/mini" element={<Navigate to="/orb/learn/cash" replace />} />
         <Route path="/objectives" element={<OnePager />} />
         <Route path="/archive" element={<Archive />} />
+        {/* no URL ever renders a blank page */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   </React.StrictMode>
