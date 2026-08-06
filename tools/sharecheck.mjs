@@ -29,13 +29,14 @@ await rideGates(page, DOTCOM_GATES.slice(1));
 console.log("reached end card:", await waitForEnd(page));
 await page.screenshot({ path: OUT + "era-end.png" });
 // the end card is stepped: score, then rewind, then the lessons screen that
-// carries "Save your orb"
+// carries "Share your orb" and "Save it as an image"
 await page.getByRole("button", { name: "Continue" }).click();
 await wait(600);
 await page.getByRole("button", { name: "Continue" }).click();
 await wait(600);
+console.log("share button present:", await page.getByRole("button", { name: "Share your orb" }).count());
 const dl = page.waitForEvent("download");
-await page.getByRole("button", { name: "Save your orb" }).click();
+await page.getByRole("button", { name: "Save it as an image" }).click();
 const d = await dl;
 await d.saveAs(OUT + "share-card.png");
 console.log("saved share card");

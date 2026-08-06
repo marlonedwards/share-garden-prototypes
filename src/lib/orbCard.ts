@@ -211,6 +211,23 @@ export function drawStaticOrb(ctx: CanvasRenderingContext2D, cx: number, cy: num
   ctx.beginPath(); ctx.arc(cx, cy, r + 1, 0, TAU); ctx.stroke();
 }
 
+// The same card, handed to the share sheet where the browser supports
+// sharing files (phones mostly do), with the download as the fallback so the
+// button always produces the image somewhere.
+export async function shareOrbCard(o: OrbCardOpts, filename = "my-orb.png", title = "My orb"): Promise<void> {
+  const canvas = document.createElement("canvas");
+  renderOrbCard(canvas, o);
+  const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/png"));
+  if (!blob) return;
+  const file = new File([blob], filename, { type: "image/png" });
+  const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+  if (nav.share && nav.canShare?.({ files: [file] })) {
+    try { await nav.share({ files: [file], title }); } catch { /* user closed the sheet */ }
+  } else {
+    downloadOrbCard(o, filename);
+  }
+}
+
 export function downloadOrbCard(o: OrbCardOpts, filename = "my-orb.png"): void {
   const canvas = document.createElement("canvas");
   renderOrbCard(canvas, o);

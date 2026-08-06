@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { roundPcts } from "../lib/orbModel";
-import { OrbCardOpts, downloadOrbCard, renderOrbCard } from "../lib/orbCard";
+import { OrbCardOpts, downloadOrbCard, shareOrbCard } from "../lib/orbCard";
 import { useOrbName } from "../lib/orbIdentity";
 import PlanMarble from "../components/PlanMarble";
 import {
@@ -184,21 +184,7 @@ export default function ReadyMode() {
     footer: "Made in The Orb · Share Garden",
   });
   const saveCardImage = () => downloadOrbCard(cardOpts(), "my-orb.png");
-  const shareCard = async () => {
-    const canvas = document.createElement("canvas");
-    renderOrbCard(canvas, cardOpts());
-    const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/png"));
-    if (!blob) return;
-    const file = new File([blob], "my-orb.png", { type: "image/png" });
-    const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
-    if (nav.share && nav.canShare?.({ files: [file] })) {
-      try {
-        await nav.share({ files: [file], title: orbName || "My orb" });
-      } catch { /* user closed the sheet */ }
-    } else {
-      saveCardImage();
-    }
-  };
+  const shareCard = () => shareOrbCard(cardOpts(), "my-orb.png", orbName || "My orb");
 
   const added = new Set(lines.map((l) => l.assetId).filter(Boolean));
   const customLines = resolved.filter((l) => l.kind === "custom");

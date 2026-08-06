@@ -66,7 +66,7 @@ await page.screenshot({ path: S("06-scout-front") });
 const start = page.getByRole("button", { name: "Start in 2000" });
 log("start present:", await start.count(), "disabled:", await start.isDisabled());
 log("counter:", await page.locator("text=/Scouted \\d+ of \\d+/").innerText());
-log("hint present:", await page.getByText("Flip every scouting card to open the era.").count());
+log("hint present:", await page.getByText("Scouting is optional. Start whenever you are ready.").count());
 
 // does the start button sit above the fold at 800px tall?
 const box = await start.boundingBox();
@@ -96,7 +96,7 @@ await wait(600);
 await page.screenshot({ path: S("08-scout-all-flipped") });
 log("all-flipped label:", await page.getByText("Every card is scouted.").count());
 log("start disabled after all flips:", await start.isDisabled());
-log("hint gone:", await page.getByText("Flip every scouting card to open the era.").count());
+log("hint gone:", await page.getByText("Scouting is optional. Start whenever you are ready.").count());
 const box2 = await start.boundingBox();
 log("start box after:", JSON.stringify(box2), "innerHeight 800");
 

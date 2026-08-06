@@ -4,7 +4,7 @@ import { fmtMoney } from "../engine/market";
 import { EraAsset, HistoryMarket } from "../engine/history";
 import { useSim } from "../lib/useSim";
 import { CompSlice, roundPcts, valueToRadius } from "../lib/orbModel";
-import { downloadOrbCard } from "../lib/orbCard";
+import { downloadOrbCard, shareOrbCard } from "../lib/orbCard";
 import { getOrbName } from "../lib/orbIdentity";
 import { unlockEntry } from "../lib/fieldGuide";
 import { clippingAt } from "../lib/headlines";
@@ -429,21 +429,21 @@ export default function OrbScenario() {
     maxSeen.current = 1000;
   };
 
-  const saveCard = () => {
-    downloadOrbCard({
-      comp,
-      value: net,
-      headline: orbName ? `This is ${orbName}.` : "This is your orb.",
-      subline: cfg.cardSubline,
-      index: { label: "The rainbow orb (real S&P 500)", value: m.benchmark },
-      rows: [
-        ...holdings.slice().sort((a, b) => b.value - a.value).slice(0, 4)
-          .map((h) => ({ color: h.ea.color, label: name(h.ea), right: fmtMoney(h.value) })),
-        { color: "#bfe6cc", label: "Cash", right: fmtMoney(m.cash) },
-      ],
-      footer: "Share Garden · The Orb",
-    });
-  };
+  const cardOpts = () => ({
+    comp,
+    value: net,
+    headline: orbName ? `This is ${orbName}.` : "This is your orb.",
+    subline: cfg.cardSubline,
+    index: { label: "The rainbow orb (real S&P 500)", value: m.benchmark },
+    rows: [
+      ...holdings.slice().sort((a, b) => b.value - a.value).slice(0, 4)
+        .map((h) => ({ color: h.ea.color, label: name(h.ea), right: fmtMoney(h.value) })),
+      { color: "#bfe6cc", label: "Cash", right: fmtMoney(m.cash) },
+    ],
+    footer: "Share Garden · The Orb",
+  });
+  const saveCard = () => downloadOrbCard(cardOpts());
+  const shareCard = () => { void shareOrbCard(cardOpts(), "my-orb.png", orbName || "My orb"); };
 
   const running = beat === "run";
   // the stage gives up height whenever a card of copy needs the room below
@@ -657,10 +657,10 @@ export default function OrbScenario() {
                     <>
                       {!scouted && (
                         <span className="text-[12.5px]" style={{ color: "#6e6e73" }}>
-                          Flip every scouting card to open the era.
+                          Scouting is optional. Start whenever you are ready.
                         </span>
                       )}
-                      <Btn disabled={!scouted} onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
+                      <Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
                     </>
                   } />
               </div>
@@ -821,7 +821,8 @@ export default function OrbScenario() {
                 </ul>
                 <Actions>
                   <Btn onClick={() => setEndPhase("quiz")}>Quick check</Btn>
-                  <GhostBtn onClick={saveCard}>Save your orb</GhostBtn>
+                  <GhostBtn onClick={shareCard}>Share your orb</GhostBtn>
+                  <GhostBtn onClick={saveCard}>Save it as an image</GhostBtn>
                   <GhostBtn onClick={restart}>Play again</GhostBtn>
                 </Actions>
               </Card>

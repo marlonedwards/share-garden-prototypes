@@ -97,7 +97,7 @@ for (let i = 0; i < 20; i++) {
   // click first option button that is not navigation
   const nextBtn = page.getByRole("button", { name: /^(Next|See how you did|Done)/ });
   if (await nextBtn.count()) { await nextBtn.first().click(); await wait(500); continue; }
-  const opts = page.locator("main button").filter({ hasNotText: /Back to the debrief|Play again|Whole shares|Real names|‹|›|Quick check|Save your orb/ });
+  const opts = page.locator("main button").filter({ hasNotText: /Back to the debrief|Play again|Whole shares|Real names|‹|›|Quick check|Save it as an image/ });
   const n = await opts.count();
   if (n === 0) break;
   await opts.nth(Math.min(1, n - 1)).click();

@@ -16,7 +16,9 @@ export function getOrbName(): string {
 export function useOrbName(): [string, (n: string) => void] {
   const [name, setName] = useState(getOrbName);
   const set = (n: string) => {
-    setName(n);
+    // no leading whitespace, so an all-space name collapses to empty and the
+    // "Your orb" fallbacks kick in everywhere a name is shown
+    setName(n.trimStart());
     try {
       localStorage.setItem(KEY, n.trim());
     } catch {

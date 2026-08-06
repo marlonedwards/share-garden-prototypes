@@ -111,7 +111,7 @@ for (let q = 1; q <= 9; q++) {
     const all = await opts.all();
     for (const b of all) {
       const t = (await b.innerText()).trim();
-      if (/^(Back to the debrief|Play again|Quick check|Restart|Save your orb|Real names|Whole shares|Fractional|Play|Pause|1×|2×|4×|scenarios|Next|Continue|Done|See my score|Finish)$/.test(t)) continue;
+      if (/^(Back to the debrief|Play again|Quick check|Restart|Save it as an image|Real names|Whole shares|Fractional|Play|Pause|1×|2×|4×|scenarios|Next|Continue|Done|See my score|Finish)$/.test(t)) continue;
       await b.click(); clicked = true; break;
     }
   }

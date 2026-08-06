@@ -6,13 +6,12 @@ import { fmtMoney } from "../engine/market";
 // own screen of the brief beat. The front shows the cast member's dot, name,
 // founding (or launch) year, and starting price; the back is the scouting
 // report, which holds where the cast member stands entering the era and what
-// believers and doubters said at the time. A card counts as scouted once its report has
-// been shown, and every way of reaching a card shows the report: tapping the
-// front flips it, tapping a report advances to the next unread report, and
-// the arrows, the arrow keys, and the pager dots land on a card with its
-// report already open. Reading all of them unlocks the era's start button,
-// which the page passes in through startSlot so the button, the pager, and
-// the unlock hint all sit in one compact row under the deck.
+// believers and doubters said at the time. A card counts as scouted once its
+// report has been shown: tapping a front flips it, tapping a report advances
+// to the next unread card front-up, and the arrows, the arrow keys, and the
+// pager dots always land on a card's front. Scouting is optional; the era's
+// start button rides in through startSlot, live from the first paint, so the
+// deck encourages reading without ever gating the run.
 // The deck's height is set by an invisible sizer that stacks every report in
 // one grid cell, so the tallest report always fits at the current width and
 // no sentence is ever clipped, on phones included.
@@ -111,7 +110,7 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 flex-shrink-0">
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 self-center" style={{ background: a.color }} />
         <span className="text-[14px] font-semibold tracking-tight">{name(a)}</span>
-        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · {listsAt[a.id] ? `still private · lists ${listsAt[a.id]}` : `starts at ${fmtMoney(startPrices[a.id] ?? 0)}`}{a.reconstructed ? " · reconstructed series" : ""}</span>
+        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · {listsAt[a.id] ? `still private · lists ${listsAt[a.id]}` : `starts at ${fmtMoney(startPrices[a.id] ?? 0)}`}</span>
       </div>
       <div className="flex-1 min-h-0 flex flex-col gap-1.5 pr-1">
         <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.history}</p>
@@ -128,7 +127,7 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
         )}
       </div>
       <div className="flex-shrink-0 text-[11.5px] font-medium" style={{ color: "#0071e3" }}>
-        {allFlipped ? "The deck is done. The start button is open." : "Tap for the next card"}
+        {allFlipped ? "The deck is done." : "Tap for the next card"}
       </div>
     </>
   );
@@ -171,11 +170,6 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
                   ? <span><span style={{ color: "#6e6e73" }}>Still private · lists </span>{listsAt[ea.id]}</span>
                   : <span><span style={{ color: "#6e6e73" }}>Starts at </span>{fmtMoney(price)}</span>}
               </div>
-              {ea.reconstructed && (
-                <div className="text-[10.5px]" style={{ color: "#6e6e73" }}>
-                  Its price series is reconstructed from the dated record.
-                </div>
-              )}
               <div className="text-[12px] font-medium mt-2" style={{ color: "#0071e3" }}>Tap to read the scouting report</div>
             </div>
             {/* back: the report, as it read at the time */}

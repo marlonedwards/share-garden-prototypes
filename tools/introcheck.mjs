@@ -45,7 +45,7 @@ await page.screenshot({ path: OUT + "intro-done.png" });
 await page.getByRole("button", { name: "Open the course" }).click();
 await wait(800);
 console.log("landed on course:", page.url().includes("/orb") && !page.url().includes("intro"));
-console.log("reco chip:", await page.getByText("Start here, for you").count());
+console.log("reco chip:", await page.getByText("Start here", { exact: true }).count());
 console.log("replay link:", await page.getByText("Replay the intro").count());
 
 // 6. claimed marbles: share + market-price ringed on the guide

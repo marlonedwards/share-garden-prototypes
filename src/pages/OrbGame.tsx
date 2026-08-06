@@ -4,7 +4,8 @@ import { ASSETS, MarketEvent, fmtMoney } from "../engine/market";
 import { useSim } from "../lib/useSim";
 import { CompSlice, ORB_ASSETS, RAINBOW, orbAsset, roundPcts, valueToRadius } from "../lib/orbModel";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
-import { downloadOrbCard } from "../lib/orbCard";
+import { downloadOrbCard, shareOrbCard } from "../lib/orbCard";
+import { TUTORIAL_DONE_KEY } from "../lib/courseProgress";
 import { getOrbName } from "../lib/orbIdentity";
 import { useStageScale } from "../lib/useStageScale";
 import {
@@ -123,10 +124,28 @@ export default function OrbGame() {
     }
   });
 
-  // bring the debrief into view when the run ends
+  // bring the debrief into view when the run ends, and record that the
+  // tutorial has been played so the course screen's Start-here chip moves on
   useEffect(() => {
-    if (beat === "end") setTimeout(() => endCardRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 350);
+    if (beat !== "end") return;
+    try { localStorage.setItem(TUTORIAL_DONE_KEY, "1"); } catch { /* private browsing */ }
+    setTimeout(() => endCardRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 350);
   }, [beat]);
+
+  // the end card's share/save image, drawn from the finished run
+  const tutorialCardOpts = () => ({
+    comp,
+    value: net,
+    headline: orbName ? `This is ${orbName}.` : "This is your orb.",
+    subline: choice === "sold" ? "Lesson 1 · sold in the crash" : "Lesson 1 · held through the crash",
+    index: { label: "The rainbow orb", value: m.benchmark },
+    rows: [
+      ...holdings.slice().sort((a, b) => b.value - a.value).slice(0, 4)
+        .map((h) => ({ color: h.oa.color, label: h.asset.name, right: fmtMoney(h.value) })),
+      { color: "#c7c7cc", label: "Cash", right: fmtMoney(m.cash) },
+    ],
+    footer: "Share Garden · The Orb",
+  });
 
   const buy = (id: string, dollars: number) => {
     const oa = orbAsset(id)!;
@@ -389,19 +408,8 @@ export default function OrbGame() {
               <li className="flex gap-2"><Dot c="#30d158" /><span>And the money you spent on shares went to the investors who sold them to you. The companies got nothing. Prices are trades between people.</span></li>
                 </ul>
                 <Actions>
-                  <Btn onClick={() => downloadOrbCard({
-                    comp,
-                    value: net,
-                    headline: orbName ? `This is ${orbName}.` : "This is your orb.",
-                    subline: choice === "sold" ? "Lesson 1 · sold in the crash" : "Lesson 1 · held through the crash",
-                    index: { label: "The rainbow orb", value: m.benchmark },
-                    rows: [
-                      ...holdings.slice().sort((a, b) => b.value - a.value).slice(0, 4)
-                        .map((h) => ({ color: h.oa.color, label: h.asset.name, right: fmtMoney(h.value) })),
-                      { color: "#c7c7cc", label: "Cash", right: fmtMoney(m.cash) },
-                    ],
-                    footer: "Share Garden · The Orb",
-                  })}>Save your orb</Btn>
+                  <Btn onClick={() => { void shareOrbCard(tutorialCardOpts(), "my-orb.png", orbName || "My orb"); }}>Share your orb</Btn>
+                  <GhostBtn onClick={() => downloadOrbCard(tutorialCardOpts())}>Save it as an image</GhostBtn>
                   <GhostBtn onClick={restart}>Play again</GhostBtn>
                   <span className="text-[12.5px] self-center" style={{ color: "#6e6e73" }}>
                     {choice === "sold" ? "Try holding on this time." : "Try selling during the crash and see what it costs."}

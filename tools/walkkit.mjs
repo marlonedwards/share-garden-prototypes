@@ -8,8 +8,10 @@
 
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Flip every scouting card so the era's start button unlocks. Safe to call on
-// eras that deal no deck: it returns immediately when there is no deck.
+// Flip every scouting card, reading the deck the way a thorough player would.
+// The start button no longer waits for this (scouting is optional), but the
+// walks still scout fully so they exercise the deck. Safe to call on eras
+// that deal no deck: it returns immediately when there is no deck.
 export async function scout(page) {
   const sm = page.getByRole("button", { name: "Scout the menu" });
   if (!(await sm.count())) return false;

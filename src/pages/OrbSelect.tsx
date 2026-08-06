@@ -6,6 +6,7 @@ import { useOrbName } from "../lib/orbIdentity";
 import { FIELD_ENTRIES, MarbleState, guideState, marbleState } from "../lib/fieldGuide";
 import { LESSON_LADDER } from "../lessons";
 import { loadReadyPlan, planSlices, planTotal } from "../lib/readyAssets";
+import { startHereRoute } from "../lib/courseProgress";
 import PlanMarble from "../components/PlanMarble";
 
 // Scenario select for the Orb. Each scenario is one lesson; the plain-language
@@ -104,6 +105,9 @@ export default function OrbSelect() {
   }, []);
   const gs = guideState();
   const proved = FIELD_ENTRIES.filter((e) => marbleState(e.id, gs) === "cleared").length;
+  // the chip starts on the intro's recommendation and advances through the
+  // course as stops are played; recomputed on every field-guide bump
+  const startHere = startHereRoute(reco);
   // the marble saved by the "Ready to invest?" finale, shown beside the named orb
   const plan = loadReadyPlan();
   const planUsd = plan ? planTotal(plan.lines) : 0;
@@ -191,9 +195,9 @@ export default function OrbSelect() {
                   <span className="text-[11px] leading-tight" style={{ color: "#6e6e73" }}>
                     {st === "cleared" ? "The marble is cleared." : st === "cloudy" ? "The marble is still setting." : st === "claimed" ? "You said you know this. Prove it here." : "The marble is waiting."}
                   </span>
-                  {reco === `lesson-${l.id}` && (
+                  {startHere === `/orb/learn/${l.id}` && (
                     <span className="text-[10.5px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
-                      Start here, for you
+                      Start here
                     </span>
                   )}
                 </Link>
@@ -225,9 +229,9 @@ export default function OrbSelect() {
               <div className="min-w-0 flex-1">
                 <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>
                   {s.lesson}
-                  {reco && reco.startsWith("era-") && s.to === `/orb/s/${reco.slice(4)}` && (
+                  {startHere === s.to && (
                     <span className="ml-2 text-[10.5px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
-                      Start here, for you
+                      Start here
                     </span>
                   )}
                 </div>

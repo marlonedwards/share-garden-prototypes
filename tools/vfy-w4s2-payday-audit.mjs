@@ -130,7 +130,7 @@ for (let i = 0; i < 14; i++) {
   } else {
     // answer: click the second option button inside the check card
     const answered = await page.evaluate(() => {
-      const btns = [...document.querySelectorAll("main button")].filter((b) => b.innerText.length > 12 && !/Back to the debrief|Play again|Quick check|Save your orb|Restart/.test(b.innerText));
+      const btns = [...document.querySelectorAll("main button")].filter((b) => b.innerText.length > 12 && !/Back to the debrief|Play again|Quick check|Save it as an image|Restart/.test(b.innerText));
       if (btns.length === 0) return null;
       btns[Math.min(1, btns.length - 1)].click();
       return btns.length;
