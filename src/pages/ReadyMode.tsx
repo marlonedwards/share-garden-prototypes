@@ -141,9 +141,19 @@ export default function ReadyMode() {
     setLines((ls) => (ls.length >= MAX_PLAN_LINES ? ls : [...ls, { key: nextCustomKey(ls), label: name, dollars: 100 }]));
     setCustomName("");
   };
+  // Money inputs accept digits and at most one dot with two decimals, so a
+  // held-down key or a pasted mess can never become a nonsense plan.
+  const sanitizeDollars = (raw: string): string => {
+    let s = raw.replace(/[^0-9.]/g, "");
+    const dot = s.indexOf(".");
+    if (dot !== -1) s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+    if (s.length > 1 && s[0] === "0" && s[1] !== ".") s = s.replace(/^0+/, "") || "0";
+    if (parseFloat(s) > 9_999_999) s = "9999999";
+    return s;
+  };
   const setDollars = (key: string, raw: string) => {
     const d = parseFloat(raw);
-    const v = Number.isFinite(d) ? Math.max(0, Math.min(d, 1_000_000_000)) : 0;
+    const v = Number.isFinite(d) ? Math.max(0, Math.min(d, 9_999_999)) : 0;
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, dollars: v } : l)));
   };
   const removeLine = (key: string) => setLines((ls) => ls.filter((l) => l.key !== key));
@@ -431,10 +441,10 @@ export default function ReadyMode() {
                     <div className="mt-1.5 flex items-center gap-2 pl-[22px]">
                       <span className="text-[13px]" style={{ color: SUB }}>$</span>
                       <input
-                        type="number" min={0} step={25}
+                        type="text" inputMode="decimal" autoComplete="off"
                         value={drafts[l.key] ?? String(l.dollars)}
                         onChange={(e) => {
-                          const raw = e.target.value;
+                          const raw = sanitizeDollars(e.target.value);
                           setDrafts((d) => ({ ...d, [l.key]: raw }));
                           setDollars(l.key, raw);
                         }}

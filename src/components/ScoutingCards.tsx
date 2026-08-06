@@ -40,10 +40,14 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
   listsAt?: Record<string, string>;
 }) {
   const [idx, setIdx] = useState(0);
+  // flipped = reports the player has actually read; showBack = whether the
+  // current card is face down right now. Arriving at a card always shows its
+  // front, so the deck reads front, report, next front, never report to report.
   const [flipped, setFlipped] = useState<Set<string>>(() => new Set());
+  const [showBack, setShowBack] = useState(false);
   const announced = useRef(false);
   const ea = assets[idx];
-  const isBack = flipped.has(ea.id);
+  const isBack = showBack;
   const allFlipped = flipped.size >= assets.length;
 
   useEffect(() => {
@@ -62,22 +66,18 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
     return null;
   }, [idx, flipped, assets]);
 
-  // every navigation lands on the report side, so paging through the deck by
-  // any means scouts the cards it visits and the counter always matches what
-  // the player has actually been shown
+  // navigation always lands on a card's front; only tapping the front opens
+  // the report, and only an opened report counts as scouted
   const visit = (j: number) => {
     setIdx(j);
-    setFlipped((f) => {
-      const n = new Set(f);
-      n.add(assets[j].id);
-      return n;
-    });
+    setShowBack(false);
   };
   const step = (d: number) => visit((idx + d + assets.length) % assets.length);
 
-  // tap an unread front to flip it; tap a report to move to the next unread
+  // tap a front to read its report; tap a report to move on, next card front up
   const tap = () => {
     if (!isBack) {
+      setShowBack(true);
       setFlipped((f) => new Set(f).add(ea.id));
     } else if (nextUnflipped !== null) {
       visit(nextUnflipped);
@@ -155,14 +155,14 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
         ))}
         <button onClick={tap} className="block w-full text-left" style={{ gridArea: "1 / 1", position: "relative" }}
           aria-label={isBack ? `Scouting report for ${name(ea)}. Tap for the next card.` : `Flip the card for ${name(ea)}.`}>
-          <div style={{
+          <div key={ea.id} style={{
             position: "absolute", inset: 0, transformStyle: "preserve-3d",
             transition: "transform 0.45s cubic-bezier(.3,1.1,.35,1)",
             transform: isBack ? "rotateY(180deg)" : "rotateY(0deg)",
           }}>
             {/* front: who is on the menu */}
             <div style={faceStyle} className="flex flex-col items-center justify-center gap-2 px-6 text-center">
-              <span className="w-9 h-9 rounded-full" style={{ background: ea.color, boxShadow: `0 0 0 6px ${ea.color}22, 0 6px 14px -6px ${ea.glow}` }} />
+              <span className="w-9 h-9 rounded-full flex-shrink-0" style={{ background: ea.color, boxShadow: `0 0 0 6px ${ea.color}22, 0 6px 14px -6px ${ea.glow}`, display: "block" }} />
               <div className="text-[17px] font-semibold tracking-tight mt-1">{name(ea)}</div>
               <div className="text-[12.5px]" style={{ color: "#6e6e73" }}>{ea.desc}</div>
               <div className="flex gap-4 mt-1 text-[12.5px] tnum" style={{ color: "#3a3a3c" }}>

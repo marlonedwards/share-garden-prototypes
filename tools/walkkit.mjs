@@ -15,10 +15,15 @@ export async function scout(page) {
   if (!(await sm.count())) return false;
   await sm.click();
   await wait(400);
-  // Paging the deck by its pager dots scouts each card it visits.
+  // Cards land front up now, so each dot visit needs a tap to open the report.
   for (let i = 1; i <= 12; i++) {
     const c = page.locator(`button[aria-label="card ${i}"]`);
-    if (await c.count()) { await c.click(); await wait(80); }
+    if (await c.count()) {
+      await c.click();
+      await wait(80);
+      const flip = page.locator('button[aria-label^="Flip the card"]');
+      if (await flip.count()) { await flip.click(); await wait(80); }
+    }
   }
   await wait(200);
   return true;

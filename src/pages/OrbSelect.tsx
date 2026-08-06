@@ -62,7 +62,7 @@ const SCENARIOS: {
 // A small marble that shows a lesson's quick-check state on the Start-here
 // strip: cleared glass, cloudy glass, or an empty dashed ring.
 function LessonMarble({ state, color }: { state: MarbleState; color: string }) {
-  const base: React.CSSProperties = { width: 32, height: 32, borderRadius: "50%", position: "relative" };
+  const base: React.CSSProperties = { width: 32, height: 32, borderRadius: "50%", position: "relative", display: "block", flexShrink: 0 };
   if (state === "cleared") {
     base.background = `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.92), ${color}55 55%, ${color}bb)`;
     base.boxShadow = `inset 0 0 0 1px rgba(30,45,80,0.14), 0 6px 12px -6px ${color}99`;

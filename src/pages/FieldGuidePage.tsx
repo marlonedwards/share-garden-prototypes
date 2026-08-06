@@ -17,7 +17,7 @@ function Marble({ entry, state, active, onClick }: {
   entry: FieldEntry; state: MarbleState; active: boolean; onClick: () => void;
 }) {
   const base: React.CSSProperties = {
-    width: 64, height: 64, borderRadius: "50%", position: "relative", cursor: "pointer",
+    width: 64, height: 64, borderRadius: "50%", position: "relative", cursor: "pointer", flexShrink: 0,
     transition: "transform 0.15s, box-shadow 0.15s",
     transform: active ? "scale(1.08)" : undefined,
   };
