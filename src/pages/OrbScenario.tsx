@@ -9,6 +9,8 @@ import { getOrbName } from "../lib/orbIdentity";
 import { unlockEntry } from "../lib/fieldGuide";
 import { clippingAt } from "../lib/headlines";
 import { ClippingCard, Ticker, TickerItem } from "../components/NewsBits";
+import { useOrbSettings } from "../lib/settings";
+import SettingsMenu from "../components/SettingsMenu";
 import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
@@ -128,6 +130,7 @@ export default function OrbScenario() {
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
   const [payMode, setPayMode] = useState<"unset" | "auto" | "ask">("unset");
   const [realNames, setRealNames] = useState(false);
+  const [settings, updateSettings] = useOrbSettings();
   const orbName = getOrbName();
   const name = (ea: { name: string; real?: string }) => (realNames && ea.real) || ea.name;
   const [runId, setRunId] = useState(0);
@@ -326,7 +329,7 @@ export default function OrbScenario() {
 
   const running = beat === "run";
   const ev = m.lastEvent;
-  const clip = running ? clippingAt(cfg.id, m.step) : null;
+  const clip = running && settings.clippings ? clippingAt(cfg.id, m.step) : null;
   const tickerItems: TickerItem[] = useMemo(
     () =>
       cfg.assets.map((ea) => {
@@ -393,6 +396,7 @@ export default function OrbScenario() {
             </div>
           )}
           <button onClick={restart} className="text-[13px] opacity-50 hover:opacity-90 transition">Restart</button>
+          <SettingsMenu settings={settings} update={updateSettings} />
         </div>
       </header>
 
@@ -465,7 +469,7 @@ export default function OrbScenario() {
                 <span style={{ color: "#6e6e73" }}> · {ev.blurb}</span>
               </div>
             )}
-            {running && <Ticker items={tickerItems} />}
+            {running && settings.ticker && <Ticker items={tickerItems} />}
           </div>
 
           <div ref={endCardRef} className={`z-20 ${beat === "end" ? "w-[min(1080px,96vw)]" : "w-[min(620px,92vw)]"}`}>
