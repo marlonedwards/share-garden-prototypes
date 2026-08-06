@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { roundPcts } from "../lib/orbModel";
+import { OrbCardOpts, downloadOrbCard, renderOrbCard } from "../lib/orbCard";
 import { useOrbName } from "../lib/orbIdentity";
 import PlanMarble from "../components/PlanMarble";
 import {
@@ -168,6 +169,35 @@ export default function ReadyMode() {
     if (screen === "pick") setScreen("door");
     else if (screen === "size") setScreen("pick");
     else if (screen === "mirror") setScreen("size");
+  };
+
+  // The shareable card: the same marble and lines as the mirror, drawn to a
+  // PNG. Save downloads it; Share hands it to the phone's share sheet where
+  // the browser supports files, and falls back to the download where it can't.
+  const cardOpts = (): OrbCardOpts => ({
+    comp: slices,
+    value: total,
+    headline: orbName ? `This is ${orbName}.` : "This is my orb.",
+    subline: `${path === "own" ? "What I hold" : "My first orb, on paper"} · ${printDate}`,
+    rows: [...resolved].filter((l) => l.dollars > 0).sort((a, b) => b.dollars - a.dollars).slice(0, 4)
+      .map((l) => ({ color: l.color, label: l.name, right: usd(l.dollars) })),
+    footer: "Made in The Orb · Share Garden",
+  });
+  const saveCardImage = () => downloadOrbCard(cardOpts(), "my-orb.png");
+  const shareCard = async () => {
+    const canvas = document.createElement("canvas");
+    renderOrbCard(canvas, cardOpts());
+    const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/png"));
+    if (!blob) return;
+    const file = new File([blob], "my-orb.png", { type: "image/png" });
+    const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], title: orbName || "My orb" });
+      } catch { /* user closed the sheet */ }
+    } else {
+      saveCardImage();
+    }
   };
 
   const added = new Set(lines.map((l) => l.assetId).filter(Boolean));
@@ -514,13 +544,26 @@ export default function ReadyMode() {
             </section>
 
             <div className="mt-6 flex flex-col gap-2.5 max-w-sm mx-auto">
+              <div className="flex justify-center gap-2.5 flex-wrap">
+                <button onClick={saveCardImage} disabled={total <= 0}
+                  className="text-[13.5px] font-medium px-5 py-2.5 rounded-full text-white transition disabled:opacity-35"
+                  style={{ background: ACCENT }}>
+                  Save as image
+                </button>
+                <button onClick={shareCard} disabled={total <= 0}
+                  className="text-[13.5px] font-medium px-5 py-2.5 rounded-full border transition disabled:opacity-35"
+                  style={{ color: ACCENT, borderColor: "rgba(0,113,227,0.4)", background: "#fff" }}>
+                  Share
+                </button>
+              </div>
               <button onClick={() => window.print()} disabled={total <= 0}
-                className="text-[13.5px] font-medium px-5 py-2.5 rounded-full text-white transition disabled:opacity-35"
-                style={{ background: ACCENT }}>
-                Print this plan
+                className="text-[12.5px] font-medium transition disabled:opacity-35 hover:opacity-75"
+                style={{ color: SUB }}>
+                Print this plan instead
               </button>
               <p className="text-[11.5px] text-center" style={{ color: SUB }}>
-                The printed page ends with three questions to ask a parent or a teacher together.
+                The card is a picture of your marble and its lines. The printed page adds three
+                questions to ask a parent or a teacher together.
               </p>
               {confirmClear ? (
                 <div className="flex items-center justify-center gap-3 text-[12px] flex-wrap">

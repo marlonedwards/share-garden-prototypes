@@ -108,44 +108,45 @@ export default function OrbSelect() {
 
       <main className="max-w-3xl mx-auto px-6 pt-10 pb-16">
         <h1 className="text-[34px] font-semibold tracking-tight leading-tight">Your portfolio, in one picture.</h1>
+        <div className="mt-2 flex items-baseline gap-2">
+          <label htmlFor="orb-name" className="text-[13.5px]" style={{ color: "#6e6e73" }}>Your orb's name:</label>
+          <input
+            id="orb-name"
+            value={orbName}
+            onChange={(e) => setOrbName(e.target.value)}
+            placeholder="give it a name"
+            maxLength={24}
+            className="text-[15px] font-semibold tracking-tight bg-transparent outline-none border-b border-black/10 focus:border-black/30 transition"
+            style={{ width: `${Math.max(11, orbName.length + 2)}ch` }}
+          />
+        </div>
         <p className="mt-2 text-[15px] max-w-xl" style={{ color: "#6e6e73" }}>
           Everything you own lives in one glass orb. Each company is a color. The orb's size is what
           it's all worth right now. Pick a scenario.
         </p>
 
         <div className="mt-6 rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full flex-shrink-0 relative"
-            style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(238,243,250,0.45) 58%, rgba(214,224,238,0.65))", boxShadow: "inset 0 0 0 1.5px rgba(30,45,80,0.12), 0 14px 28px -14px rgba(24,34,60,0.4)" }}>
-            <div className="absolute inset-4 rounded-full overflow-hidden" style={{ filter: "blur(7px)", opacity: 0.55 }}>
-              <div className="w-full h-full" style={{ background: "conic-gradient(from 200deg, #0a84ff, #30d158 30%, #ff9f0a 60%, #bf5af2 85%, #0a84ff)" }} />
-            </div>
-            <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
-          </div>
-          {plan && planUsd > 0 && (
-            <Link to="/orb/ready" className="flex-shrink-0 flex flex-col items-center transition hover:opacity-80"
-              title="This marble is the plan you saved in the last lesson. It opens Ready to invest?">
-              <PlanMarble slices={planSlices(plan.lines)} total={planUsd} size={64}
-                ariaLabel="The marble from your saved plan" />
-              <span className="text-[11px] font-medium leading-none" style={{ color: "#0071e3" }}>
-                {plan.path === "own" ? "What you hold" : "Your plan"}
-              </span>
-              <span className="text-[10.5px] tnum mt-0.5" style={{ color: "#6e6e73" }}>
-                ${Math.round(planUsd).toLocaleString("en-US")}
-              </span>
+          {plan && planUsd > 0 ? (
+            <Link to="/orb/ready" className="flex-shrink-0 transition hover:opacity-85"
+              title="Your orb, drawn from the plan you saved in Ready to invest?">
+              <PlanMarble slices={planSlices(plan.lines)} total={planUsd} size={96}
+                ariaLabel="Your orb, drawn from your saved plan" />
             </Link>
+          ) : (
+            <div className="w-24 h-24 rounded-full flex-shrink-0 relative"
+              style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(238,243,250,0.45) 58%, rgba(214,224,238,0.65))", boxShadow: "inset 0 0 0 1.5px rgba(30,45,80,0.12), 0 14px 28px -14px rgba(24,34,60,0.4)" }}>
+              <div className="absolute inset-4 rounded-full overflow-hidden" style={{ filter: "blur(7px)", opacity: 0.55 }}>
+                <div className="w-full h-full" style={{ background: "conic-gradient(from 200deg, #0a84ff, #30d158 30%, #ff9f0a 60%, #bf5af2 85%, #0a84ff)" }} />
+              </div>
+              <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
+            </div>
           )}
           <div className="min-w-0 flex-1">
-            <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>This is your orb</div>
-            <input
-              value={orbName}
-              onChange={(e) => setOrbName(e.target.value)}
-              placeholder="Give it a name"
-              maxLength={24}
-              className="text-[21px] font-semibold tracking-tight bg-transparent outline-none w-full border-b border-transparent focus:border-black/15 transition"
-            />
-            <p className="text-[12.5px] mt-1" style={{ color: "#6e6e73" }}>
-              It holds every investment you make, in every lesson. A crash can shrink it, but only
-              selling empties it. Its name stays on this computer and goes nowhere else.
+            <div className="text-[17px] font-semibold tracking-tight">{orbName || "Your orb"}</div>
+            <p className="text-[12.5px] mt-0.5" style={{ color: "#6e6e73" }}>
+              {plan && planUsd > 0
+                ? `${plan.path === "own" ? "Holding" : "Planning"} $${Math.round(planUsd).toLocaleString("en-US")} across ${plan.lines.length} ${plan.lines.length === 1 ? "line" : "lines"}. It grows with every lesson you play.`
+                : "It holds every investment you make, in every lesson, and everything about it stays on this computer."}
             </p>
           </div>
           <Link to="/orb/guide" className="flex-shrink-0 text-right group">
