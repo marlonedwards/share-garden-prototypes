@@ -3,10 +3,11 @@ import { FluidStyle } from "./OrbScene";
 
 // Shared UI atoms for the Orb pages (tutorial, era, select).
 
-export function Card({ title, children, wide }: { title: string; children: ReactNode; wide?: boolean }) {
+export function Card({ title, children, wide, eyebrow }: { title: string; children: ReactNode; wide?: boolean; eyebrow?: string }) {
   return (
     <div className={`pop-in rounded-2xl border border-black/8 shadow-xl p-5 ${wide ? "w-full" : ""}`}
       style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)" }}>
+      {eyebrow && <div className="text-[12px] font-medium mb-0.5" style={{ color: "#6e6e73" }}>{eyebrow}</div>}
       <div className="text-[15px] font-semibold mb-1.5 tracking-tight">{title}</div>
       <div className="text-sm leading-relaxed" style={{ color: "#3a3a3c" }}>{children}</div>
     </div>

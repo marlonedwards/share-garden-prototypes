@@ -5,7 +5,10 @@
 // Everything stays on this computer: results go to localStorage only.
 import { HistoryMarket } from "../engine/history";
 import { fmtMoney } from "../engine/market";
+import { markCheck } from "./fieldGuide";
 import { ScenarioConfig } from "./scenarios";
+import { covidCheckItems } from "../content/era-covid";
+import { inflationQuiz } from "../content/era-inflation";
 
 export interface CheckItem {
   id: string;
@@ -17,27 +20,61 @@ export interface CheckItem {
   concept?: string;    // field-guide marble this item can clear
 }
 
+// One answered item, in the shape CheckResult stores.
+export interface AnsweredItem {
+  id: string;
+  choice: number;
+  correct: boolean;
+}
+
 export interface CheckResult {
   scenario: string;
   when: string;        // ISO date
   score: number;
   total: number;
-  items: { id: string; choice: number; correct: boolean }[];
+  items: AnsweredItem[];
   gateMs: number[];    // how long each history gate took to answer
 }
 
+// The single scoring-and-marking code path for every check renderer
+// (QuickCheck in the era debriefs, LessonCheck in the stepped lessons):
+// grade the tap, move the field-guide marble, and hand back the result row.
+export function gradeCheckAnswer(item: CheckItem, choice: number): AnsweredItem {
+  const correct = choice === item.answer;
+  if (item.concept) markCheck(item.concept, correct);
+  return { id: item.id, choice, correct };
+}
+
+// The single result-row writer: score the answered items and store one
+// aggregated CheckResult. No-op on an empty run.
+export function saveAnsweredRun(scenario: string, items: AnsweredItem[], gateMs: number[] = []): void {
+  if (items.length === 0) return;
+  saveCheckResult({
+    scenario,
+    when: new Date().toISOString(),
+    score: items.filter((it) => it.correct).length,
+    total: items.length,
+    items,
+    gateMs,
+  });
+}
+
 const STATIC_ITEMS: Record<string, CheckItem[]> = {
+  covid: covidCheckItems,
+  inflation: inflationQuiz,
   dotcom: [
     {
+      // CEE Investing 12-5c ladder (downturns move asset prices); concept: crash
       id: "dotcom-recovery",
-      focus: 93,
+      focus: 81,
       concept: "crash",
-      prompt: "The index peaked in early 2000, then crashed. How long until it reached a new high?",
-      options: ["About one year", "About three years", "About seven years", "It never did"],
+      prompt: "The index peaked in the summer of 2000, then crashed. How long did it take to reach a new high?",
+      options: ["About one year", "About three years", "About six years", "It never did"],
       answer: 2,
-      explain: "About seven years. Recoveries are measured in years, not weeks, and that is why the money you invest needs time.",
+      explain: "It took about six years, from the summer of 2000 to the fall of 2006. Recoveries are measured in years, not weeks, and that is why the money you invest needs time.",
     },
     {
+      // CEE Investing 12-5b ladder (expectations are already in the price); concept: bubble
       id: "dotcom-pricedin",
       focus: 1,
       concept: "bubble",
@@ -52,6 +89,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "A price is a bundle of expectations. When everyone already believes the story, believing it too buys you nothing.",
     },
     {
+      // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
       id: "dotcom-survivors",
       focus: 30,
       concept: "survivorship",
@@ -65,9 +103,40 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       answer: 2,
       explain: "Hundreds went to zero. Every chart of the past you will ever see is missing its corpses. That is survivorship bias.",
     },
+    {
+      // CEE Investing 12-5c ladder (downturns and investor mood); concept: panic-selling
+      id: "dotcom-reopen",
+      focus: 20,
+      concept: "panic-selling",
+      prompt: "In September 2001 the market closed for four trading days, then fell about 14 percent in the week it reopened. What happened to those losses?",
+      options: [
+        "They kept deepening for years",
+        "The market regained the lost ground within about two months",
+        "The market stayed closed until 2002",
+        "Only oil stocks recovered",
+      ],
+      answer: 1,
+      explain: "The reopening week was the Dow's worst since 1933, and the lost ground came back within about two months. Whoever sold into that fear turned a temporary fall into a permanent one.",
+    },
+    {
+      // CEE Investing 8-5a (diversification within and among asset classes); concept: diversification
+      id: "dotcom-fraud",
+      focus: 30,
+      concept: "diversification",
+      prompt: "The Phone Giant's profits were invented, and even Wall Street's most famous telecom analyst recommended it for most of the ride down. What actually protects an investor from a fraud nobody sees coming?",
+      options: [
+        "Reading the company's reports more carefully",
+        "Following the most famous analysts",
+        "Spreading money so widely that no single company can sink the plan",
+        "Only buying big, well-known companies",
+      ],
+      answer: 2,
+      explain: "The fraud fooled the professionals who read the reports for a living. Diversification is the one defense that does not require spotting the lie.",
+    },
   ],
   payday: [
     {
+      // CEE Investing 8-7c (future value of a regular series); concept: dca
       id: "payday-bestbuys",
       focus: 33,
       concept: "dca",
@@ -82,6 +151,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "The months that felt worst bought the most shares for the money. The plan works precisely when it feels wrong.",
     },
     {
+      // CEE Investing 8-7 (compounding rewards regular investing); concept: dca
       id: "payday-dca",
       focus: 3,
       concept: "dca",
@@ -93,20 +163,54 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
         "Guaranteeing a profit",
       ],
       answer: 1,
-      explain: "Fixed dollars divided by a lower price equals more shares. No prediction required.",
+      explain: "Fixed dollars divided by a lower price equals more shares, and no prediction is required.",
     },
     {
+      // CEE Investing 8-7 with the 12-5c ladder (nobody can time the bottom); concept: dca
       id: "payday-bell",
       focus: 33,
       concept: "dca",
       prompt: "October 2002 turned out to be the bottom of the market. Who knew that at the time?",
-      options: ["Experienced investors", "The people on TV", "Nobody. Bottoms are only visible afterward", "The companies themselves"],
+      options: ["Experienced investors", "The people on TV", "Nobody, because bottoms are only visible afterward", "The companies themselves"],
       answer: 2,
       explain: "Nobody rings a bell at the bottom. That is the whole argument for a plan that does not need one.",
+    },
+    {
+      // CEE Investing 8-7 with the 12-5c ladder (a plan decided in calm holds
+      // through a panic); concept: panic-selling
+      id: "payday-reopen",
+      focus: 20,
+      concept: "panic-selling",
+      prompt: "In September 2001 the market closed for four days, then fell hard when it reopened. What did the steady $50 plan need from you that month?",
+      options: [
+        "A forecast of what came next",
+        "A brave last-minute trade",
+        "Nothing new, because the decision was already made",
+        "A pause until the news improved",
+      ],
+      answer: 2,
+      explain: "The plan was written on a calm day so that a terrible month could not rewrite it. Deciding once is the whole trick.",
+    },
+    {
+      // CEE Investing 12-5b ladder (expectations are already in the price);
+      // concept: market-price
+      id: "payday-record",
+      focus: 93,
+      concept: "market-price",
+      prompt: "In October 2007 the index closed at an all-time record. What does a record high tell you about the month that follows it?",
+      options: [
+        "Prices must keep rising",
+        "A crash must come next",
+        "Nothing, because past prices do not tell you the next one",
+        "Records mean the market is safe",
+      ],
+      answer: 2,
+      explain: "A chart only looks backward. The plan kept buying at records for the same reason it kept buying at bottoms: it never needed to know what came next.",
     },
   ],
   gfc: [
     {
+      // CEE Investing 12-5c ladder (downturns move asset prices); concept: crash
       id: "gfc-arc",
       focus: 20,
       concept: "crash",
@@ -118,13 +222,14 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
         "Went to zero",
       ],
       answer: 1,
-      explain: "Down about half by March 2009, then a recovery to new records. The system bent hard. It did not break.",
+      explain: "The index fell by about half into March 2009, then recovered to new records. The system bent hard. It did not break.",
     },
     {
+      // CEE Investing 8-5a (diversification within and among asset classes); concept: diversification
       id: "gfc-safe",
       focus: 26,
       concept: "diversification",
-      prompt: "Mega Bank and The Insurance Giant were among the biggest companies on earth in 2007. What does their collapse say about 'big means safe'?",
+      prompt: "Mega Bank and The Insurance Giant were among the biggest companies on earth in 2007. What does their collapse say about ‘big means safe’?",
       options: [
         "Big usually does mean safe",
         "Size is not safety. Even giants can lose nine dollars of every ten",
@@ -135,6 +240,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "Fame and size tell you a company is important, not that its stock is safe. Safety comes from spreading out.",
     },
     {
+      // CEE Investing 12-5c ladder (downturns and investor mood); concept: panic-selling
       id: "gfc-bottom",
       focus: 26,
       concept: "panic-selling",
@@ -148,9 +254,40 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       answer: 1,
       explain: "The best prices of the decade arrived dressed as the end of the world. That is why holding a plan beats reading a mood.",
     },
+    {
+      // CEE Investing 8-5b (diversified fund versus individual assets); concept: index-fund
+      id: "gfc-index-recovery",
+      focus: 74,
+      concept: "index-fund",
+      prompt: "The index owned the same collapsing banks everyone else did. How did it still reach new records by 2013?",
+      options: [
+        "It quietly sold the banks before the crash",
+        "The government replaced its losses",
+        "Its winners, like the phone maker and the everything store, grew by more than the fallen banks could take away",
+        "It never actually fell",
+      ],
+      answer: 2,
+      explain: "An index holds losers and winners alike. A stock can only lose 100%, but a winner can gain far more, and that lopsided math pulled the whole basket to new highs.",
+    },
+    {
+      // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
+      id: "gfc-fallen-vs-dead",
+      focus: 26,
+      concept: "survivorship",
+      prompt: "The Carmaker fell under $3 a share and later multiplied. The Old Bank fell to zero and stayed there. What separates the two?",
+      options: [
+        "Nothing, because both were just low prices",
+        "A fallen price can recover as long as the business survives. A bankruptcy takes shareholders to zero, and zero is forever",
+        "Car companies are always safer than banks",
+        "The Carmaker's shares were cheaper to begin with",
+      ],
+      answer: 1,
+      explain: "A crash marks prices down. A bankruptcy erases the owners. Since nobody can be sure which giants will survive, spreading out matters more than picking well.",
+    },
   ],
   crypto: [
     {
+      // CEE Investing 12-2c ladder (cryptocurrencies are speculative); concept: position-size
       id: "crypto-size",
       focus: 58,
       concept: "position-size",
@@ -165,6 +302,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "Bet size decides whether you can wait. An investor who must sell in winter never sees spring.",
     },
     {
+      // CEE Investing 12-2c ladder (speculative promises); concept: ponzi
       id: "crypto-promise",
       focus: 1,
       concept: "ponzi",
@@ -179,6 +317,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "Real investments pay for risk taken. Anything guaranteeing riches is paying old investors with new investors' money, until it can't.",
     },
     {
+      // CEE Investing 8-5b (diversified fund versus individual assets); concept: index-fund
       id: "crypto-boring",
       focus: 46,
       concept: "index-fund",
@@ -191,6 +330,37 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       ],
       answer: 1,
       explain: "It did not beat the luckiest coins. It beat most coin holders, because it was possible to actually hold it.",
+    },
+    {
+      // CEE Investing 12-2c ladder (speculative assets swing hardest) with the
+      // 12-5c ladder (downturns move asset prices); concept: crash
+      id: "crypto-haven",
+      focus: 26,
+      concept: "crash",
+      prompt: "In March 2020, stocks fell by about a third. What did the coins that fans called ‘digital gold’ do in the same storm?",
+      options: [
+        "Held steady, like gold",
+        "Rose as money fled the stock market",
+        "Fell even harder than stocks, nearly half in two days",
+        "Stopped trading until the panic passed",
+      ],
+      answer: 2,
+      explain: "When frightened people need cash they sell everything, and the wildest assets fall hardest. A shelter that falls harder than the storm is not a shelter.",
+    },
+    {
+      // CEE Investing 12-5c ladder (nobody can time the market); concept: bubble
+      id: "crypto-top",
+      focus: 46,
+      concept: "bubble",
+      prompt: "In November 2021, Coin Alpha hit a record near $69,000, then fell for a year. What told investors at the time that this was the top?",
+      options: [
+        "The charts gave a clear signal",
+        "The news announced the top that week",
+        "Nothing, because tops are only visible afterward",
+        "The exchanges warned their customers",
+      ],
+      answer: 2,
+      explain: "No bell rings at a top while you are standing on it. That is why bet size, which you control, beats timing, which nobody does.",
     },
   ],
 };
@@ -226,6 +396,7 @@ function runItems(
       .map((v) => Math.round(v))
       .sort((a, b) => a - b);
     const answer = opts.indexOf(Math.round(panicNow));
+    // CEE Investing 12-5c ladder (downturns and investor mood); concept: panic-selling
     out.push({
       id: "run-panic",
       focus: firstPanicStep,
@@ -233,7 +404,7 @@ function runItems(
       prompt: `During the crash you sold shares for ${fmtMoney(panicSold)}. Held to the end of the era, what would those same shares be worth?`,
       options: opts.map((v) => fmtMoney(v)),
       answer,
-      explain: `${fmtMoney(panicNow)}. The debrief showed this number. Selling in a panic locks the low price in forever.`,
+      explain: `They would be worth ${fmtMoney(panicNow)}, and the debrief showed that number. Selling in a panic locks the low price in forever.`,
     });
   }
 
@@ -242,13 +413,14 @@ function runItems(
     const deadName = cfg.assets.filter((a) => deadHeld.has(a.id)).map((a) => name(a)).join(" and ");
     const firstDeadId = [...deadHeld][0];
     const deathStep = firstDeadId ? Math.max(0, (m.history[firstDeadId] ?? []).findIndex((p) => p <= 0)) : undefined;
+    // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
     out.push({
       id: "run-dead",
       focus: deathStep,
       concept: "survivorship",
       prompt: `You put money into ${deadName}, which went to zero. How much of it comes back if you wait long enough?`,
       options: [
-        "None. Zero is forever",
+        "None of it, because zero is forever",
         "About half, eventually",
         "All of it, given enough years",
         "It depends on the next bull market",
@@ -260,6 +432,7 @@ function runItems(
 
   if (out.length < 2) {
     const gain = m.benchmark - m.bench[0];
+    // CEE Investing 8-5b (diversified fund versus individual assets); concept: index-fund
     out.push({
       id: "run-index",
       concept: "index-fund",

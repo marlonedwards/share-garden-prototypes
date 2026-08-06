@@ -10,8 +10,10 @@ import { unlockEntry } from "../lib/fieldGuide";
 import { clippingAt } from "../lib/headlines";
 import { ClippingCard, Ticker, TickerItem } from "../components/NewsBits";
 import { useOrbSettings } from "../lib/settings";
+import { useStageScale } from "../lib/useStageScale";
 import SettingsMenu from "../components/SettingsMenu";
-import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
+import { Gate, ScenarioConfig, getScenario, hasScouting } from "../lib/scenarios";
+import ScoutingCards from "../components/ScoutingCards";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
@@ -29,6 +31,15 @@ type Beat = "brief" | "run" | "payday" | "gate" | "end";
 
 const STAGE_W = 1080;
 const STAGE_H = 440;
+
+// The holdings rail's share count. Whole-share eras with $100+ prices make a
+// single-share position the normal case, so the label must stay grammatical:
+// "1 share", "2 shares", "1.5 shares".
+function fmtShares(shares: number, fractional: boolean): string {
+  if (fractional) return `${shares.toFixed(1)} shares`;
+  const n = Math.round(shares);
+  return `${n} ${n === 1 ? "share" : "shares"}`;
+}
 
 // Debrief bullets computed from the player's actual run: outcome vs the index,
 // panic sells priced against holding, money lost to names that went to zero.
@@ -76,6 +87,17 @@ function runBullets(
   } else {
     out.push({ c: "#30d158", text: `You finished within ${fmtMoney(Math.abs(net - bench))} of the rainbow orb. Matching the index is a result most professionals never manage.` });
   }
+  // income eras: say what actually happened to the paydays, counted from the
+  // trade log, so the debrief never congratulates a schedule nobody followed
+  if (cfg.income && bought) {
+    const buyMonths = new Set(m.trades.filter((t) => t.side === "buy").map((t) => t.step)).size;
+    const total = cfg.lastStep ?? cfg.dataset.months.length - 1;
+    if (buyMonths >= total * 0.8) {
+      out.push({ c: "#30d158", text: `You put money in during ${buyMonths} of ${total} months, high and low. The same dollars always buy more shares when the price is lower.` });
+    } else if (buyMonths < total * 0.5) {
+      out.push({ c: "#ff9f0a", text: `Money went in during ${buyMonths} of ${total} months. A payday that stays in cash buys no shares at any price, cheap or not.` });
+    }
+  }
   if (panicSold > 1 && panicNow > panicSold * 1.05) {
     out.push({ c: "#ff453a", text: `You sold ${fmtMoney(panicSold)} of shares while the market was deep underwater. Held to the end, those same shares would be worth ${fmtMoney(panicNow)}. That gap is what panic costs.` });
   }
@@ -90,6 +112,19 @@ const RAINBOW_COMP: CompSlice[] = [
   ["#ff453a", "#ff9d97"], ["#ff9f0a", "#ffcf7a"], ["#ffd60a", "#ffe97a"], ["#30d158", "#8ff0ae"],
   ["#64d2ff", "#b0e8ff"], ["#0a84ff", "#7cc0ff"], ["#bf5af2", "#e0a9ff"],
 ].map(([color, glow], i) => ({ key: `r${i}`, color, glow, frac: 1 / 7 }));
+
+// A gate is a teaching beat, so its card opens with the definition sentence
+// in a heavier weight than the story below it. Eras that have had their
+// depth pass carry the definition in the gate's `definition` field; gates
+// written before that split still open context[0] with the definition
+// sentence, and this helper splits it off so their typography matches.
+// Splits at the first sentence-ending punctuation followed by a space;
+// decimals and prices never have a space after the period, so they do not
+// split.
+function splitLead(p: string): [string, string] {
+  const m = p.match(/^(.+?[.?!])\s+([\s\S]+)$/);
+  return m ? [m[1], m[2]] : [p, ""];
+}
 
 // Rebuilds what the player held at any month from the trade log, so the
 // end-game chart can rewind the whole scene. Strictly a rewind of what
@@ -117,14 +152,47 @@ export default function OrbScenario() {
   const cfg = getScenario(id);
   const lastStep = cfg.lastStep ?? cfg.dataset.months.length - 1;
 
+  // companies that go public mid-era (EraAsset.listedAtStep) cannot be
+  // bought before their listing month: the engine refuses the trade, and
+  // every surface that shows their price shows "lists <month>" instead
+  const listedAt = useMemo(
+    () => Object.fromEntries(cfg.assets.filter((a) => (a.listedAtStep ?? 0) > 0).map((a) => [a.id, a.listedAtStep as number])),
+    [cfg],
+  );
   const { m, speed, setSpeed, done, reset, act } = useSim<HistoryMarket>({
     maxStep: lastStep,
     make: () => new HistoryMarket({
       dataset: cfg.dataset, indexKey: cfg.indexKey, cash: cfg.startCash,
-      income: cfg.income, moments: cfg.moments, lastStep,
+      income: cfg.income, moments: cfg.moments, lastStep, listedAt,
     }),
   });
   const [beat, setBeat] = useState<Beat>("brief");
+  // the end beat is a sequence of single screens that replace each other, per
+  // the one-idea-per-screen layout law: the score, the rewind chart, the
+  // lessons, then the quiz. The quiz screen unmounts the stage entirely (the
+  // quiz replaces the stage; it never stacks under it), so every end screen
+  // sits above an 800px fold on a 1280x800 laptop.
+  const [endPhase, setEndPhase] = useState<"score" | "rewind" | "lessons" | "quiz">("score");
+  // eras with full scouting notes deal the card deck in the brief beat, and
+  // the start button stays shut until every card has been flipped once.
+  // The brief beat is two screens for those eras (the written brief, then the
+  // deck), replacing each other per the layout law, so the deck, its pager,
+  // and the start button all fit above the fold on a laptop screen.
+  const scouting = hasScouting(cfg.assets);
+  const [scouted, setScouted] = useState(false);
+  const [briefPhase, setBriefPhase] = useState<"read" | "scout">("read");
+  const startPrices = useMemo(
+    () => Object.fromEntries(cfg.assets.map((a) => [a.id, cfg.dataset.series[a.id]?.[0] ?? 0])),
+    [cfg],
+  );
+  // scouting cards for still-private companies show the listing month
+  // instead of a starting price, so no pre-listing backfill value is ever
+  // presented as a real price
+  const listsAt = useMemo(
+    () => Object.fromEntries(cfg.assets.filter((a) => (a.listedAtStep ?? 0) > 0).map((a) => [a.id, m.monthLabel(a.listedAtStep as number)])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cfg],
+  );
   const [fluid, setFluid] = useFluidPref();
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
@@ -137,17 +205,21 @@ export default function OrbScenario() {
   const [pausedForMove, setPausedForMove] = useState(false);
   const [hoverStep, setHoverStep] = useState<number | null>(null);
   const [lockedStep, setLockedStep] = useState<number | null>(null);
-  const [quizFocus, setQuizFocus] = useState<number | null>(null);
-  const reviewStep = hoverStep ?? lockedStep ?? quizFocus;
+  const reviewStep = hoverStep ?? lockedStep;
   const [activeGate, setActiveGate] = useState<Gate | null>(null);
   const [gateAnswers, setGateAnswers] = useState<{ title: string; choice: string; ms: number }[]>([]);
   const firedGates = useRef<Set<number>>(new Set());
   const gateShownAt = useRef(0);
   const sceneRef = useRef<OrbSceneHandle>(null);
   const endCardRef = useRef<HTMLDivElement>(null);
+  const railCardRef = useRef<HTMLDivElement>(null);
   const peakInvested = useRef(0);
   const crashSeen = useRef(false);
   const lastPay = useRef(0);
+  // paydays that arrived while the orb was empty (nothing to follow yet).
+  // They wait in cash and ride along with the first payday the player can
+  // actually settle, so no month's $50 is ever silently swallowed.
+  const pendingPay = useRef(0);
 
   const holdings = useMemo(
     () =>
@@ -183,15 +255,29 @@ export default function OrbScenario() {
   useEffect(() => {
     if (!cfg.income || beat !== "run") return;
     if (m.step > lastPay.current) {
+      // months skipped in a single jump before this render still owe their
+      // paydays; they join the pending pool instead of vanishing
+      pendingPay.current += (cfg.income ?? 0) * (m.step - lastPay.current - 1);
       lastPay.current = m.step;
-      if (invested <= 0) return;                 // nothing to follow yet; cash just accumulates
+      // a gate is about to pause this same month, so the auto-buy and the
+      // payday card both stand down: the gate's answer settles what happens
+      // to this payday (answerGate invests it, or leaves it in cash)
+      if (cfg.gates.some((g) => m.step >= g.atStep && !firedGates.current.has(g.atStep))) return;
+      if (invested <= 0) {
+        // nothing to follow yet: this month's payday waits in the pending
+        // pool until the first payday the player can actually settle
+        pendingPay.current += cfg.income;
+        return;
+      }
       if (payMode === "auto") {
         act((mm) => {
           const inv = mm.invested();
           if (inv <= 0) return;
+          const amt = (cfg.income ?? 0) + pendingPay.current;
+          pendingPay.current = 0;
           for (const key of Object.keys(mm.holdings)) {
             const w = (mm.holdings[key].shares * mm.prices[key]) / inv;
-            mm.buy(key, Math.min((cfg.income ?? 0) * w, mm.cash));
+            mm.buy(key, Math.min(amt * w, mm.cash));
           }
         });
       } else {
@@ -206,6 +292,17 @@ export default function OrbScenario() {
   useEffect(() => {
     if (speed > 0) setPausedForMove(false);
   }, [speed]);
+
+  // after an act option the caption points the player at the "Inside your
+  // orb" panel, but below the 2xl breakpoint the trade rail stacks under the
+  // stage and can sit below the fold on a 1280x800 laptop. Bring the panel
+  // on screen when the tape pauses for a move, so the caption never points
+  // at something the player cannot see; "nearest" keeps the caption in view
+  // and is a no-op on wide screens where the rail already rides beside the
+  // stage.
+  useEffect(() => {
+    if (pausedForMove) setTimeout(() => railCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 350);
+  }, [pausedForMove]);
 
   // field-guide cards open the first time a concept appears in play
   useEffect(() => {
@@ -234,15 +331,29 @@ export default function OrbScenario() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m.step, beat]);
 
-  const answerGate = (choice: string, act?: boolean) => {
+  // Answering a gate settles the gate month's payday too (the payday effect
+  // stood down for it), so every option really happens in the sim: "invest"
+  // under an automatic schedule buys now by current weights, "hold" leaves
+  // this one month in cash, and "stop" also drops the schedule back to
+  // asking, so future paydays wait for the player again. The debrief can
+  // then honestly quote the choice back.
+  const answerGate = (o: Gate["options"][number]) => {
     if (activeGate) {
       const ms = Math.round(performance.now() - gateShownAt.current);
-      setGateAnswers((a) => [...a, { title: activeGate.title, choice, ms }]);
+      setGateAnswers((a) => [...a, { title: activeGate.title, choice: o.label, ms }]);
       if (cfg.income) unlockEntry("dca");
     }
     setActiveGate(null);
     setBeat("run");
-    if (act) {
+    if (o.pay === "stop") setPayMode("ask");
+    if (o.pay === "invest" && payMode === "auto") {
+      // the automatic plan makes the move itself, exactly as it would have
+      // without the gate, and the tape rolls on
+      investIncomeNow();
+      setSpeed(1);
+      return;
+    }
+    if (o.act) {
       setSpeed(0);
       setPausedForMove(true);
     } else {
@@ -258,15 +369,19 @@ export default function OrbScenario() {
     act((mm) => {
       const inv = mm.invested();
       if (inv <= 0) return;
+      // the month's payday plus any paydays that waited while the orb was empty
+      const amt = (cfg.income ?? 0) + pendingPay.current;
+      pendingPay.current = 0;
       for (const key of Object.keys(mm.holdings)) {
         const w = (mm.holdings[key].shares * mm.prices[key]) / inv;
-        mm.buy(key, Math.min((cfg.income ?? 0) * w, mm.cash));
+        mm.buy(key, Math.min(amt * w, mm.cash));
       }
     });
     sceneRef.current?.pour({ kind: "buy", color: "#30d158", glow: "#8ff0ae" });
   };
 
   const buy = (assetId: string, dollars: number) => {
+    if (!m.listed(assetId)) return;
     const ea = cfg.assets.find((a) => a.id === assetId)!;
     let spend = Math.min(dollars, m.cash);
     if (!fractional) {
@@ -295,19 +410,22 @@ export default function OrbScenario() {
   const restart = () => {
     reset();
     setBeat("brief");
+    setEndPhase("score");
+    setScouted(false);
+    setBriefPhase("read");
     setTradeRow(null);
     setPayMode("unset");
     setActiveGate(null);
     setGateAnswers([]);
     setHoverStep(null);
     setLockedStep(null);
-    setQuizFocus(null);
     setPausedForMove(false);
     setRunId((r) => r + 1);
     firedGates.current.clear();
     peakInvested.current = 0;
     crashSeen.current = false;
     lastPay.current = 0;
+    pendingPay.current = 0;
     maxSeen.current = 1000;
   };
 
@@ -328,6 +446,20 @@ export default function OrbScenario() {
   };
 
   const running = beat === "run";
+  // the stage gives up height whenever a card of copy needs the room below
+  // it on a 1280x800 laptop: during a scouting era's brief beat the deck, its
+  // paragraph, its pager, and the start button all land above the fold. A
+  // gate shrinks the stage further (and widens its card so the story wraps
+  // into fewer lines), because the whole teaching beat, answer buttons
+  // included, must sit above an 800px fold; vfy-w4s2-dc-layout.mjs measures
+  // this. The end beat shrinks the stage the same way so each debrief screen
+  // (score, rewind, lessons) fits above the fold with the scene still live
+  // for the rewind scrubber. The stage opens back to full height while the
+  // tape runs.
+  const stageH = scouting && beat === "brief" ? 272 : beat === "gate" ? 264 : beat === "end" ? 300 : STAGE_H;
+  // scale-to-fit keeps the fixed-geometry stage from forcing sideways scroll
+  // on phones; the wrapper below is sized to the scaled picture
+  const stageScale = useStageScale(STAGE_W);
   const ev = m.lastEvent;
   const clip = running && settings.clippings ? clippingAt(cfg.id, m.step) : null;
   const tickerItems: TickerItem[] = useMemo(
@@ -335,7 +467,11 @@ export default function OrbScenario() {
       cfg.assets.map((ea) => {
         const p = m.prices[ea.id] ?? 0;
         const prev = m.history[ea.id]?.[Math.max(0, m.step - 1)] ?? p;
-        return { name: name(ea), price: p, delta: prev > 0 ? (p - prev) / prev : 0, dead: p <= 0 };
+        return {
+          name: name(ea), price: p, delta: prev > 0 ? (p - prev) / prev : 0, dead: p <= 0,
+          // a company that has not listed yet has no market price to show
+          note: !m.listed(ea.id) ? `lists ${m.monthLabel(ea.listedAtStep ?? 0)}` : undefined,
+        };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [m.step, realNames]
@@ -348,7 +484,8 @@ export default function OrbScenario() {
     [beat]
   );
 
-  // rewind scrubber: hover or quiz focus rewinds the scene to that month
+  // rewind scrubber: hovering or pinning the end chart rewinds the scene to
+  // that month (the quiz screen has no scene: the quiz replaces the stage)
   const review = beat === "end" && reviewStep !== null && reviewStep < lastStep
     ? stateAt(m, cfg, reviewStep)
     : null;
@@ -375,7 +512,7 @@ export default function OrbScenario() {
 
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
-      <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 sm:px-10 py-2 min-h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
           scenarios
@@ -402,13 +539,18 @@ export default function OrbScenario() {
 
       <main className="px-4 sm:px-8 pb-4 flex flex-col 2xl:flex-row gap-6 items-center 2xl:items-start justify-center">
         <div className="flex flex-col items-center gap-5">
+          {/* the quiz replaces the stage (layout law: the quiz never stacks
+              under the lesson), so the check card is the only thing on the
+              quiz screen and its Next button never falls past the fold */}
+          {!(beat === "end" && endPhase === "quiz") && (
+          <div style={{ width: STAGE_W * stageScale, height: stageH * stageScale, transition: "height 0.4s ease" }}>
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
-            style={{ width: STAGE_W, height: STAGE_H, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)" }}>
+            style={{ width: STAGE_W, height: stageH, transform: `scale(${stageScale})`, transformOrigin: "top left", background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)", transition: "height 0.4s ease" }}>
             <OrbScene
               key={runId}
               ref={sceneRef}
               width={STAGE_W}
-              height={STAGE_H}
+              height={stageH}
               player={{ value: dInvested, comp: review ? review.comp : comp }}
               index={{ value: dBench, comp: RAINBOW_COMP }}
               cash={dCash}
@@ -452,7 +594,7 @@ export default function OrbScenario() {
             </div>
             {crashSeen.current && peakInvested.current > invested * 1.08 && (
               <div className="absolute -translate-x-1/2 text-[12px] tnum"
-                style={{ left: `${LAYOUT.playerX * 100}%`, top: STAGE_H * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) * radiusScale - 22, color: "#6e6e73" }}>
+                style={{ left: `${LAYOUT.playerX * 100}%`, top: stageH * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) * radiusScale - 22, color: "#6e6e73" }}>
                 the high · {fmtMoney(peakInvested.current)}
               </div>
             )}
@@ -471,18 +613,63 @@ export default function OrbScenario() {
             )}
             {running && settings.ticker && <Ticker items={tickerItems} />}
           </div>
+          </div>
+          )}
 
-          <div ref={endCardRef} className={`z-20 ${beat === "end" ? "w-[min(1080px,96vw)]" : "w-[min(620px,92vw)]"}`}>
-            {beat === "brief" && (
+          <div ref={endCardRef} className={`z-20 ${beat === "end" ? (endPhase === "quiz" ? "w-[min(720px,94vw)]" : "w-[min(1080px,96vw)]") : beat === "gate" ? "w-[min(900px,94vw)]" : "w-[min(620px,92vw)]"}`}>
+            {/* brief, screen one: the written brief. Scouting eras advance to
+                the deck screen from here; other eras start the tape directly. */}
+            {beat === "brief" && (!scouting || briefPhase === "read") && (
               <Card title={cfg.briefTitle}>
                 {cfg.briefBody.map((p, i) => (
                   <p key={i} className={i > 0 ? "mt-2" : ""}>{p}</p>
                 ))}
-                <Actions><Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn></Actions>
+                <Actions>
+                  {scouting ? (
+                    <Btn onClick={() => setBriefPhase("scout")}>Scout the menu</Btn>
+                  ) : (
+                    <Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
+                  )}
+                </Actions>
               </Card>
             )}
+            {/* brief, screen two: the scouting deck replaces the written brief.
+                Per the layout law the screen holds one paragraph (definition
+                first, then story), the deck as its interactive stage, the
+                pager as its progress dots, and the start button as its
+                Continue, riding in the deck's pager row so everything stays
+                above the fold. */}
+            {beat === "brief" && scouting && briefPhase === "scout" && (
+              <div className="pop-in">
+                {/* the cast noun is per era: most menus hold companies, but
+                    the crypto menu holds coins, and its own briefing teaches
+                    that a coin is not a company */}
+                <p className="text-[15px] font-semibold tracking-tight leading-snug">
+                  A scouting report describes a {cfg.castNoun ?? "company"} as an investor could see it before putting any money in.
+                </p>
+                <p className="mt-1 text-[13.5px] leading-snug" style={{ color: "#3a3a3c" }}>
+                  Each card shows one {cfg.castNoun ?? "company"} on this menu as it stood in {m.monthLabel(0)}, with the case its believers and its doubters were really making at the time.
+                </p>
+                <ScoutingCards assets={cfg.assets} startPrices={startPrices} name={name}
+                  foundedLabel={cfg.castFoundedLabel} listsAt={listsAt}
+                  onAllFlipped={() => setScouted(true)}
+                  startSlot={
+                    <>
+                      {!scouted && (
+                        <span className="text-[12.5px]" style={{ color: "#6e6e73" }}>
+                          Flip every scouting card to open the era.
+                        </span>
+                      )}
+                      <Btn disabled={!scouted} onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
+                    </>
+                  } />
+              </div>
+            )}
+            {/* the trade rail sits beside the stage only on wide screens and
+                stacks below it otherwise, so the caption names the panel
+                instead of a direction */}
             {beat === "run" && pausedForMove && speed === 0 && (
-              <Caption>Paused for your move. Trade on the right, then press Play when you are ready.</Caption>
+              <Caption>The tape is paused for your move. Trade in the &ldquo;Inside your orb&rdquo; panel, then press Play when you are ready.</Caption>
             )}
             {beat === "run" && speed > 0 && m.step < 4 && !cfg.income && (
               <Caption>Pause anytime to trade. The tape runs to the end either way.</Caption>
@@ -490,15 +677,37 @@ export default function OrbScenario() {
             {beat === "run" && speed > 0 && m.step < 4 && cfg.income && (
               <Caption>Buy your first colors, then your income can follow them every month.</Caption>
             )}
-            {beat === "gate" && activeGate && (
-              <Card title={`${activeGate.title}. ${activeGate.question}`}>
-                {activeGate.context.map((p, i) => (
+            {beat === "gate" && activeGate && (() => {
+              // teaching-beat typography: an eyebrow naming the concept, the
+              // definition sentence in a heavier weight, then the story at
+              // body size. Gates without an explicit definition field lend
+              // their first context sentence to the lead slot via splitLead.
+              const lead = activeGate.definition ?? splitLead(activeGate.context[0] ?? "")[0];
+              const story = activeGate.definition
+                ? activeGate.context
+                : [splitLead(activeGate.context[0] ?? "")[1], ...activeGate.context.slice(1)].filter((s) => s);
+              return (
+              <Card title={lead}
+                eyebrow={activeGate.eyebrow ? `${activeGate.title} · ${activeGate.eyebrow}` : activeGate.title}>
+                {story.map((p, i) => (
                   <p key={i} className={i > 0 ? "mt-2" : ""}>{p}</p>
                 ))}
-                {activeGate.refs && activeGate.refs.length > 0 && (
+                {((activeGate.refs && activeGate.refs.length > 0) || cfg.briefing) && (
                   <p className="mt-2.5 text-[12.5px]">
                     <span style={{ color: "#6e6e73" }}>Read more: </span>
-                    {activeGate.refs.map((r, i) => (
+                    {cfg.briefing && (
+                      <span>
+                        {/* opens in a new tab like the refs beside it: an
+                            in-place navigation would unmount the live run and
+                            throw away every flip and trade */}
+                        <a href={`#/orb/brief/${cfg.id}`} target="_blank" rel="noopener noreferrer"
+                          style={{ color: "#0071e3", textDecoration: "none", borderBottom: "1px dotted #0071e3" }}>
+                          The era briefing
+                        </a>
+                        {activeGate.refs && activeGate.refs.length > 0 && <span style={{ color: "#6e6e73" }}> · </span>}
+                      </span>
+                    )}
+                    {(activeGate.refs ?? []).map((r, i) => (
                       <span key={r.url}>
                         {i > 0 && <span style={{ color: "#6e6e73" }}> · </span>}
                         <a href={r.url} target="_blank" rel="noopener noreferrer"
@@ -509,24 +718,31 @@ export default function OrbScenario() {
                     ))}
                   </p>
                 )}
+                <p className="mt-2.5 font-medium" style={{ color: "#1d1d1f" }}>{activeGate.question}</p>
                 <Actions>
                   {activeGate.options.map((o) => (
-                    <GhostBtn key={o.label} onClick={() => answerGate(o.label, o.act)}>{o.label}</GhostBtn>
+                    <GhostBtn key={o.label} onClick={() => answerGate(o)}>{o.label}</GhostBtn>
                   ))}
                 </Actions>
               </Card>
-            )}
+              );
+            })()}
             {beat === "payday" && (
-              <Card title={`Payday. ${fmtMoney(cfg.income ?? 0)} arrived.`}>
-                <p>Invest it into your colors in their current mix, or keep it as cash.</p>
+              <Card title={`Your payday of ${fmtMoney(cfg.income ?? 0)} just arrived.`}>
+                {pendingPay.current > 0 && (
+                  <p>Another {fmtMoney(pendingPay.current)} of earlier paydays waited in cash while your orb was empty, and it follows this month&apos;s choice.</p>
+                )}
+                <p className={pendingPay.current > 0 ? "mt-2" : ""}>Invest it into your colors in their current mix, or keep it as cash.</p>
                 <Actions>
                   <Btn onClick={() => { investIncomeNow(); setPayMode("auto"); setBeat("run"); setSpeed(1); }}>Invest, and do this automatically</Btn>
                   <GhostBtn onClick={() => { investIncomeNow(); setPayMode("ask"); setBeat("run"); setSpeed(1); }}>Invest, ask me each payday</GhostBtn>
-                  <GhostBtn onClick={() => { setBeat("run"); setSpeed(1); }}>Keep as cash</GhostBtn>
+                  <GhostBtn onClick={() => { pendingPay.current = 0; setBeat("run"); setSpeed(1); }}>Keep as cash</GhostBtn>
                 </Actions>
               </Card>
             )}
-            {beat === "end" && (
+            {/* end screen one: the score. Just the two finishing numbers and
+                what the player said at the crossroads, then Continue. */}
+            {beat === "end" && endPhase === "score" && (
               <Card title={cfg.endTitle} wide>
                 <div className="flex gap-3 my-3">
                   <div className="flex-1 rounded-xl px-4 py-3 border"
@@ -544,21 +760,36 @@ export default function OrbScenario() {
                   </div>
                 </div>
                 {gateAnswers.length > 0 && (
-                  <div className="mb-3 rounded-xl px-4 py-3" style={{ background: "#f5f5f7" }}>
+                  <div className="mb-1 rounded-xl px-4 py-3" style={{ background: "#f5f5f7" }}>
                     <div className="text-[12px] font-semibold mb-1" style={{ color: "#6e6e73" }}>At the crossroads, you said</div>
                     {gateAnswers.map((a) => (
                       <div key={a.title} className="text-[13px]">{a.title}: &ldquo;{a.choice}&rdquo;</div>
                     ))}
                   </div>
                 )}
+                <Actions>
+                  <Btn onClick={() => setEndPhase("rewind")}>Continue</Btn>
+                  <GhostBtn onClick={restart}>Play again</GhostBtn>
+                </Actions>
+              </Card>
+            )}
+            {/* end screen two: the rewind chart replaces the score card. The
+                scrubber is this screen's one interactive stage. */}
+            {beat === "end" && endPhase === "rewind" && (
+              <Card title="Every month of your run is on this chart." wide>
                 {cfg.income && holdings.length > 0 && (() => {
                   const top = holdings.slice().sort((a, b) => b.value - a.value)[0];
                   const hh = m.holdings[top.ea.id];
                   const avg = hh && hh.shares > 0 ? (hh.cost > 0 ? hh.cost / hh.shares : 0) : 0;
+                  // the closing line about steady buying is earned, not
+                  // assumed: it only appears when the trade log shows buys of
+                  // this name spread across at least six different months
+                  const buyMonths = new Set(m.trades.filter((t) => t.side === "buy" && t.id === top.ea.id).map((t) => t.step)).size;
                   return avg > 0 ? (
                     <p className="mb-3 text-[13px]" style={{ color: "#6e6e73" }}>
                       Your average cost for {name(top.ea)}: <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(avg)}</strong> a share.
-                      It closes at <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(m.prices[top.ea.id])}</strong>. Steady months bought the dips for you.
+                      It closes at <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(m.prices[top.ea.id])}</strong>.
+                      {buyMonths >= 6 && " Buying month after month, high and low, is what set that average."}
                     </p>
                   ) : null;
                 })()}
@@ -570,32 +801,60 @@ export default function OrbScenario() {
                     locked={lockedStep !== null && hoverStep === null}
                     tipFor={(s) => `${m.monthLabel(s)} · you ${fmtMoney(m.net[s] ?? 0)} · index ${fmtMoney(m.bench[s] ?? 0)}`} />
                 </div>
-                <p className="mb-3 t-xs text-[11.5px]" style={{ color: "#6e6e73" }}>
+                <p className="t-xs text-[11.5px]" style={{ color: "#6e6e73" }}>
                   Drag to rewind the scene above. Click to pin a month. It only looks backward:
                   knowing this chart never tells you the next one.
                 </p>
+                <Actions>
+                  <Btn onClick={() => { setHoverStep(null); setLockedStep(null); setEndPhase("lessons"); }}>Continue</Btn>
+                  <GhostBtn onClick={() => { setHoverStep(null); setLockedStep(null); setEndPhase("score"); }}>Back</GhostBtn>
+                </Actions>
+              </Card>
+            )}
+            {/* end screen three: what the run proved, then the quiz. */}
+            {beat === "end" && endPhase === "lessons" && (
+              <Card title="Take these lessons with you." wide>
                 <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
                   {endBullets.map((b, i) => (
                     <li key={i} className="flex gap-2"><Dot c={b.c} /><span>{b.text}</span></li>
                   ))}
                 </ul>
                 <Actions>
-                  <Btn onClick={saveCard}>Save your orb</Btn>
+                  <Btn onClick={() => setEndPhase("quiz")}>Quick check</Btn>
+                  <GhostBtn onClick={saveCard}>Save your orb</GhostBtn>
                   <GhostBtn onClick={restart}>Play again</GhostBtn>
                 </Actions>
-                <QuickCheck scenario={cfg.id} items={checkItems} gateMs={gateAnswers.map((a) => a.ms)}
-                  onFocus={setQuizFocus} />
+              </Card>
+            )}
+            {beat === "end" && endPhase === "quiz" && (
+              <Card title="Prove what this era taught you." wide>
+                <QuickCheck scenario={cfg.id} items={checkItems} gateMs={gateAnswers.map((a) => a.ms)} />
+                <Actions>
+                  <GhostBtn onClick={() => setEndPhase("lessons")}>Back to the debrief</GhostBtn>
+                  <GhostBtn onClick={restart}>Play again</GhostBtn>
+                </Actions>
               </Card>
             )}
           </div>
         </div>
 
+        {/* the side rail stays off during the brief, gate, and payday beats:
+            below the 2xl breakpoint it stacks under the main column, so on
+            those one-card screens it would pile extra cards beneath the card
+            of copy (breaking the one-visible-card law on a 1280x800 laptop).
+            On the brief screens a live trade panel would also let the whole
+            portfolio be bought at month-zero prices before the start button
+            ever opens. A gate that ends in a trade returns to the run beat
+            paused, where the rail is back for the move itself, and the
+            paused-for-move effect scrolls this first card on screen where
+            the rail stacks below the fold. */}
+        {beat !== "end" && beat !== "brief" && beat !== "gate" && beat !== "payday" && (
         <div className="w-full max-w-xs flex flex-col gap-4">
-          <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
+          <div ref={railCardRef} style={{ scrollMarginBlock: 16 }} className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
             <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>Inside your orb</div>
             {holdings.length === 0 && (
               <div className="text-sm py-1" style={{ color: "#6e6e73" }}>
-                {beat === "end" ? "Empty. You sold everything." : "Nothing here yet. Clear glass."}
+                Nothing is here yet. The glass is clear.
               </div>
             )}
             {holdings.map((h, hi) => {
@@ -607,7 +866,7 @@ export default function OrbScenario() {
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.ea.color, boxShadow: `0 0 0 3px ${h.ea.color}22` }} />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{name(h.ea)}</div>
-                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fractional ? h.shares.toFixed(1) : Math.round(h.shares)} shares</div>
+                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtShares(h.shares, fractional)}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold tnum">{fmtMoney(h.value)}</div>
@@ -619,7 +878,7 @@ export default function OrbScenario() {
                   </div>
                   {open && (
                     <div className="ml-6 mt-2 flex flex-wrap items-center gap-1.5 pop-in">
-                      <div className="w-full"><Sparkline width={180} height={40} data={m.history[h.ea.id]} color={h.ea.color} /></div>
+                      <div className="w-full"><Sparkline width={180} height={40} data={m.history[h.ea.id].slice(h.ea.listedAtStep ?? 0)} color={h.ea.color} /></div>
                       {[100, 250].map((a) => (
                         <TradeChip key={a} disabled={fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[h.ea.id]) < 1}
                           onClick={() => buy(h.ea.id, Math.min(a, m.cash))}>
@@ -638,26 +897,37 @@ export default function OrbScenario() {
               {cfg.assets.filter((ea) => !holdings.some((h) => h.ea.id === ea.id)).map((ea) => {
                 const open = tradeRow === `add-${ea.id}`;
                 const dead = m.prices[ea.id] <= 0;
+                // still a private company this month: no price, no buying
+                const unlisted = !m.listed(ea.id);
+                const listMonth = m.monthLabel(ea.listedAtStep ?? 0);
                 return (
-                  <div key={ea.id} style={dead ? { opacity: 0.55 } : undefined}>
+                  <div key={ea.id} style={dead || unlisted ? { opacity: 0.55 } : undefined}>
                     <button className="w-full flex items-center gap-2.5 py-1.5 text-left" title={ea.desc}
                       onClick={() => setTradeRow(open ? null : `add-${ea.id}`)}>
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ea.color }} />
                       <span className="text-[13px] flex-1 truncate">{name(ea)}</span>
-                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{dead ? "gone" : fmtMoney(m.prices[ea.id])}</span>
+                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{unlisted ? `lists ${listMonth}` : dead ? "gone" : fmtMoney(m.prices[ea.id])}</span>
                     </button>
                     {open && (
                       <div className="ml-5 mb-1.5 pop-in">
                         <div className="text-[11.5px] mb-1" style={{ color: "#6e6e73" }}>{ea.desc}</div>
-                        <div className="mb-1.5"><Sparkline width={180} height={40} data={m.history[ea.id]} color={ea.color} /></div>
-                        <div className="flex gap-1.5">
-                          {[100, 250].map((a) => (
-                            <TradeChip key={a} disabled={dead || (fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
-                              onClick={() => { buy(ea.id, Math.min(a, m.cash)); setTradeRow(null); }}>
-                              Buy ${Math.min(a, Math.floor(m.cash))}
-                            </TradeChip>
-                          ))}
-                        </div>
+                        {unlisted ? (
+                          <div className="text-[11.5px] mb-1" style={{ color: "#6e6e73" }}>
+                            It is still a private company, so it has no shares on the market. Its shares list in {listMonth}, and nothing can be bought before then.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="mb-1.5"><Sparkline width={180} height={40} data={m.history[ea.id].slice(ea.listedAtStep ?? 0)} color={ea.color} /></div>
+                            <div className="flex gap-1.5">
+                              {[100, 250].map((a) => (
+                                <TradeChip key={a} disabled={dead || (fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
+                                  onClick={() => { buy(ea.id, Math.min(a, m.cash)); setTradeRow(null); }}>
+                                  Buy ${Math.min(a, Math.floor(m.cash))}
+                                </TradeChip>
+                              ))}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -671,25 +941,24 @@ export default function OrbScenario() {
             </div>
           </div>
 
-          {beat !== "brief" && (
-            <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
-              <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: RAINBOW_DOT }} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">The rainbow orb</div>
-                  <div className="text-[12px]" style={{ color: "#6e6e73" }}>{cfg.indexSub}</div>
-                </div>
-                <div className="text-sm font-semibold tnum">{fmtMoney(m.benchmark)}</div>
+          <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
+            <div className="flex items-center gap-3">
+              <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: RAINBOW_DOT }} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium">The rainbow orb</div>
+                <div className="text-[12px]" style={{ color: "#6e6e73" }}>{cfg.indexSub}</div>
               </div>
+              <div className="text-sm font-semibold tnum">{fmtMoney(m.benchmark)}</div>
             </div>
-          )}
-          {beat !== "brief" && beat !== "end" && m.net.length > 10 && (
+          </div>
+          {m.net.length > 10 && (
             <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
               <div className="text-[13px] font-semibold mb-2" style={{ color: "#6e6e73" }}>Growth</div>
               <GrowthChart net={m.net} bench={m.bench} width={272} height={80} xLabels={[m.monthLabel(0), m.monthLabel()]} />
             </div>
           )}
         </div>
+        )}
       </main>
     </div>
   );

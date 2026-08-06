@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 // First-week prototypes, preserved for reference and kept out of the way.
 
 const OLD = [
-  { to: "/pulse", name: "Pulse", note: "The whole market as a live ticker wall and treemap." },
-  { to: "/prism", name: "Prism", note: "The market as a 3D polygon landscape sized by market cap." },
-  { to: "/garden-old", name: "Garden (first draft)", note: "The original garden loop, before the metaphor law." },
+  { to: "/pulse", name: "Pulse", note: "Pulse shows the whole market as a live ticker wall and treemap." },
+  { to: "/prism", name: "Prism", note: "Prism draws the market as a 3D polygon landscape sized by market cap." },
+  { to: "/garden-old", name: "Garden (first draft)", note: "This is the original garden loop, built before the metaphor law." },
 ];
 
 export default function Archive() {
@@ -21,9 +21,9 @@ export default function Archive() {
       </header>
       <main className="max-w-2xl mx-auto px-6 pt-10 pb-16">
         <p className="text-[14px]" style={{ color: "#6e6e73" }}>
-          Earlier explorations from the first build week. They taught us what didn't work: growth
-          animations decoupled from value, geometry frozen at market cap, pedagogy as UI copy.
-          Kept here for reference.
+          These earlier explorations come from the first build week. They taught us what didn't
+          work: growth animations decoupled from value, geometry frozen at market cap, pedagogy
+          as UI copy. They stay here for reference.
         </p>
         <div className="mt-6 flex flex-col gap-3">
           {OLD.map((o) => (

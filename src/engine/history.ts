@@ -13,6 +13,29 @@ export interface EraAsset {
   desc: string;      // honest description of the real company
   color: string;
   glow: string;
+  // Scouting notes for the pre-run cards, written strictly as of the era's
+  // first month. All four must be present for the scouting deck to deal.
+  founded?: number;  // the year the real company was founded
+  history?: string;  // where the company stands entering the era
+  believers?: string; // the bull case as people argued it at the time
+  doubters?: string;  // the bear case as people argued it at the time
+  // True for a delisted series rebuilt from the dated record instead of a
+  // market data feed (docs/course-style.md names the four: WCOM, ETYS, LEH,
+  // BCC). The scouting card discloses it wherever the price is shown.
+  reconstructed?: boolean;
+  // Optional replacement for the scouting card's default reconstruction
+  // disclosure, for assets whose reconstruction needs an extra honest detail
+  // (BCC also enters at a start-of-month price while every real series is a
+  // month-end close).
+  reconstructedNote?: string;
+  // First step at which the series is real traded data, for companies that
+  // go public mid-era (ZM and PTON in the covid era). The engine refuses
+  // buys before this step and the UI shows a "lists <month>" note instead
+  // of a price. Earlier rows in the data file are backfilled flat only so
+  // the series arrays stay rectangular; those values are never shown as a
+  // price and never tradable. Omitted or 0 means listed from the era's
+  // first month.
+  listedAtStep?: number;
 }
 
 export interface HistoryDataset {
@@ -35,6 +58,10 @@ export interface HistoryOpts {
   income?: number;       // added to cash each month; benchmark gets it too
   moments: MarketEvent[];
   lastStep?: number;
+  // per-asset first tradable step (EraAsset.listedAtStep); buys before an
+  // asset's listing step are refused, so a company cannot be bought while
+  // it was still private
+  listedAt?: Record<string, number>;
 }
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -59,12 +86,14 @@ export class HistoryMarket {
   private data: Record<string, number[]>;
   private indexKey: string;
   private moments: MarketEvent[];
+  private listedAt: Record<string, number>;
 
   constructor(opts: HistoryOpts) {
     this.data = opts.dataset.series;
     this.months = opts.dataset.months;
     this.indexKey = opts.indexKey;
     this.moments = opts.moments;
+    this.listedAt = opts.listedAt ?? {};
     this.maxStep = Math.min(opts.lastStep ?? this.months.length - 1, this.months.length - 1);
     this.cash = opts.cash;
     this.start = opts.cash;
@@ -119,7 +148,14 @@ export class HistoryMarket {
 
   netWorth(): number { return this.cash + this.invested(); }
 
+  // whether the asset's shares exist on the market at this step; a company
+  // that has not listed yet cannot be traded at any price
+  listed(assetId: string, step = this.step): boolean {
+    return step >= (this.listedAt[assetId] ?? 0);
+  }
+
   buy(assetId: string, dollars: number): boolean {
+    if (!this.listed(assetId)) return false;
     const p = this.prices[assetId];
     if (!p || dollars <= 0 || dollars > this.cash + 1e-6) return false;
     const shares = dollars / p;

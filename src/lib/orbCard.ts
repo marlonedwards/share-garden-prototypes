@@ -77,7 +77,9 @@ export function renderOrbCard(canvas: HTMLCanvasElement, o: OrbCardOpts): void {
   ctx.fillText(o.footer, W / 2, H - 60);
 }
 
-function drawStaticOrb(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, comp: CompSlice[]): void {
+// Exported so the Ready finale can draw the same marble live on its own
+// canvases; the share-card path above is unchanged.
+export function drawStaticOrb(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, comp: CompSlice[]): void {
   const groundY = cy + r;
   const dominant = comp.length ? comp.reduce((m, s) => (s.frac > m.frac ? s : m)) : null;
 

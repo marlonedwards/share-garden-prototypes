@@ -26,13 +26,123 @@ interface Unit {
 const UNITS: Unit[] = [
   {
     game: "The Orb",
-    name: "Lesson 1. What a portfolio is",
-    note: "Seeded simulation. One shock, one recovery.",
+    name: "Basics 1. What cash does",
+    note: "Seven screens follow Maya's dollar from the lemonade stand to the bakery. Two check items clear the inflation marble.",
     status: "Playable today",
     objective: (
       <>
-        Given a portfolio of correlated assets, the student will <b>predict</b> the outcome of a
-        market shock and <b>explain</b> why share count does not change.
+        Across eight replayed years, the student will <b>explain</b> why a jar&apos;s printed number
+        holds still while its buying power leaks, and <b>compare</b> the loud danger cash escapes
+        with the quiet one it cannot.
+      </>
+    ),
+    misconceptions: [
+      "money in a jar is perfectly safe",
+      "safe from crashes means safe from everything",
+    ],
+    assessment:
+      "The slider stage replays eight years of sneaker prices against a $100 jar, and both check items price the gap the student just watched open. Clearing them earns the inflation marble in the field guide.",
+    cites: [
+      { src: "CEE", code: "Saving 8-1", gloss: "reasons people save for the future" },
+      { src: "CEE", code: "Investing 12-4", gloss: "9 to 12 ladder. real versus nominal return, taught as buying power" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "Basics 2. What savings do",
+    note: "Maya's account pays interest while Jordan's shoebox pays nothing. Two check items clear the compounding and inflation marbles.",
+    status: "Playable today",
+    objective: (
+      <>
+        The student will <b>contrast</b> simple and compound interest on the same axes and{" "}
+        <b>explain</b> why emergency money lives in savings rather than in the market.
+      </>
+    ),
+    misconceptions: [
+      "every year of waiting pays the same",
+      "a shoebox keeps money safe from everything",
+    ],
+    assessment:
+      "The drag-the-years stage shows the straight simple-interest line falling behind the bending compound curve. The checks ask the student to name compounding when the bank pays interest on interest, and to read what eight closed-shoebox years did to buying power.",
+    cites: [
+      { src: "CEE", code: "Saving 8-1", gloss: "reasons people save for the future" },
+      { src: "CEE", code: "Investing 8-7", gloss: "compounding rewards waiting; interest earns interest of its own" },
+      { src: "CEE", code: "Investing 12-4", gloss: "9 to 12 ladder. real versus nominal return, taught as buying power" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "Basics 3. What a share is",
+    note: "Maya's stand is divided into 100 equal pieces, and Jordan buys one on the open market. Three check items clear the share, market price, and dividend marbles.",
+    status: "Playable today",
+    objective: (
+      <>
+        The student will <b>explain</b> where the money goes when a share trades hands and{" "}
+        <b>demonstrate</b> that the market price is only the newest trade.
+      </>
+    ),
+    misconceptions: [
+      "the company gets my money when I buy its stock",
+      "a falling price means I own less of the company",
+    ],
+    assessment:
+      "The trading-table stage lets the student push the price with one buyer or seller at a time. The three checks price a fall without changing ownership, name who set the $12 print, and pay a $2 dividend on a season when the price never moved.",
+    cites: [
+      { src: "CEE", code: "Investing 8-4", gloss: "stock buyers become part-owners; risks and rewards of stock" },
+      { src: "CEE", code: "Investing 8-1", gloss: "return arrives as capital gain and/or regular income" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "Basics 4. What a fund is",
+    note: "One sealed marble holds all eight companies on Jordan's board, the tripler and the flop together. Two check items clear the index fund and diversification marbles.",
+    status: "Playable today",
+    objective: (
+      <>
+        The student will <b>compare</b> picking one company with owning every company on the list,
+        and <b>evaluate</b> what diversification does when a single holding fails.
+      </>
+    ),
+    misconceptions: ["a smart picker can reliably choose next year's winner"],
+    assessment:
+      "The finished board reveals that the tripler was a different company in each of three years, and the professionals' report cards state the index's long-run record in plain words. Both checks price what the fund delivers, average and one-in-eight failure included.",
+    cites: [
+      { src: "CEE", code: "Investing 8-5b", gloss: "diversified fund versus individual stocks and bonds" },
+      { src: "CEE", code: "Investing 8-5a", gloss: "diversification within and among asset classes" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "Basics 5. What a coin is",
+    note: "A coin card opens onto nothing, while the share card opens onto a business. Two check items clear the position size and Ponzi marbles.",
+    status: "Playable today",
+    objective: (
+      <>
+        The student will <b>compare</b> a coin&apos;s monthly swings with an index fund&apos;s over
+        the same replayed year and <b>evaluate</b> how position size decides what a 75 percent
+        winter costs.
+      </>
+    ),
+    misconceptions: [
+      "picking the right coin matters more than the size of the bet",
+      "a steady 10 percent every month is a great offer",
+    ],
+    assessment:
+      "The student lives the same replayed coin winter at three position sizes, then taps through a Ponzi month by month until the new deposits stop arriving. Both checks are answered from what just happened on screen, and clearing them earns the last two Basics marbles.",
+    cites: [
+      { src: "CEE", code: "Investing 12-2c", gloss: "names cryptocurrencies as speculative, 9 to 12 ladder" },
+      { src: "CEE", code: "Investing 8-6a", gloss: "compare rates of return, order investments by risk" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "Lesson 1. What a portfolio is",
+    note: "The seeded tutorial opens the numbered ladder as Lesson 1. One shock hits and one recovery follows.",
+    status: "Playable today",
+    objective: (
+      <>
+        Given a portfolio of correlated assets, the student will <b>describe</b> what a market
+        shock does to the orb&apos;s value and <b>explain</b> why share count does not change.
       </>
     ),
     misconceptions: [
@@ -51,7 +161,7 @@ const UNITS: Unit[] = [
   {
     game: "The Orb",
     name: "Lesson 2. The dot-com era",
-    note: "Real 2000 to 2007 prices. S&P 500 total return as the benchmark line.",
+    note: "The prices are real, 2000 to 2007. The S&P 500 total return is the benchmark line.",
     status: "Playable today",
     objective: (
       <>
@@ -71,8 +181,8 @@ const UNITS: Unit[] = [
   },
   {
     game: "The Orb",
-    name: "Pay yourself first",
-    note: "Dollar cost averaging against a monthly income stream.",
+    name: "Lesson 3. Pay yourself first",
+    note: "A monthly payday runs through the era's real prices, and dollar cost averaging does the teaching.",
     status: "Playable today",
     objective: (
       <>
@@ -92,8 +202,8 @@ const UNITS: Unit[] = [
   },
   {
     game: "The Orb",
-    name: "The 2008 crash",
-    note: "Real 2007 to 2015 prices. A giant bank and a giant insurer nearly die on screen.",
+    name: "Lesson 4. The 2008 crash",
+    note: "The prices are real, 2007 to 2015. A giant bank and a giant insurer nearly die on screen.",
     status: "Playable today",
     objective: (
       <>
@@ -113,8 +223,8 @@ const UNITS: Unit[] = [
   },
   {
     game: "The Orb",
-    name: "Crypto winters",
-    note: "Real coin prices, 2018 to 2024. Two drawdowns of three quarters, on the same axes as the stock index.",
+    name: "Lesson 5. Crypto winters",
+    note: "The coin prices are real, 2018 to 2024. Two drawdowns of three quarters sit on the same axes as the stock index.",
     status: "Playable today",
     objective: (
       <>
@@ -131,15 +241,92 @@ const UNITS: Unit[] = [
     ],
   },
   {
+    game: "The Orb",
+    name: "Lesson 6. The covid years",
+    note: "The prices are real, 2019 to 2024. The era holds the fastest crash in market history, a meme-stock mania, and the giveback that followed.",
+    status: "Playable today",
+    objective: (
+      <>
+        Across the covid market, the student will <b>explain</b> why the fastest crash on record
+        could not be timed, and <b>evaluate</b> what happens to a price that assumes a temporary
+        world is permanent.
+      </>
+    ),
+    misconceptions: [
+      "a crash this fast must be sold first and bought back later",
+      "a crowd buying a stock means the business is worth more",
+    ],
+    assessment:
+      "Sell in March 2020 and the debrief prices the exit against the record the index set again by August. The January 2021 gate records what the student did with the meme stock, and the quick check reads the stay-at-home darlings' 95 percent giveback against the index that never traded. Two cast members are still private in January 2019 and cannot be bought before their real listing months.",
+    cites: [
+      { src: "CEE", code: "Investing 12-5c", gloss: "9 to 12 ladder. downturns move asset prices; recoveries arrive unannounced" },
+      { src: "CEE", code: "Investing 12-2c", gloss: "9 to 12 ladder. speculation, crowds, and short-term greed" },
+      { src: "CEE", code: "Investing 12-5b", gloss: "9 to 12 ladder. expectations are already in the price" },
+      { src: "CEE", code: "Investing 8-5a", gloss: "diversification within and among asset classes" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "Lesson 7. The inflation years",
+    note: "The prices are real, 2021 to 2024. A long Treasury bond fund shares the menu with the stocks.",
+    status: "Playable today",
+    objective: (
+      <>
+        Across the fastest inflation in forty years, the student will <b>explain</b> why cash and
+        long government bonds both lost buying power, and <b>evaluate</b> what diversification can
+        and cannot do in a year when stocks and bonds fall together.
+      </>
+    ),
+    misconceptions: [
+      "cash is safe because its number never changes",
+      "a government bond fund cannot lose money",
+    ],
+    assessment:
+      "Flee to cash in 2022 and the debrief prices the escape in buying power, not just in dollars. The quick check reads the bond fund's 31 percent fall back against the payments the government never missed, and the October 2022 gate records what the student did at a bottom nobody could see.",
+    cites: [
+      { src: "CEE", code: "Investing 12-4", gloss: "9 to 12 ladder. real versus nominal return, taught as buying power" },
+      { src: "CEE", code: "Investing 12-3", gloss: "9 to 12 ladder. bond prices fall when interest rates rise" },
+      { src: "CEE", code: "Investing 8-5a", gloss: "diversification within and among asset classes" },
+      { src: "CEE", code: "Investing 12-5c", gloss: "9 to 12 ladder. downturns move asset prices" },
+      { src: "CEE", code: "Investing 8-5b", gloss: "diversified fund versus individual stocks and bonds" },
+    ],
+  },
+  {
+    game: "The Orb",
+    name: "The last lesson. Ready to invest?",
+    note: "The student builds a paper plan from twenty real assets, priced as of January 2, 2026. It prints as a one-page sheet.",
+    status: "Playable today",
+    objective: (
+      <>
+        Using real names and real prices, the student will <b>construct</b> a first portfolio on
+        paper and <b>evaluate</b> its concentration, its position sizes, and what a 2008-sized
+        fall would have done to it.
+      </>
+    ),
+    misconceptions: [
+      "a plan is something you carry in your head",
+      "more lines always means more spread",
+    ],
+    assessment:
+      "The mirror reads the plan the way the course read every era, by looking backward: concentration against the dot-com collapses, coin size against the crypto winters, and a 2008-sized fall priced in the plan's own dollars. The printed sheet ends with three discussion questions and signature lines for the student and an adult.",
+    cites: [
+      { src: "CEE", code: "Investing 8-2b", gloss: "find the current prices of stocks and funds" },
+      { src: "CEE", code: "Investing 8-5a", gloss: "diversification within and among asset classes" },
+      { src: "CEE", code: "Investing 8-5b", gloss: "diversified fund versus individual stocks and bonds" },
+      { src: "CEE", code: "Investing 8-6a", gloss: "compare rates of return, order investments by risk" },
+      { src: "CEE", code: "Investing 12-2c", gloss: "names cryptocurrencies as speculative, 9 to 12 ladder" },
+    ],
+  },
+  {
     game: "Share Garden",
     name: "Tutorial slice",
-    note: "Deliberate A/B twin of Orb Lesson 1. Plant size is current price. Selling is transplanting to another gardener. Seeds are sold only at IPO.",
+    note: "This slice is a deliberate A/B twin of Orb Lesson 1. Plant size is the current price, selling is transplanting to another gardener, and seeds are sold only at IPO.",
     status: "Playable today",
     objective: (
       <>
         Using the transplant rule, the student will <b>explain</b> why selling moves ownership to
-        another investor rather than returning money to the company, and <b>predict</b> what a
-        market-wide frost does to plant size versus plant count.
+        another investor rather than returning money to the company, and <b>contrast</b> what a
+        market-wide frost does to plant size with what it does to plant count.
       </>
     ),
     misconceptions: [
@@ -282,6 +469,12 @@ export default function OnePager() {
             <p className="sg-thesis t-md mt-2 max-w-3xl" style={{ color: INK }}>
               Two games, one curriculum. Every unit is built to break a specific misconception.
             </p>
+            <p className="t-xs mt-1 max-w-3xl" style={{ color: SUB }}>
+              The Orb&apos;s course runs in two ladders, listed below in play order. Five short
+              Basics lessons come first, and then seven numbered lessons follow: the seeded
+              tutorial is Lesson 1, six real eras are Lessons 2 through 7, and the finale ends
+              the course.
+            </p>
             <p className="t-xs mt-1" style={{ color: SUB }}>
               Grades 6 to 8, laddering to 9 to 12. Free and open source. Aligned to the 2021 National
               Standards for Personal Financial Education, co-published by the Council for Economic
@@ -407,7 +600,7 @@ export default function OnePager() {
             Built on a deterministic simulation engine plus real historical market data, including
             S&P 500 total return and 2000 to 2015 era datasets. Same seed, same run, every time.
             Era menus include companies that did not survive; those delisted price series, like
-            WorldCom and Lehman Brothers, are reconstructed from the documented record.
+            WorldCom, eToys, and Lehman Brothers, are reconstructed from the documented record.
             Every number in the games is inspectable, and the curriculum, the engine, and the data
             are in one public repository.
           </div>
