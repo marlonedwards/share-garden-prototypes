@@ -407,7 +407,7 @@ export default function OnePager() {
             Built on a deterministic simulation engine plus real historical market data, including
             S&P 500 total return and 2000 to 2015 era datasets. Same seed, same run, every time.
             Era menus include companies that did not survive; those delisted price series, like
-            WorldCom and Lehman Brothers, are reconstructed from the documented record.
+            WorldCom, eToys, and Lehman Brothers, are reconstructed from the documented record.
             Every number in the games is inspectable, and the curriculum, the engine, and the data
             are in one public repository.
           </div>

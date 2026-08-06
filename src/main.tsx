@@ -14,6 +14,7 @@ import FieldGuidePage from "./pages/FieldGuidePage";
 import LessonPage from "./pages/LessonPage";
 import OnePager from "./pages/OnePager";
 import OrbSelect from "./pages/OrbSelect";
+import EraBriefing from "./pages/EraBriefing";
 import Archive from "./pages/Archive";
 
 // remount the scenario page whenever the scenario id changes, so the sim
@@ -43,6 +44,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/tutorial" element={<OrbGame />} />
         <Route path="/orb/era" element={<ScenarioRoute />} />
         <Route path="/orb/s/:id" element={<ScenarioRoute />} />
+        <Route path="/orb/brief/:id" element={<EraBriefing />} />
         <Route path="/orb/free" element={<OrbFree />} />
         <Route path="/orb/guide" element={<FieldGuidePage />} />
         <Route path="/orb/learn/:id" element={<LessonRoute />} />

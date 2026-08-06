@@ -8,7 +8,16 @@ import { LESSON_LADDER } from "../lessons";
 // Scenario select for the Orb. Each scenario is one lesson; the plain-language
 // objective is right on the card. Standards mapping lives in the one-pager.
 
-const SCENARIOS = [
+const SCENARIOS: {
+  to: string;
+  lesson: string;
+  title: string;
+  line: string;
+  learn: string;
+  dots: string[];
+  time: string;
+  brief?: string;   // path to the era briefing, when one is written
+}[] = [
   {
     to: "/orb/tutorial",
     lesson: "Lesson 1",
@@ -26,6 +35,7 @@ const SCENARIOS = [
     learn: e.learn,
     dots: e.dots,
     time: e.time,
+    brief: e.briefing ? `/orb/brief/${e.id}` : undefined,
   })),
   {
     to: "/orb/free",
@@ -146,7 +156,8 @@ export default function OrbSelect() {
 
         <div className="mt-8 flex flex-col gap-4">
           {SCENARIOS.map((s) => (
-            <Link key={s.to} to={s.to}
+            <div key={s.to}>
+            <Link to={s.to}
               className="group rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex items-center gap-6 transition hover:shadow-md hover:-translate-y-0.5">
               <div className="w-20 h-20 rounded-full flex-shrink-0 relative"
                 style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(238,243,250,0.4) 60%, rgba(214,224,238,0.6))", boxShadow: "inset 0 0 0 1px rgba(30,45,80,0.1), 0 6px 16px -8px rgba(24,34,60,0.35)" }}>
@@ -170,6 +181,19 @@ export default function OrbSelect() {
                 <div className="mt-2 text-[13px] font-medium px-3.5 py-1.5 rounded-full text-white transition group-hover:brightness-110 flex items-center justify-center leading-none" style={{ background: "#0071e3" }}>Play</div>
               </div>
             </Link>
+            {s.brief && (
+              <div className="mt-1.5 pl-8">
+                <Link to={s.brief} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium transition hover:opacity-75"
+                  style={{ color: "#0071e3" }}>
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 2.5 h7 a2 2 0 0 1 2 2 V 11.5 a1.6 1.6 0 0 0 -1.6 -1.6 H2 Z" />
+                    <path d="M4.3 5 h4.4 M4.3 7.2 h4.4" />
+                  </svg>
+                  The era briefing is an optional 2 minute read, and it tells the whole story, ending included.
+                </Link>
+              </div>
+            )}
+            </div>
           ))}
         </div>
       </main>

@@ -13,6 +13,16 @@ export interface EraAsset {
   desc: string;      // honest description of the real company
   color: string;
   glow: string;
+  // Scouting notes for the pre-run cards, written strictly as of the era's
+  // first month. All four must be present for the scouting deck to deal.
+  founded?: number;  // the year the real company was founded
+  history?: string;  // where the company stands entering the era
+  believers?: string; // the bull case as people argued it at the time
+  doubters?: string;  // the bear case as people argued it at the time
+  // True for a delisted series rebuilt from the dated record instead of a
+  // market data feed (docs/course-style.md names the four: WCOM, ETYS, LEH,
+  // BCC). The scouting card discloses it wherever the price is shown.
+  reconstructed?: boolean;
 }
 
 export interface HistoryDataset {

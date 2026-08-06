@@ -11,7 +11,8 @@ import { clippingAt } from "../lib/headlines";
 import { ClippingCard, Ticker, TickerItem } from "../components/NewsBits";
 import { useOrbSettings } from "../lib/settings";
 import SettingsMenu from "../components/SettingsMenu";
-import { Gate, ScenarioConfig, getScenario } from "../lib/scenarios";
+import { Gate, ScenarioConfig, getScenario, hasScouting } from "../lib/scenarios";
+import ScoutingCards from "../components/ScoutingCards";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
@@ -128,6 +129,18 @@ export default function OrbScenario() {
   // the end beat shows one card at a time: the debrief first, then the quiz
   // replaces it, per the one-idea-per-screen layout law
   const [endPhase, setEndPhase] = useState<"debrief" | "quiz">("debrief");
+  // eras with full scouting notes deal the card deck in the brief beat, and
+  // the start button stays shut until every card has been flipped once.
+  // The brief beat is two screens for those eras (the written brief, then the
+  // deck), replacing each other per the layout law, so the deck, its pager,
+  // and the start button all fit above the fold on a laptop screen.
+  const scouting = hasScouting(cfg.assets);
+  const [scouted, setScouted] = useState(false);
+  const [briefPhase, setBriefPhase] = useState<"read" | "scout">("read");
+  const startPrices = useMemo(
+    () => Object.fromEntries(cfg.assets.map((a) => [a.id, cfg.dataset.series[a.id]?.[0] ?? 0])),
+    [cfg],
+  );
   const [fluid, setFluid] = useFluidPref();
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
@@ -299,6 +312,8 @@ export default function OrbScenario() {
     reset();
     setBeat("brief");
     setEndPhase("debrief");
+    setScouted(false);
+    setBriefPhase("read");
     setTradeRow(null);
     setPayMode("unset");
     setActiveGate(null);
@@ -332,6 +347,12 @@ export default function OrbScenario() {
   };
 
   const running = beat === "run";
+  // the stage gives up height whenever a card of copy needs the room below
+  // it on a 1280x800 laptop: during a scouting era's brief beat the deck, its
+  // paragraph, its pager, and the start button all land above the fold, and
+  // during a gate the question's answer buttons do too. The stage opens back
+  // to full height while the tape runs.
+  const stageH = scouting && beat === "brief" ? 272 : beat === "gate" ? 340 : STAGE_H;
   const ev = m.lastEvent;
   const clip = running && settings.clippings ? clippingAt(cfg.id, m.step) : null;
   const tickerItems: TickerItem[] = useMemo(
@@ -407,12 +428,12 @@ export default function OrbScenario() {
       <main className="px-4 sm:px-8 pb-4 flex flex-col 2xl:flex-row gap-6 items-center 2xl:items-start justify-center">
         <div className="flex flex-col items-center gap-5">
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
-            style={{ width: STAGE_W, height: STAGE_H, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)" }}>
+            style={{ width: STAGE_W, height: stageH, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)", transition: "height 0.4s ease" }}>
             <OrbScene
               key={runId}
               ref={sceneRef}
               width={STAGE_W}
-              height={STAGE_H}
+              height={stageH}
               player={{ value: dInvested, comp: review ? review.comp : comp }}
               index={{ value: dBench, comp: RAINBOW_COMP }}
               cash={dCash}
@@ -456,7 +477,7 @@ export default function OrbScenario() {
             </div>
             {crashSeen.current && peakInvested.current > invested * 1.08 && (
               <div className="absolute -translate-x-1/2 text-[12px] tnum"
-                style={{ left: `${LAYOUT.playerX * 100}%`, top: STAGE_H * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) * radiusScale - 22, color: "#6e6e73" }}>
+                style={{ left: `${LAYOUT.playerX * 100}%`, top: stageH * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) * radiusScale - 22, color: "#6e6e73" }}>
                 the high · {fmtMoney(peakInvested.current)}
               </div>
             )}
@@ -477,13 +498,49 @@ export default function OrbScenario() {
           </div>
 
           <div ref={endCardRef} className={`z-20 ${beat === "end" ? "w-[min(1080px,96vw)]" : "w-[min(620px,92vw)]"}`}>
-            {beat === "brief" && (
+            {/* brief, screen one: the written brief. Scouting eras advance to
+                the deck screen from here; other eras start the tape directly. */}
+            {beat === "brief" && (!scouting || briefPhase === "read") && (
               <Card title={cfg.briefTitle}>
                 {cfg.briefBody.map((p, i) => (
                   <p key={i} className={i > 0 ? "mt-2" : ""}>{p}</p>
                 ))}
-                <Actions><Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn></Actions>
+                <Actions>
+                  {scouting ? (
+                    <Btn onClick={() => setBriefPhase("scout")}>Scout the menu</Btn>
+                  ) : (
+                    <Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
+                  )}
+                </Actions>
               </Card>
+            )}
+            {/* brief, screen two: the scouting deck replaces the written brief.
+                Per the layout law the screen holds one paragraph (definition
+                first, then story), the deck as its interactive stage, the
+                pager as its progress dots, and the start button as its
+                Continue, riding in the deck's pager row so everything stays
+                above the fold. */}
+            {beat === "brief" && scouting && briefPhase === "scout" && (
+              <div className="pop-in">
+                <p className="text-[15px] font-semibold tracking-tight leading-snug">
+                  A scouting report describes a company as an investor could see it before putting any money in.
+                </p>
+                <p className="mt-1 text-[13.5px] leading-snug" style={{ color: "#3a3a3c" }}>
+                  Each card shows one company on this menu as it stood in {m.monthLabel(0)}, with the case its believers and its doubters were really making at the time.
+                </p>
+                <ScoutingCards assets={cfg.assets} startPrices={startPrices} name={name}
+                  onAllFlipped={() => setScouted(true)}
+                  startSlot={
+                    <>
+                      {!scouted && (
+                        <span className="text-[12.5px]" style={{ color: "#6e6e73" }}>
+                          Flip every scouting card to open the era.
+                        </span>
+                      )}
+                      <Btn disabled={!scouted} onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
+                    </>
+                  } />
+              </div>
             )}
             {beat === "run" && pausedForMove && speed === 0 && (
               <Caption>The tape is paused for your move. Trade on the right, then press Play when you are ready.</Caption>
@@ -499,10 +556,22 @@ export default function OrbScenario() {
                 {activeGate.context.map((p, i) => (
                   <p key={i} className={i > 0 ? "mt-2" : ""}>{p}</p>
                 ))}
-                {activeGate.refs && activeGate.refs.length > 0 && (
+                {((activeGate.refs && activeGate.refs.length > 0) || cfg.briefing) && (
                   <p className="mt-2.5 text-[12.5px]">
                     <span style={{ color: "#6e6e73" }}>Read more: </span>
-                    {activeGate.refs.map((r, i) => (
+                    {cfg.briefing && (
+                      <span>
+                        {/* opens in a new tab like the refs beside it: an
+                            in-place navigation would unmount the live run and
+                            throw away every flip and trade */}
+                        <a href={`#/orb/brief/${cfg.id}`} target="_blank" rel="noopener noreferrer"
+                          style={{ color: "#0071e3", textDecoration: "none", borderBottom: "1px dotted #0071e3" }}>
+                          The era briefing
+                        </a>
+                        {activeGate.refs && activeGate.refs.length > 0 && <span style={{ color: "#6e6e73" }}> · </span>}
+                      </span>
+                    )}
+                    {(activeGate.refs ?? []).map((r, i) => (
                       <span key={r.url}>
                         {i > 0 && <span style={{ color: "#6e6e73" }}> · </span>}
                         <a href={r.url} target="_blank" rel="noopener noreferrer"
@@ -603,7 +672,11 @@ export default function OrbScenario() {
           </div>
         </div>
 
-        {beat !== "end" && (
+        {/* the side rail stays off during the brief beat: on the brief and
+            scouting screens it would stack a second card under the one on
+            screen, and a live trade panel there would let the whole portfolio
+            be bought at month-zero prices before the start button ever opens */}
+        {beat !== "end" && beat !== "brief" && (
         <div className="w-full max-w-xs flex flex-col gap-4">
           <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
             <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>Inside your orb</div>
@@ -685,19 +758,17 @@ export default function OrbScenario() {
             </div>
           </div>
 
-          {beat !== "brief" && (
-            <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
-              <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: RAINBOW_DOT }} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">The rainbow orb</div>
-                  <div className="text-[12px]" style={{ color: "#6e6e73" }}>{cfg.indexSub}</div>
-                </div>
-                <div className="text-sm font-semibold tnum">{fmtMoney(m.benchmark)}</div>
+          <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
+            <div className="flex items-center gap-3">
+              <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: RAINBOW_DOT }} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium">The rainbow orb</div>
+                <div className="text-[12px]" style={{ color: "#6e6e73" }}>{cfg.indexSub}</div>
               </div>
+              <div className="text-sm font-semibold tnum">{fmtMoney(m.benchmark)}</div>
             </div>
-          )}
-          {beat !== "brief" && m.net.length > 10 && (
+          </div>
+          {m.net.length > 10 && (
             <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
               <div className="text-[13px] font-semibold mb-2" style={{ color: "#6e6e73" }}>Growth</div>
               <GrowthChart net={m.net} bench={m.bench} width={272} height={80} xLabels={[m.monthLabel(0), m.monthLabel()]} />
