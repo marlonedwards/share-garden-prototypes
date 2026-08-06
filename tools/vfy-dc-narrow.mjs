@@ -1,0 +1,29 @@
+import { chromium } from "playwright";
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
+const B = "http://localhost:4332";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
+await page.goto(B + "/#/orb/s/dotcom");
+await wait(1400);
+await page.getByRole("button", { name: "Scout the menu" }).click();
+await wait(600);
+await page.screenshot({ path: OUT + "dcn-scout.png", fullPage: true });
+for (let i = 0; i < 10; i++) { await page.locator('button[aria-label^="Scouting report"], button[aria-label^="Flip the card"]').first().click(); await wait(300); }
+await page.screenshot({ path: OUT + "dcn-scout-done.png", fullPage: true });
+await page.getByRole("button", { name: "Start in 2000" }).click();
+await wait(800);
+await page.locator("text=February 2000").first().waitFor({ timeout: 60000 });
+await wait(600);
+await page.screenshot({ path: OUT + "dcn-gate1.png", fullPage: true });
+// clipping check: does a real headline render mid-run
+await page.getByRole("button", { name: "Wait in cash", exact: true }).click();
+await wait(400);
+const x4 = page.getByRole("button", { name: "4×", exact: true });
+if (await x4.count()) await x4.first().click();
+await page.locator("text=Burning Up").first().waitFor({ timeout: 60000 }).catch(() => console.log("NO CLIPPING FOUND"));
+await wait(300);
+await page.screenshot({ path: OUT + "dcn-clipping.png" });
+console.log("done");
+await browser.close();

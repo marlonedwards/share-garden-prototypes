@@ -62,12 +62,12 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
     {
       // CEE Investing 12-5c ladder (downturns move asset prices); concept: crash
       id: "dotcom-recovery",
-      focus: 93,
+      focus: 81,
       concept: "crash",
-      prompt: "The index peaked in early 2000, then crashed. How long did it take to reach a new high?",
-      options: ["About one year", "About three years", "About seven years", "It never did"],
+      prompt: "The index peaked in the summer of 2000, then crashed. How long did it take to reach a new high?",
+      options: ["About one year", "About three years", "About six years", "It never did"],
       answer: 2,
-      explain: "It took about seven years. Recoveries are measured in years, not weeks, and that is why the money you invest needs time.",
+      explain: "It took about six years, from the summer of 2000 to the fall of 2006. Recoveries are measured in years, not weeks, and that is why the money you invest needs time.",
     },
     {
       // CEE Investing 12-5b ladder (expectations are already in the price); concept: bubble
@@ -98,6 +98,36 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       ],
       answer: 2,
       explain: "Hundreds went to zero. Every chart of the past you will ever see is missing its corpses. That is survivorship bias.",
+    },
+    {
+      // CEE Investing 12-5c ladder (downturns and investor mood); concept: panic-selling
+      id: "dotcom-reopen",
+      focus: 20,
+      concept: "panic-selling",
+      prompt: "In September 2001 the market closed for four trading days, then fell about 14 percent in the week it reopened. What happened to those losses?",
+      options: [
+        "They kept deepening for years",
+        "The market regained the lost ground within about two months",
+        "The market stayed closed until 2002",
+        "Only oil stocks recovered",
+      ],
+      answer: 1,
+      explain: "The reopening week was the Dow's worst since 1933, and the lost ground came back within about two months. Whoever sold into that fear turned a temporary fall into a permanent one.",
+    },
+    {
+      // CEE Investing 8-5a (diversification within and among asset classes); concept: diversification
+      id: "dotcom-fraud",
+      focus: 30,
+      concept: "diversification",
+      prompt: "The Phone Giant's profits were invented, and even Wall Street's most famous telecom analyst recommended it for most of the ride down. What actually protects an investor from a fraud nobody sees coming?",
+      options: [
+        "Reading the company's reports more carefully",
+        "Following the most famous analysts",
+        "Spreading money so widely that no single company can sink the plan",
+        "Only buying big, well-known companies",
+      ],
+      answer: 2,
+      explain: "The fraud fooled the professionals who read the reports for a living. Diversification is the one defense that does not require spotting the lie.",
     },
   ],
   payday: [
@@ -141,6 +171,38 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       answer: 2,
       explain: "Nobody rings a bell at the bottom. That is the whole argument for a plan that does not need one.",
     },
+    {
+      // CEE Investing 8-7 with the 12-5c ladder (a plan decided in calm holds
+      // through a panic); concept: panic-selling
+      id: "payday-reopen",
+      focus: 20,
+      concept: "panic-selling",
+      prompt: "In September 2001 the market closed for four days, then fell hard when it reopened. What did the steady $50 plan need from you that month?",
+      options: [
+        "A forecast of what came next",
+        "A brave last-minute trade",
+        "Nothing new, because the decision was already made",
+        "A pause until the news improved",
+      ],
+      answer: 2,
+      explain: "The plan was written on a calm day so that a terrible month could not rewrite it. Deciding once is the whole trick.",
+    },
+    {
+      // CEE Investing 12-5b ladder (expectations are already in the price);
+      // concept: market-price
+      id: "payday-record",
+      focus: 93,
+      concept: "market-price",
+      prompt: "In October 2007 the index closed at an all-time record. What does a record high tell you about the month that follows it?",
+      options: [
+        "Prices must keep rising",
+        "A crash must come next",
+        "Nothing, because past prices do not tell you the next one",
+        "Records mean the market is safe",
+      ],
+      answer: 2,
+      explain: "A chart only looks backward. The plan kept buying at records for the same reason it kept buying at bottoms: it never needed to know what came next.",
+    },
   ],
   gfc: [
     {
@@ -163,7 +225,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       id: "gfc-safe",
       focus: 26,
       concept: "diversification",
-      prompt: "Mega Bank and The Insurance Giant were among the biggest companies on earth in 2007. What does their collapse say about 'big means safe'?",
+      prompt: "Mega Bank and The Insurance Giant were among the biggest companies on earth in 2007. What does their collapse say about ‘big means safe’?",
       options: [
         "Big usually does mean safe",
         "Size is not safety. Even giants can lose nine dollars of every ten",
@@ -187,6 +249,36 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       ],
       answer: 1,
       explain: "The best prices of the decade arrived dressed as the end of the world. That is why holding a plan beats reading a mood.",
+    },
+    {
+      // CEE Investing 8-5b (diversified fund versus individual assets); concept: index-fund
+      id: "gfc-index-recovery",
+      focus: 74,
+      concept: "index-fund",
+      prompt: "The index owned the same collapsing banks everyone else did. How did it still reach new records by 2013?",
+      options: [
+        "It quietly sold the banks before the crash",
+        "The government replaced its losses",
+        "Its winners, like the phone maker and the everything store, grew by more than the fallen banks could take away",
+        "It never actually fell",
+      ],
+      answer: 2,
+      explain: "An index holds losers and winners alike. A stock can only lose 100%, but a winner can gain far more, and that lopsided math pulled the whole basket to new highs.",
+    },
+    {
+      // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
+      id: "gfc-fallen-vs-dead",
+      focus: 26,
+      concept: "survivorship",
+      prompt: "The Carmaker fell under $3 a share and later multiplied. The Old Bank fell to zero and stayed there. What separates the two?",
+      options: [
+        "Nothing, because both were just low prices",
+        "A fallen price can recover as long as the business survives. A bankruptcy takes shareholders to zero, and zero is forever",
+        "Car companies are always safer than banks",
+        "The Carmaker's shares were cheaper to begin with",
+      ],
+      answer: 1,
+      explain: "A crash marks prices down. A bankruptcy erases the owners. Since nobody can be sure which giants will survive, spreading out matters more than picking well.",
     },
   ],
   crypto: [
@@ -234,6 +326,37 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       ],
       answer: 1,
       explain: "It did not beat the luckiest coins. It beat most coin holders, because it was possible to actually hold it.",
+    },
+    {
+      // CEE Investing 12-2c ladder (speculative assets swing hardest) with the
+      // 12-5c ladder (downturns move asset prices); concept: crash
+      id: "crypto-haven",
+      focus: 26,
+      concept: "crash",
+      prompt: "In March 2020, stocks fell by about a third. What did the coins that fans called ‘digital gold’ do in the same storm?",
+      options: [
+        "Held steady, like gold",
+        "Rose as money fled the stock market",
+        "Fell even harder than stocks, nearly half in two days",
+        "Stopped trading until the panic passed",
+      ],
+      answer: 2,
+      explain: "When frightened people need cash they sell everything, and the wildest assets fall hardest. A shelter that falls harder than the storm is not a shelter.",
+    },
+    {
+      // CEE Investing 12-5c ladder (nobody can time the market); concept: bubble
+      id: "crypto-top",
+      focus: 46,
+      concept: "bubble",
+      prompt: "In November 2021, Coin Alpha hit a record near $69,000, then fell for a year. What told investors at the time that this was the top?",
+      options: [
+        "The charts gave a clear signal",
+        "The news announced the top that week",
+        "Nothing, because tops are only visible afterward",
+        "The exchanges warned their customers",
+      ],
+      answer: 2,
+      explain: "No bell rings at a top while you are standing on it. That is why bet size, which you control, beats timing, which nobody does.",
     },
   ],
 };

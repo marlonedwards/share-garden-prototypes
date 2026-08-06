@@ -23,6 +23,11 @@ export interface EraAsset {
   // market data feed (docs/course-style.md names the four: WCOM, ETYS, LEH,
   // BCC). The scouting card discloses it wherever the price is shown.
   reconstructed?: boolean;
+  // Optional replacement for the scouting card's default reconstruction
+  // disclosure, for assets whose reconstruction needs an extra honest detail
+  // (BCC also enters at a start-of-month price while every real series is a
+  // month-end close).
+  reconstructedNote?: string;
 }
 
 export interface HistoryDataset {

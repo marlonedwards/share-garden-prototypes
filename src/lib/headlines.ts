@@ -31,11 +31,15 @@ export const HEADLINES: Record<string, Clipping[]> = {
   payday: [
     { atStep: 3, date: "April 14, 2000", source: "CNNfn", headline: "Bleak Friday on Wall Street",
       sub: "Unnerved investors rapidly unload stocks amid inflationary fears." },
+    { atStep: 20, date: "September 18, 2001", source: "The New York Times", headline: "Stocks Suffer Steep Losses, but Investors Resist Panic",
+      sub: "The Dow fell 684 points, its worst point loss ever, on the first day of trading after the attacks." },
     { atStep: 33, date: "October 9, 2002", source: "CNN/Money", headline: "Stocks get pummeled on GE, autos, investor pessimism" },
     { atStep: 90, date: "July 19, 2007", source: "CNNMoney", headline: "Finally! Dow finishes above 14,000" },
+    { atStep: 93, date: "October 9, 2007", source: "CNNMoney", headline: "Dow, S&P break records" },
   ],
   gfc: [
     { atStep: 9, date: "October 9, 2007", source: "CNNMoney", headline: "Dow, S&P break records" },
+    { atStep: 14, date: "March 17, 2008", source: "The New York Times", headline: "JPMorgan Acts to Buy Ailing Bear Stearns at Deep Discount" },
     { atStep: 20, date: "September 15, 2008", source: "The New York Times", headline: "After Frantic Day, Wall St. Banks Falter",
       sub: "Lehman Will File Bankruptcy; Merrill to Be Sold" },
     { atStep: 21, date: "September 17, 2008", source: "The New York Times", headline: "Fed's $85 Billion Loan Rescues Insurer",

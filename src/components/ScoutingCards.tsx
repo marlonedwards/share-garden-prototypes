@@ -3,10 +3,10 @@ import { EraAsset } from "../engine/history";
 import { fmtMoney } from "../engine/market";
 
 // Pre-run scouting deck for an era: one card per cast member, dealt as its
-// own screen of the brief beat. The front shows the company's dot, name,
-// founding year, and starting price; the back is the scouting report, which
-// holds where the company stands entering the era and what believers and
-// doubters said at the time. A card counts as scouted once its report has
+// own screen of the brief beat. The front shows the cast member's dot, name,
+// founding (or launch) year, and starting price; the back is the scouting
+// report, which holds where the cast member stands entering the era and what
+// believers and doubters said at the time. A card counts as scouted once its report has
 // been shown, and every way of reaching a card shows the report: tapping the
 // front flips it, tapping a report advances to the next unread report, and
 // the arrows, the arrow keys, and the pager dots land on a card with its
@@ -18,15 +18,21 @@ import { fmtMoney } from "../engine/market";
 // no sentence is ever clipped, on phones included.
 // Everything here reads backward from the era's first month; nothing on a
 // card hints at what the price does next. Series flagged as reconstructed
-// (delisted casualties) say so wherever their price is shown.
+// say so wherever their price is shown, but the card never says why the
+// series needed reconstructing: naming the delisting here would tell the
+// player before the run which companies die. The why lives in the era
+// briefing, which warns up front that it contains the ending.
 
-export default function ScoutingCards({ assets, startPrices, name, onAllFlipped, startSlot }: {
+export default function ScoutingCards({ assets, startPrices, name, onAllFlipped, startSlot, foundedLabel = "Founded" }: {
   assets: EraAsset[];
   startPrices: Record<string, number>;
   name: (ea: { name: string; real?: string }) => string;
   onAllFlipped: () => void;
   // the era's start button (and its unlock hint), rendered in the pager row
   startSlot?: React.ReactNode;
+  // what the year on a card means for this era's cast: companies are
+  // founded, but the crypto era passes "Launched" because coins launch
+  foundedLabel?: string;
 }) {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState<Set<string>>(() => new Set());
@@ -100,9 +106,9 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 flex-shrink-0">
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 self-center" style={{ background: a.color }} />
         <span className="text-[14px] font-semibold tracking-tight">{name(a)}</span>
-        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>Founded {a.founded} · starts at {fmtMoney(startPrices[a.id] ?? 0)}</span>
+        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · starts at {fmtMoney(startPrices[a.id] ?? 0)}{a.reconstructed ? " · reconstructed series" : ""}</span>
       </div>
-      <div className="flex-1 min-h-0 flex flex-col gap-2 pr-1">
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 pr-1">
         <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.history}</p>
         <div>
           <div className="text-[11px] font-semibold" style={{ color: "#248a3d" }}>Believers say</div>
@@ -112,10 +118,8 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
           <div className="text-[11px] font-semibold" style={{ color: "#d70015" }}>Doubters say</div>
           <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.doubters}</p>
         </div>
-        {a.reconstructed && (
-          <p className="text-[11px] leading-snug" style={{ color: "#6e6e73" }}>
-            This company was delisted before the era ended, so its price series is reconstructed from the dated record, not taken from a market feed.
-          </p>
+        {a.reconstructedNote && (
+          <p className="text-[11px] leading-snug" style={{ color: "#6e6e73" }}>{a.reconstructedNote}</p>
         )}
       </div>
       <div className="flex-shrink-0 text-[11.5px] font-medium" style={{ color: "#0071e3" }}>
@@ -139,8 +143,8 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
             ever clips a sentence */}
         {assets.map((a) => (
           <div key={a.id} aria-hidden
-            style={{ gridArea: "1 / 1", visibility: "hidden", pointerEvents: "none", border: "1px solid transparent", minHeight: 252 }}
-            className="px-5 py-4 flex flex-col gap-2">
+            style={{ gridArea: "1 / 1", visibility: "hidden", pointerEvents: "none", border: "1px solid transparent", minHeight: 244 }}
+            className="px-5 py-3 flex flex-col gap-2">
             {report(a)}
           </div>
         ))}
@@ -157,18 +161,18 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
               <div className="text-[17px] font-semibold tracking-tight mt-1">{name(ea)}</div>
               <div className="text-[12.5px]" style={{ color: "#6e6e73" }}>{ea.desc}</div>
               <div className="flex gap-4 mt-1 text-[12.5px] tnum" style={{ color: "#3a3a3c" }}>
-                <span><span style={{ color: "#6e6e73" }}>Founded </span>{ea.founded}</span>
+                <span><span style={{ color: "#6e6e73" }}>{foundedLabel} </span>{ea.founded}</span>
                 <span><span style={{ color: "#6e6e73" }}>Starts at </span>{fmtMoney(price)}</span>
               </div>
               {ea.reconstructed && (
                 <div className="text-[10.5px]" style={{ color: "#6e6e73" }}>
-                  Its delisted price series is reconstructed from the dated record.
+                  Its price series is reconstructed from the dated record.
                 </div>
               )}
               <div className="text-[12px] font-medium mt-2" style={{ color: "#0071e3" }}>Tap to read the scouting report</div>
             </div>
             {/* back: the report, as it read at the time */}
-            <div style={{ ...faceStyle, transform: "rotateY(180deg)" }} className="px-5 py-4 flex flex-col gap-2">
+            <div style={{ ...faceStyle, transform: "rotateY(180deg)" }} className="px-5 py-3 flex flex-col gap-2">
               {report(ea)}
             </div>
           </div>

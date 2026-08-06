@@ -48,7 +48,7 @@ export const dotcom: ScenarioConfig = {
       founded: 1975,
       history: "Its operating system runs on more than nine of every ten personal computers, and it recently became the most valuable company in the world.",
       believers: "Every new computer on earth pays it a toll, and no competitor has ever loosened its grip.",
-      doubters: "The government's antitrust case is closing in, and a judge has already found that it used its power to crush rivals.",
+      doubters: "The government has taken it to court for using its power to crush rivals, and a judge has already found that it did exactly that.",
     },
     {
       id: "CSCO", real: "Cisco", name: "Router Works",
@@ -119,7 +119,7 @@ export const dotcom: ScenarioConfig = {
   moments: [
     mom(0, 2, "Dot-com mania", "Internet stocks have gone vertical. Everyone has a hot tip."),
     mom(2, 4, "The bubble pops", "The internet dream meets its bill. Tech is falling, hard."),
-    mom(20, 3, "September 2001", "Markets close for a week, then drop. Fear is everywhere."),
+    mom(20, 3, "September 2001", "Markets close for four trading days, then drop. Fear is everywhere."),
     mom(30, 3, "The fraud", "The Phone Giant admits its profits were made up. It is not coming back."),
     mom(33, 3, "The bottom", "Prices have fallen for three brutal years. Most sellers are done."),
     mom(41, 4, "The climb back", "Quietly, prices are rising again."),
@@ -132,22 +132,71 @@ export const dotcom: ScenarioConfig = {
       atStep: 1,
       title: "February 2000",
       question: "The internet party is at its loudest. Where does your $1,000 go?",
+      eyebrow: "A bubble",
+      definition: "A bubble is a price that has run far ahead of the real business, held up only by the belief that somebody will pay more tomorrow.",
       context: [
-        "A bubble is a price that has run far ahead of the real business, held up only by the belief that somebody will pay more tomorrow. Internet stocks have multiplied five times over in five years, magazines say the old rules are dead, and companies with no profits are worth billions.",
+        "Internet stocks have multiplied five times over in five years, magazines say the old rules are dead, and companies with no profits are worth billions.",
         "A few loud skeptics point out that many of these companies lose money on every sale, and that a price this high needs new buyers arriving forever. The magazines call those skeptics dinosaurs who do not understand the new economy.",
       ],
       options: [{ label: "All-in on the hottest tech", act: true }, { label: "Spread across everything", act: true }, { label: "Wait in cash" }],
       refs: [{ label: "The dot-com bubble", url: "https://en.wikipedia.org/wiki/Dot-com_bubble" }],
+    },
+    // CEE Investing 12-5b ladder (expectations are already in the price, and
+    // a falling price is not evidence of a bargain); concept: crash
+    {
+      atStep: 3,
+      title: "April 2000",
+      question: "Tech just had its worst week on record. What do you do with your plan?",
+      eyebrow: "A dip",
+      definition: "A dip is a fast fall from a recent high, and a lower price is only a bargain if the business behind it is worth more than that price.",
+      context: [
+        "The Nasdaq, the exchange where most technology stocks trade, just fell 25% in five days, its worst week on record, and the hottest names now sit far below their March peaks.",
+        "For five straight years, every dip in technology stocks has turned out to be a buying chance, and television is full of people saying this one is no different. A chart cannot settle the argument, because a chart only shows what people paid, not what the companies earn.",
+      ],
+      options: [{ label: "Buy the dip in tech", act: true }, { label: "Hold what I have" }, { label: "Get out of tech", act: true }],
+      refs: [{ label: "The dot-com bubble", url: "https://en.wikipedia.org/wiki/Dot-com_bubble" }],
+    },
+    // CEE Investing 12-5c ladder (downturns and investor mood); concept:
+    // panic-selling
+    {
+      atStep: 20,
+      title: "September 2001",
+      question: "The market just reopened after four dark days. What do you do?",
+      eyebrow: "Panic selling",
+      definition: "Panic selling is selling an investment during a fall because fear is making the decision instead of the plan.",
+      context: [
+        "After the attacks of September 11, the stock market stayed closed for four trading days, its longest pause since 1933. When it reopened on September 17, the Dow, the market's most famous stock average, fell 684 points, its biggest one-day point drop up to that date.",
+        "By Friday the week's losses reach about 14 percent, the Dow's worst week since 1933. Nobody watching tonight's news knows what next month holds. That is exactly the condition under which every panic seller in history has sold.",
+      ],
+      options: [{ label: "Sell and wait for calm", act: true }, { label: "Hold and stick to the plan" }, { label: "Buy while others flee", act: true }],
+      refs: [{ label: "The economic effects of September 11", url: "https://en.wikipedia.org/wiki/Economic_effects_of_the_September_11_attacks" }],
+    },
+    // CEE Investing 8-4 (risks of owning single stocks; a fraud is invisible
+    // in the reported numbers); concept: survivorship
+    {
+      atStep: 29,
+      title: "June 2002",
+      question: "The Phone Giant just admitted its profits were invented. What now?",
+      eyebrow: "A fraud",
+      definition: "A fraud is a company publishing invented numbers, and no chart can warn you about one, because the chart is drawn from the very numbers being invented.",
+      context: [
+        "The Phone Giant has just admitted hiding $3.8 billion of costs to make fake profits look real. The smooth earnings its doubters could never explain were smooth because they were fiction.",
+        "The stock that traded above $60 three years ago now sells for about a dollar, and Wall Street's most famous telecom analyst called it a must-own for most of the ride down. Every company's numbers suddenly feel less trustworthy, and honest businesses are falling alongside the guilty one.",
+      ],
+      options: [{ label: "Sell what is left of the Phone Giant", act: true }, { label: "Hold and hope it survives" }, { label: "Spread the rest across more companies", act: true }],
+      refs: [{ label: "The WorldCom scandal", url: "https://en.wikipedia.org/wiki/WorldCom_scandal" }],
     },
     // CEE Investing 12-5c ladder (downturns move asset prices, and nobody
     // rings a bell at the bottom); concept: crash
     {
       atStep: 33,
       title: "October 2002",
-      question: "Prices have fallen for three years. Do you believe the market comes back?",
+      question: "Prices have fallen for three years. What is your next move?",
+      eyebrow: "A bear market",
+      definition: "A bear market is a long stretch of falling prices that turns almost everyone against owning stocks.",
       context: [
-        "A bear market is a long stretch of falling prices that turns almost everyone against owning stocks. The index has been cut nearly in half. The Phone Giant is gone in the biggest bankruptcy in American history. People who bragged about stocks in 2000 now call the market a casino.",
-        "A share bought after a crash costs less, but it never feels cheap at the time. Every dollar invested this month buys almost twice the shares it did in 2000, and it still feels like catching a falling knife.",
+        "The index has fallen about 40 percent from its 2000 high. The Phone Giant is gone in the biggest bankruptcy in American history. People who bragged about stocks in 2000 now call the market a casino.",
+        "A share bought after a crash costs less, but it never feels cheap at the time. Every dollar invested this month buys about one and a half times the shares it did at the start of 2000, and it still feels like catching a falling knife.",
       ],
       options: [{ label: "Buy while it's cheap", act: true }, { label: "Hold what I have" }, { label: "Sell before it gets worse", act: true }],
       refs: [
@@ -161,7 +210,7 @@ export const dotcom: ScenarioConfig = {
   briefTitle: "January 2000. The internet party is as loud as it will ever get.",
   briefBody: [
     "You have $1,000 and eight years. The names are made up; the companies were not, and not every name on this menu makes it to 2008.",
-    "The rainbow orb puts the same $1,000 all-in on the real S&P 500. Eight of the ten series are the era's real quotes, and the two that end in bankruptcy are reconstructed from the dated record.",
+    "The rainbow orb puts the same $1,000 all-in on the real S&P 500. Eight of the ten series are the era's real quotes, and two are reconstructed from the dated record.",
   ],
   startLabel: "Start in 2000",
   endTitle: "December 2007. You bought the top of a bubble and lived to tell it.",
@@ -208,7 +257,7 @@ export const dotcom: ScenarioConfig = {
         lead: "A fair replay of history includes the companies that died, not just the ones that survived.",
         body: [
           "Eight of the ten names on your menu carry real market prices, month by month from January 2000 to December 2007. The Phone Giant and The Online Toy Store were real companies too, but their shares stopped trading when they collapsed, so their price series are reconstructed from the dated record of their rise and their fall. Neither one survives to 2008.",
-          "The names are made up, and the companies behind them were not. You will live through a crash, a fraud, a long bear market, and a slow recovery, and at two crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way: it holds the real S&P 500, an index that bundles five hundred large American companies into one purchase, and it never trades once.",
+          "The names are made up, and the companies behind them were not. You will live through a crash, a fraud, a long bear market, and a slow recovery, and at five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way: it holds the real S&P 500, an index that bundles five hundred large American companies into one purchase, and it never trades once.",
         ],
       },
     ],
@@ -224,6 +273,7 @@ export const dotcom: ScenarioConfig = {
     sources: [
       { label: "The dot-com bubble", url: "https://en.wikipedia.org/wiki/Dot-com_bubble" },
       { label: "The 2002 downturn", url: "https://en.wikipedia.org/wiki/Stock_market_downturn_of_2002" },
+      { label: "The economic effects of September 11", url: "https://en.wikipedia.org/wiki/Economic_effects_of_the_September_11_attacks" },
       { label: "The WorldCom scandal", url: "https://en.wikipedia.org/wiki/WorldCom_scandal" },
     ],
   },
