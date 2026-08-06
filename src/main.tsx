@@ -15,6 +15,7 @@ import LessonPage from "./pages/LessonPage";
 import OnePager from "./pages/OnePager";
 import OrbSelect from "./pages/OrbSelect";
 import EraBriefing from "./pages/EraBriefing";
+import ReadyMode from "./pages/ReadyMode";
 import Archive from "./pages/Archive";
 
 // remount the scenario page whenever the scenario id changes, so the sim
@@ -49,6 +50,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/guide" element={<FieldGuidePage />} />
         <Route path="/orb/learn/:id" element={<LessonRoute />} />
         <Route path="/orb/mini/:id" element={<LessonRoute />} />
+        {/* the finale: one door, two paths, one mirror */}
+        <Route path="/orb/ready" element={<ReadyMode />} />
         {/* id-less lesson paths land on the first rung of the ladder */}
         <Route path="/orb/learn" element={<Navigate to="/orb/learn/cash" replace />} />
         <Route path="/orb/mini" element={<Navigate to="/orb/learn/cash" replace />} />

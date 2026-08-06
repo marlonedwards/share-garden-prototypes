@@ -7,6 +7,7 @@ import { CompSlice, FREE_ASSETS, roundPcts, valueToRadius } from "../lib/orbMode
 import { getScenario } from "../lib/scenarios";
 import { downloadOrbCard } from "../lib/orbCard";
 import { getOrbName } from "../lib/orbIdentity";
+import { useStageScale } from "../lib/useStageScale";
 import OrbScene, { LAYOUT, OrbSceneHandle } from "../components/OrbScene";
 import {
   Btn, Dot, FluidCycler, GhostBtn, GrowthChart, RAINBOW_DOT, Sparkline,
@@ -66,6 +67,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
       : undefined,
   });
   const [fluid, setFluid] = useFluidPref();
+  const stageScale = useStageScale(STAGE_W);
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const [realNames, setRealNames] = useState(false);
@@ -135,7 +137,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
 
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
-      <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 sm:px-10 py-2 min-h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
           scenarios
@@ -169,8 +171,11 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
 
       <main className="px-4 sm:px-8 pb-4 flex flex-col 2xl:flex-row gap-6 items-center 2xl:items-start justify-center">
         <div className="flex flex-col items-center gap-5">
+          {/* stage: scale-to-fit so the fixed-geometry scene never forces
+              sideways scroll on a phone */}
+          <div style={{ width: STAGE_W * stageScale, height: STAGE_H * stageScale }}>
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
-            style={{ width: STAGE_W, height: STAGE_H, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)" }}>
+            style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${stageScale})`, transformOrigin: "top left", background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)" }}>
             <OrbScene
               ref={sceneRef}
               width={STAGE_W}
@@ -210,6 +215,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
                 <span style={{ color: "#6e6e73" }}> · {ev.blurb}</span>
               </div>
             )}
+          </div>
           </div>
 
           {finished && (

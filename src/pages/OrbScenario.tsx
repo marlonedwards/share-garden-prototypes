@@ -10,6 +10,7 @@ import { unlockEntry } from "../lib/fieldGuide";
 import { clippingAt } from "../lib/headlines";
 import { ClippingCard, Ticker, TickerItem } from "../components/NewsBits";
 import { useOrbSettings } from "../lib/settings";
+import { useStageScale } from "../lib/useStageScale";
 import SettingsMenu from "../components/SettingsMenu";
 import { Gate, ScenarioConfig, getScenario, hasScouting } from "../lib/scenarios";
 import ScoutingCards from "../components/ScoutingCards";
@@ -30,6 +31,15 @@ type Beat = "brief" | "run" | "payday" | "gate" | "end";
 
 const STAGE_W = 1080;
 const STAGE_H = 440;
+
+// The holdings rail's share count. Whole-share eras with $100+ prices make a
+// single-share position the normal case, so the label must stay grammatical:
+// "1 share", "2 shares", "1.5 shares".
+function fmtShares(shares: number, fractional: boolean): string {
+  if (fractional) return `${shares.toFixed(1)} shares`;
+  const n = Math.round(shares);
+  return `${n} ${n === 1 ? "share" : "shares"}`;
+}
 
 // Debrief bullets computed from the player's actual run: outcome vs the index,
 // panic sells priced against holding, money lost to names that went to zero.
@@ -142,11 +152,18 @@ export default function OrbScenario() {
   const cfg = getScenario(id);
   const lastStep = cfg.lastStep ?? cfg.dataset.months.length - 1;
 
+  // companies that go public mid-era (EraAsset.listedAtStep) cannot be
+  // bought before their listing month: the engine refuses the trade, and
+  // every surface that shows their price shows "lists <month>" instead
+  const listedAt = useMemo(
+    () => Object.fromEntries(cfg.assets.filter((a) => (a.listedAtStep ?? 0) > 0).map((a) => [a.id, a.listedAtStep as number])),
+    [cfg],
+  );
   const { m, speed, setSpeed, done, reset, act } = useSim<HistoryMarket>({
     maxStep: lastStep,
     make: () => new HistoryMarket({
       dataset: cfg.dataset, indexKey: cfg.indexKey, cash: cfg.startCash,
-      income: cfg.income, moments: cfg.moments, lastStep,
+      income: cfg.income, moments: cfg.moments, lastStep, listedAt,
     }),
   });
   const [beat, setBeat] = useState<Beat>("brief");
@@ -166,6 +183,14 @@ export default function OrbScenario() {
   const [briefPhase, setBriefPhase] = useState<"read" | "scout">("read");
   const startPrices = useMemo(
     () => Object.fromEntries(cfg.assets.map((a) => [a.id, cfg.dataset.series[a.id]?.[0] ?? 0])),
+    [cfg],
+  );
+  // scouting cards for still-private companies show the listing month
+  // instead of a starting price, so no pre-listing backfill value is ever
+  // presented as a real price
+  const listsAt = useMemo(
+    () => Object.fromEntries(cfg.assets.filter((a) => (a.listedAtStep ?? 0) > 0).map((a) => [a.id, m.monthLabel(a.listedAtStep as number)])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [cfg],
   );
   const [fluid, setFluid] = useFluidPref();
@@ -356,6 +381,7 @@ export default function OrbScenario() {
   };
 
   const buy = (assetId: string, dollars: number) => {
+    if (!m.listed(assetId)) return;
     const ea = cfg.assets.find((a) => a.id === assetId)!;
     let spend = Math.min(dollars, m.cash);
     if (!fractional) {
@@ -431,6 +457,9 @@ export default function OrbScenario() {
   // for the rewind scrubber. The stage opens back to full height while the
   // tape runs.
   const stageH = scouting && beat === "brief" ? 272 : beat === "gate" ? 264 : beat === "end" ? 300 : STAGE_H;
+  // scale-to-fit keeps the fixed-geometry stage from forcing sideways scroll
+  // on phones; the wrapper below is sized to the scaled picture
+  const stageScale = useStageScale(STAGE_W);
   const ev = m.lastEvent;
   const clip = running && settings.clippings ? clippingAt(cfg.id, m.step) : null;
   const tickerItems: TickerItem[] = useMemo(
@@ -438,7 +467,11 @@ export default function OrbScenario() {
       cfg.assets.map((ea) => {
         const p = m.prices[ea.id] ?? 0;
         const prev = m.history[ea.id]?.[Math.max(0, m.step - 1)] ?? p;
-        return { name: name(ea), price: p, delta: prev > 0 ? (p - prev) / prev : 0, dead: p <= 0 };
+        return {
+          name: name(ea), price: p, delta: prev > 0 ? (p - prev) / prev : 0, dead: p <= 0,
+          // a company that has not listed yet has no market price to show
+          note: !m.listed(ea.id) ? `lists ${m.monthLabel(ea.listedAtStep ?? 0)}` : undefined,
+        };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [m.step, realNames]
@@ -479,7 +512,7 @@ export default function OrbScenario() {
 
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
-      <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 sm:px-10 py-2 min-h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
           scenarios
@@ -510,8 +543,9 @@ export default function OrbScenario() {
               under the lesson), so the check card is the only thing on the
               quiz screen and its Next button never falls past the fold */}
           {!(beat === "end" && endPhase === "quiz") && (
+          <div style={{ width: STAGE_W * stageScale, height: stageH * stageScale, transition: "height 0.4s ease" }}>
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
-            style={{ width: STAGE_W, height: stageH, background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)", transition: "height 0.4s ease" }}>
+            style={{ width: STAGE_W, height: stageH, transform: `scale(${stageScale})`, transformOrigin: "top left", background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)", transition: "height 0.4s ease" }}>
             <OrbScene
               key={runId}
               ref={sceneRef}
@@ -579,6 +613,7 @@ export default function OrbScenario() {
             )}
             {running && settings.ticker && <Ticker items={tickerItems} />}
           </div>
+          </div>
           )}
 
           <div ref={endCardRef} className={`z-20 ${beat === "end" ? (endPhase === "quiz" ? "w-[min(720px,94vw)]" : "w-[min(1080px,96vw)]") : beat === "gate" ? "w-[min(900px,94vw)]" : "w-[min(620px,92vw)]"}`}>
@@ -616,7 +651,7 @@ export default function OrbScenario() {
                   Each card shows one {cfg.castNoun ?? "company"} on this menu as it stood in {m.monthLabel(0)}, with the case its believers and its doubters were really making at the time.
                 </p>
                 <ScoutingCards assets={cfg.assets} startPrices={startPrices} name={name}
-                  foundedLabel={cfg.castFoundedLabel}
+                  foundedLabel={cfg.castFoundedLabel} listsAt={listsAt}
                   onAllFlipped={() => setScouted(true)}
                   startSlot={
                     <>
@@ -831,7 +866,7 @@ export default function OrbScenario() {
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.ea.color, boxShadow: `0 0 0 3px ${h.ea.color}22` }} />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{name(h.ea)}</div>
-                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fractional ? h.shares.toFixed(1) : Math.round(h.shares)} shares</div>
+                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtShares(h.shares, fractional)}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold tnum">{fmtMoney(h.value)}</div>
@@ -843,7 +878,7 @@ export default function OrbScenario() {
                   </div>
                   {open && (
                     <div className="ml-6 mt-2 flex flex-wrap items-center gap-1.5 pop-in">
-                      <div className="w-full"><Sparkline width={180} height={40} data={m.history[h.ea.id]} color={h.ea.color} /></div>
+                      <div className="w-full"><Sparkline width={180} height={40} data={m.history[h.ea.id].slice(h.ea.listedAtStep ?? 0)} color={h.ea.color} /></div>
                       {[100, 250].map((a) => (
                         <TradeChip key={a} disabled={fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[h.ea.id]) < 1}
                           onClick={() => buy(h.ea.id, Math.min(a, m.cash))}>
@@ -862,26 +897,37 @@ export default function OrbScenario() {
               {cfg.assets.filter((ea) => !holdings.some((h) => h.ea.id === ea.id)).map((ea) => {
                 const open = tradeRow === `add-${ea.id}`;
                 const dead = m.prices[ea.id] <= 0;
+                // still a private company this month: no price, no buying
+                const unlisted = !m.listed(ea.id);
+                const listMonth = m.monthLabel(ea.listedAtStep ?? 0);
                 return (
-                  <div key={ea.id} style={dead ? { opacity: 0.55 } : undefined}>
+                  <div key={ea.id} style={dead || unlisted ? { opacity: 0.55 } : undefined}>
                     <button className="w-full flex items-center gap-2.5 py-1.5 text-left" title={ea.desc}
                       onClick={() => setTradeRow(open ? null : `add-${ea.id}`)}>
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ea.color }} />
                       <span className="text-[13px] flex-1 truncate">{name(ea)}</span>
-                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{dead ? "gone" : fmtMoney(m.prices[ea.id])}</span>
+                      <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{unlisted ? `lists ${listMonth}` : dead ? "gone" : fmtMoney(m.prices[ea.id])}</span>
                     </button>
                     {open && (
                       <div className="ml-5 mb-1.5 pop-in">
                         <div className="text-[11.5px] mb-1" style={{ color: "#6e6e73" }}>{ea.desc}</div>
-                        <div className="mb-1.5"><Sparkline width={180} height={40} data={m.history[ea.id]} color={ea.color} /></div>
-                        <div className="flex gap-1.5">
-                          {[100, 250].map((a) => (
-                            <TradeChip key={a} disabled={dead || (fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
-                              onClick={() => { buy(ea.id, Math.min(a, m.cash)); setTradeRow(null); }}>
-                              Buy ${Math.min(a, Math.floor(m.cash))}
-                            </TradeChip>
-                          ))}
-                        </div>
+                        {unlisted ? (
+                          <div className="text-[11.5px] mb-1" style={{ color: "#6e6e73" }}>
+                            It is still a private company, so it has no shares on the market. Its shares list in {listMonth}, and nothing can be bought before then.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="mb-1.5"><Sparkline width={180} height={40} data={m.history[ea.id].slice(ea.listedAtStep ?? 0)} color={ea.color} /></div>
+                            <div className="flex gap-1.5">
+                              {[100, 250].map((a) => (
+                                <TradeChip key={a} disabled={dead || (fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
+                                  onClick={() => { buy(ea.id, Math.min(a, m.cash)); setTradeRow(null); }}>
+                                  Buy ${Math.min(a, Math.floor(m.cash))}
+                                </TradeChip>
+                              ))}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -7,6 +7,8 @@ import { HistoryMarket } from "../engine/history";
 import { fmtMoney } from "../engine/market";
 import { markCheck } from "./fieldGuide";
 import { ScenarioConfig } from "./scenarios";
+import { covidCheckItems } from "../content/era-covid";
+import { inflationQuiz } from "../content/era-inflation";
 
 export interface CheckItem {
   id: string;
@@ -58,6 +60,8 @@ export function saveAnsweredRun(scenario: string, items: AnsweredItem[], gateMs:
 }
 
 const STATIC_ITEMS: Record<string, CheckItem[]> = {
+  covid: covidCheckItems,
+  inflation: inflationQuiz,
   dotcom: [
     {
       // CEE Investing 12-5c ladder (downturns move asset prices); concept: crash

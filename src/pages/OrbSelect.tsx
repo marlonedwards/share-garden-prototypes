@@ -4,6 +4,8 @@ import { SCENARIOS as ERAS } from "../lib/scenarios";
 import { useOrbName } from "../lib/orbIdentity";
 import { FIELD_ENTRIES, MarbleState, guideState, marbleState } from "../lib/fieldGuide";
 import { LESSON_LADDER } from "../lessons";
+import { loadReadyPlan, planSlices, planTotal } from "../lib/readyAssets";
+import PlanMarble from "../components/PlanMarble";
 
 // Scenario select for the Orb. Each scenario is one lesson; the plain-language
 // objective is right on the card. Standards mapping lives in the one-pager.
@@ -38,11 +40,20 @@ const SCENARIOS: {
     brief: e.briefing ? `/orb/brief/${e.id}` : undefined,
   })),
   {
+    to: "/orb/ready",
+    lesson: "The last lesson",
+    title: "Ready to invest?",
+    line: "One door opens on two paths. Build a plan in real names and real dollars, and let the mirror read it.",
+    learn: "This lesson shows how to put a first orb on paper, read its shape honestly, and talk it over with an adult.",
+    dots: ["#0057b8", "#30d158", "#f7931a", "#64748b"],
+    time: "about 10 minutes",
+  },
+  {
     to: "/orb/free",
     lesson: "Freeplay",
     title: "The sandbox",
-    line: "A toy market or a real era, no script. Finish whenever you like.",
-    learn: "Whatever you try. The rainbow orb is watching.",
+    line: "You can run a toy market or a real era here, and no script tells you what to do. Finish whenever you like.",
+    learn: "The sandbox teaches whatever you decide to try, and the rainbow orb runs beside you the whole time.",
     dots: ["#0a84ff", "#bf5af2", "#ff9f0a", "#30d158", "#64d2ff", "#ffd60a", "#ff453a", "#a2845e"],
     time: "open ended",
   },
@@ -81,6 +92,9 @@ export default function OrbSelect() {
   }, []);
   const gs = guideState();
   const proved = FIELD_ENTRIES.filter((e) => marbleState(e.id, gs) === "cleared").length;
+  // the marble saved by the "Ready to invest?" finale, shown beside the named orb
+  const plan = loadReadyPlan();
+  const planUsd = plan ? planTotal(plan.lines) : 0;
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
       <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
@@ -107,6 +121,19 @@ export default function OrbSelect() {
             </div>
             <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
           </div>
+          {plan && planUsd > 0 && (
+            <Link to="/orb/ready" className="flex-shrink-0 flex flex-col items-center transition hover:opacity-80"
+              title="This marble is the plan you saved in the last lesson. It opens Ready to invest?">
+              <PlanMarble slices={planSlices(plan.lines)} total={planUsd} size={64}
+                ariaLabel="The marble from your saved plan" />
+              <span className="text-[11px] font-medium leading-none" style={{ color: "#0071e3" }}>
+                {plan.path === "own" ? "What you hold" : "Your plan"}
+              </span>
+              <span className="text-[10.5px] tnum mt-0.5" style={{ color: "#6e6e73" }}>
+                ${Math.round(planUsd).toLocaleString("en-US")}
+              </span>
+            </Link>
+          )}
           <div className="min-w-0 flex-1">
             <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>This is your orb</div>
             <input
@@ -130,7 +157,7 @@ export default function OrbSelect() {
         <div className="mt-6 rounded-2xl bg-white border border-black/8 shadow-sm p-5">
           <div className="flex items-baseline gap-2">
             <div className="text-[15px] font-semibold tracking-tight">Start here: the basics</div>
-            <div className="text-[12px]" style={{ color: "#6e6e73" }}>Five short lessons run in order, and each one clears a marble.</div>
+            <div className="text-[12px]" style={{ color: "#6e6e73" }}>Five short lessons run in order, and together they clear nine marbles.</div>
           </div>
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-3">
             {LESSON_LADDER.map((l, i) => {
@@ -142,7 +169,7 @@ export default function OrbSelect() {
                   title={st === "cleared" ? "This marble is cleared." : st === "cloudy" ? "This marble is still setting." : "This marble is not earned yet."}>
                   <div className="flex items-center gap-2 w-full">
                     <LessonMarble state={st} color={l.marble.color} />
-                    <span className="ml-auto text-[11px] tnum" style={{ color: "#a1a1a6" }}>{i + 1} of {LESSON_LADDER.length}</span>
+                    <span className="ml-auto text-[11px] tnum whitespace-nowrap" style={{ color: "#a1a1a6" }}>Basics {i + 1} of {LESSON_LADDER.length}</span>
                   </div>
                   <span className="text-[12.5px] font-medium leading-tight">{l.title}</span>
                   <span className="text-[11px] leading-tight" style={{ color: "#6e6e73" }}>
@@ -154,7 +181,13 @@ export default function OrbSelect() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-8 flex items-baseline gap-2">
+          <div className="text-[15px] font-semibold tracking-tight">Then play the lessons</div>
+          <div className="text-[12px]" style={{ color: "#6e6e73" }}>
+            The tutorial and six real eras run in order as Lessons 1 to 7, and the last lesson ends the course.
+          </div>
+        </div>
+        <div className="mt-3 flex flex-col gap-4">
           {SCENARIOS.map((s) => (
             <div key={s.to}>
             <Link to={s.to}

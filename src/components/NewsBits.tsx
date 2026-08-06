@@ -33,6 +33,9 @@ export interface TickerItem {
   price: number;
   delta: number;   // vs previous month; 0 when flat or unknown
   dead?: boolean;
+  // shown instead of the price, for an asset with no market price to show
+  // (a company that has not listed yet: "lists Apr 2019")
+  note?: string;
 }
 
 export function Ticker({ items }: { items: TickerItem[] }) {
@@ -40,7 +43,9 @@ export function Ticker({ items }: { items: TickerItem[] }) {
   const cell = (it: TickerItem, i: number) => (
     <span key={i} className="inline-flex items-baseline gap-1.5 px-4">
       <span style={{ color: "#6e6e73" }}>{it.name}</span>
-      {it.dead ? (
+      {it.note ? (
+        <span style={{ color: "#a1a1a6" }}>{it.note}</span>
+      ) : it.dead ? (
         <span style={{ color: "#a1a1a6" }}>gone</span>
       ) : (
         <>

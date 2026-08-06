@@ -13,7 +13,12 @@ export interface Clipping {
   sub?: string;
 }
 
+import { covidHeadlines } from "../content/era-covid";
+import { inflationHeadlines } from "../content/era-inflation";
+
 export const HEADLINES: Record<string, Clipping[]> = {
+  covid: covidHeadlines,
+  inflation: inflationHeadlines,
   dotcom: [
     { atStep: 2, date: "March 20, 2000", source: "Barron's", headline: "Burning Up",
       sub: "When will the Internet Bubble burst? For scores of 'Net upstarts, that unpleasant popping sound is likely to be heard before the end of this year." },

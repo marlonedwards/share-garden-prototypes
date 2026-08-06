@@ -10,7 +10,7 @@ export default function Landing() {
       <main className="max-w-4xl mx-auto px-6 pt-16 pb-20">
         <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Financial literacy games</h1>
         <p className="mt-3 text-[17px] max-w-2xl" style={{ color: "#6e6e73" }}>
-          Investing concepts and fundamentals, taught through visually beautiful games. Each one
+          Two visually beautiful games teach investing concepts and fundamentals. Each one
           turns the market into something you can see and play with: shares, prices, crashes,
           and what it takes to hold through them.
         </p>
@@ -29,10 +29,10 @@ export default function Landing() {
             <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>Game one</div>
             <div className="text-[22px] font-semibold tracking-tight">The Orb</div>
             <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
-              Your portfolio as one glass marble. Companies are colors, the sealed rainbow orb is
-              the index, and crashes deflate prices, never your shares. Six scenarios, four on
-              real market history, pointing toward a core curriculum that teaches the history of
-              the stock market era by era.
+              Your portfolio is one glass marble. Companies are colors, the sealed rainbow orb is
+              the index, and crashes deflate prices, never your shares. Five short Basics lessons,
+              a guided tutorial, six eras of real market history, and a final planning lesson run
+              in order as one course, and an open sandbox waits beside them.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#0071e3" }}>Play the Orb</div>
           </Link>
@@ -44,7 +44,7 @@ export default function Landing() {
             <div className="text-[12px] font-semibold" style={{ color: "#3f6b3a" }}>Game two</div>
             <div className="text-[22px] font-semibold tracking-tight">Share Garden</div>
             <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
-              The same first lesson in a garden. Plant size is the market price, selling is
+              Share Garden teaches the same first lesson in a garden. Plant size is the market price, selling is
               transplanting to another gardener, the co-op field is the index, and frost is the
               crash you tend through.
             </p>
@@ -56,21 +56,22 @@ export default function Landing() {
           <Link to="/objectives" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
             <div className="text-[15px] font-semibold tracking-tight">Learning objectives</div>
             <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
-              Every unit mapped to CEE and Jump$tart standards, with the misconception it busts
-              and its assessment hook. Printable.
+              Every unit is mapped to CEE and Jump$tart standards, with the misconception it busts
+              and its assessment hook. The whole page prints on one sheet.
             </p>
           </Link>
           <Link to="/archive" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
             <div className="text-[15px] font-semibold tracking-tight">First-week prototypes</div>
             <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
-              The earlier explorations, kept for reference.
+              The earlier explorations are kept here for reference.
             </p>
           </Link>
         </div>
 
         <p className="mt-10 text-[12.5px]" style={{ color: "#a1a1a6" }}>
-          Free and open source. No accounts, no logins. Runs in a browser on a Chromebook.
-          Deterministic simulation engine plus real historical market data, every number inspectable.
+          Everything here is free and open source, with no accounts and no logins, and it runs
+          in a browser on a Chromebook. A deterministic simulation engine replays real historical
+          market data, and every number is inspectable.
         </p>
       </main>
     </div>

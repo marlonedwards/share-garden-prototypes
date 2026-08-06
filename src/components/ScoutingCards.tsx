@@ -23,7 +23,7 @@ import { fmtMoney } from "../engine/market";
 // player before the run which companies die. The why lives in the era
 // briefing, which warns up front that it contains the ending.
 
-export default function ScoutingCards({ assets, startPrices, name, onAllFlipped, startSlot, foundedLabel = "Founded" }: {
+export default function ScoutingCards({ assets, startPrices, name, onAllFlipped, startSlot, foundedLabel = "Founded", listsAt = {} }: {
   assets: EraAsset[];
   startPrices: Record<string, number>;
   name: (ea: { name: string; real?: string }) => string;
@@ -33,6 +33,11 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
   // what the year on a card means for this era's cast: companies are
   // founded, but the crypto era passes "Launched" because coins launch
   foundedLabel?: string;
+  // asset id to listing-month label for cast members still private in the
+  // era's first month (EraAsset.listedAtStep); their cards show the listing
+  // month instead of a starting price, because a private company has no
+  // market price yet
+  listsAt?: Record<string, string>;
 }) {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState<Set<string>>(() => new Set());
@@ -106,7 +111,7 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 flex-shrink-0">
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 self-center" style={{ background: a.color }} />
         <span className="text-[14px] font-semibold tracking-tight">{name(a)}</span>
-        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · starts at {fmtMoney(startPrices[a.id] ?? 0)}{a.reconstructed ? " · reconstructed series" : ""}</span>
+        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · {listsAt[a.id] ? `still private · lists ${listsAt[a.id]}` : `starts at ${fmtMoney(startPrices[a.id] ?? 0)}`}{a.reconstructed ? " · reconstructed series" : ""}</span>
       </div>
       <div className="flex-1 min-h-0 flex flex-col gap-1.5 pr-1">
         <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.history}</p>
@@ -162,7 +167,9 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
               <div className="text-[12.5px]" style={{ color: "#6e6e73" }}>{ea.desc}</div>
               <div className="flex gap-4 mt-1 text-[12.5px] tnum" style={{ color: "#3a3a3c" }}>
                 <span><span style={{ color: "#6e6e73" }}>{foundedLabel} </span>{ea.founded}</span>
-                <span><span style={{ color: "#6e6e73" }}>Starts at </span>{fmtMoney(price)}</span>
+                {listsAt[ea.id]
+                  ? <span><span style={{ color: "#6e6e73" }}>Still private · lists </span>{listsAt[ea.id]}</span>
+                  : <span><span style={{ color: "#6e6e73" }}>Starts at </span>{fmtMoney(price)}</span>}
               </div>
               {ea.reconstructed && (
                 <div className="text-[10.5px]" style={{ color: "#6e6e73" }}>
