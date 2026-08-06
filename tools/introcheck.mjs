@@ -13,10 +13,10 @@ await wait(1200);
 console.log("redirected to intro:", page.url().includes("/orb/intro"));
 
 // 2. arrival lines, then name
-for (let i = 0; i < 12; i++) { await wait(400); if (await page.getByPlaceholder("type a name").count()) break; }
-await page.getByPlaceholder("type a name").fill("Comet");
+for (let i = 0; i < 12; i++) { await wait(400); if (await page.getByPlaceholder("your name").count()) break; }
+await page.getByPlaceholder("your name").fill("Comet");
 await page.screenshot({ path: OUT + "intro-name.png" });
-await page.getByRole("button", { name: "That is its name" }).click();
+await page.getByRole("button", { name: "That's me" }).click();
 await wait(500);
 
 // 3. pour
@@ -40,9 +40,9 @@ await page.getByRole("button", { name: "I have heard the name" }).click();
 await wait(500);
 
 // 5. done screen recommends the stocks lesson (exactly one knows-answer)
-console.log("done for Comet:", await page.getByText("Comet is ready.").count());
+console.log("done for Comet:", await page.getByText("Comet's orb is ready.").count());
 await page.screenshot({ path: OUT + "intro-done.png" });
-await page.getByRole("button", { name: "Open the course" }).click();
+await page.getByRole("button", { name: "I'm ready!" }).click();
 await wait(800);
 console.log("landed on course:", page.url().includes("/orb") && !page.url().includes("intro"));
 console.log("reco chip:", await page.getByText("Start here", { exact: true }).count());
