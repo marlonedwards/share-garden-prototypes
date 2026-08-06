@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Metaphor probe, blocks</title>
+<style>
+  :root {
+    --ink: #1d1d1f; --ink2: #6e6e73; --ink3: #8e8e93;
+    --bg: #f5f5f7; --accent: #0071e3;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+    --good: #0ca30c; --bad: #d03b3b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header.top { margin-bottom: 30px; }
+  h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 8px; }
+  .sub { font-size: 15px; color: var(--ink2); max-width: 800px; line-height: 1.55; margin: 0; }
+  .secthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 44px 0 16px; }
+  .secthead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .secthead .why { font-size: 13.5px; color: var(--ink2); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 16px 18px 18px;
+  }
+  .card.wide { grid-column: 1 / -1; }
+  .stage {
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fdfdff 0%, #f2f3f7 100%);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden; position: relative;
+  }
+  canvas { display: block; width: 100%; }
+  .cname { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; margin: 13px 0 5px; }
+  .cnote { font-size: 13px; line-height: 1.55; color: #3a3a3c; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 11px; }
+  button.pill {
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 500;
+    padding: 7px 15px; border-radius: 999px; cursor: pointer; transition: background .15s ease, opacity .15s ease;
+  }
+  button.pill:hover { background: rgba(0,0,0,0.05); }
+  button.pill.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  button.pill.primary:hover { filter: brightness(1.08); }
+  button.pill:disabled { opacity: .38; cursor: default; }
+  button.pill:disabled:hover { background: #fff; }
+  button.pill.primary:disabled, button.pill.primary:disabled:hover { background: var(--accent); }
+  .hint { font-size: 12.5px; color: var(--ink2); }
+  .hud { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .hud .stat { font-size: 13px; color: var(--ink2); }
+  .hud .stat b { color: var(--ink); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .tokens { display: inline-flex; gap: 5px; vertical-align: middle; }
+  .tok { width: 15px; height: 15px; border-radius: 4px; background: linear-gradient(180deg, #7fb0ec, #2a78d6); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+  .tok.spent { background: rgba(0,0,0,.08); box-shadow: none; }
+  .pname {
+    font: inherit; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink);
+    border: 1px solid transparent; background: rgba(0,0,0,0.03); border-radius: 8px;
+    padding: 4px 9px; width: 210px;
+  }
+  .pname:focus { outline: none; border-color: rgba(0,113,227,.5); background: #fff; }
+  .lvgrid { display: grid; grid-template-columns: minmax(0,1fr) 268px; gap: 18px; align-items: start; }
+  .readout { border-radius: 14px; border: 1px solid rgba(0,0,0,0.06); background: #fff; padding: 12px 13px 10px; }
+  .readout h3 { font-size: 13px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .readout p { font-size: 12px; color: var(--ink2); line-height: 1.45; margin: 0 0 8px; }
+  .legend { display: flex; gap: 14px; margin: 8px 0 0; font-size: 12px; color: var(--ink2); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .overlay {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(245,245,247,.84); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+  }
+  .overlay.on { display: flex; }
+  .panel { text-align: center; }
+  .panel .stars { font-size: 40px; letter-spacing: 6px; line-height: 1; color: var(--s4); }
+  .panel .big { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 12px 0 4px; font-variant-numeric: tabular-nums; }
+  .panel .small { font-size: 13.5px; color: var(--ink2); max-width: 430px; margin: 0 auto 14px; line-height: 1.5; }
+  footer.note { margin-top: 48px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; max-width: 820px; }
+  @media (max-width: 1080px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } .lvgrid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Metaphor probe &middot; blocks</h1>
+    <p class="sub">
+      The no metaphor metaphor. One rounded glass block per holding, standing on a shared floor against a faint
+      dollar ruler. Height is value, continuously. Nothing is a plant, a coin or a balloon; the only warm thing on
+      screen is the name over your own row. Part one runs the foolproof checklist live, part two is a sixty second level.
+    </p>
+  </header>
+
+  <div class="secthead">
+    <h2>Part 1 &middot; The foolproof checklist</h2>
+    <span class="why">Each panel is one claim the metaphor has to survive.</span>
+  </div>
+
+  <div class="grid3">
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="grow" data-h="240"></canvas></div>
+      <div class="cname">a &middot; One holding growing</div>
+      <div class="cnote">Teaches: growth is your block rising smoothly past ruler lines, so more money is literally more block.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="fall" data-h="240"></canvas></div>
+      <div class="cname">b &middot; The same holding declining</div>
+      <div class="cnote">Teaches: a loss is your block sinking below the dashed outline of what you paid, and that outline never moves.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="race" data-h="240"></canvas></div>
+      <div class="cname">c &middot; Five holdings, re sorting</div>
+      <div class="cnote">Teaches: blocks slide past each other into size order as values change, so you feel the lead change instead of reading it.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="crash" data-h="240"></canvas></div>
+      <div class="cname">d &middot; A market wide crash</div>
+      <div class="cnote">Teaches: when every block sinks at once and the order barely changes, the drop was the market, not your picks.</div>
+      <div class="row"><button class="pill" data-act="crash">Crash the market</button><span class="hint">Replays on its own too.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="bust" data-h="240"></canvas></div>
+      <div class="cname">e &middot; Bankruptcy, not a bad week</div>
+      <div class="cnote">Teaches: a short block is still a block and can rise again, a bankrupt one cracks into grey rubble that stays on the floor.</div>
+      <div class="row"><button class="pill" data-act="bust">Run it</button><button class="pill" data-act="bustreset">Reset</button></div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="index" data-h="240"></canvas></div>
+      <div class="cname">f &middot; The index block</div>
+      <div class="cnote">Teaches: an index is hundreds of hairline blocks fused side by side, so any single one wobbling barely moves the top edge.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="div" data-h="240"></canvas></div>
+      <div class="cname">g &middot; A dividend arriving</div>
+      <div class="cnote">Teaches: a dividend is a thin slice sliding off the top of the block into your cash tray, money you keep even if the block never grows again.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="trade" data-h="240"></canvas></div>
+      <div class="cname">h &middot; Buy and sell as physical acts</div>
+      <div class="cnote">Teaches: buying carries a slab of value out of your tray into the block, selling carries it back, and the two together never make value appear.</div>
+      <div class="row">
+        <button class="pill primary" data-act="buy">Buy $60</button>
+        <button class="pill" data-act="sell">Sell $60</button>
+        <span class="hint">Tray plus block is always $260.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="secthead">
+    <h2>Part 2 &middot; A sixty second level</h2>
+    <span class="why">Twenty scripted weeks, three trade tokens, one goal line.</span>
+  </div>
+
+  <div class="card wide">
+    <div class="hud">
+      <input class="pname" id="pname" value="Marlon's blocks" spellcheck="false" aria-label="Portfolio name" />
+      <span class="stat">Cash <b id="hCash">$250</b></span>
+      <span class="stat">Total <b id="hTotal">$1,000</b></span>
+      <span class="stat">Goal <b>$1,200</b></span>
+      <span class="stat">Week <b id="hTick">0 / 20</b></span>
+      <span class="stat">Trades left <span class="tokens" id="hTok"><i class="tok"></i><i class="tok"></i><i class="tok"></i></span></span>
+    </div>
+
+    <div class="lvgrid">
+      <div class="stage">
+        <canvas data-scene="level" data-h="340"></canvas>
+        <div class="overlay" id="ovl">
+          <div class="panel">
+            <div class="stars" id="ovStars">★★★</div>
+            <div class="big" id="ovBig">$1,203</div>
+            <div class="small" id="ovSmall"></div>
+            <button class="pill primary" data-act="again">Play again</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="readout">
+        <h3>You against the index</h3>
+        <p>Both start at 100 on week zero. The line is the same money, just measured against the whole market.</p>
+        <canvas data-scene="readout" data-h="150"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--s1)"></i>You <b id="lgYou" style="font-variant-numeric:tabular-nums">100</b></span>
+          <span><i style="background:#9a9aa2"></i>Index <b id="lgIdx" style="font-variant-numeric:tabular-nums">100</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="pill primary" data-act="play" id="btnPlay">Play the twenty weeks</button>
+      <button class="pill" data-act="buyA">Buy A $150</button>
+      <button class="pill" data-act="sellA">Sell A $150</button>
+      <button class="pill" data-act="buyB">Buy B $150</button>
+      <button class="pill" data-act="sellB">Sell B $150</button>
+      <button class="pill" data-act="buyC">Buy C $150</button>
+      <button class="pill" data-act="sellC">Sell C $150</button>
+    </div>
+    <div class="row"><span class="hint" id="lvHint">Each trade spends one token. Trade before you press play, or mid run while the blocks are moving.</span></div>
+  </div>
+
+  <footer class="note">
+    One file, canvas only, no images and no randomness in the level, so the same play always scores the same.
+    Block colours are the validated categorical slots and stay bolted to the holding, never to its rank, which is
+    what makes the re sorting readable. Every block carries a visible label because the glass fills sit under 3:1
+    against the card.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- colour + geometry helpers ---------------- */
+  function hex2rgb(h){ var n = parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+  function rgba(c,a){ return "rgba("+c[0]+","+c[1]+","+c[2]+","+a+")"; }
+  function fmt(v){ return "$" + Math.round(v).toLocaleString("en-US"); }
+  function ease(cur, tgt, dt, k){ return cur + (tgt-cur) * Math.min(1, dt*(k||6)); }
+
+  function rr(g,x,y,w,h,r){
+    r = Math.max(0, Math.min(r, w/2, h/2));
+    g.beginPath();
+    g.moveTo(x+r,y); g.lineTo(x+w-r,y); g.quadraticCurveTo(x+w,y,x+w,y+r);
+    g.lineTo(x+w,y+h-r); g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    g.lineTo(x+r,y+h); g.quadraticCurveTo(x,y+h,x,y+h-r);
+    g.lineTo(x,y+r); g.quadraticCurveTo(x,y,x+r,y); g.closePath();
+  }
+
+  /* one rounded glass slab */
+  function glass(g, x, y, w, h, hex, opt){
+    if (h <= 0.4) return;
+    opt = opt || {};
+    var c = hex2rgb(hex), r = Math.min(11, w*0.3, h*0.5), a = opt.alpha === undefined ? 1 : opt.alpha;
+    g.save();
+    g.globalAlpha = a;
+    // contact shadow on the floor
+    if (opt.shadow !== false) {
+      g.save();
+      g.globalAlpha = a*0.14; g.fillStyle = "#20283f";
+      g.beginPath(); g.ellipse(x+w/2, y+h+2, w*0.62, 5, 0, 0, Math.PI*2); g.fill();
+      g.restore();
+    }
+    g.save();
+    g.shadowColor = "rgba(24,32,56,0.18)"; g.shadowBlur = 14; g.shadowOffsetY = 5;
+    var grd = g.createLinearGradient(0,y,0,y+h);
+    grd.addColorStop(0, rgba(c,0.46)); grd.addColorStop(0.45, rgba(c,0.30)); grd.addColorStop(1, rgba(c,0.40));
+    rr(g,x,y,w,h,r); g.fillStyle = grd; g.fill();
+    g.restore();
+    // interior sheen
+    g.save(); rr(g,x,y,w,h,r); g.clip();
+    var sg = g.createLinearGradient(x,0,x+w,0);
+    sg.addColorStop(0,"rgba(255,255,255,0.55)"); sg.addColorStop(0.30,"rgba(255,255,255,0.06)");
+    sg.addColorStop(0.72,"rgba(255,255,255,0.04)"); sg.addColorStop(1,"rgba(255,255,255,0.30)");
+    g.fillStyle = sg; g.fillRect(x,y,w,h);
+    g.fillStyle = "rgba(255,255,255,0.55)"; g.fillRect(x, y, w, Math.min(3.5, h*0.3));
+    g.restore();
+    // a surface ring keeps two blocks legible while they slide past each other
+    if (opt.ring) { rr(g,x,y,w,h,r); g.strokeStyle = "rgba(255,255,255,0.92)"; g.lineWidth = 2.5; g.stroke(); }
+    rr(g,x,y,w,h,r); g.strokeStyle = rgba(c,0.62); g.lineWidth = 1; g.stroke();
+    g.restore();
+  }
+
+  /* dashed cost-basis outline */
+  function ghost(g, x, y, w, h, hex){
+    if (h <= 1) return;
+    var c = hex2rgb(hex);
+    g.save();
+    g.setLineDash([4,4]); g.lineWidth = 1.2; g.strokeStyle = rgba(c,0.55);
+    rr(g,x,y,w,h,Math.min(11,w*0.3,h*0.5)); g.stroke();
+    g.restore();
+  }
+
+  /* faint dollar ruler + floor */
+  function ruler(g, w, baseY, ppd, step, maxV, label){
+    g.save();
+    g.font = "500 10px -apple-system, system-ui, sans-serif"; g.textBaseline = "middle";
+    for (var v = step; v <= maxV+0.001; v += step) {
+      var y = baseY - v*ppd;
+      if (y < 12) break;
+      g.strokeStyle = "rgba(0,0,0,0.055)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(10, y+0.5); g.lineTo(w-10, y+0.5); g.stroke();
+      if (label !== false) { g.fillStyle = "#a1a1a6"; g.textAlign = "left"; g.fillText("$"+v, 12, y-6); }
+    }
+    g.strokeStyle = "rgba(0,0,0,0.20)"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(8, baseY+0.5); g.lineTo(w-8, baseY+0.5); g.stroke();
+    g.restore();
+  }
+
+  function capLabel(g, cx, topY, text, sub, col){
+    g.save();
+    g.textAlign = "center";
+    g.font = "600 13px -apple-system, system-ui, sans-serif";
+    g.fillStyle = col || "#1d1d1f";
+    g.fillText(text, cx, topY - 9);
+    if (sub) {
+      g.font = "500 10.5px -apple-system, system-ui, sans-serif";
+      g.fillStyle = "#8e8e93"; g.fillText(sub, cx, topY - 23);
+    }
+    g.restore();
+  }
+
+  function footLabel(g, cx, baseY, text){
+    g.save();
+    g.textAlign = "center"; g.font = "600 11.5px -apple-system, system-ui, sans-serif";
+    g.fillStyle = "#6e6e73"; g.fillText(text, cx, baseY + 16);
+    g.restore();
+  }
+
+  /* thin slice of value in flight (dividend, buy, sell) */
+  function slice(g, x, y, w, h, hex, alpha){
+    var c = hex2rgb(hex);
+    g.save(); g.globalAlpha = alpha === undefined ? 1 : alpha;
+    rr(g,x,y,w,h,Math.min(3,h/2)); g.fillStyle = rgba(c,0.62); g.fill();
+    g.strokeStyle = rgba(c,0.8); g.lineWidth = 1; g.stroke();
+    g.restore();
+  }
+
+  function tray(g, x, y, w, h, cash, cap){
+    g.save();
+    rr(g,x,y,w,h,10);
+    g.fillStyle = "rgba(255,255,255,0.72)"; g.fill();
+    g.setLineDash([3,3]); g.strokeStyle = "rgba(0,0,0,0.22)"; g.lineWidth = 1; g.stroke();
+    g.setLineDash([]);
+    // cash fills the tray from the bottom in thin slabs
+    var frac = Math.max(0, Math.min(1, cash/cap));
+    var fh = (h-8) * frac;
+    if (fh > 1) {
+      g.save(); rr(g,x+4,y+h-4-fh,w-8,fh,6); g.clip();
+      g.fillStyle = "rgba(42,120,214,0.26)"; g.fillRect(x+4,y+h-4-fh,w-8,fh);
+      g.strokeStyle = "rgba(42,120,214,0.30)"; g.lineWidth = 1;
+      for (var yy = y+h-8; yy > y+h-4-fh; yy -= 5) { g.beginPath(); g.moveTo(x+4,yy+0.5); g.lineTo(x+w-4,yy+0.5); g.stroke(); }
+      g.restore();
+      rr(g,x+4,y+h-4-fh,w-8,fh,6); g.strokeStyle = "rgba(42,120,214,0.55)"; g.lineWidth = 1; g.stroke();
+    }
+    g.textAlign = "center";
+    g.font = "600 11px -apple-system, system-ui, sans-serif"; g.fillStyle = "#6e6e73";
+    g.fillText("CASH TRAY", x+w/2, y-14);
+    g.font = "600 13px -apple-system, system-ui, sans-serif"; g.fillStyle = "#1d1d1f";
+    g.fillText(fmt(cash), x+w/2, y-1 + 0);
+    g.restore();
+  }
+
+  /* hundreds of hairline strata fused into one wide block */
+  function strataBlock(g, x, y, w, h, level, t, hex){
+    if (h <= 1) return;
+    var c = hex2rgb(hex || "#2a78d6");
+    g.save();
+    rr(g,x,y,w,h,Math.min(10,h/2));
+    g.save();
+    g.shadowColor = "rgba(24,32,56,0.16)"; g.shadowBlur = 13; g.shadowOffsetY = 5;
+    g.fillStyle = rgba(c,0.16); g.fill();
+    g.restore();
+    g.clip();
+    var n = Math.max(60, Math.round(w/2.2)), step = w/n;
+    for (var i=0;i<n;i++){
+      // deterministic per-stratum wobble; the ensemble barely moves
+      var ph = i*0.7311, amp = 0.10 + 0.13*Math.abs(Math.sin(i*1.7));
+      var f = 1 - amp*0.5 - amp*0.5*Math.sin(t*1.6 + ph*6.0);
+      var sh = h*f;
+      g.fillStyle = rgba(c, 0.28 + 0.16*Math.abs(Math.sin(i*2.3)));
+      g.fillRect(x + i*step, y + (h-sh), Math.max(0.7, step*0.62), sh);
+    }
+    var sg = g.createLinearGradient(x,0,x+w,0);
+    sg.addColorStop(0,"rgba(255,255,255,0.42)"); sg.addColorStop(0.35,"rgba(255,255,255,0.02)");
+    sg.addColorStop(1,"rgba(255,255,255,0.22)");
+    g.fillStyle = sg; g.fillRect(x,y,w,h);
+    g.fillStyle = "rgba(255,255,255,0.5)"; g.fillRect(x,y,w,3);
+    g.restore();
+    rr(g,x,y,w,h,Math.min(10,h/2)); g.strokeStyle = rgba(c,0.55); g.lineWidth = 1; g.stroke();
+    g.restore();
+  }
+
+  /* crumble: shards fall and settle into a grey pile that stays */
+  function makeShards(x, w, top, baseY){
+    var out = [], rows = 7, cols = 4;
+    var h = baseY - top, rh = h/rows, cw = w/cols;
+    for (var r=0;r<rows;r++) for (var cI=0;cI<cols;cI++){
+      var sx = x + cI*cw, sy = top + r*rh;
+      var settleY = baseY - 4 - (rows-1-r)*1.6 - Math.abs(Math.sin(r*3+cI))*3;
+      out.push({
+        x0:sx, y0:sy, w:cw*0.92, h:rh*0.86,
+        x1: x + w/2 + (sx + cw/2 - (x+w/2))*(1.7 + 0.5*Math.sin(r*2.1+cI)) - cw*0.46,
+        y1: settleY, rot0:0, rot1:(Math.sin(r*1.3+cI*2.7))*0.9,
+        d: 0.05*r + 0.03*cI, t:0, dur: 0.55 + 0.02*r
+      });
+    }
+    return out;
+  }
+  function drawShards(g, S, t, hex){
+    var c = hex2rgb(hex), grey = [154,154,162];
+    for (var i=0;i<S.length;i++){
+      var q = S[i], p = Math.max(0, Math.min(1, (t - q.d)/q.dur));
+      if (p <= 0) { // still standing: draw in place
+        g.save(); g.fillStyle = rgba(c,0.32); g.strokeStyle = rgba(c,0.5); g.lineWidth = 1;
+        rr(g,q.x0,q.y0,q.w,q.h,2); g.fill(); g.stroke(); g.restore();
+        continue;
+      }
+      var e = p*p, col = p >= 1 ? grey : [c[0]+(grey[0]-c[0])*p, c[1]+(grey[1]-c[1])*p, c[2]+(grey[2]-c[2])*p].map(Math.round);
+      var x = q.x0 + (q.x1-q.x0)*e, y = q.y0 + (q.y1-q.y0)*e - Math.sin(Math.PI*e)*8;
+      var rot = q.rot0 + (q.rot1-q.rot0)*e, hh = q.h*(1 - 0.35*e);
+      g.save(); g.translate(x+q.w/2, y+hh/2); g.rotate(rot);
+      g.fillStyle = rgba(col,0.5); g.strokeStyle = rgba(col,0.75); g.lineWidth = 1;
+      rr(g,-q.w/2,-hh/2,q.w,hh,2); g.fill(); g.stroke(); g.restore();
+    }
+  }
+  function cracks(g, x, y, w, h, p){
+    g.save(); g.globalAlpha = Math.min(1,p*2); g.strokeStyle = "rgba(30,34,44,0.55)"; g.lineWidth = 1.2;
+    for (var i=0;i<4;i++){
+      var sx = x + w*(0.2+0.2*i);
+      g.beginPath(); g.moveTo(sx, y);
+      for (var k=1;k<=5;k++) g.lineTo(sx + Math.sin(i*2.1+k*1.7)*w*0.14, y + h*(k/5));
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  /* ---------------- scenes ---------------- */
+  var S1="#2a78d6", S2="#eb6834", S3="#1baf7a", S4="#eda100", S5="#e87ba4";
+  var SCENES = {};
+
+  /* a. one block growing */
+  SCENES.grow = function(){
+    var v = 60, tgt = 60, t = 0, phase = 0;
+    return { step:function(dt){
+        t += dt;
+        if (t > 1.5) { t = 0; phase++; tgt = [60,95,130,170,215,60][phase % 6]; }
+        v = ease(v, tgt, dt, 2.6);
+      },
+      draw:function(g,w,h){
+        var baseY = h-34, ppd = (h-70)/240;
+        ruler(g,w,baseY,ppd,50,240);
+        var bw = 92, x = w/2 - bw/2, bh = v*ppd;
+        glass(g,x,baseY-bh,bw,bh,S1);
+        capLabel(g, w/2, baseY-bh, fmt(v));
+        footLabel(g, w/2, baseY, "A");
+      } };
+  };
+
+  /* b. declining under the ghost cost line */
+  SCENES.fall = function(){
+    var cost = 180, v = 180, tgt = 180, t = 0, phase = 0;
+    return { step:function(dt){
+        t += dt;
+        if (t > 1.7) { t = 0; phase++; tgt = [180,150,112,88,88,180][phase % 6]; }
+        v = ease(v, tgt, dt, 2.4);
+      },
+      draw:function(g,w,h){
+        var baseY = h-34, ppd = (h-70)/240;
+        ruler(g,w,baseY,ppd,50,240);
+        var bw = 92, x = w/2 - bw/2, bh = v*ppd, ch = cost*ppd;
+        // the gap you are down, hatched
+        if (v < cost - 0.5) {
+          g.save(); rr(g,x,baseY-ch,bw,ch-bh,6); g.clip();
+          g.strokeStyle = "rgba(208,59,59,0.28)"; g.lineWidth = 1.4;
+          for (var i=-40;i<bw+60;i+=7){ g.beginPath(); g.moveTo(x+i, baseY-ch); g.lineTo(x+i-50, baseY-bh); g.stroke(); }
+          g.restore();
+        }
+        glass(g,x,baseY-bh,bw,bh,S1);
+        ghost(g,x,baseY-ch,bw,ch,S1);
+        g.save();
+        g.font = "500 10.5px -apple-system, system-ui, sans-serif"; g.fillStyle = "#8e8e93"; g.textAlign = "left";
+        g.fillText("you paid " + fmt(cost), x+bw+9, baseY-ch+4);
+        g.restore();
+        var down = (v-cost)/cost*100;
+        capLabel(g, w/2, Math.min(baseY-bh, baseY-ch), fmt(v), (down<0?"":"+") + down.toFixed(0) + "% vs cost", down < 0 ? "#d03b3b" : "#0ca30c");
+        footLabel(g, w/2, baseY, "A");
+      } };
+  };
+
+  /* c. five blocks re-sorting (bar chart race) */
+  SCENES.race = function(){
+    var hexes = [S1,S2,S3,S4,S5], names = ["A","B","C","D","E"];
+    var series = [
+      [210, 60,140, 95,175],
+      [160,110,120,150,205],
+      [120,190, 90,205,150],
+      [ 95,225,140,180,110],
+      [130,200,215,120, 80],
+      [210, 60,140, 95,175]
+    ];
+    var bl = [], i;
+    for (i=0;i<5;i++) bl.push({hex:hexes[i], name:names[i], v:series[0][i], tgt:series[0][i], x:0, tx:0, init:false});
+    var t = 0, step = 0;
+    return { step:function(dt){
+        t += dt;
+        if (t > 1.9) { t = 0; step++; for (var i=0;i<5;i++) bl[i].tgt = series[step % series.length][i]; }
+        for (i=0;i<5;i++) bl[i].v = ease(bl[i].v, bl[i].tgt, dt, 2.2);
+      },
+      draw:function(g,w,h){
+        var baseY = h-34, GUT = 44;
+        var ppd = (h-70)/250, bw = Math.min(60, (w-GUT-24)/5 - 10), gap = (w - GUT - 16 - bw*5)/4;
+        var order = bl.slice().sort(function(a,b){ return b.v - a.v; });
+        for (var i=0;i<5;i++){ order[i].tx = GUT + i*(bw+gap); }
+        ruler(g,w,baseY,ppd,50,250);
+        var drawn = [];
+        for (i=0;i<5;i++){
+          var b = bl[i];
+          if (!b.init) { b.x = b.tx; b.init = true; }
+          b.x = ease(b.x, b.tx, 1/60, 6);
+          var bh = b.v*ppd;
+          glass(g,b.x,baseY-bh,bw,bh,b.hex,{ring:true});
+          footLabel(g, b.x+bw/2, baseY, b.name);
+          drawn.push({cx:b.x+bw/2, top:baseY-bh, v:b.v});
+        }
+        // labels last, lifted when two blocks are passing each other
+        drawn.sort(function(a,b){ return a.cx - b.cx; });
+        for (i=0;i<drawn.length;i++){
+          var d = drawn[i], lift = 0;
+          if (i > 0 && Math.abs(d.cx - drawn[i-1].cx) < 42 && Math.abs(d.top - drawn[i-1].top) < 18) lift = 15;
+          capLabel(g, d.cx, d.top - lift, fmt(d.v));
+        }
+      } };
+  };
+
+  /* d. market-wide crash */
+  SCENES.crash = function(){
+    var hexes=[S1,S2,S3,S4,S5], names=["A","B","C","D","E"], base=[205,140,175,110,235];
+    var bl=[], i; for(i=0;i<5;i++) bl.push({hex:hexes[i],name:names[i],v:base[i],pre:base[i],tgt:base[i]});
+    var t = 0, state = 0;
+    function crash(){ for(var i=0;i<5;i++){ bl[i].pre = bl[i].v; bl[i].tgt = bl[i].v*(0.55 + 0.06*Math.sin(i*2.4)); } state=1; t=0; }
+    function recover(){ for(var i=0;i<5;i++) bl[i].tgt = base[i]; state=0; t=0; }
+    return { step:function(dt){
+        t += dt;
+        if (state===0 && t>3.2) crash();
+        else if (state===1 && t>3.6) recover();
+        for (var i=0;i<5;i++) bl[i].v = ease(bl[i].v, bl[i].tgt, dt, state===1?2.0:1.4);
+      },
+      act:function(a){ if (a==="crash") crash(); },
+      draw:function(g,w,h){
+        var baseY = h-34, GUT = 44;
+        var ppd = (h-70)/250, bw = Math.min(56,(w-GUT-24)/5-10), gap=(w-GUT-16-bw*5)/4;
+        ruler(g,w,baseY,ppd,50,250);
+        for (var i=0;i<5;i++){
+          var b = bl[i], x = GUT+i*(bw+gap), bh = b.v*ppd;
+          if (state===1) ghost(g,x,baseY-b.pre*ppd,bw,b.pre*ppd,b.hex);
+          glass(g,x,baseY-bh,bw,bh,b.hex);
+          capLabel(g,x+bw/2,baseY-bh,fmt(b.v));
+          footLabel(g,x+bw/2,baseY,b.name);
+        }
+        if (state===1) {
+          g.save(); g.font="600 12px -apple-system, system-ui, sans-serif"; g.fillStyle="#d03b3b"; g.textAlign="right";
+          g.fillText("whole market down", w-14, 22); g.restore();
+        }
+      } };
+  };
+
+  /* e. bankruptcy vs merely short */
+  SCENES.bust = function(){
+    var live = {v:190, tgt:190}, dead = {v:190, tgt:190, shards:null, t:0, state:0, shake:0};
+    var t = 0, auto = 0;
+    function run(){ if (dead.state!==0) return; dead.state=1; dead.t=0; dead.shake=0.9; live.tgt = 62; }
+    function reset(){ dead.state=0; dead.shards=null; dead.v=190; dead.tgt=190; live.v=190; live.tgt=190; auto=0; t=0; }
+    return { step:function(dt){
+        t += dt; auto += dt;
+        if (dead.state===0 && auto > 3.4) run();
+        if (dead.state===0 && auto > 2.0) live.tgt = 120;
+        if (dead.state===1){ dead.t += dt; if (dead.t > 0.55) { dead.state = 2; dead.t = 0; } }
+        else if (dead.state===2){ dead.t += dt; if (dead.t > 5.5) reset(); if (live.tgt < 150 && dead.t > 1.6) live.tgt = 150; }
+        live.v = ease(live.v, live.tgt, dt, 2.0);
+        if (dead.shake>0) dead.shake = Math.max(0, dead.shake - dt*1.6);
+      },
+      act:function(a){ if (a==="bust") run(); if (a==="bustreset") reset(); },
+      draw:function(g,w,h){
+        var baseY = h-34, ppd = (h-70)/240, bw = Math.min(88,(w-90)/2);
+        ruler(g,w,baseY,ppd,50,240);
+        var x1 = w*0.28-bw/2, x2 = w*0.72-bw/2;
+        var lh = live.v*ppd;
+        glass(g,x1,baseY-lh,bw,lh,S3);
+        capLabel(g,x1+bw/2,baseY-lh,fmt(live.v));
+        footLabel(g,x1+bw/2,baseY,"C  ·  just a bad week");
+        var dh = dead.v*ppd, top = baseY-dh;
+        if (dead.state===0){
+          glass(g,x2,top,bw,dh,S2);
+          capLabel(g,x2+bw/2,top,fmt(dead.v));
+        } else if (dead.state===1){
+          var sx = Math.sin(dead.t*54)*dead.shake*4;
+          g.save(); g.translate(sx,0);
+          glass(g,x2,top,bw,dh,S2);
+          cracks(g,x2,top,bw,dh,dead.t/0.55);
+          g.restore();
+          capLabel(g,x2+bw/2,top,fmt(dead.v));
+        } else {
+          if (!dead.shards) dead.shards = makeShards(x2,bw,top,baseY);
+          drawShards(g, dead.shards, dead.t, S2);
+          g.save(); g.textAlign="center"; g.font="600 12.5px -apple-system, system-ui, sans-serif"; g.fillStyle="#6e6e73";
+          g.fillText("$0 · gone for good", x2+bw/2, baseY-34); g.restore();
+        }
+        footLabel(g,x2+bw/2,baseY,"D  ·  bankrupt");
+      } };
+  };
+
+  /* f. the index block */
+  SCENES.index = function(){
+    var t = 0, lvl = 190, tgt = 190, k = 0;
+    return { step:function(dt){ t += dt; k += dt; if (k>2.6){ k=0; tgt = 190 + 18*Math.sin(t*0.7) + (Math.sin(t*3.1)>0?8:-8); } lvl = ease(lvl,tgt,dt,1.2); },
+      draw:function(g,w,h){
+        var baseY = h-34, ppd = (h-70)/250;
+        ruler(g,w,baseY,ppd,50,250);
+        var bw = Math.min(w-52, 300), x = w/2-bw/2, bh = lvl*ppd;
+        strataBlock(g,x,baseY-bh,bw,bh,lvl,t,S1);
+        capLabel(g,w/2,baseY-bh,fmt(lvl),"one wide block, hundreds of companies");
+        footLabel(g,w/2,baseY,"INDEX");
+      } };
+  };
+
+  /* g. a dividend sliding off into the tray */
+  SCENES.div = function(){
+    var v = 180, cash = 0, t = 0, fly = null;
+    return { step:function(dt){
+        t += dt;
+        if (!fly && t > 2.0) { fly = {p:0, amt:14}; v -= 14; }
+        if (fly) { fly.p += dt*1.1; if (fly.p >= 1) { cash += fly.amt; fly = null; t = 0; if (cash > 70) { cash = 0; v = 180; } } }
+        v = ease(v, Math.max(120, v), dt, 1);
+      },
+      draw:function(g,w,h){
+        var baseY = h-34, ppd = (h-72)/240;
+        ruler(g,w,baseY,ppd,50,240,false);
+        var bw = 84, x = w*0.34-bw/2, bh = v*ppd, top = baseY-bh;
+        glass(g,x,top,bw,bh,S3);
+        capLabel(g,x+bw/2,top,fmt(v));
+        footLabel(g,x+bw/2,baseY,"C");
+        var tw = 78, tx = w*0.74-tw/2, th = 74, ty = baseY-th;
+        tray(g,tx,ty,tw,th,cash,80);
+        if (fly) {
+          var p = fly.p, e = p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+          var sx = x + (tx+6-x)*e, sy = (top-6) + ((ty+th-14) - (top-6))*e - Math.sin(Math.PI*e)*26;
+          slice(g, sx, sy, bw*(1-0.18*e), 7, S3, 1);
+        }
+        g.save(); g.textAlign="center"; g.font="500 10.5px -apple-system, system-ui, sans-serif"; g.fillStyle="#8e8e93";
+        g.fillText("a slice leaves the block, the cash is yours", w/2, 18); g.restore();
+      } };
+  };
+
+  /* h. buy and sell as physical moves */
+  SCENES.trade = function(){
+    var TOTAL = 260, held = 120, cash = TOTAL-120, disp = 120, dispCash = TOTAL-120, fly = null, msg = "";
+    function move(dir){ // +1 buy, -1 sell
+      var amt = 60;
+      if (dir>0 && cash < amt) { msg = "tray is empty"; return; }
+      if (dir<0 && held < amt) { msg = "nothing left to sell"; return; }
+      held += dir*amt; cash -= dir*amt; fly = {p:0, dir:dir, amt:amt}; msg = "";
+    }
+    return { step:function(dt){
+        disp = ease(disp, held, dt, 4.5); dispCash = ease(dispCash, cash, dt, 4.5);
+        if (fly) { fly.p += dt*1.6; if (fly.p >= 1) fly = null; }
+      },
+      act:function(a){ if (a==="buy") move(1); if (a==="sell") move(-1); },
+      draw:function(g,w,h){
+        var baseY = h-34, ppd = (h-72)/260;
+        ruler(g,w,baseY,ppd,50,260,false);
+        var tw = 78, tx = w*0.26-tw/2, th = 96, ty = baseY-th;
+        tray(g,tx,ty,tw,th,dispCash,TOTAL);
+        var bw = 88, x = w*0.72-bw/2, bh = disp*ppd, top = baseY-bh;
+        glass(g,x,top,bw,bh,S1);
+        capLabel(g,x+bw/2,top,fmt(disp));
+        footLabel(g,x+bw/2,baseY,"A");
+        if (fly) {
+          var p = fly.p, e = p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+          var a = {x:tx+6, y:ty+th-24}, b = {x:x, y:top-4};
+          var s = fly.dir>0 ? a : b, d = fly.dir>0 ? b : a;
+          var sx = s.x + (d.x-s.x)*e, sy = s.y + (d.y-s.y)*e - Math.sin(Math.PI*e)*30;
+          slice(g, sx, sy, 66, 9, S1, 1);
+        }
+        g.save(); g.textAlign="center"; g.font="500 10.5px -apple-system, system-ui, sans-serif"; g.fillStyle= msg?"#d03b3b":"#8e8e93";
+        g.fillText(msg || "value only ever moves, it never appears", w/2, 18); g.restore();
+      } };
+  };
+
+  /* ---------------- the level ---------------- */
+  var RET = {
+    A: [ 2.5, 1.5, 3.0, 2.0,-1.0, 2.5, 3.0, 1.5, 3.5, 2.0,-1.5, 3.0,-9.0, 4.0, 5.0, 3.0, 2.5, 3.5, 2.0, 3.0],
+    B: [-1.0,-2.0, 1.0,-3.0,-2.0,-1.5, 0.5,-3.0,-2.0,-1.0,-2.5,-1.0,-9.0,-2.0,-1.0,-2.0,-1.5,-2.0,-1.0,-2.0],
+    C: [-4.0, 6.0,-5.0, 7.0,-6.0, 5.0,-3.0, 8.0,-7.0, 4.0, 3.0,-5.0,-11.0, 9.0, 7.0, 8.0, 5.0, 7.0, 4.0, 6.0]
+  };
+  var LV = null;
+  function lvNew(){
+    return {
+      tick:0, cash:250, tokens:3, playing:false, done:false, acc:0,
+      hold:{A:250,B:250,C:250}, disp:{A:250,B:250,C:250},
+      idx:1000, idxDisp:1000, idxV:100, youV:100,
+      hist:[{you:100, idx:100}],
+      flash:null, order:["A","B","C"], px:{}, msg:""
+    };
+  }
+  function lvTotal(s){ return s.cash + s.hold.A + s.hold.B + s.hold.C; }
+  function lvStep(s){
+    var t = s.tick;
+    if (t >= 20) return;
+    ["A","B","C"].forEach(function(k){ s.hold[k] = s.hold[k] * (1 + RET[k][t]/100); });
+    var im = (RET.A[t] + RET.B[t] + RET.C[t]) / 3 * 0.62 + 0.35;
+    s.idx = s.idx * (1 + im/100);
+    s.tick++;
+    s.youV = lvTotal(s)/1000*100;
+    s.idxV = s.idx/1000*100;
+    s.hist.push({you:s.youV, idx:s.idxV});
+    if (s.tick >= 20) { s.playing = false; s.done = true; lvEnd(); }
+    lvHud();
+  }
+  function lvTrade(k, dir){
+    var s = LV, amt = 150;
+    if (s.done) return;
+    if (s.tokens <= 0) { s.msg = "no trade tokens left"; lvHud(); return; }
+    if (dir > 0 && s.cash < amt) { s.msg = "not enough cash"; lvHud(); return; }
+    if (dir < 0 && s.hold[k] < amt) { s.msg = k + " is smaller than $150"; lvHud(); return; }
+    s.hold[k] += dir*amt; s.cash -= dir*amt; s.tokens--;
+    s.flash = {k:k, dir:dir, p:0};
+    s.msg = (dir>0 ? "bought " : "sold ") + "$150 of " + k;
+    lvHud();
+  }
+
+  function lvHud(){
+    var s = LV;
+    document.getElementById("hCash").textContent = fmt(s.cash);
+    document.getElementById("hTotal").textContent = fmt(lvTotal(s));
+    document.getElementById("hTick").textContent = s.tick + " / 20";
+    var toks = document.getElementById("hTok").children;
+    for (var i=0;i<toks.length;i++) toks[i].className = "tok" + (i < s.tokens ? "" : " spent");
+    document.getElementById("lgYou").textContent = Math.round(lvTotal(s)/1000*100);
+    document.getElementById("lgIdx").textContent = Math.round(s.idx/1000*100);
+    document.getElementById("lvHint").textContent = s.msg ||
+      "Each trade spends one token. Trade before you press play, or mid run while the blocks are moving.";
+  }
+  function lvEnd(){
+    var s = LV, total = lvTotal(s), beat = total/1000*100 > s.idx/1000*100;
+    var stars = 0;
+    if (total >= 1200) stars = 1;
+    if (total >= 1250) stars = 2;
+    if (total >= 1290 && beat) stars = 3;
+    document.getElementById("ovStars").textContent = "★★★".slice(0,stars) + "☆☆☆".slice(0,3-stars);
+    document.getElementById("ovBig").textContent = fmt(total);
+    document.getElementById("ovSmall").textContent = stars === 0
+      ? "Short of $1,200. The blocks that were sinking on week one kept sinking; moving that money is what the tokens are for."
+      : (stars === 3 ? "Goal cleared and your total block finished taller than the index. You moved money out of the block that was sinking."
+        : "Goal cleared. Three stars needs $1,290 and a finish above the index.");
+    document.getElementById("ovl").classList.add("on");
+    document.getElementById("btnPlay").disabled = true;
+  }
+
+  SCENES.level = function(){
+    var t = 0;
+    return { step:function(dt){
+        t += dt;
+        var s = LV;
+        if (s.playing) { s.acc += dt; if (s.acc > 0.62) { s.acc = 0; lvStep(s); } }
+        ["A","B","C"].forEach(function(k){ s.disp[k] = ease(s.disp[k], s.hold[k], dt, 3.4); });
+        s.idxDisp = ease(s.idxDisp, s.idx, dt, 3.4);
+        if (s.flash) { s.flash.p += dt*1.5; if (s.flash.p >= 1) s.flash = null; }
+      },
+      draw:function(g,w,h){
+        var s = LV;
+        var baseY = h-46, ppd = (h-104)/1700;
+        ruler(g,w,baseY,ppd,400,1700);
+        // name over your row
+        g.save();
+        g.font = "600 12.5px -apple-system, system-ui, sans-serif"; g.fillStyle = "#1d1d1f"; g.textAlign="left";
+        g.fillText(document.getElementById("pname").value || "your blocks", 14, 20);
+        g.font = "500 10.5px -apple-system, system-ui, sans-serif"; g.fillStyle="#8e8e93";
+        g.fillText("three holdings, your cash, and what they add up to", 14, 35);
+        g.restore();
+
+        var keys = ["A","B","C"], hexes = {A:S1,B:S2,C:S3}, cost = 250;
+        var bw = Math.min(66, (w-330)/3 - 14), gap = 20, x0 = 22;
+        var trayX = x0 + 3*(bw+gap) + 4;
+        for (var i=0;i<keys.length;i++){
+          var k = keys[i], x = x0 + i*(bw+gap), v = s.disp[k], bh = v*ppd;
+          ghost(g,x,baseY-cost*ppd,bw,cost*ppd,hexes[k]);
+          glass(g,x,baseY-bh,bw,bh,hexes[k]);
+          capLabel(g,x+bw/2,baseY-bh,fmt(v));
+          footLabel(g,x+bw/2,baseY,k);
+          if (s.flash && s.flash.k === k) {
+            var p = s.flash.p, e = p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+            var a = {x:trayX+4, y:baseY-52}, b = {x:x, y:baseY-bh-6};
+            var from = s.flash.dir>0 ? a : b, to = s.flash.dir>0 ? b : a;
+            slice(g, from.x + (to.x-from.x)*e, from.y + (to.y-from.y)*e - Math.sin(Math.PI*e)*34, bw*0.9, 8, hexes[k], 1);
+          }
+        }
+        // cash tray
+        var tw = 66, th = 92, ty = baseY-th;
+        tray(g,trayX,ty,tw,th,s.cash,600);
+        // your total, then the index, on the same ruler
+        var iw = Math.min(96, (w - (trayX+tw) - 60)/2), gx = trayX + tw + 34;
+        var tot = s.cash + s.disp.A + s.disp.B + s.disp.C, tH = tot*ppd;
+        glass(g,gx,baseY-tH,iw,tH,"#4a3aa7");
+        capLabel(g,gx+iw/2,baseY-tH,fmt(tot));
+        footLabel(g,gx+iw/2,baseY,"TOTAL");
+        var ix = gx + iw + 22, ih = s.idxDisp*ppd;
+        strataBlock(g,ix,baseY-ih,Math.min(iw+34, w-ix-16),ih,s.idxDisp,t,"#7a7a82");
+        capLabel(g,ix+Math.min(iw+34, w-ix-16)/2,baseY-ih,fmt(s.idxDisp));
+        footLabel(g,ix+Math.min(iw+34, w-ix-16)/2,baseY,"INDEX");
+        // the goal line, read against TOTAL
+        var goalY = baseY - 1200*ppd;
+        g.save(); g.setLineDash([5,4]); g.strokeStyle="rgba(12,163,12,0.6)"; g.lineWidth=1.4;
+        g.beginPath(); g.moveTo(gx-16, goalY+0.5); g.lineTo(w-10, goalY+0.5); g.stroke(); g.setLineDash([]);
+        g.font="600 10.5px -apple-system, system-ui, sans-serif"; g.fillStyle="#0ca30c"; g.textAlign="right";
+        g.fillText("goal $1,200", w-12, goalY-6); g.restore();
+      } };
+  };
+
+  /* the small normalised readout: you vs index since week zero */
+  SCENES.readout = function(){
+    return { step:function(){},
+      draw:function(g,w,h){
+        var s = LV, H = s.hist, pad = {l:30, r:34, t:12, b:18};
+        var lo = 80, hi = 130;
+        for (var i=0;i<H.length;i++){ lo = Math.min(lo, H[i].you, H[i].idx); hi = Math.max(hi, H[i].you, H[i].idx); }
+        lo = Math.floor(lo/10)*10; hi = Math.ceil(hi/10)*10;
+        function X(i){ return pad.l + (w-pad.l-pad.r) * (i/20); }
+        function Y(v){ return pad.t + (h-pad.t-pad.b) * (1 - (v-lo)/(hi-lo)); }
+        g.save();
+        g.font = "500 9.5px -apple-system, system-ui, sans-serif"; g.textBaseline="middle";
+        for (var v = lo; v <= hi; v += (hi-lo)/2) {
+          g.strokeStyle = v===100 ? "rgba(0,0,0,0.16)" : "rgba(0,0,0,0.06)"; g.lineWidth=1;
+          g.beginPath(); g.moveTo(pad.l, Y(v)+0.5); g.lineTo(w-pad.r, Y(v)+0.5); g.stroke();
+          g.fillStyle="#a1a1a6"; g.textAlign="right"; g.fillText(Math.round(v), pad.l-6, Y(v));
+        }
+        function line(key, col, wid){
+          g.beginPath();
+          for (var i=0;i<H.length;i++){ var px = X(i), py = Y(H[i][key]); i ? g.lineTo(px,py) : g.moveTo(px,py); }
+          g.strokeStyle = col; g.lineWidth = wid; g.lineJoin="round"; g.lineCap="round"; g.stroke();
+        }
+        line("idx", "#9a9aa2", 2);
+        line("you", S1, 2);
+        var last = H.length-1;
+        g.textAlign="left"; g.font="600 10px -apple-system, system-ui, sans-serif";
+        g.fillStyle="#9a9aa2"; g.fillText("Index", X(last)+5, Y(H[last].idx));
+        g.fillStyle=S1; g.fillText("You", X(last)+5, Y(H[last].you));
+        g.restore();
+      } };
+  };
+
+  /* ---------------- driver ---------------- */
+  LV = lvNew();
+  var mounted = [];
+  document.querySelectorAll("canvas[data-scene]").forEach(function(cv){
+    var name = cv.dataset.scene;
+    if (!SCENES[name]) return;
+    var sc = SCENES[name](), g = cv.getContext("2d"), hh = parseInt(cv.dataset.h,10) || 220;
+    var rec = {cv:cv, g:g, sc:sc, h:hh, w:0, name:name};
+    mounted.push(rec);
+  });
+  function resize(){
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    mounted.forEach(function(r){
+      var w = r.cv.parentNode.clientWidth;
+      if (w === r.w) return;
+      r.w = w; r.cv.width = Math.round(w*dpr); r.cv.height = Math.round(r.h*dpr);
+      r.cv.style.height = r.h + "px";
+      r.g.setTransform(dpr,0,0,dpr,0,0);
+    });
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  var last = performance.now();
+  function frame(now){
+    var dt = Math.min(0.05, (now-last)/1000); last = now;
+    resize();
+    mounted.forEach(function(r){
+      r.sc.step(dt);
+      r.g.clearRect(0,0,r.w,r.h);
+      r.sc.draw(r.g, r.w, r.h);
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function sceneNamed(n){ for (var i=0;i<mounted.length;i++) if (mounted[i].name===n) return mounted[i].sc; return null; }
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var a = b.dataset.act;
+    if (a==="crash") sceneNamed("crash").act("crash");
+    else if (a==="bust" || a==="bustreset") sceneNamed("bust").act(a);
+    else if (a==="buy" || a==="sell") sceneNamed("trade").act(a);
+    else if (a==="play") { LV.playing = true; LV.msg = ""; b.disabled = true; }
+    else if (a==="again") { LV = lvNew(); document.getElementById("ovl").classList.remove("on"); document.getElementById("btnPlay").disabled = false; lvHud(); }
+    else if (a.indexOf("buy")===0) lvTrade(a.slice(3), 1);
+    else if (a.indexOf("sell")===0) lvTrade(a.slice(4), -1);
+  });
+
+  lvHud();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Metaphor probe, the segmented cylinder</title>
+<style>
+  :root {
+    --ink: #1d1d1f; --ink2: #6e6e73; --muted: #898781; --bg: #f5f5f7; --accent: #0071e3;
+    --grid: #e1e0d9; --hair: rgba(11,11,11,0.10);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header.top { margin-bottom: 30px; }
+  h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 8px; }
+  .sub { font-size: 15px; color: var(--ink2); max-width: 780px; line-height: 1.55; margin: 0; }
+  .secthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 44px 0 16px; }
+  .secthead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .secthead .why { font-size: 13.5px; color: var(--ink2); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 16px 18px 18px;
+  }
+  .card.wide { grid-column: 1 / -1; }
+  .stage {
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fbfbfd 0%, #eef0f4 100%);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+    position: relative;
+  }
+  canvas { display: block; width: 100%; }
+  .cname { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; margin: 13px 0 5px; }
+  .cname .k { color: var(--ink2); font-weight: 500; }
+  .cnote { font-size: 13px; line-height: 1.55; color: #3a3a3c; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 11px; }
+  button.pill {
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 500;
+    padding: 7px 15px; border-radius: 999px; cursor: pointer; transition: background .15s ease, opacity .15s ease;
+  }
+  button.pill:hover { background: rgba(0,0,0,0.05); }
+  button.pill.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  button.pill.primary:hover { filter: brightness(1.08); }
+  button.pill.sm { font-size: 12px; padding: 5px 11px; }
+  button.pill:disabled { opacity: .38; cursor: default; }
+  button.pill:disabled:hover { background: #fff; }
+  .hint { font-size: 12.5px; color: var(--ink2); }
+  .hud { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .hud .stat { font-size: 13px; color: var(--ink2); }
+  .hud .stat b { color: var(--ink); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .tokens { display: inline-flex; gap: 5px; vertical-align: middle; }
+  .tok { width: 15px; height: 15px; border-radius: 999px; background: #0071e3; box-shadow: inset 0 0 0 1px rgba(0,0,0,.10); }
+  .tok.spent { background: rgba(0,0,0,.10); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; color: var(--ink2); }
+  .legend span.i { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i.sw { width: 11px; height: 11px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  table.vals { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 12px; display: none; }
+  table.vals.on { display: table; }
+  table.vals th, table.vals td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); color: var(--ink2); }
+  table.vals td.n { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+  table.vals th { font-weight: 600; color: var(--ink); }
+  .tip {
+    position: fixed; pointer-events: none; z-index: 40; opacity: 0; transition: opacity .12s ease;
+    background: rgba(255,255,255,.97); border: 1px solid var(--hair); border-radius: 10px;
+    box-shadow: 0 8px 22px rgba(20,30,60,.14); padding: 7px 10px; font-size: 12.5px; color: var(--ink);
+    white-space: nowrap;
+  }
+  .tip.on { opacity: 1; }
+  .tip .m { color: var(--ink2); }
+  .overlay {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(245,245,247,.82); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+  }
+  .overlay.on { display: flex; }
+  .panel { text-align: center; }
+  .panel .stars { font-size: 38px; letter-spacing: 6px; line-height: 1; color: #eda100; }
+  .panel .big { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 12px 0 4px; }
+  .panel .small { font-size: 13.5px; color: var(--ink2); max-width: 440px; margin: 0 auto 14px; line-height: 1.5; }
+  footer.note { margin-top: 48px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; max-width: 800px; }
+  @media (max-width: 1080px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 760px) { .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Metaphor probe &middot; the segmented cylinder</h1>
+    <p class="sub">
+      One glass cylinder is your whole portfolio. Each holding is a colour band, band height is that holding's value,
+      and the top of the cylinder is your total read off the wall ruler. Beside it stands the index: the same column
+      built from hundreds of hairline bands. Everything is drawn live. Part 1 runs the foolproof checklist,
+      part 2 is a sixty second level.
+    </p>
+  </header>
+
+  <div class="secthead">
+    <h2>Part 1 &middot; The foolproof checklist</h2>
+    <span class="why">Each panel is one claim the metaphor has to survive.</span>
+  </div>
+
+  <div class="grid3">
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="grow" data-h="250"></canvas></div>
+      <div class="cname">a &middot; The cylinder growing taller</div>
+      <div class="cnote">Teaches: when your holdings gain, the whole column rises up the wall, so growth is a height you can point at.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="thin" data-h="250"></canvas></div>
+      <div class="cname">b &middot; One band thinning, the rest holding</div>
+      <div class="cnote">Teaches: one company falling squeezes only its own band; everything you own beneath it stays exactly as thick.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="five" data-h="250"></canvas></div>
+      <div class="cname">c &middot; Five bands, five thicknesses</div>
+      <div class="cnote">Teaches: thickness is how much of your money sits in that company, so concentration is visible without a single number.</div>
+      <div class="row">
+        <button class="pill sm" data-act="table">Show the numbers</button>
+        <span class="hint">Hover a band for its value.</span>
+      </div>
+      <table class="vals" id="tblFive">
+        <thead><tr><th>Holding</th><th class="n" style="text-align:right">Value</th><th class="n" style="text-align:right">Share</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="crash" data-h="250"></canvas></div>
+      <div class="cname">d &middot; A crash shortening the whole cylinder</div>
+      <div class="cnote">Teaches: a crash presses every band down at once, so the column drops as one piece and no single company is to blame.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="bust" data-h="250"></canvas></div>
+      <div class="cname">e &middot; A bankruptcy leaving a grey seam</div>
+      <div class="cnote">Teaches: a company going bankrupt does not thin out, it collapses to a dead grey seam that stays in your glass forever.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="index" data-h="250"></canvas></div>
+      <div class="cname">f &middot; The index cylinder beside yours</div>
+      <div class="cnote">Teaches: the index is the same column made of hundreds of hairlines, so it climbs calmly while your few thick bands lurch.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="divi" data-h="250"></canvas></div>
+      <div class="cname">g &middot; A dividend sliding out to cash</div>
+      <div class="cnote">Teaches: a dividend is a thin slice that leaves the company band and lands in your cash column, still yours, now spendable.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="pour" data-h="250"></canvas></div>
+      <div class="cname">h &middot; Buying and selling as pours</div>
+      <div class="cnote">Teaches: buying pours cash across into a coloured band, selling lifts that band out and pours it back, so nothing is created or destroyed.</div>
+      <div class="row">
+        <button class="pill" data-act="buy">Buy $300</button>
+        <button class="pill" data-act="sell">Sell Solaris</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="secthead">
+    <h2>Part 2 &middot; A sixty second level</h2>
+    <span class="why">Twenty scripted weeks, three trade tokens, one goal line. Rough on purpose.</span>
+  </div>
+
+  <div class="card wide">
+    <div class="hud">
+      <span class="stat">Cash <b id="hCash">$400</b></span>
+      <span class="stat">Total <b id="hTotal">$1,000</b></span>
+      <span class="stat">Goal <b>$1,200</b></span>
+      <span class="stat">Week <b id="hTick">0 / 20</b></span>
+      <span class="stat">Trades left <span class="tokens" id="hTok"><i class="tok"></i><i class="tok"></i><i class="tok"></i></span></span>
+    </div>
+    <div class="stage">
+      <canvas data-scene="level" data-h="380"></canvas>
+      <div class="overlay" id="ovl">
+        <div class="panel">
+          <div class="stars" id="ovStars">&#9733;&#9733;&#9733;</div>
+          <div class="big" id="ovBig">$1,415</div>
+          <div class="small" id="ovSmall"></div>
+          <button class="pill primary" data-act="again">Play again</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="pill primary" data-act="play" id="btnPlay">Play the twenty weeks</button>
+      <button class="pill" data-act="buy0">Buy Solaris $300</button>
+      <button class="pill" data-act="sell0">Sell Solaris</button>
+      <button class="pill" data-act="buy1">Buy Ledger $300</button>
+      <button class="pill" data-act="sell1">Sell Ledger</button>
+      <button class="pill" data-act="sell2">Sell Verdant</button>
+    </div>
+    <div class="legend">
+      <span class="i"><i class="sw" style="background:#2a78d6"></i>Solaris</span>
+      <span class="i"><i class="sw" style="background:#eb6834"></i>Ledger</span>
+      <span class="i"><i class="sw" style="background:#1baf7a"></i>Verdant</span>
+      <span class="i"><i class="sw" style="background:#8e8e93"></i>Dead seam</span>
+      <span class="i"><i class="sw" style="background:#b7b7b1"></i>Cash</span>
+      <span class="i">Every trade costs one token. Verdant is heading somewhere; the wall ruler tells you if you got out in time.</span>
+    </div>
+  </div>
+
+  <footer class="note">
+    One file, canvas only, no images and no randomness: the same play always gives the same score, so the level can be
+    compared between runs. Band colours are the validated categorical palette (adjacent pairs clear the colour vision
+    gates); because several of those hues sit under 3:1 against this surface, every band carries a visible label and
+    panel c ships a table of the same numbers.
+  </footer>
+
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- tiny helpers ---------- */
+  function q(s, r) { return (r || document).querySelector(s); }
+  function qa(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeInOut(t) { t = clamp(t, 0, 1); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function easeOut(t) { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); }
+  function money(v) { return "$" + Math.round(v).toLocaleString("en-US"); }
+
+  function hex2rgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+  function css(c, a) { return "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + (a === undefined ? 1 : a) + ")"; }
+  var WHITE = [255, 255, 255], BLACK = [12, 14, 20];
+  function tint(hex, t) { return css(mix(hex2rgb(hex), WHITE, t)); }
+  function shade(hex, t) { return css(mix(hex2rgb(hex), BLACK, t)); }
+
+  /* ---------- palette (validated categorical, light mode) ---------- */
+  var SER = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"];
+  var NAME = ["Solaris", "Ledger", "Verdant", "Kestrel", "Northwind"];
+  var SEAM = "#8e8e93", CASH = "#b7b7b1";
+  var INK = "#1d1d1f", INK2 = "#6e6e73", MUTED = "#898781", GRID = "#e1e0d9";
+  var SEAM_H = 7;
+
+  /* index micro bands: the same hues pulled far back toward the surface so the
+     column reads as one calm mass of hundreds of holdings, never as five series */
+  var MICRO = SER.map(function (h) { return css(mix(hex2rgb(h), WHITE, 0.60)); });
+
+  var hatch = (function () {
+    var c = document.createElement("canvas"); c.width = c.height = 8;
+    var x = c.getContext("2d");
+    x.strokeStyle = "rgba(60,60,66,0.55)"; x.lineWidth = 1.6;
+    x.beginPath(); x.moveTo(-2, 6); x.lineTo(6, -2); x.moveTo(2, 10); x.lineTo(10, 2); x.stroke();
+    return x.canvas;
+  })();
+  var hatchPat = null;
+
+  /* ---------- band model ---------- */
+  function Band(i, v) {
+    this.name = NAME[i]; this.color = SER[i]; this.v = v; this.disp = v;
+    this.dead = false; this.hidden = false;
+  }
+  function ease(b, dt, rate) { b.disp += (b.v - b.disp) * clamp(dt * (rate || 6), 0, 1); }
+  function stepBands(bands, dt, rate) { for (var i = 0; i < bands.length; i++) ease(bands[i], dt, rate); }
+  function total(bands) { var s = 0; for (var i = 0; i < bands.length; i++) if (!bands[i].hidden) s += bands[i].v; return s; }
+  function totalDisp(bands) { var s = 0; for (var i = 0; i < bands.length; i++) if (!bands[i].hidden) s += bands[i].disp; return s; }
+
+  /* ---------- cylinder drawing ---------- */
+  function slabPath(g, cx, y0, y1, rx, ry) {
+    g.beginPath();
+    g.moveTo(cx - rx, y0);
+    g.lineTo(cx - rx, y1);
+    g.ellipse(cx, y1, rx, ry, 0, Math.PI, 0, false);
+    g.lineTo(cx + rx, y0);
+    g.ellipse(cx, y0, rx, ry, 0, 0, Math.PI, true);
+    g.closePath();
+  }
+  function bodyGrad(g, cx, rx, hex) {
+    var lg = g.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    lg.addColorStop(0, shade(hex, .34));
+    lg.addColorStop(.16, shade(hex, .06));
+    lg.addColorStop(.36, tint(hex, .26));
+    lg.addColorStop(.62, shade(hex, .04));
+    lg.addColorStop(1, shade(hex, .38));
+    return lg;
+  }
+
+  /* draws a stack of bands bottom-up; returns [{band, y0, y1, h}] */
+  function drawStack(g, cx, baseY, rx, bands, scale, opt) {
+    opt = opt || {};
+    var ry = Math.max(3, rx * 0.30), gap = 2, y = baseY, out = [], i, b, h, y0, y1;
+    for (i = 0; i < bands.length; i++) {
+      b = bands[i];
+      if (b.hidden) continue;
+      h = b.dead ? SEAM_H : (b.v > 0 ? Math.max(b.disp * scale, 2.5) : b.disp * scale);
+      if (h <= 1.2) continue;
+      y1 = y; y0 = y - h;
+      slabPath(g, cx, y0, y1, rx, ry);
+      if (b.dead) {
+        g.fillStyle = css(mix(hex2rgb(SEAM), WHITE, .28)); g.fill();
+        g.save(); g.clip();
+        if (!hatchPat) hatchPat = g.createPattern(hatch, "repeat");
+        g.fillStyle = hatchPat; g.fillRect(cx - rx, y0 - ry - 2, rx * 2, h + ry * 2 + 4);
+        g.restore();
+        g.strokeStyle = "rgba(40,40,46,.75)"; g.lineWidth = 1; g.stroke();
+      } else {
+        g.fillStyle = bodyGrad(g, cx, rx, b.color); g.fill();
+        /* top face of this disc, read through the glass */
+        g.beginPath(); g.ellipse(cx, y0, rx, ry, 0, 0, Math.PI * 2);
+        g.fillStyle = tint(b.color, .34); g.fill();
+        g.strokeStyle = shade(b.color, .30); g.lineWidth = .8; g.stroke();
+      }
+      out.push({ band: b, y0: y0, y1: y1, h: h, top: y0 - ry, bot: y1 + ry });
+      y = y0 - gap;
+    }
+    var topY = out.length ? out[out.length - 1].y0 : baseY;
+
+    /* glass shell over the whole column */
+    if (out.length) {
+      slabPath(g, cx, topY, baseY, rx, ry);
+      g.save(); g.clip();
+      var sg = g.createLinearGradient(cx - rx, 0, cx + rx, 0);
+      sg.addColorStop(0, "rgba(255,255,255,.34)");
+      sg.addColorStop(.22, "rgba(255,255,255,0)");
+      sg.addColorStop(.62, "rgba(255,255,255,0)");
+      sg.addColorStop(.88, "rgba(255,255,255,.20)");
+      sg.addColorStop(1, "rgba(255,255,255,.42)");
+      g.fillStyle = sg; g.fillRect(cx - rx, topY - ry, rx * 2, baseY - topY + ry * 2);
+      g.fillStyle = "rgba(255,255,255,.30)";
+      g.fillRect(cx - rx * .60, topY - ry, rx * .16, baseY - topY + ry * 2);
+      g.restore();
+      g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = 1.6;
+      slabPath(g, cx, topY, baseY, rx, ry); g.stroke();
+      g.strokeStyle = "rgba(11,11,11,.16)"; g.lineWidth = 1;
+      slabPath(g, cx, topY, baseY, rx, ry); g.stroke();
+      /* rim */
+      g.beginPath(); g.ellipse(cx, topY, rx, ry, 0, 0, Math.PI * 2);
+      g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1.8; g.stroke();
+      g.strokeStyle = "rgba(11,11,11,.18)"; g.lineWidth = .8; g.stroke();
+      /* ground shadow */
+      g.save();
+      g.beginPath(); g.ellipse(cx, baseY + ry * .5, rx * 1.05, ry * .55, 0, 0, Math.PI * 2);
+      g.fillStyle = "rgba(20,30,60,.10)"; g.fill(); g.restore();
+    }
+    return out;
+  }
+
+  /* index column: hundreds of hairline bands of the same total height */
+  function drawMicro(g, cx, baseY, rx, value, scale) {
+    var H = value * scale; if (H < 1) return baseY;
+    var ry = Math.max(3, rx * 0.30);
+    var n = Math.max(24, Math.min(220, Math.round(H / 2.4)));
+    var h = H / n, y = baseY, i, y0, y1;
+    for (i = 0; i < n; i++) {
+      y1 = y; y0 = y - Math.max(h - 0.7, 0.9);
+      slabPath(g, cx, y0, y1, rx, ry);
+      g.fillStyle = MICRO[i % MICRO.length]; g.fill();
+      y -= h;
+    }
+    var topY = baseY - H;
+    slabPath(g, cx, topY, baseY, rx, ry);
+    g.save(); g.clip();
+    var sg = g.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    sg.addColorStop(0, "rgba(20,24,40,.16)");
+    sg.addColorStop(.3, "rgba(255,255,255,.10)");
+    sg.addColorStop(.65, "rgba(255,255,255,0)");
+    sg.addColorStop(1, "rgba(20,24,40,.18)");
+    g.fillStyle = sg; g.fillRect(cx - rx, topY - ry, rx * 2, baseY - topY + ry * 2);
+    g.fillStyle = "rgba(255,255,255,.26)"; g.fillRect(cx - rx * .60, topY - ry, rx * .14, baseY - topY + ry * 2);
+    g.restore();
+    slabPath(g, cx, topY, baseY, rx, ry);
+    g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 1.5; g.stroke();
+    g.strokeStyle = "rgba(11,11,11,.16)"; g.lineWidth = 1; g.stroke();
+    g.beginPath(); g.ellipse(cx, topY, rx, ry, 0, 0, Math.PI * 2);
+    g.strokeStyle = "rgba(11,11,11,.14)"; g.lineWidth = .9; g.stroke();
+    g.save(); g.beginPath(); g.ellipse(cx, baseY + ry * .5, rx * 1.05, ry * .55, 0, 0, Math.PI * 2);
+    g.fillStyle = "rgba(20,30,60,.09)"; g.fill(); g.restore();
+    return topY;
+  }
+
+  /* plain cash column, deliberately colourless */
+  function drawCash(g, cx, baseY, rx, value, scale) {
+    var H = Math.max(value * scale, 0), ry = Math.max(3, rx * 0.30);
+    if (H < 1.5) H = 1.5;
+    var topY = baseY - H;
+    slabPath(g, cx, topY, baseY, rx, ry);
+    var lg = g.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    lg.addColorStop(0, shade(CASH, .30)); lg.addColorStop(.34, tint(CASH, .30));
+    lg.addColorStop(.7, shade(CASH, .04)); lg.addColorStop(1, shade(CASH, .32));
+    g.fillStyle = lg; g.fill();
+    g.beginPath(); g.ellipse(cx, topY, rx, ry, 0, 0, Math.PI * 2);
+    g.fillStyle = tint(CASH, .42); g.fill();
+    g.strokeStyle = shade(CASH, .26); g.lineWidth = .9; g.stroke();
+    g.save(); g.beginPath(); g.ellipse(cx, baseY + ry * .5, rx * 1.05, ry * .55, 0, 0, Math.PI * 2);
+    g.fillStyle = "rgba(20,30,60,.09)"; g.fill(); g.restore();
+    return topY;
+  }
+
+  /* ---------- chrome ---------- */
+  function drawRuler(g, w, baseY, scale, stepV, maxV, x0) {
+    g.save();
+    g.font = "500 10.5px -apple-system, system-ui, sans-serif";
+    g.textBaseline = "middle";
+    for (var v = stepV; v <= maxV + 1; v += stepV) {
+      var y = baseY - v * scale; if (y < 30) break;
+      g.strokeStyle = GRID; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, Math.round(y) + .5); g.lineTo(w - 8, Math.round(y) + .5); g.stroke();
+      g.fillStyle = MUTED; g.textAlign = "left";
+      g.fillText(money(v), 6, y - 6);
+    }
+    g.strokeStyle = "#c3c2b7"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(6, Math.round(baseY) + .5); g.lineTo(w - 8, Math.round(baseY) + .5); g.stroke();
+    g.restore();
+  }
+  function label(g, x, y, text, colr, size, align, weight) {
+    g.font = (weight || "500") + " " + (size || 11.5) + "px -apple-system, system-ui, sans-serif";
+    g.textAlign = align || "left"; g.textBaseline = "middle";
+    g.fillStyle = colr || INK2; g.fillText(text, x, y);
+  }
+  function chip(g, x, y, text, tone) {
+    g.font = "600 11px -apple-system, system-ui, sans-serif";
+    var w = g.measureText(text).width + 16;
+    g.beginPath();
+    var r = 9; g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + 18, r); g.arcTo(x + w, y + 18, x, y + 18, r);
+    g.arcTo(x, y + 18, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+    g.fillStyle = tone || "rgba(255,255,255,.9)"; g.fill();
+    g.strokeStyle = "rgba(11,11,11,.10)"; g.lineWidth = 1; g.stroke();
+    g.fillStyle = INK; g.textAlign = "left"; g.textBaseline = "middle";
+    g.fillText(text, x + 8, y + 9.5);
+    return w;
+  }
+  /* push desired label positions apart so two-line labels never overlap */
+  function layoutLabels(ys, gap, minY, maxY) {
+    /* ys run bottom-up, so y decreases with index */
+    var n = ys.length, out = ys.slice(), i, d;
+    for (i = n - 2; i >= 0; i--) if (out[i] - out[i + 1] < gap) out[i] = out[i + 1] + gap;
+    if (out[0] > maxY) { d = out[0] - maxY; for (i = 0; i < n; i++) out[i] -= d; }
+    if (out[n - 1] < minY) { d = minY - out[n - 1]; for (i = 0; i < n; i++) out[i] += d; }
+    return out;
+  }
+
+  /* direct label with a leader line, right of the column */
+  function bandLabel(g, xFrom, xTo, y, text, sub) {
+    g.strokeStyle = "rgba(11,11,11,.18)"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(xFrom, Math.round(y) + .5); g.lineTo(xTo - 4, Math.round(y) + .5); g.stroke();
+    label(g, xTo, y - (sub ? 6 : 0), text, INK, 11.5, "left", "600");
+    if (sub) label(g, xTo, y + 7, sub, INK2, 11, "left", "500");
+  }
+
+  /* ---------- pouring slugs ---------- */
+  function Slug(x0, y0, x1, y1, color, h, dur, onDone) {
+    this.x0 = x0; this.y0 = y0; this.x1 = x1; this.y1 = y1; this.color = color;
+    this.h = h; this.t = 0; this.dur = dur || .75; this.done = false; this.onDone = onDone;
+  }
+  Slug.prototype.step = function (dt) {
+    this.t += dt;
+    if (this.t >= this.dur && !this.done) { this.done = true; if (this.onDone) this.onDone(); }
+  };
+  Slug.prototype.draw = function (g, rx) {
+    var p = clamp(this.t / this.dur, 0, 1), e = easeInOut(p);
+    var x = lerp(this.x0, this.x1, e);
+    var arc = Math.sin(p * Math.PI) * 26;
+    var y = lerp(this.y0, this.y1, e) - arc;
+    var ry = Math.max(2.5, rx * .30);
+    var h = Math.max(this.h, 4);
+    g.save(); g.globalAlpha = p > .92 ? (1 - p) / .08 : 1;
+    slabPath(g, x, y - h, y, rx, ry);
+    g.fillStyle = this.color === CASH ? shade(CASH, .06) : bodyGrad(g, x, rx, this.color);
+    g.fill();
+    g.beginPath(); g.ellipse(x, y - h, rx, ry, 0, 0, Math.PI * 2);
+    g.fillStyle = tint(this.color, .36); g.fill();
+    g.restore();
+  };
+
+  /* ---------- engine ---------- */
+  var tip = q("#tip");
+  function showTip(x, y, html) { tip.innerHTML = html; tip.classList.add("on"); tip.style.left = (x + 14) + "px"; tip.style.top = (y - 10) + "px"; }
+  function hideTip() { tip.classList.remove("on"); }
+
+  var scenes = [];
+  function mount(name, factory) {
+    var cv = q('canvas[data-scene="' + name + '"]'); if (!cv) return null;
+    var g = cv.getContext("2d"), hCSS = +cv.getAttribute("data-h") || 240;
+    var S = factory(cv, g);
+    S.cv = cv; S.g = g; S.hCSS = hCSS; S.w = 0; S.h = hCSS;
+    function size() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = cv.clientWidth || cv.parentNode.clientWidth || 300;
+      cv.width = Math.round(w * dpr); cv.height = Math.round(hCSS * dpr);
+      cv.style.height = hCSS + "px";
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      S.w = w; S.h = hCSS;
+    }
+    S.resize = size; size();
+    window.addEventListener("resize", size);
+    if (S.hit) {
+      cv.addEventListener("mousemove", function (e) {
+        var r = cv.getBoundingClientRect();
+        var t = S.hit(e.clientX - r.left, e.clientY - r.top);
+        if (t) showTip(e.clientX, e.clientY, t); else hideTip();
+      });
+      cv.addEventListener("mouseleave", hideTip);
+    }
+    scenes.push(S);
+    return S;
+  }
+  var last = 0;
+  function frame(ts) {
+    var dt = last ? Math.min((ts - last) / 1000, .05) : .016; last = ts;
+    for (var i = 0; i < scenes.length; i++) {
+      var S = scenes[i];
+      var r = S.cv.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > window.innerHeight + 200) continue;
+      S.step(dt);
+      S.g.clearRect(0, 0, S.w, S.h);
+      S.draw(S.g, S.w, S.h);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  /* ================= a. growing ================= */
+  mount("grow", function () {
+    var start = [240, 180, 140], end = [430, 265, 215];
+    var bands = [new Band(0, start[0]), new Band(1, start[1]), new Band(2, start[2])];
+    var t = 0;
+    return {
+      step: function (dt) {
+        t += dt; if (t > 8) t = 0;
+        var p = easeInOut(clamp((t - .6) / 5.2, 0, 1));
+        for (var i = 0; i < 3; i++) { bands[i].v = lerp(start[i], end[i], p); bands[i].disp = bands[i].v; }
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 1000, cx = w * .52, rx = Math.min(46, w * .16);
+        drawRuler(g, w, baseY, scale, 250, 1000, 34);
+        var segs = drawStack(g, cx, baseY, rx, bands, scale);
+        var topY = segs[segs.length - 1].y0;
+        label(g, cx, baseY + 14, "Your portfolio", INK2, 11, "center");
+        chip(g, cx + rx + 12, topY - 22, money(totalDisp(bands)));
+        label(g, cx + rx + 14, topY + 2, "the top of the glass", INK2, 11, "left");
+      }
+    };
+  });
+
+  /* ================= b. one band thinning ================= */
+  mount("thin", function () {
+    var base = [260, 300, 200, 150];
+    var bands = [new Band(0, base[0]), new Band(1, base[1]), new Band(2, base[2]), new Band(3, base[3])];
+    var t = 0;
+    return {
+      step: function (dt) {
+        t += dt; if (t > 8) t = 0;
+        var p = easeInOut(clamp((t - 1) / 4, 0, 1));
+        bands[1].v = lerp(base[1], 88, p);
+        stepBands(bands, dt, 9);
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 1000, cx = w * .46, rx = Math.min(44, w * .155);
+        drawRuler(g, w, baseY, scale, 250, 1000, 34);
+        var segs = drawStack(g, cx, baseY, rx, bands, scale);
+        var pct = Math.round((bands[1].disp / base[1] - 1) * 100);
+        for (var i = 0; i < segs.length; i++) {
+          var s = segs[i];
+          if (s.band === bands[1]) {
+            bandLabel(g, cx + rx, cx + rx + 16, (s.y0 + s.y1) / 2, "Ledger " + pct + "%", money(s.band.disp));
+          } else if (s.h > 26) {
+            label(g, cx - rx - 10, (s.y0 + s.y1) / 2, s.band.name + " " + money(s.band.disp), INK2, 11, "right");
+          }
+        }
+        label(g, cx, baseY + 14, "the other three never move", INK2, 11, "center");
+      }
+    };
+  });
+
+  /* ================= c. five bands ================= */
+  var fiveVals = [520, 300, 180, 110, 60];
+  mount("five", function () {
+    var bands = fiveVals.map(function (v, i) { return new Band(i, v); });
+    var segs = [], geom = { cx: 0, rx: 0 };
+    return {
+      step: function () { },
+      draw: function (g, w, h) {
+        var baseY = h - 26, sum = 1170, scale = (h - 60) / 1250, cx = w * .40, rx = Math.min(42, w * .145);
+        geom.cx = cx; geom.rx = rx;
+        drawRuler(g, w, baseY, scale, 250, 1250, 34);
+        segs = drawStack(g, cx, baseY, rx, bands, scale);
+        var ys = layoutLabels(segs.map(function (s) { return (s.y0 + s.y1) / 2; }), 30, 16, baseY - 10);
+        for (var i = 0; i < segs.length; i++) {
+          var s = segs[i];
+          bandLabel(g, cx + rx, cx + rx + 18, ys[i], s.band.name, money(s.band.v) + "  ·  " + Math.round(s.band.v / sum * 100) + "%");
+        }
+        label(g, cx, baseY + 14, "one glass, five companies", INK2, 11, "center");
+      },
+      hit: function (x, y) {
+        for (var i = 0; i < segs.length; i++) {
+          var s = segs[i];
+          if (x > geom.cx - geom.rx - 4 && x < geom.cx + geom.rx + 4 && y >= s.y0 - 3 && y <= s.y1 + 3) {
+            return "<b>" + s.band.name + "</b> &nbsp;<span class='m'>" + money(s.band.v) + " · " +
+              Math.round(s.band.v / 1170 * 100) + "% of the glass</span>";
+          }
+        }
+        return null;
+      }
+    };
+  });
+  (function () {
+    var tb = q("#tblFive tbody"), sum = 1170;
+    fiveVals.forEach(function (v, i) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + NAME[i] + "</td><td class='n'>" + money(v) + "</td><td class='n'>" + Math.round(v / sum * 100) + "%</td>";
+      tb.appendChild(tr);
+    });
+    var btn = q('[data-act="table"]');
+    btn.addEventListener("click", function () {
+      var on = q("#tblFive").classList.toggle("on");
+      btn.textContent = on ? "Hide the numbers" : "Show the numbers";
+    });
+  })();
+
+  /* ================= d. crash ================= */
+  mount("crash", function () {
+    var base = [300, 250, 200, 160], f = [.62, .68, .60, .72];
+    var bands = base.map(function (v, i) { return new Band(i, v); });
+    var t = 0;
+    return {
+      step: function (dt) {
+        t += dt; if (t > 7.5) t = 0;
+        var p = easeInOut(clamp((t - 1.6) / 1.1, 0, 1));
+        for (var i = 0; i < base.length; i++) { bands[i].v = lerp(base[i], base[i] * f[i], p); bands[i].disp = bands[i].v; }
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 1050, cx = w * .50, rx = Math.min(44, w * .155);
+        drawRuler(g, w, baseY, scale, 250, 1050, 34);
+        var segs = drawStack(g, cx, baseY, rx, bands, scale);
+        var topY = segs[segs.length - 1].y0;
+        var tot = totalDisp(bands), full = 910;
+        var falling = t > 1.6 && t < 3.2;
+        /* the height it used to have, kept as a hairline memory */
+        var wasY = baseY - full * scale;
+        g.save(); g.setLineDash([4, 4]); g.strokeStyle = "rgba(11,11,11,.28)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(cx - rx - 26, wasY + .5); g.lineTo(w - 10, wasY + .5); g.stroke(); g.restore();
+        label(g, w - 10, wasY - 9, "last month " + money(full), INK2, 10.5, "right");
+        chip(g, cx + rx + 12, topY - 22, money(tot), falling ? "rgba(255,241,238,.95)" : "rgba(255,255,255,.9)");
+        if (t > 1.7) label(g, cx, baseY + 14, "every band pressed down at once, -" + Math.round((1 - tot / full) * 100) + "%", INK2, 11, "center");
+        else label(g, cx, baseY + 14, "a calm market", INK2, 11, "center");
+      }
+    };
+  });
+
+  /* ================= e. bankruptcy ================= */
+  mount("bust", function () {
+    var b0 = [260, 210, 190, 140];
+    var bands = b0.map(function (v, i) { return new Band(i, v); });
+    var t = 0;
+    function reset() { for (var i = 0; i < 4; i++) { bands[i].v = b0[i]; bands[i].disp = b0[i]; bands[i].dead = false; } }
+    reset();
+    return {
+      step: function (dt) {
+        t += dt; if (t > 10) { t = 0; reset(); }
+        var p = easeInOut(clamp((t - 1.2) / 1.6, 0, 1));
+        bands[2].v = lerp(b0[2], 0, p);
+        bands[2].dead = p >= 1;
+        var g2 = easeInOut(clamp((t - 4) / 3.4, 0, 1));
+        bands[0].v = lerp(b0[0], b0[0] * 1.42, g2);
+        bands[1].v = lerp(b0[1], b0[1] * 1.3, g2);
+        bands[3].v = lerp(b0[3], b0[3] * 1.35, g2);
+        stepBands(bands, dt, 10);
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 1050, cx = w * .46, rx = Math.min(44, w * .155);
+        drawRuler(g, w, baseY, scale, 250, 1050, 34);
+        var segs = drawStack(g, cx, baseY, rx, bands, scale);
+        for (var i = 0; i < segs.length; i++) {
+          var s = segs[i];
+          if (s.band === bands[2]) {
+            bandLabel(g, cx + rx, cx + rx + 16, (s.y0 + s.y1) / 2 + (s.band.dead ? 4 : 0),
+              s.band.dead ? "Verdant, gone" : "Verdant collapsing",
+              s.band.dead ? "a seam, not a thin band" : money(s.band.disp));
+          }
+        }
+        label(g, cx, baseY + 14, t > 4 ? "the rest grow, the seam never returns" : "one company files for bankruptcy", INK2, 11, "center");
+      }
+    };
+  });
+
+  /* ================= f. index beside you ================= */
+  mount("index", function () {
+    var you = [100, 104, 98, 108, 117, 110, 122, 130, 124, 137, 146];
+    var mkt = [100, 101.4, 102.7, 104, 105.2, 106.3, 107.5, 108.6, 109.8, 111, 112.2];
+    var bands = [new Band(0, 340), new Band(1, 300), new Band(3, 190), new Band(4, 170)];
+    var w0 = [.34, .30, .19, .17];
+    var t = 0, T = 11;
+    function sample(a, x) { var i = clamp(Math.floor(x), 0, a.length - 2); return lerp(a[i], a[i + 1], x - i); }
+    return {
+      step: function (dt) {
+        t += dt; if (t > T + 2) t = 0;
+        var x = clamp(t - .5, 0, 10);
+        var yv = sample(you, x) * 10, wob = [.28, -.18, .10, -.06], p = x / 10, sum = 0, sh = [], i;
+        for (i = 0; i < bands.length; i++) { sh[i] = w0[i] * (1 + wob[i] * p); sum += sh[i]; }
+        for (i = 0; i < bands.length; i++) { bands[i].v = yv * sh[i] / sum; bands[i].disp = bands[i].v; }
+        this.mv = sample(mkt, x) * 10;
+        this.x = x;
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 1700, rx = Math.min(30, w * .105);
+        var cxA = w * .30, cxB = w * .58;
+        drawRuler(g, w, baseY, scale, 500, 1700, 30);
+        var segs = drawStack(g, cxA, baseY, rx, bands, scale);
+        var topB = drawMicro(g, cxB, baseY, rx, this.mv, scale);
+        var topA = segs[segs.length - 1].y0;
+        label(g, cxA, baseY + 14, "you, four holdings", INK2, 11, "center");
+        label(g, cxB, baseY + 14, "the index, ~500", INK2, 11, "center");
+        chip(g, cxA - 26, topA - 24, money(totalDisp(bands)));
+        chip(g, cxB - 26, topB - 24, money(this.mv));
+
+        /* index chart readout: both normalised to 100 on day one */
+        var pw = Math.min(120, w * .30), px = w - pw - 14, py = 24, ph = 52;
+        if (pw > 70) {
+          g.save();
+          g.fillStyle = "rgba(255,255,255,.92)"; g.strokeStyle = "rgba(11,11,11,.10)"; g.lineWidth = 1;
+          g.beginPath(); g.roundRect ? g.roundRect(px - 10, py - 16, pw + 20, ph + 48, 10) : g.rect(px - 10, py - 16, pw + 20, ph + 48);
+          g.fill(); g.stroke();
+          label(g, px - 2, py - 6, "since day one", MUTED, 9.5, "left", "600");
+          var lo = 92, hi = 150;
+          function Y(v) { return py + ph - (v - lo) / (hi - lo) * ph; }
+          g.strokeStyle = GRID; g.beginPath(); g.moveTo(px, Y(100) + .5); g.lineTo(px + pw, Y(100) + .5); g.stroke();
+          label(g, px + pw, Y(100) + 8, "100", MUTED, 9.5, "right");
+          var n = Math.max(2, Math.floor(this.x) + 1), i, xx;
+          g.lineJoin = g.lineCap = "round";
+          g.setLineDash([3, 3]); g.strokeStyle = INK2; g.lineWidth = 2; g.beginPath();
+          for (i = 0; i < n; i++) { xx = px + i / 10 * pw; if (i === 0) g.moveTo(xx, Y(mkt[i])); else g.lineTo(xx, Y(mkt[i])); }
+          xx = px + this.x / 10 * pw; g.lineTo(xx, Y(this.mv / 10)); g.stroke(); g.setLineDash([]);
+          g.strokeStyle = INK; g.lineWidth = 2; g.beginPath();
+          for (i = 0; i < n; i++) { xx = px + i / 10 * pw; if (i === 0) g.moveTo(xx, Y(you[i])); else g.lineTo(xx, Y(you[i])); }
+          xx = px + this.x / 10 * pw; g.lineTo(xx, Y(totalDisp(bands) / 10)); g.stroke();
+          g.beginPath(); g.arc(xx, Y(totalDisp(bands) / 10), 3, 0, Math.PI * 2); g.fillStyle = INK; g.fill();
+          label(g, px - 2, py + ph + 14, "You " + (totalDisp(bands) / 10 - 100 >= 0 ? "+" : "") + Math.round(totalDisp(bands) / 10 - 100) + "%", INK, 10.5, "left", "600");
+          label(g, px - 2, py + ph + 27, "Market +" + Math.round(this.mv / 10 - 100) + "%", INK2, 10.5, "left");
+          g.restore();
+        }
+      }
+    };
+  });
+
+  /* ================= g. dividend ================= */
+  mount("divi", function () {
+    var bands = [new Band(0, 300), new Band(1, 240), new Band(2, 180)];
+    var cash = 120, slugs = [], t = 0, fired = false;
+    return {
+      step: function (dt) {
+        t += dt;
+        if (t > 4.2) { t = 0; fired = false; if (cash > 420) cash = 120; }
+        if (t > 1 && !fired) {
+          fired = true;
+          this.pending = true;
+        }
+        for (var i = slugs.length - 1; i >= 0; i--) { slugs[i].step(dt); if (slugs[i].t > slugs[i].dur + .1) slugs.splice(i, 1); }
+        this.cashDisp = this.cashDisp === undefined ? cash : this.cashDisp + (cash - this.cashDisp) * clamp(dt * 8, 0, 1);
+        stepBands(bands, dt, 8);
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 900, rx = Math.min(38, w * .13);
+        var cxA = w * .34, cxB = w * .74;
+        drawRuler(g, w, baseY, scale, 250, 900, 30);
+        var segs = drawStack(g, cxA, baseY, rx, bands, scale);
+        drawCash(g, cxB, baseY, rx * .78, this.cashDisp, scale);
+        label(g, cxA, baseY + 14, "your holdings", INK2, 11, "center");
+        label(g, cxB, baseY + 14, "cash", INK2, 11, "center");
+        if (this.pending) {
+          this.pending = false;
+          var s = segs[0], mid = (s.y0 + s.y1) / 2;
+          var self = this;
+          slugs.push(new Slug(cxA, mid, cxB, baseY - this.cashDisp * scale, SER[0], 46 * scale, .95, function () { cash += 46; }));
+        }
+        for (var i = 0; i < slugs.length; i++) slugs[i].draw(g, rx * .5);
+        label(g, w / 2, 18, "Solaris pays a dividend, $46", INK2, 11, "center");
+        chip(g, cxB - 30, baseY - this.cashDisp * scale - 26, money(this.cashDisp));
+      }
+    };
+  });
+
+  /* ================= h. buy and sell pours ================= */
+  mount("pour", function () {
+    var bands = [new Band(0, 260), new Band(1, 220), new Band(2, 170)];
+    var cash = 520, cashDisp = 520, slugs = [], auto = 0, userTouched = false;
+    var S = {
+      buy: function () {
+        if (cash < 300) return;
+        cash -= 300;
+        var self = this;
+        slugs.push(new Slug(this.cxB, this.baseY - cashDisp * this.scale, this.cxA, this.topA, SER[0], 300 * this.scale, .85, function () {
+          bands[0].v += 300;
+        }));
+      },
+      sell: function () {
+        if (bands[0].v <= 0) return;
+        var v = bands[0].v; bands[0].v = 0;
+        slugs.push(new Slug(this.cxA, this.topA + v * this.scale, this.cxB, this.baseY - cashDisp * this.scale, SER[0], v * this.scale, .85, function () {
+          cash += v;
+        }));
+      },
+      step: function (dt) {
+        auto += dt;
+        if (!userTouched && auto > 3) { auto = 0; if (bands[0].v > 0) this.sell(); else this.buy(); }
+        for (var i = slugs.length - 1; i >= 0; i--) { slugs[i].step(dt); if (slugs[i].t > slugs[i].dur + .1) slugs.splice(i, 1); }
+        cashDisp += (cash - cashDisp) * clamp(dt * 8, 0, 1);
+        stepBands(bands, dt, 9);
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 26, scale = (h - 62) / 1050, rx = Math.min(36, w * .125);
+        var cxA = w * .62, cxB = w * .24;
+        this.baseY = baseY; this.scale = scale; this.cxA = cxA; this.cxB = cxB;
+        drawRuler(g, w, baseY, scale, 250, 1050, 30);
+        drawCash(g, cxB, baseY, rx * .78, cashDisp, scale);
+        var segs = drawStack(g, cxA, baseY, rx, bands, scale);
+        this.topA = segs.length ? segs[segs.length - 1].y0 : baseY;
+        for (var i = 0; i < slugs.length; i++) slugs[i].draw(g, rx * .62);
+        label(g, cxB, baseY + 14, "cash " + money(cashDisp), INK2, 11, "center");
+        label(g, cxA, baseY + 14, "portfolio " + money(totalDisp(bands)), INK2, 11, "center");
+        label(g, w / 2, 18, "nothing is created, it moves between the two columns", INK2, 11, "center");
+      },
+      touch: function () { userTouched = true; }
+    };
+    return S;
+  });
+  (function () {
+    var S = scenes[scenes.length - 1];
+    var b = q('[data-act="buy"]'), s = q('[data-act="sell"]');
+    if (b) b.addEventListener("click", function () { S.touch(); S.buy(); });
+    if (s) s.addEventListener("click", function () { S.touch(); S.sell(); });
+  })();
+
+  /* ================= Part 2, the level ================= */
+  var PRICE = [
+    [100, 102, 99, 104, 110, 108, 115, 121, 118, 126, 133, 131, 140, 146, 143, 152, 160, 157, 166, 174, 182],
+    [100, 105, 101, 97, 103, 99, 95, 101, 97, 92, 96, 90, 94, 88, 92, 86, 90, 84, 88, 82, 86],
+    [100, 104, 108, 112, 109, 113, 116, 110, 104, 96, 84, 70, 55, 38, 0, 0, 0, 0, 0, 0, 0]
+  ];
+  var IDX = [1000, 1012, 1020, 1031, 1044, 1051, 1063, 1072, 1080, 1091, 1099, 1108, 1116, 1124, 1131, 1140, 1148, 1155, 1163, 1172, 1180];
+  var GOAL = 1200, STAR3 = 1380, TICKS = 20, TICK_MS = .70;
+
+  mount("level", function () {
+    var bands = [new Band(0, 200), new Band(1, 200), new Band(2, 200)];
+    var slugs = [], segs = [], geo = {};
+    var L = {
+      reset: function () {
+        this.tick = 0; this.acc = 0; this.cash = 400; this.cashDisp = 400;
+        this.sh = [2, 2, 2]; this.tokens = 3; this.playing = false; this.done = false;
+        this.bust = false; this.flash = 0;
+        slugs.length = 0;
+        for (var i = 0; i < 3; i++) { bands[i].v = this.sh[i] * PRICE[i][0]; bands[i].disp = bands[i].v; bands[i].dead = false; bands[i].hidden = false; }
+        q("#ovl").classList.remove("on");
+        q("#btnPlay").disabled = false;
+        q("#btnPlay").textContent = "Play the twenty weeks";
+        this.hud();
+      },
+      price: function (i) { return PRICE[i][Math.min(this.tick, TICKS)]; },
+      mark: function () {
+        for (var i = 0; i < 3; i++) {
+          var p = this.price(i);
+          if (p === 0) { bands[i].v = 0; if (this.sh[i] > 0) { bands[i].dead = true; this.bust = true; } }
+          else bands[i].v = this.sh[i] * p;
+        }
+      },
+      totalNow: function () { return this.cash + bands.reduce(function (s, b) { return s + b.v; }, 0); },
+      hud: function () {
+        q("#hCash").textContent = money(this.cash);
+        q("#hTotal").textContent = money(this.totalNow());
+        q("#hTick").textContent = this.tick + " / " + TICKS;
+        qa("#hTok .tok").forEach(function (t, i) { t.classList.toggle("spent", i >= L.tokens); });
+        qa('[data-act^="buy"],[data-act^="sell"]', q(".card.wide")).forEach(function (b) {
+          var i = +b.getAttribute("data-act").slice(-1);
+          var isBuy = b.getAttribute("data-act").indexOf("buy") === 0;
+          b.disabled = L.done || L.tokens <= 0 || (isBuy ? (L.cash < 300 || L.price(i) === 0) : (L.sh[i] <= 0 || L.price(i) === 0));
+        });
+      },
+      buy: function (i) {
+        if (this.done || this.tokens <= 0 || this.cash < 300 || this.price(i) === 0) return;
+        this.tokens--; this.cash -= 300;
+        var self = this, amt = 300, pr = this.price(i);
+        slugs.push(new Slug(geo.cxCash, geo.baseY - this.cashDisp * geo.scale, geo.cxYou, geo.topYou, SER[i], amt * geo.scale, .8, function () {
+          self.sh[i] += amt / pr; self.mark(); self.hud();
+        }));
+        this.hud();
+      },
+      sell: function (i) {
+        if (this.done || this.tokens <= 0 || this.sh[i] <= 0 || this.price(i) === 0) return;
+        this.tokens--;
+        var self = this, v = bands[i].v;
+        this.sh[i] = 0; this.mark();
+        slugs.push(new Slug(geo.cxYou, geo.topYou + v * geo.scale, geo.cxCash, geo.baseY - this.cashDisp * geo.scale, SER[i], v * geo.scale, .8, function () {
+          self.cash += v; self.hud();
+        }));
+        this.hud();
+      },
+      finish: function () {
+        this.done = true; this.playing = false;
+        var t = this.totalNow(), stars = t >= STAR3 ? 3 : t >= GOAL ? 2 : 1;
+        q("#ovStars").textContent = "★★★".slice(0, stars) + "☆☆☆".slice(0, 3 - stars);
+        q("#ovBig").textContent = money(t);
+        q("#ovSmall").textContent = stars === 3
+          ? "You cleared the goal and beat the index column beside you. Verdant's seam is still in the glass, but you were not holding it."
+          : stars === 2
+            ? "Above $1,200. The glass ended taller than it started, though the index column is closer than it looks."
+            : "Below the goal. Look at where the grey seam sits: that band was still yours when the company folded.";
+        q("#ovl").classList.add("on");
+        q("#btnPlay").disabled = true;
+        q("#btnPlay").textContent = "Twenty weeks done";
+        this.hud();
+      },
+      step: function (dt) {
+        if (this.playing && !this.done) {
+          this.acc += dt;
+          while (this.acc >= TICK_MS && this.tick < TICKS) {
+            this.acc -= TICK_MS; this.tick++;
+            var wasBust = this.bust;
+            this.mark();
+            if (this.bust && !wasBust) this.flash = 1.2;
+            this.hud();
+            if (this.tick >= TICKS) { this.finish(); break; }
+          }
+        }
+        if (this.flash > 0) this.flash -= dt;
+        for (var i = slugs.length - 1; i >= 0; i--) { slugs[i].step(dt); if (slugs[i].t > slugs[i].dur + .1) slugs.splice(i, 1); }
+        this.cashDisp += (this.cash - this.cashDisp) * clamp(dt * 7, 0, 1);
+        stepBands(bands, dt, 8);
+      },
+      draw: function (g, w, h) {
+        var baseY = h - 34, scale = (h - 62) / 1500, rx = Math.min(46, w * .085);
+        var cxCash = w * .22, cxYou = w * .47, cxIdx = w * .72;
+        geo = { baseY: baseY, scale: scale, cxCash: cxCash, cxYou: cxYou, cxIdx: cxIdx, rx: rx };
+        drawRuler(g, w, baseY, scale, 250, 1500, 34);
+
+        /* goal line */
+        var gy = baseY - GOAL * scale;
+        g.save(); g.setLineDash([5, 4]); g.strokeStyle = "#0071e3"; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(34, gy + .5); g.lineTo(w - 10, gy + .5); g.stroke(); g.restore();
+        label(g, w - 10, gy - 9, "goal $1,200", "#0071e3", 11, "right", "600");
+
+        drawCash(g, cxCash, baseY, rx * .74, this.cashDisp, scale);
+        segs = drawStack(g, cxYou, baseY, rx, bands, scale);
+        var topYou = segs.length ? segs[segs.length - 1].y0 : baseY;
+        geo.topYou = topYou;
+        var idxTop = drawMicro(g, cxIdx, baseY, rx * .9, IDX[Math.min(this.tick, TICKS)], scale);
+
+        var shown = segs.filter(function (s) { return s.h > 12 || s.band.dead; });
+        var lys = layoutLabels(shown.map(function (s) { return (s.y0 + s.y1) / 2; }), 30, 22, baseY - 8);
+        for (var i = 0; i < shown.length; i++) {
+          var s = shown[i];
+          bandLabel(g, cxYou + rx, cxYou + rx + 14, lys[i],
+            s.band.dead ? "Verdant, gone" : s.band.name, s.band.dead ? "dead seam, $0" : money(s.band.v));
+        }
+        /* your true total, cash included, marked on the same wall ruler */
+        var ty = baseY - this.totalNow() * scale;
+        g.save(); g.setLineDash([2, 3]); g.strokeStyle = "rgba(11,11,11,.35)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(cxCash - rx * .9, ty + .5); g.lineTo(cxYou + rx + 6, ty + .5); g.stroke(); g.restore();
+        label(g, cxCash - rx * .9, ty - 9, "you, cash included " + money(this.totalNow()), INK2, 10.5, "left", "600");
+        for (var j = 0; j < slugs.length; j++) slugs[j].draw(g, rx * .6);
+
+        label(g, cxCash, baseY + 16, "cash " + money(this.cashDisp), INK2, 11.5, "center");
+        label(g, cxYou, baseY + 16, "your glass", INK2, 11.5, "center");
+        label(g, cxIdx, baseY + 16, "the index", INK2, 11.5, "center");
+        chip(g, cxYou - 30, topYou - 26, money(this.totalNow() - this.cash + 0));
+        chip(g, cxIdx - 30, idxTop - 26, money(IDX[Math.min(this.tick, TICKS)]));
+        label(g, 8, 16, "Week " + this.tick + " of " + TICKS, INK, 12.5, "left", "600");
+        label(g, 8, 32, "total " + money(this.totalNow()), INK2, 11.5, "left");
+        if (this.flash > 0) {
+          g.save(); g.globalAlpha = clamp(this.flash, 0, 1);
+          chip(g, w / 2 - 66, 12, "Verdant filed for bankruptcy", "rgba(255,238,236,.96)");
+          g.restore();
+        }
+      },
+      hit: function (x, y) {
+        for (var i = 0; i < segs.length; i++) {
+          var s = segs[i];
+          if (x > geo.cxYou - geo.rx - 4 && x < geo.cxYou + geo.rx + 4 && y >= s.y0 - 3 && y <= s.y1 + 3) {
+            if (s.band.dead) return "<b>" + s.band.name + "</b> <span class='m'>bankrupt, $0 forever</span>";
+            return "<b>" + s.band.name + "</b> <span class='m'>" + money(s.band.v) + " · " + (this.sh[i] || 0).toFixed(2) + " shares</span>";
+          }
+        }
+        return null;
+      }
+    };
+    L.reset();
+    return L;
+  });
+  (function () {
+    var L = scenes[scenes.length - 1];
+    var card = q(".card.wide");
+    q("#btnPlay").addEventListener("click", function () {
+      if (L.done) return;
+      L.playing = !L.playing;
+      this.textContent = L.playing ? "Pause" : "Resume";
+    });
+    qa('[data-act^="buy"],[data-act^="sell"]', card).forEach(function (b) {
+      var act = b.getAttribute("data-act"), i = +act.slice(-1);
+      b.addEventListener("click", function () { if (act.indexOf("buy") === 0) L.buy(i); else L.sell(i); });
+    });
+    q('[data-act="again"]').addEventListener("click", function () { L.reset(); });
+  })();
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
