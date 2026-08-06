@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Ladder Yard, a wildcard portfolio metaphor</title>
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --ink2: #6e6e73;
+    --bg: #f5f5f7;
+    --blue: #0071e3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header.top { margin-bottom: 30px; }
+  h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 10px; }
+  .sub { font-size: 15px; color: var(--ink2); max-width: 860px; line-height: 1.6; margin: 0 0 6px; }
+  .sub b { color: var(--ink); font-weight: 600; }
+  .why {
+    background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 18px;
+    padding: 16px 20px; margin-top: 18px; max-width: 980px;
+    box-shadow: 0 10px 26px rgba(20,30,60,0.06);
+  }
+  .why h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .why p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: #3a3a3c; }
+  .why p:last-child { margin-bottom: 0; }
+  .rejects { font-size: 12.5px; color: var(--ink2); }
+  .secthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 42px 0 16px; }
+  .secthead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .secthead .note { font-size: 13.5px; color: var(--ink2); }
+  .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .card {
+    background: rgba(255,255,255,0.94);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 14px 16px 16px;
+  }
+  .stage {
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fbfbfd 0%, #eef0f4 100%);
+    overflow: hidden; cursor: pointer;
+  }
+  canvas { display: block; width: 100%; height: auto; }
+  .clabel { display: flex; align-items: baseline; gap: 7px; margin: 12px 0 5px; }
+  .ckey {
+    font-size: 11px; font-weight: 600; color: #fff; background: var(--ink);
+    border-radius: 6px; padding: 2px 6px; letter-spacing: 0.02em;
+  }
+  .cname { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .cnote { font-size: 12.6px; line-height: 1.55; color: #3a3a3c; }
+  .replay { font-size: 11.5px; color: var(--ink2); margin-top: 8px; }
+
+  /* level */
+  .level { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(0,1fr); gap: 20px; align-items: start; }
+  .yardcard { padding: 16px 18px 18px; }
+  .hud { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .stat .k { font-size: 11px; color: var(--ink2); letter-spacing: 0.03em; text-transform: none; }
+  .stat .v { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .goal { margin-left: auto; text-align: right; }
+  .tokens { display: flex; gap: 5px; align-items: center; }
+  .tok { width: 15px; height: 15px; border-radius: 999px; background: var(--blue); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12); }
+  .tok.spent { background: rgba(0,0,0,0.10); box-shadow: none; }
+  button.pill {
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: 999px; cursor: pointer; transition: background .15s ease;
+  }
+  button.pill:hover:not(:disabled) { background: rgba(0,0,0,0.05); }
+  button.pill.primary { background: var(--blue); color: #fff; border-color: transparent; }
+  button.pill.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  button.pill:disabled { opacity: 0.35; cursor: default; }
+  button.mini {
+    font: inherit; font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  button.mini.buy { background: var(--blue); color: #fff; border-color: transparent; }
+  button.mini:disabled { opacity: 0.3; cursor: default; }
+  .mrow { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .mrow:first-of-type { border-top: 0; }
+  .mrow canvas { width: 46px; height: auto; flex: none; }
+  .mmeta { flex: 1; min-width: 0; }
+  .mtick { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .mname { font-size: 11.5px; color: var(--ink2); }
+  .mprice { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mdelta { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .up { color: #248a3d; } .down { color: #c9302c; } .flat { color: var(--ink2); }
+  .own { font-size: 11.5px; color: var(--ink2); }
+  .btns { display: flex; gap: 6px; flex: none; }
+  .ticker { font-size: 12.5px; color: var(--ink2); min-height: 18px; margin-top: 10px; }
+  .result {
+    margin-top: 14px; border-radius: 16px; padding: 14px 16px;
+    background: linear-gradient(180deg, #fbfbfd, #f2f3f6); border: 1px solid rgba(0,0,0,0.08);
+    display: none;
+  }
+  .result.on { display: block; }
+  .stars { font-size: 26px; letter-spacing: 4px; line-height: 1; }
+  .rtitle { font-size: 15px; font-weight: 600; margin: 8px 0 5px; letter-spacing: -0.01em; }
+  .rbody { font-size: 12.8px; line-height: 1.6; color: #3a3a3c; }
+  footer.foot { margin-top: 44px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; max-width: 940px; }
+  @media (max-width: 1120px) { .grid4 { grid-template-columns: repeat(2, minmax(0,1fr)); } .level { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .grid4 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>The Ladder Yard</h1>
+    <p class="sub">
+      A company you own is a <b>ladder standing in your yard</b>. Its value is the number of rungs, and rungs are
+      evenly spaced, so <b>height and count say the same thing</b>. You can read it across the room and you can also
+      literally count it. An index fund is not a ladder at all: it is a <b>staircase</b> built from one step of every
+      company in the market.
+    </p>
+    <div class="why">
+      <h3>Why this beats the glass orb</h3>
+      <p>
+        The orb encoded value as <i>area</i>, which the eye cannot compare and cannot count, so growth and decline
+        disappeared into the mix. A ladder encodes value as <i>a stack of identical units</i>. Adding a rung is
+        growth. Taking one off is decline. Nothing is inferred; the change happens at the top of the ladder where the
+        eye already is.
+      </p>
+      <p>
+        It also carries the three things bars and coin stacks cannot: a ladder can <b>snap</b> (bankruptcy is a
+        different <i>state</i>, not a lower number), a ladder can <b>lean in the wind</b> (a market-wide shock is one
+        gust hitting the whole yard), and a ladder is a thing a kid <b>stands up, folds down, and carries</b>, which
+        gives buying and selling real bodies.
+      </p>
+      <p>
+        The index reads as the steady hero for a structural reason, not a promised one: a staircase is <b>wide at the
+        bottom and cannot tip</b>, and if one company fails, that step just turns gray while the staircase keeps its
+        shape and still holds your weight. It is drawn as the calmest thing in the yard, never the tallest.
+      </p>
+      <p class="rejects">
+        Considered and rejected: <b>water tanks and aquariums</b> (a level is volume again, the orb's exact mistake, and
+        a half-full tank looks the same as a broken one), <b>bookshelves and trains</b> (horizontal counts that are just
+        coin stacks turned sideways, with nothing to say about failure), <b>candles</b> (they only ever go down, so
+        growth is impossible), <b>mountains</b> (nobody buys, sells or breaks a mountain), <b>snowmen and sandcastles</b>
+        (melting implies time alone destroys value). <b>No chart lines appear anywhere in this file</b>: the yard shows
+        today only, so nothing on screen can be read as a forecast.
+      </p>
+    </div>
+  </header>
+
+  <div class="secthead">
+    <h2>1 &middot; The foolproof checklist, rendered live</h2>
+    <span class="note">Eight things the metaphor must survive. Click any tile to replay it.</span>
+  </div>
+  <div class="grid4" id="tiles"></div>
+
+  <div class="secthead">
+    <h2>2 &middot; A sixty second level</h2>
+    <span class="note">Twenty ticks, three trade tokens, one goal. The same twenty ticks every time, so a class can talk about it.</span>
+  </div>
+
+  <div class="level">
+    <div class="card yardcard">
+      <div class="hud">
+        <div class="stat"><div class="k">Your yard is worth</div><div class="v" id="total">$1,000</div></div>
+        <div class="stat"><div class="k">Coins in the jar</div><div class="v" id="cash">$760</div></div>
+        <div class="stat">
+          <div class="k">Trade tokens</div>
+          <div class="tokens" id="toks" style="margin-top:5px"><span class="tok"></span><span class="tok"></span><span class="tok"></span></div>
+        </div>
+        <div class="stat goal"><div class="k">Goal, day 20</div><div class="v">Above $1,200</div></div>
+      </div>
+      <div class="stage" style="cursor:default"><canvas id="yard" width="660" height="330"></canvas></div>
+      <div class="hud" style="margin: 12px 0 0">
+        <button class="pill primary" id="play">Play the twenty days</button>
+        <button class="pill" id="reset">Reset</button>
+        <span class="ticker" id="ticker" style="margin:0">Spend tokens whenever you like, before or during the run. One token per trade.</span>
+      </div>
+      <div class="result" id="result">
+        <div class="stars" id="stars"></div>
+        <div class="rtitle" id="rtitle"></div>
+        <div class="rbody" id="rbody"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="clabel" style="margin-top:2px"><span class="cname">The yard next door</span></div>
+      <div class="cnote" style="margin-bottom:6px">
+        Four things you can stand up in your own yard. Height is today's price, nothing more.
+      </div>
+      <div id="market"></div>
+      <div class="cnote" style="margin-top:12px; color:var(--ink2)">
+        Three stars needs more than a number: finish above $1,200 <b>and</b> end the day holding two different things.
+        Everything in one ladder is not a plan, it is a wish.
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    Rendering is 2D canvas with no external assets. One rung is $20 everywhere in this file, in the tiles and in the
+    level, so a kid can carry the unit from a teaching moment straight into play. Buying adds a whole ladder to the
+    yard, which means <b>how many ladders</b> is share count and <b>how tall</b> is share price, two physical
+    quantities a twelve year old can point at separately.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var TAU = Math.PI * 2;
+  var RUNG = 20; // dollars per rung, everywhere
+
+  var C = {
+    sun:  "#f08c2e",
+    pine: "#2f8f6b",
+    volt: "#8a5cf0",
+    idx:  "#0071e3",
+    dead: "#a7a7ac",
+    ink:  "#1d1d1f",
+    ink2: "#6e6e73",
+    up:   "#248a3d",
+    down: "#c9302c"
+  };
+  var STEPCOLORS = ["#f08c2e","#2f8f6b","#8a5cf0","#0a84ff","#e0575b","#d8a520","#3aa9a0","#c95fa0"];
+
+  function rr(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function ground(ctx, w, baseY) {
+    ctx.strokeStyle = "rgba(0,0,0,0.13)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(8, baseY + 0.5); ctx.lineTo(w - 8, baseY + 0.5); ctx.stroke();
+  }
+  function shadow(ctx, x, baseY, w) {
+    ctx.save();
+    ctx.fillStyle = "rgba(20,30,60,0.10)";
+    ctx.beginPath(); ctx.ellipse(x, baseY + 3, w, 3.2, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  // ---- the ladder --------------------------------------------------------
+  // x is the centre of the base. rise is pixels per rung (the shared vertical scale).
+  function ladder(ctx, x, baseY, rungs, color, rise, o) {
+    o = o || {};
+    var railW = o.railW || 22;
+    if (o.broken) { brokenLadder(ctx, x, baseY, o.deadRungs || 8, rise, railW); return; }
+    if (rungs <= 0) return;
+    var h = rungs * rise;
+    var lean = o.lean || 0;
+
+    ctx.save();
+    ctx.translate(x, baseY);
+    ctx.rotate(lean);
+    shadow(ctx, 0, 0, railW * 0.85);
+
+    var topW = railW * 0.86; // slight taper reads as a ladder, not a bar
+    function railX(side, t) { return side * (railW / 2 + (topW / 2 - railW / 2) * t); }
+
+    // rails
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4.4;
+    ctx.lineCap = "round";
+    [-1, 1].forEach(function (s) {
+      ctx.beginPath();
+      ctx.moveTo(railX(s, 0), 0);
+      ctx.lineTo(railX(s, 1), -h);
+      ctx.stroke();
+    });
+    // rungs
+    ctx.lineWidth = 3.4;
+    for (var i = 1; i <= rungs; i++) {
+      var t = i / rungs;
+      var y = -i * rise;
+      var isTop = (i === rungs);
+      var glow = (isTop && o.glow) ? o.glow : 0;
+      ctx.strokeStyle = glow > 0 ? mix(color, "#ffffff", 0.55 * glow) : color;
+      ctx.globalAlpha = o.fadeTop && isTop ? o.fadeTop : 1;
+      ctx.beginPath();
+      ctx.moveTo(railX(-1, t) + 1.6, y);
+      ctx.lineTo(railX(1, t) - 1.6, y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (glow > 0) {
+        ctx.save();
+        ctx.globalAlpha = glow * 0.9;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(railX(-1, t) + 1.6, y); ctx.lineTo(railX(1, t) - 1.6, y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // ghost of a rung that was just removed
+    if (o.ghost > 0) {
+      ctx.save();
+      ctx.globalAlpha = o.ghost * 0.75;
+      ctx.strokeStyle = C.down;
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 3;
+      var gy = -(rungs + 1) * rise;
+      ctx.beginPath(); ctx.moveTo(railX(-1, 1) + 1.6, gy); ctx.lineTo(railX(1, 1) - 1.6, gy); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function brokenLadder(ctx, x, baseY, rungs, rise, railW) {
+    // lies flat on the ground, gray, with a hatched footprint where it stood
+    ctx.save();
+    ctx.translate(x, baseY);
+    ctx.scale(railW / 22, railW / 22); // the wreck stays inside the space the ladder used
+    railW = 22;
+    // footprint
+    ctx.strokeStyle = "rgba(0,0,0,0.13)";
+    ctx.lineWidth = 1;
+    var fw = railW + 6, fh = rungs * rise;
+    ctx.setLineDash([3, 4]);
+    ctx.strokeRect(-fw / 2, -fh, fw, fh);
+    ctx.setLineDash([]);
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "rgba(0,0,0,0.16)";
+    for (var k = -fw / 2; k < fw / 2 + fh; k += 8) {
+      ctx.beginPath(); ctx.moveTo(k, 0); ctx.lineTo(k - fh, -fh); ctx.stroke();
+    }
+    ctx.restore();
+    // the wreck: two rail pieces and loose rungs lying down
+    ctx.strokeStyle = C.dead;
+    ctx.lineCap = "round";
+    ctx.lineWidth = 4.4;
+    var segs = [[-34, -3, 6, -9, 0.06], [8, -2, 40, -7, -0.09]];
+    segs.forEach(function (s) {
+      ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.lineTo(s[2], s[3]); ctx.stroke();
+    });
+    ctx.lineWidth = 3;
+    var loose = [[-28, -8, -19, -13], [-6, -9, 3, -14], [18, -8, 27, -12]];
+    loose.forEach(function (s) {
+      ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.lineTo(s[2], s[3]); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  // ---- the staircase (index) --------------------------------------------
+  // one step per company, total height = steps * rise, so it is on the same scale as a ladder
+  function staircase(ctx, x, baseY, steps, rise, o) {
+    o = o || {};
+    var run = o.run || Math.max(6, rise * 0.62);
+    var w = steps * run;
+    ctx.save();
+    ctx.translate(x - w / 2, baseY);
+    shadow(ctx, w / 2, 0, w * 0.55);
+    for (var i = 0; i < steps; i++) {
+      var col = (o.gray && o.gray.indexOf(i) >= 0) ? C.dead : STEPCOLORS[i % STEPCOLORS.length];
+      var h = (i + 1) * rise;
+      ctx.fillStyle = col;
+      ctx.globalAlpha = (o.newTop && i === steps - 1) ? 1 : 0.92;
+      ctx.fillRect(i * run, -h, run + 0.6, h);
+      // tread highlight
+      ctx.fillStyle = "rgba(255,255,255,0.42)";
+      ctx.fillRect(i * run, -h, run + 0.6, 2.2);
+      ctx.globalAlpha = 1;
+    }
+    // a broad base line: it cannot tip
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    ctx.fillRect(-3, -2.5, w + 6, 2.5);
+    ctx.restore();
+  }
+
+  // ---- the coin jar (your cash) -----------------------------------------
+  function jar(ctx, x, baseY, coins, label) {
+    var w = 44, h = 52;
+    ctx.save();
+    ctx.translate(x, baseY);
+    shadow(ctx, 0, 0, 24);
+    // coins inside
+    var n = Math.min(coins, 7);
+    for (var i = 0; i < n; i++) {
+      var cy = -6 - i * 6;
+      ctx.fillStyle = i % 2 ? "#e8b23a" : "#f0c250";
+      ctx.beginPath(); ctx.ellipse(0, cy, 14, 4.4, 0, 0, TAU); ctx.fill();
+    }
+    // glass
+    ctx.strokeStyle = "rgba(29,29,31,0.34)";
+    ctx.lineWidth = 2;
+    rr(ctx, -w / 2, -h, w, h, 8);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.30)";
+    ctx.fill();
+    ctx.restore();
+    if (label) {
+      ctx.fillStyle = C.ink2;
+      ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(label, x, baseY + 17);
+    }
+  }
+
+  function chip(ctx, x, y, text, color, sub) {
+    ctx.save();
+    ctx.font = "600 11.5px -apple-system, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = color || C.ink;
+    ctx.fillText(text, x, y);
+    if (sub) {
+      ctx.font = "500 10.5px -apple-system, system-ui, sans-serif";
+      ctx.fillStyle = C.ink2;
+      ctx.fillText(sub, x, y + 12);
+    }
+    ctx.restore();
+  }
+
+  function mix(a, b, t) {
+    function p(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    var A = p(a), B = p(b);
+    return "rgb(" + Math.round(A[0] + (B[0] - A[0]) * t) + "," + Math.round(A[1] + (B[1] - A[1]) * t) + "," + Math.round(A[2] + (B[2] - A[2]) * t) + ")";
+  }
+  function ease(t) { return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t); }
+
+  // =======================================================================
+  // SECTION 1 : the checklist tiles
+  // =======================================================================
+  var TW = 300, TH = 210, TBASE = 168, TRISE = 8.4;
+
+  var TILES = [
+    {
+      key: "a", name: "Growth, one holding",
+      note: "A rung is added at the top. Taller and countable at the same time, so nobody has to guess how much better it got.",
+      period: 5200,
+      draw: function (ctx, t) {
+        var step = Math.min(7, Math.floor(t / 0.6));
+        var frac = (t / 0.6) - Math.floor(t / 0.6);
+        var rungs = 6 + step;
+        ladder(ctx, 118, TBASE, rungs, C.sun, TRISE, { glow: step > 0 && step <= 7 ? 1 - ease(frac) : 0 });
+        chip(ctx, 118, TBASE + 24, "SUNRISE FOODS", C.ink, "$" + (rungs * RUNG) + "  ·  " + rungs + " rungs");
+        // the rung being carried in
+        if (step < 7) {
+          var y = TBASE - (rungs + 1) * TRISE;
+          ctx.save();
+          ctx.globalAlpha = 0.35 + 0.4 * frac;
+          ctx.strokeStyle = C.up; ctx.lineWidth = 3.2; ctx.lineCap = "round";
+          var x0 = 210 - 70 * ease(frac);
+          ctx.beginPath(); ctx.moveTo(x0 - 9, y); ctx.lineTo(x0 + 9, y); ctx.stroke();
+          ctx.restore();
+        }
+        chip(ctx, 228, 34, "+ $" + (step * RUNG), C.up, "in 7 days");
+      }
+    },
+    {
+      key: "b", name: "Decline, one holding",
+      note: "A rung comes off the top and its outline lingers for a beat. The ladder is shorter, still standing, still able to grow again.",
+      period: 5200,
+      draw: function (ctx, t) {
+        var step = Math.min(6, Math.floor(t / 0.62));
+        var frac = (t / 0.62) - Math.floor(t / 0.62);
+        var rungs = 13 - step;
+        ladder(ctx, 118, TBASE, rungs, C.pine, TRISE, { ghost: step > 0 && step <= 6 ? 1 - ease(frac) : 0 });
+        chip(ctx, 118, TBASE + 24, "PINE & CO", C.ink, "$" + (rungs * RUNG) + "  ·  " + rungs + " rungs");
+        chip(ctx, 228, 34, "− $" + (step * RUNG), C.down, "still standing");
+      }
+    },
+    {
+      key: "c", name: "Five holdings at once",
+      note: "Five ladders on one ground line. The tallest is five times the shortest and you read that in a glance, no legend needed.",
+      period: 6000,
+      draw: function (ctx, t) {
+        var set = [[3, C.pine], [7, C.sun], [16, C.idx], [5, C.volt], [11, "#e0575b"]];
+        set.forEach(function (s, i) {
+          var x = 40 + i * 56;
+          ladder(ctx, x, TBASE, s[0], s[1], TRISE, { railW: 17 });
+          chip(ctx, x, TBASE + 20, "$" + (s[0] * RUNG), C.ink2);
+        });
+        chip(ctx, 150, 26, "one ground line, one rung size", C.ink2);
+      }
+    },
+    {
+      key: "d", name: "A market wide shock",
+      note: "One gust crosses the whole yard. Every ladder leans and loses rungs on the same beat, so nobody in the class thinks they picked wrong.",
+      period: 6000,
+      draw: function (ctx, t) {
+        var set = [[13, C.sun], [10, C.pine], [15, C.volt], [12, C.idx]];
+        var hit = t > 1.6;
+        var g = ease((t - 1.6) / 0.5) - ease((t - 2.9) / 1.4);
+        var loss = hit ? 3 : 0;
+        set.forEach(function (s, i) {
+          var x = 52 + i * 66;
+          ladder(ctx, x, TBASE, s[0] - loss, s[1], TRISE, { railW: 19, lean: 0.05 * g * (1 + i * 0.1) });
+          chip(ctx, x, TBASE + 20, hit ? "−$" + (3 * RUNG) : "$" + (s[0] * RUNG), hit ? C.down : C.ink2);
+        });
+        // the gust
+        ctx.save();
+        ctx.strokeStyle = "rgba(29,29,31," + (0.30 * g) + ")";
+        ctx.lineWidth = 1.6; ctx.lineCap = "round";
+        for (var k = 0; k < 4; k++) {
+          var y = 46 + k * 22;
+          var x0 = -60 + ((t * 260) % 420);
+          ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + 46, y - 4); ctx.stroke();
+        }
+        ctx.restore();
+        chip(ctx, 150, 26, hit ? "the same gust hit all four" : "a calm day", hit ? C.down : C.ink2);
+      }
+    },
+    {
+      key: "e", name: "Permanent failure",
+      note: "A snapped ladder lies flat and gray inside a dashed outline of where it stood. It never stands again, which a short ladder always can.",
+      period: 7200,
+      draw: function (ctx, t) {
+        var brk = t > 2.2;
+        var fallT = ease((t - 2.2) / 0.55);
+        // the survivor, low but alive
+        ladder(ctx, 78, TBASE, 5, C.pine, TRISE, { railW: 19 });
+        chip(ctx, 78, TBASE + 20, "down, not out", C.ink2, "$100, can grow");
+        if (!brk) {
+          ladder(ctx, 205, TBASE, 12, C.volt, TRISE, { railW: 19, lean: 0.02 * Math.sin(t * 5) });
+          chip(ctx, 205, TBASE + 20, "$240", C.ink2);
+        } else if (fallT < 1) {
+          ctx.save();
+          ctx.globalAlpha = 1 - fallT;
+          ladder(ctx, 205, TBASE, 12, mix(C.volt, C.dead, fallT), TRISE, { railW: 19, lean: 1.35 * fallT });
+          ctx.restore();
+        } else {
+          brokenLadder(ctx, 205, TBASE, 12, TRISE, 19);
+          chip(ctx, 205, TBASE + 20, "BANKRUPT", C.dead, "$0 forever");
+        }
+        chip(ctx, 150, 26, "gray and flat is a different thing from short", C.ink2);
+      }
+    },
+    {
+      key: "f", name: "The index, a staircase",
+      note: "One step from every company, wide at the bottom so it cannot tip. When a company fails its step goes gray and the staircase still holds you.",
+      period: 8000,
+      draw: function (ctx, t) {
+        var grow = Math.min(4, Math.floor(t / 0.9));
+        var steps = 10 + grow;
+        var grayed = t > 4.4 ? [4] : [];
+        staircase(ctx, 150, TBASE, steps, TRISE, { gray: grayed });
+        chip(ctx, 150, TBASE + 22, "THE EVERYTHING STAIRCASE", C.ink,
+          t > 4.4 ? "one step failed, height kept" : "$" + (steps * RUNG) + "  ·  one of everything");
+        chip(ctx, 150, 26, "climb it with your hands in your pockets", C.ink2);
+      }
+    },
+    {
+      key: "g", name: "A dividend arrives",
+      note: "A coin drops off the ladder into your jar and the ladder stays exactly as tall. Owning paid you without you selling anything.",
+      period: 4600,
+      draw: function (ctx, t) {
+        var cyc = t % 2.3;
+        ladder(ctx, 112, TBASE, 11, C.sun, TRISE, { railW: 20 });
+        chip(ctx, 112, TBASE + 22, "still 11 rungs", C.ink2, "height unchanged");
+        var coins = 2 + Math.floor(t / 2.3);
+        jar(ctx, 232, TBASE, Math.min(coins, 6), "your jar");
+        if (cyc < 1.15) {
+          var p = ease(cyc / 1.15);
+          var cx = 112 + (232 - 112) * p;
+          var cy = (TBASE - 11 * TRISE) + (TBASE - 18 - (TBASE - 11 * TRISE)) * p - Math.sin(p * Math.PI) * 26;
+          ctx.fillStyle = "#f0c250"; ctx.strokeStyle = "#c99a2b"; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.arc(cx, cy, 6.4, 0, TAU); ctx.fill(); ctx.stroke();
+        }
+        chip(ctx, 150, 26, "+$20 in coins, 0 rungs lost", C.up);
+      }
+    },
+    {
+      key: "h", name: "Buying and selling",
+      note: "Buy: lift a ladder off the ground and stand it up, coins leave the jar. Sell: fold it down and carry it back, coins return. Mime it with two hands.",
+      period: 6400,
+      draw: function (ctx, t) {
+        var cyc = t % 3.2;
+        var buying = cyc < 1.6;
+        var p = ease((buying ? cyc : cyc - 1.6) / 1.4);
+        var ang = buying ? (1.45 * (1 - p)) : (1.45 * p);
+        var coins = buying ? 6 - Math.round(4 * p) : 2 + Math.round(4 * p);
+        jar(ctx, 60, TBASE, coins, buying ? "coins out" : "coins in");
+        ladder(ctx, 200, TBASE, 9, C.idx, TRISE, { railW: 20, lean: ang });
+        // the hands, as two simple grips on the rail
+        ctx.save();
+        ctx.fillStyle = "rgba(29,29,31,0.55)";
+        ctx.translate(200, TBASE); ctx.rotate(ang);
+        ctx.beginPath(); ctx.arc(-13, -30, 4.6, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(13, -58, 4.6, 0, TAU); ctx.fill();
+        ctx.restore();
+        chip(ctx, 200, TBASE + 22, buying ? "STAND IT UP" : "FOLD IT DOWN", buying ? C.idx : C.ink2, "$180 either way");
+        chip(ctx, 150, 26, buying ? "buying" : "selling", C.ink2);
+      }
+    }
+  ];
+
+  var tileState = [];
+  (function buildTiles() {
+    var host = document.getElementById("tiles");
+    TILES.forEach(function (tile, i) {
+      var card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML =
+        '<div class="stage"><canvas width="' + TW + '" height="' + TH + '"></canvas></div>' +
+        '<div class="clabel"><span class="ckey">' + tile.key + '</span><span class="cname">' + tile.name + '</span></div>' +
+        '<div class="cnote">' + tile.note + '</div>' +
+        '<div class="replay">click to replay</div>';
+      host.appendChild(card);
+      var cv = card.querySelector("canvas");
+      var st = { cv: cv, ctx: cv.getContext("2d"), t0: performance.now() - i * 250, tile: tile };
+      cv.parentNode.addEventListener("click", function () { st.t0 = performance.now(); });
+      tileState.push(st);
+    });
+  })();
+
+  function paintTiles(now) {
+    tileState.forEach(function (st) {
+      var el = (now - st.t0) % st.tile.period;
+      var ctx = st.ctx;
+      ctx.clearRect(0, 0, TW, TH);
+      ground(ctx, TW, TBASE);
+      st.tile.draw(ctx, el / 1000);
+    });
+  }
+
+  // =======================================================================
+  // SECTION 2 : the sixty second level
+  // =======================================================================
+  // Deterministic rung series, 21 entries (day 0 to day 20). 0 rungs means the ladder snapped.
+  var SERIES = {
+    SUN:  [12,12,13,13,13,14,14,13,14,15,15,15,16,14,13,14,14,14,14,14,14],
+    PINE: [14,14,13,13,13,12,12,12,11,11,12,12,12,11,10,10,11,11,12,12,12],
+    VOLT: [10,11,12,13,15,16,18,19,18,20,21,20,19,17, 0, 0, 0, 0, 0, 0, 0],
+    IDX:  [12,12,13,13,13,14,14,14,15,15,15,16,16,14,14,15,15,16,16,17,17]
+  };
+  var ASSETS = [
+    { id: "SUN",  name: "Sunrise Foods",       color: C.sun,  kind: "ladder" },
+    { id: "PINE", name: "Pine & Co",           color: C.pine, kind: "ladder" },
+    { id: "VOLT", name: "Voltcart",            color: C.volt, kind: "ladder" },
+    { id: "IDX",  name: "The Everything Fund", color: C.idx,  kind: "stair"  }
+  ];
+
+  var G = null;
+  function resetGame() {
+    G = {
+      day: 0, cash: 760, tokens: 3, running: false, done: false,
+      hold: { SUN: 1, PINE: 0, VOLT: 0, IDX: 0 },
+      lastTick: 0, msg: "Spend tokens whenever you like, before or during the run. One token per trade.",
+      flash: 0, shockFlash: 0, snapAt: -1, log: []
+    };
+    document.getElementById("result").classList.remove("on");
+    document.getElementById("play").disabled = false;
+    document.getElementById("play").textContent = "Play the twenty days";
+    syncHud();
+  }
+
+  function price(id, day) { return SERIES[id][Math.min(day, 20)] * RUNG; }
+  function rungs(id, day) { return SERIES[id][Math.min(day, 20)]; }
+  function totalValue() {
+    var v = G.cash;
+    ASSETS.forEach(function (a) { v += G.hold[a.id] * price(a.id, G.day); });
+    return v;
+  }
+
+  var marketRows = [];
+  (function buildMarket() {
+    var host = document.getElementById("market");
+    ASSETS.forEach(function (a) {
+      var row = document.createElement("div");
+      row.className = "mrow";
+      row.innerHTML =
+        '<canvas width="52" height="170"></canvas>' +
+        '<div class="mmeta">' +
+          '<div class="mtick">' + a.id + '</div>' +
+          '<div class="mname">' + a.name + '</div>' +
+          '<div class="mprice"></div>' +
+          '<div class="mdelta flat">&nbsp;</div>' +
+          '<div class="own"></div>' +
+        '</div>' +
+        '<div class="btns"><button class="mini buy">Buy</button><button class="mini sell">Sell</button></div>';
+      host.appendChild(row);
+      var o = {
+        a: a, cv: row.querySelector("canvas"), ctx: row.querySelector("canvas").getContext("2d"),
+        price: row.querySelector(".mprice"), delta: row.querySelector(".mdelta"),
+        own: row.querySelector(".own"),
+        buy: row.querySelector(".buy"), sell: row.querySelector(".sell")
+      };
+      o.buy.addEventListener("click", function () { trade(a.id, 1); });
+      o.sell.addEventListener("click", function () { trade(a.id, -1); });
+      marketRows.push(o);
+    });
+  })();
+
+  function trade(id, dir) {
+    if (!G || G.done) return;
+    var p = price(id, G.day);
+    if (G.tokens <= 0) { G.msg = "No tokens left. Trades are supposed to be rare."; return; }
+    if (dir > 0) {
+      if (p <= 0) { G.msg = "That ladder is snapped. There is nothing left to stand up."; return; }
+      if (G.cash < p) { G.msg = "Not enough coins in the jar for that ladder."; return; }
+      G.cash -= p; G.hold[id]++; G.tokens--;
+      G.msg = "Stood up a " + id + " ladder for $" + p + ". " + G.tokens + " token" + (G.tokens === 1 ? "" : "s") + " left.";
+      G.log.push("day " + G.day + ": bought " + id + " at $" + p);
+    } else {
+      if (G.hold[id] <= 0) { G.msg = "You do not own one of those."; return; }
+      G.hold[id]--; G.cash += p; G.tokens--;
+      G.msg = "Folded down a " + id + " ladder for $" + p + ". " + G.tokens + " token" + (G.tokens === 1 ? "" : "s") + " left.";
+      G.log.push("day " + G.day + ": sold " + id + " at $" + p);
+    }
+    G.flash = performance.now();
+    syncHud();
+  }
+
+  function syncHud() {
+    document.getElementById("cash").textContent = "$" + G.cash.toLocaleString();
+    document.getElementById("total").textContent = "$" + totalValue().toLocaleString();
+    var toks = document.getElementById("toks").children;
+    for (var i = 0; i < toks.length; i++) toks[i].className = "tok" + (i < G.tokens ? "" : " spent");
+    document.getElementById("ticker").textContent = "Day " + G.day + " of 20. " + G.msg;
+    marketRows.forEach(function (o) {
+      var p = price(o.a.id, G.day);
+      var prev = G.day > 0 ? price(o.a.id, G.day - 1) : p;
+      var d = p - prev;
+      o.price.textContent = p > 0 ? "$" + p : "snapped";
+      o.delta.textContent = p <= 0 ? "bankrupt, gone for good" : (d === 0 ? "no change today" : (d > 0 ? "+$" + d : "−$" + Math.abs(d)) + " today");
+      o.delta.className = "mdelta " + (p <= 0 ? "down" : d > 0 ? "up" : d < 0 ? "down" : "flat");
+      o.own.textContent = G.hold[o.a.id] > 0 ? "you own " + G.hold[o.a.id] + (o.a.kind === "stair" ? " staircase" + (G.hold[o.a.id] > 1 ? "s" : "") : " ladder" + (G.hold[o.a.id] > 1 ? "s" : "")) : "";
+      o.buy.disabled = G.done || G.tokens <= 0 || p <= 0 || G.cash < p;
+      o.sell.disabled = G.done || G.tokens <= 0 || G.hold[o.a.id] <= 0;
+    });
+  }
+
+  var YW = 660, YH = 330, YBASE = 268, YRISE = 11;
+
+  function paintYard(now) {
+    var ctx = document.getElementById("yard").getContext("2d");
+    ctx.clearRect(0, 0, YW, YH);
+    ground(ctx, YW, YBASE);
+
+    // day counter and value line
+    ctx.font = "600 12px -apple-system, system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillStyle = C.ink2;
+    ctx.fillText("YOUR YARD  ·  day " + G.day + " of 20", 16, 24);
+
+    // No goal line is drawn. A dashed line across the sky would be a height that means nothing,
+    // since the total includes coins in the jar. The goal stays a number.
+    ctx.fillStyle = "rgba(0,113,227,0.85)";
+    ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("goal: ladders + staircases + coins above $1,200", YW - 16, 42);
+
+    // the jar
+    jar(ctx, 54, YBASE, Math.round(G.cash / 130), "$" + G.cash);
+
+    // shock shake, day 13 for everything
+    var shake = 0;
+    if (G.shockFlash && now - G.shockFlash < 900) {
+      var s = 1 - (now - G.shockFlash) / 900;
+      shake = 0.04 * s * Math.sin((now - G.shockFlash) / 40);
+    }
+
+    var x = 132;
+    ASSETS.forEach(function (a) {
+      var n = G.hold[a.id];
+      var r = rungs(a.id, G.day);
+      for (var i = 0; i < n; i++) {
+        if (a.kind === "stair") {
+          var w = Math.max(70, r * YRISE * 0.62);
+          x += w / 2;
+          staircase(ctx, x, YBASE, r, YRISE, {});
+          chip(ctx, x, YBASE + 20, "$" + (r * RUNG), C.idx, "everything");
+          x += w / 2 + 26;
+        } else {
+          x += 22;
+          if (r <= 0) {
+            ladder(ctx, x, YBASE, 0, a.color, YRISE, { broken: true, deadRungs: 17, railW: 22 });
+            chip(ctx, x, YBASE + 20, "$0", C.dead, a.id + " snapped");
+          } else {
+            ladder(ctx, x, YBASE, r, a.color, YRISE, { lean: shake, railW: 22 });
+            chip(ctx, x, YBASE + 20, "$" + (r * RUNG), a.color, a.id);
+          }
+          x += 40;
+        }
+      }
+    });
+
+    if (x === 132) {
+      ctx.fillStyle = C.ink2;
+      ctx.font = "500 13px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Nothing standing. Coins in a jar do not grow.", YW / 2, YBASE - 60);
+    }
+
+    // total, as a readout at the top right of the yard
+    var tv = totalValue();
+    ctx.textAlign = "right";
+    ctx.font = "600 13px -apple-system, system-ui, sans-serif";
+    ctx.fillStyle = tv >= 1200 ? C.up : C.ink;
+    ctx.fillText("yard + jar = $" + tv.toLocaleString(), YW - 16, 24);
+
+    if (G.snapAt >= 0 && now - G.snapAt < 2200) {
+      ctx.textAlign = "center";
+      ctx.font = "600 13px -apple-system, system-ui, sans-serif";
+      ctx.fillStyle = C.down;
+      ctx.globalAlpha = 1 - (now - G.snapAt) / 2200;
+      ctx.fillText("Voltcart snapped. That ladder is gone for good.", YW / 2, 78);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function step() {
+    if (!G.running) return;
+    G.day++;
+    if (G.day === 13) { G.shockFlash = performance.now(); G.msg = "A gust crossed the whole yard. Every ladder lost rungs at once."; }
+    else if (G.day === 14) { G.snapAt = performance.now(); G.msg = "Voltcart went bankrupt. Nobody in the yard could have seen it coming."; }
+    else G.msg = "";
+    if (G.day >= 20) { G.running = false; finish(); }
+    syncHud();
+  }
+
+  function finish() {
+    G.done = true;
+    var tv = totalValue();
+    var kinds = 0;
+    ASSETS.forEach(function (a) { if (G.hold[a.id] > 0 && price(a.id, 20) > 0) kinds++; });
+    var stars = 1;
+    if (tv >= 1200) stars = kinds >= 2 ? 3 : 2;
+    var el = document.getElementById("result");
+    document.getElementById("stars").textContent = "★★★".slice(0, stars) + "☆☆☆".slice(0, 3 - stars);
+    document.getElementById("rtitle").textContent =
+      "Day 20. Your yard and jar are worth $" + tv.toLocaleString() + ".";
+    var body;
+    if (stars === 3) body = "Above the goal and still holding two different things. When Voltcart snapped on day 14 it could not take the whole yard with it.";
+    else if (stars === 2) body = "Above the goal, but everything you own is one ladder. That worked this time. It is the same bet that took Voltcart's owners to zero.";
+    else if (G.tokens === 3) body = "Coins in a jar stayed coins in a jar. Nothing standing means nothing growing, and the goal needed something standing.";
+    else body = "Short of $1,200. Look at what the staircase did on day 13: it lost rungs with everyone else and had them back by day 17.";
+    document.getElementById("rbody").textContent = body + " Voltcart climbed from $200 to $420 and then snapped with no warning, which is exactly why the staircase exists.";
+    el.classList.add("on");
+    document.getElementById("play").disabled = true;
+    document.getElementById("play").textContent = "Finished";
+    syncHud();
+  }
+
+  document.getElementById("play").addEventListener("click", function () {
+    if (G.done) return;
+    G.running = !G.running;
+    this.textContent = G.running ? "Pause" : "Resume";
+    G.lastTick = performance.now();
+  });
+  document.getElementById("reset").addEventListener("click", function () { resetGame(); });
+
+  // ---- one loop ----------------------------------------------------------
+  resetGame();
+  function frame(now) {
+    paintTiles(now);
+    if (G.running && now - G.lastTick > 800) { G.lastTick = now; step(); }
+    paintYard(now);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // market row ladders repaint on their own light loop
+  setInterval(function () {
+    marketRows.forEach(function (o) {
+      var ctx = o.ctx;
+      ctx.clearRect(0, 0, 52, 170);
+      var r = rungs(o.a.id, G.day);
+      if (r <= 0) {
+        brokenLadder(ctx, 26, 150, 12, 7, 14);
+      } else if (o.a.kind === "stair") {
+        staircase(ctx, 26, 150, r, 7, { run: 2.6 });
+      } else {
+        ladder(ctx, 26, 150, r, o.a.color, 7, { railW: 14 });
+      }
+      ctx.strokeStyle = "rgba(0,0,0,0.10)";
+      ctx.beginPath(); ctx.moveTo(4, 150.5); ctx.lineTo(48, 150.5); ctx.stroke();
+    });
+  }, 120);
+
+})();
+</script>
+</body>
+</html>

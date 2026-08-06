@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Balloons, a metaphor mock</title>
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --ink2: #6e6e73;
+    --bg: #f5f5f7;
+    --blue: #0071e3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header.top { margin-bottom: 30px; }
+  h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 8px; }
+  .sub { font-size: 15px; color: var(--ink2); max-width: 760px; line-height: 1.55; margin: 0 0 14px; }
+  .warnbar {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.18);
+    color: #14456f; border-radius: 999px; padding: 7px 15px; font-size: 13px; line-height: 1.4;
+  }
+  .warnbar b { font-weight: 600; }
+  .secthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 44px 0 16px; }
+  .secthead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .secthead .why { font-size: 13.5px; color: var(--ink2); }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 14px 16px 16px;
+    position: relative;
+  }
+  .card.wide { grid-column: span 2; }
+  .card.hero { border-color: rgba(0,113,227,0.35); box-shadow: 0 14px 36px rgba(0,80,180,0.13), 0 2px 6px rgba(20,30,60,0.06); }
+  .stage {
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fbfcff 0%, #eef1f7 100%);
+    overflow: hidden;
+    position: relative;
+  }
+  canvas { display: block; width: 100%; }
+  .ctag {
+    position: absolute; top: 22px; right: 26px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.01em;
+    background: rgba(0,113,227,0.12); color: #0a5ec2;
+    border-radius: 999px; padding: 4px 10px;
+  }
+  .cname { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; margin: 13px 0 5px; }
+  .cname .let { color: var(--ink2); font-weight: 500; margin-right: 6px; }
+  .cnote { font-size: 13px; line-height: 1.55; color: #3a3a3c; margin: 0; }
+  .rowbtn { margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button.pill {
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 500;
+    padding: 7px 15px; border-radius: 999px; cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+  }
+  button.pill:hover { background: rgba(0,0,0,0.05); }
+  button.pill.primary { background: var(--blue); color: #fff; border-color: transparent; }
+  button.pill.primary:hover { filter: brightness(1.08); }
+  button.pill:disabled { opacity: 0.38; cursor: default; }
+  button.pill:disabled:hover { background: #fff; }
+  .hint { font-size: 12.5px; color: var(--ink2); }
+
+  /* level */
+  .level { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; align-items: start; }
+  .panel {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 16px 18px 18px;
+  }
+  .goalline { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+  .goalline .g { font-size: 15px; font-weight: 600; }
+  .goalline .t { font-size: 13px; color: var(--ink2); }
+  .tokens { display: flex; gap: 6px; align-items: center; }
+  .tok { width: 20px; height: 20px; border-radius: 999px; background: linear-gradient(160deg, #ffd97a, #e8a83a); border: 1px solid rgba(120,80,0,0.3); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+  .tok.spent { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); box-shadow: none; }
+  .assets { margin-top: 6px; }
+  .asset {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 4px; border-top: 1px solid rgba(0,0,0,0.07);
+  }
+  .asset .sw { width: 12px; height: 16px; border-radius: 6px 6px 7px 7px; flex: none; }
+  .asset .nm { font-size: 13.5px; font-weight: 600; flex: 1; min-width: 0; }
+  .asset .nm small { display: block; font-weight: 400; color: var(--ink2); font-size: 11.5px; margin-top: 1px; }
+  .asset .vl { font-size: 13px; font-variant-numeric: tabular-nums; color: #3a3a3c; min-width: 62px; text-align: right; }
+  .stats { display: flex; gap: 18px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .stat .k { font-size: 11.5px; color: var(--ink2); }
+  .stat .v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .ticker { margin-top: 12px; font-size: 12.5px; color: #3a3a3c; min-height: 34px; line-height: 1.4; background: rgba(0,0,0,0.035); border-radius: 12px; padding: 8px 11px; }
+  .result { margin-top: 12px; border-radius: 14px; padding: 12px 14px; background: rgba(0,113,227,0.07); border: 1px solid rgba(0,113,227,0.16); display: none; }
+  .result.on { display: block; }
+  .stars { font-size: 24px; letter-spacing: 3px; color: #e8a83a; line-height: 1; }
+  .stars .off { color: rgba(0,0,0,0.15); }
+  .result .rl { font-size: 13px; color: #3a3a3c; margin-top: 7px; line-height: 1.5; }
+  footer.note { margin-top: 44px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; max-width: 820px; }
+  @media (max-width: 1080px) { .grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .level { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .card.wide { grid-column: span 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Balloons</h1>
+    <p class="sub">
+      A holding is a balloon on a string. Its size is its value, so growth inflates and rises, decline deflates and
+      sinks, and a bankruptcy pops. Your portfolio is one hand holding several strings. Everything here is drawn live
+      on canvas, no assets, so the language can be judged in motion rather than in a still.
+    </p>
+    <div class="warnbar">
+      <b>The trap this metaphor has to dodge:</b> fast inflation must read as thin skin, not as winning.
+      The hero is the patchwork balloon that cannot pop.
+    </div>
+  </header>
+
+  <div class="secthead">
+    <h2>1. The foolproof checklist, rendered live</h2>
+    <span class="why">Every claim the metaphor makes has to survive being drawn.</span>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="inflate" data-h="230"></canvas></div>
+      <div class="cname"><span class="let">a</span>Inflating</div>
+      <p class="cnote">The company earns more, so the balloon takes in more air, grows wider and floats higher up its string.</p>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="deflate" data-h="230"></canvas></div>
+      <div class="cname"><span class="let">b</span>Deflating</div>
+      <p class="cnote">The company is worth less, so air leaves, the skin goes slack and wrinkled, and the balloon sinks lower.</p>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="hand" data-h="230"></canvas></div>
+      <div class="cname"><span class="let">c</span>A hand of five</div>
+      <p class="cnote">Your portfolio is one hand. The biggest balloon is the biggest part of your money, at a glance, with no numbers needed.</p>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="cold" data-h="230"></canvas></div>
+      <div class="cname"><span class="let">d</span>The cold snap</div>
+      <p class="cnote">Bad weather cools the air in every balloon at once, so the whole hand shrinks together. Nothing you did caused it.</p>
+      <div class="rowbtn"><button class="pill" data-act="cold">Bring the cold snap</button><span class="hint">Then watch them warm back up.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="pop" data-h="230"></canvas></div>
+      <div class="cname"><span class="let">e</span>Deflated, then popped</div>
+      <p class="cnote">Left, deflated: small, still round, still yours, can refill. Right, popped: a knotted scrap on the ground that never lifts again.</p>
+      <div class="rowbtn"><button class="pill" data-act="pop">Replay the pop</button><span class="hint">The scrap stays until you replay.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="dividend" data-h="230"></canvas></div>
+      <div class="cname"><span class="let">g</span>A dividend arrives</div>
+      <p class="cnote">A little basket of coins is lowered down the string into your hand. The balloon dips slightly, because the coins came out of it.</p>
+    </div>
+
+    <div class="card wide hero">
+      <span class="ctag">the hero</span>
+      <div class="stage"><canvas data-scene="index" data-h="300"></canvas></div>
+      <div class="cname"><span class="let">f</span>The index, one balloon stitched from hundreds of patches</div>
+      <p class="cnote">It climbs slowly and never dramatically. When a patch fails it goes dark and is stitched over within seconds, and the balloon keeps rising. There is no hole big enough to pop it, which is exactly why it is boring and exactly why it wins.</p>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="trade" data-h="300"></canvas></div>
+      <div class="cname"><span class="let">h</span>Buying and selling</div>
+      <p class="cnote">Buying is coins out of your hand and a new string knotted on. Selling is handing that same string to someone else and taking their coins. Nothing is created, it changes hands.</p>
+    </div>
+
+  </div>
+
+  <div class="secthead">
+    <h2>2. A sixty second level</h2>
+    <span class="why">Twenty ticks, three trades, one goal. The same scripted market every time.</span>
+  </div>
+
+  <div class="level">
+    <div class="panel" style="padding:12px">
+      <div class="stage"><canvas data-scene="level" data-h="420"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="goalline">
+        <div>
+          <div class="g">End above $1,200</div>
+          <div class="t" id="tickLbl">Tick 0 of 20</div>
+        </div>
+        <div>
+          <div class="t" style="margin-bottom:4px">Trades left</div>
+          <div class="tokens" id="tokens"></div>
+        </div>
+      </div>
+
+      <div class="rowbtn">
+        <button class="pill primary" id="playBtn">Play</button>
+        <button class="pill" id="resetBtn">Reset</button>
+      </div>
+
+      <div class="assets" id="assets"></div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">Cash</div><div class="v" id="cashV">$0</div></div>
+        <div class="stat"><div class="k">Balloons</div><div class="v" id="holdV">$0</div></div>
+        <div class="stat"><div class="k">Total</div><div class="v" id="totV">$0</div></div>
+      </div>
+
+      <div class="ticker" id="ticker">Press play. You start holding one very fast balloon and a little cash.</div>
+
+      <div class="result" id="result">
+        <div class="stars" id="stars"></div>
+        <div class="rl" id="rl"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">
+    Rendering notes: every balloon is one teardrop path with a radial gradient, a knot, and a swaying quadratic string,
+    so the same twelve lines of drawing code cover a holding, a hype balloon, and the index. Skin state is the only
+    extra channel, taut and pale when a balloon has inflated too fast, slack and wrinkled when it has deflated. The
+    patchwork envelope is a clipped grid fill, which is what makes hundreds of patches cheap to draw and cheap to
+    repair one at a time.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var TAU = Math.PI * 2;
+
+  /* ------------------------------------------------------------------ util */
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+  function hex(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function rgba(c, a) { return "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + a + ")"; }
+  function mix(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+  function shade(c, k) { return [clamp(c[0] * k, 0, 255), clamp(c[1] * k, 0, 255), clamp(c[2] * k, 0, 255)]; }
+  var WHITE = [255, 255, 255], GREY = [150, 152, 158];
+  function money(v) { return "$" + Math.round(v).toLocaleString("en-US"); }
+
+  var PAL = {
+    red: hex("#ff453a"), orange: hex("#ff9f0a"), green: hex("#30d158"),
+    blue: hex("#0a84ff"), purple: hex("#bf5af2"), teal: hex("#3ec9e0"),
+    pink: hex("#ff6482"), sky: hex("#64d2ff"), lime: hex("#a2d729")
+  };
+
+  /* -------------------------------------------------------------- balloon */
+  // o: {x, y (body centre), r, col, skin (-1 slack .. 0 normal .. 1 taut),
+  //     anchor:[ax,ay], sway, label, alpha}
+  function balloonBody(ctx, x, y, r, squash) {
+    var rx = r * (1 + squash * 0.10), ry = r * (1 - squash * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(x, y - ry * 1.05);
+    ctx.bezierCurveTo(x + rx * 1.34, y - ry * 0.92, x + rx * 0.96, y + ry * 0.86, x, y + ry * 1.12);
+    ctx.bezierCurveTo(x - rx * 0.96, y + ry * 0.86, x - rx * 1.34, y - ry * 0.92, x, y - ry * 1.05);
+    ctx.closePath();
+    return ry;
+  }
+
+  function drawString(ctx, x, y, ax, ay, sway, alpha) {
+    var mx = (x + ax) / 2 + sway * 12, my = (y + ay) / 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(mx, my, ax, ay);
+    ctx.strokeStyle = "rgba(60,64,74," + (0.42 * (alpha === undefined ? 1 : alpha)) + ")";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  function drawBalloon(ctx, o) {
+    var r = o.r, x = o.x, y = o.y, col = o.col, skin = o.skin || 0;
+    var a = o.alpha === undefined ? 1 : o.alpha;
+    var sway = o.sway || 0;
+    var squash = skin < 0 ? -skin : 0;
+
+    ctx.save();
+    ctx.globalAlpha = a;
+
+    // string first
+    if (o.anchor) {
+      var ry0 = r * (1 - squash * 0.06);
+      drawString(ctx, x + sway * 2, y + ry0 * 1.16, o.anchor[0], o.anchor[1], sway, a);
+    }
+
+    // body
+    var ry = balloonBody(ctx, x, y, r, squash);
+    var face = skin > 0 ? mix(col, WHITE, skin * 0.42) : mix(col, GREY, (-skin) * 0.22);
+    var g = ctx.createRadialGradient(x - r * 0.36, y - r * 0.46, r * 0.08, x, y + r * 0.12, r * 1.35);
+    g.addColorStop(0, rgba(mix(face, WHITE, 0.55), 1));
+    g.addColorStop(0.38, rgba(face, 1));
+    g.addColorStop(1, rgba(shade(face, 0.66), 1));
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = rgba(shade(face, 0.55), 0.35);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // specular
+    ctx.beginPath();
+    ctx.ellipse(x - r * 0.36, y - r * 0.44, r * 0.24, r * 0.34, -0.5, 0, TAU);
+    ctx.fillStyle = "rgba(255,255,255," + (0.55 + skin * 0.2) + ")";
+    ctx.fill();
+
+    // taut skin: stretch marks, the balloon is thin and about to be in trouble
+    if (skin > 0.15) {
+      ctx.save();
+      ctx.beginPath(); balloonBody(ctx, x, y, r, 0); ctx.clip();
+      ctx.strokeStyle = "rgba(255,255,255," + (0.30 * skin) + ")";
+      ctx.lineWidth = 1.1;
+      for (var i = 0; i < 5; i++) {
+        var yy = y - r * 0.7 + i * r * 0.36;
+        ctx.beginPath();
+        ctx.moveTo(x - r * 1.1, yy);
+        ctx.quadraticCurveTo(x, yy - r * 0.18, x + r * 1.1, yy);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // slack skin: wrinkles
+    if (skin < -0.15) {
+      ctx.save();
+      ctx.beginPath(); balloonBody(ctx, x, y, r, squash); ctx.clip();
+      ctx.strokeStyle = "rgba(40,44,54," + (0.20 * -skin) + ")";
+      ctx.lineWidth = 1.2;
+      for (var j = 0; j < 3; j++) {
+        var ay2 = y - r * 0.1 + j * r * 0.34;
+        ctx.beginPath();
+        ctx.moveTo(x - r * 0.9, ay2);
+        ctx.quadraticCurveTo(x - r * 0.1, ay2 + r * 0.26, x + r * 0.85, ay2 - r * 0.06);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // knot
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.13, y + ry * 1.06);
+    ctx.lineTo(x + r * 0.13, y + ry * 1.06);
+    ctx.lineTo(x + sway * 2, y + ry * 1.22);
+    ctx.closePath();
+    ctx.fillStyle = rgba(shade(face, 0.72), 1);
+    ctx.fill();
+
+    if (o.label) {
+      ctx.fillStyle = "rgba(29,29,31,0.78)";
+      ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(o.label, x, y + ry * 1.12 + 16);
+    }
+    ctx.restore();
+  }
+
+  // a popped balloon: knotted scrap of rubber lying on the ground, permanent
+  function drawScrap(ctx, x, groundY, col, label, scale) {
+    var c = mix(col, GREY, 0.42);
+    ctx.save();
+    if (scale && scale !== 1) { ctx.translate(x, groundY); ctx.scale(scale, scale); ctx.translate(-x, -groundY); }
+    // ground contact shadow
+    ctx.beginPath();
+    ctx.ellipse(x, groundY + 2, 21, 4.5, 0, 0, TAU);
+    ctx.fillStyle = "rgba(30,34,44,0.13)";
+    ctx.fill();
+    // shrivelled body
+    ctx.beginPath();
+    ctx.moveTo(x - 17, groundY);
+    ctx.bezierCurveTo(x - 14, groundY - 10, x - 3, groundY - 9, x + 1, groundY - 2);
+    ctx.bezierCurveTo(x + 5, groundY - 11, x + 15, groundY - 8, x + 18, groundY);
+    ctx.closePath();
+    ctx.fillStyle = rgba(shade(c, 0.82), 1);
+    ctx.fill();
+    ctx.strokeStyle = rgba(shade(c, 0.55), 0.6);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // torn edge nicks
+    ctx.beginPath();
+    for (var i = -3; i <= 3; i++) {
+      ctx.moveTo(x + i * 5, groundY - 3);
+      ctx.lineTo(x + i * 5 + 2, groundY - 7 - (i % 2 ? 2 : 0));
+    }
+    ctx.strokeStyle = rgba(shade(c, 0.5), 0.5);
+    ctx.stroke();
+    // the knot, still tied, still on a limp string
+    ctx.beginPath();
+    ctx.arc(x + 1, groundY - 1.5, 4.2, 0, TAU);
+    ctx.fillStyle = rgba(shade(c, 0.62), 1);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + 1, groundY);
+    ctx.bezierCurveTo(x + 12, groundY + 1, x + 18, groundY - 4, x + 30, groundY);
+    ctx.strokeStyle = "rgba(60,64,74,0.35)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    if (label) {
+      ctx.fillStyle = "rgba(110,110,115,0.95)";
+      ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(label, x, groundY + 18);
+    }
+    ctx.restore();
+  }
+
+  function drawBurst(ctx, x, y, r, col, t) {
+    // t 0..1
+    var k = ease(clamp(t, 0, 1));
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.strokeStyle = rgba(col, 1);
+    ctx.lineWidth = 2.2 * (1 - k) + 0.5;
+    for (var i = 0; i < 12; i++) {
+      var a = (i / 12) * TAU + 0.2;
+      var r0 = r * (0.7 + k * 1.5), r1 = r0 + r * (0.35 + k * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0);
+      ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------ the hand */
+  function drawHand(ctx, x, y, s) {
+    s = s || 1;
+    var skin = [232, 191, 156];
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = rgba(skin, 1);
+    ctx.strokeStyle = "rgba(90,64,44,0.30)";
+    ctx.lineWidth = 1.1;
+    // fingers curled over the top
+    for (var i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.roundRect(-19 + i * 10, -12 + (i === 0 ? 2 : 0) + (i === 3 ? 3 : 0), 9.4, 13, 4.6);
+      ctx.fill(); ctx.stroke();
+    }
+    // palm
+    ctx.beginPath();
+    ctx.roundRect(-20, -4, 40, 24, 10);
+    ctx.fill(); ctx.stroke();
+    // thumb
+    ctx.beginPath();
+    ctx.ellipse(20, 4, 6.5, 8.5, -0.5, 0, TAU);
+    ctx.fill(); ctx.stroke();
+    // wrist
+    ctx.beginPath();
+    ctx.roundRect(-13, 17, 26, 16, 7);
+    ctx.fillStyle = "rgba(214,220,232,1)";
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCoin(ctx, x, y, r) {
+    var g = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
+    g.addColorStop(0, "#ffe28f"); g.addColorStop(1, "#dc9c2c");
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = "rgba(130,88,10,0.35)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  function drawBasket(ctx, x, y, s, coins) {
+    s = s || 1;
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(s, s);
+    // handle
+    ctx.beginPath();
+    ctx.arc(0, 0, 8, Math.PI, 0);
+    ctx.strokeStyle = "#b6844b"; ctx.lineWidth = 1.6; ctx.stroke();
+    // body
+    ctx.beginPath();
+    ctx.moveTo(-9, 0); ctx.lineTo(9, 0); ctx.lineTo(6.5, 11); ctx.lineTo(-6.5, 11); ctx.closePath();
+    ctx.fillStyle = "#cf9c5e"; ctx.fill();
+    ctx.strokeStyle = "rgba(110,74,30,0.45)"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath();
+    for (var i = -6; i <= 6; i += 4) { ctx.moveTo(i, 0.5); ctx.lineTo(i * 0.72, 10.5); }
+    ctx.moveTo(-8, 5); ctx.lineTo(8, 5);
+    ctx.strokeStyle = "rgba(110,74,30,0.25)"; ctx.stroke();
+    if (coins !== false) { drawCoin(ctx, -3, -1, 3.4); drawCoin(ctx, 3.4, -1.6, 3.4); }
+    ctx.restore();
+  }
+
+  /* ------------------------------------------- the patchwork index balloon */
+  function envelopePath(ctx, x, y, r) {
+    var h = r * 1.16;
+    ctx.beginPath();
+    ctx.moveTo(x, y - h);
+    ctx.bezierCurveTo(x + r * 1.10, y - h * 0.92, x + r * 1.22, y + h * 0.28, x + r * 0.34, y + h * 0.86);
+    ctx.lineTo(x - r * 0.34, y + h * 0.86);
+    ctx.bezierCurveTo(x - r * 1.22, y + h * 0.28, x - r * 1.10, y - h * 0.92, x, y - h);
+    ctx.closePath();
+    return h;
+  }
+
+  var PATCH_HUES = [
+    [86, 160, 232], [122, 196, 160], [232, 178, 96], [200, 132, 190],
+    [120, 186, 226], [156, 200, 128], [230, 150, 128], [140, 152, 214],
+    [110, 200, 190], [206, 190, 120]
+  ];
+  var PATCH_TINT = [126, 164, 208]; // one shared dye, so hundreds of patches still read as one balloon
+  function patchColor(i, j) {
+    var n = ((i * 73856093) ^ (j * 19349663)) >>> 0;
+    var base = PATCH_HUES[n % PATCH_HUES.length];
+    var k = 0.90 + ((n >> 8) % 18) / 100;
+    return shade(mix(base, PATCH_TINT, 0.30), k);
+  }
+
+  function drawIndexBalloon(ctx, x, y, r, t, failure) {
+    var h = envelopePath(ctx, x, y, r);
+    ctx.save();
+    ctx.clip();
+    var cell = Math.max(7, r * 0.155);
+    var x0 = x - r * 1.3, y0 = y - h * 1.05;
+    var cols = Math.ceil((r * 2.6) / cell), rows = Math.ceil((h * 2.1) / cell);
+    for (var i = 0; i < cols; i++) {
+      for (var j = 0; j < rows; j++) {
+        var px = x0 + i * cell, py = y0 + j * cell;
+        var c = patchColor(i, j);
+        if (failure && failure.i === i && failure.j === j) {
+          if (failure.phase === "dark") c = [78, 80, 88];
+          else c = mix(patchColor(i, j), WHITE, 0.28);
+        }
+        // curvature shading: darker toward the rim
+        var u = (px + cell / 2 - x) / (r * 1.25);
+        var v = (py + cell / 2 - y) / (h * 1.05);
+        var lightK = 1.10 - Math.abs(u) * 0.40 - Math.max(0, v) * 0.16 + (u < 0 ? 0.06 : 0);
+        ctx.fillStyle = rgba(shade(c, lightK), 1);
+        ctx.fillRect(px, py, cell - 0.6, cell - 0.6);
+      }
+    }
+    // stitching
+    ctx.strokeStyle = "rgba(255,255,255,0.30)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    for (var a = 0; a < cols; a++) { ctx.moveTo(x0 + a * cell - 0.3, y0); ctx.lineTo(x0 + a * cell - 0.3, y0 + rows * cell); }
+    for (var b = 0; b < rows; b++) { ctx.moveTo(x0, y0 + b * cell - 0.3); ctx.lineTo(x0 + cols * cell, y0 + b * cell - 0.3); }
+    ctx.stroke();
+    // soft global shading
+    var g = ctx.createLinearGradient(x - r, y, x + r, y);
+    g.addColorStop(0, "rgba(20,26,40,0.22)");
+    g.addColorStop(0.32, "rgba(255,255,255,0.14)");
+    g.addColorStop(1, "rgba(20,26,40,0.26)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r * 1.4, y - h * 1.1, r * 2.8, h * 2.2);
+    ctx.restore();
+
+    // fresh patch highlight
+    if (failure && failure.phase === "new") {
+      var cell2 = Math.max(7, r * 0.155);
+      var fx = x - r * 1.3 + failure.i * cell2, fy = y - h * 1.05 + failure.j * cell2;
+      ctx.save();
+      envelopePath(ctx, x, y, r); ctx.clip();
+      ctx.strokeStyle = "rgba(255,255,255," + (0.9 * failure.k) + ")";
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([2.5, 2.5]);
+      ctx.strokeRect(fx, fy, cell2 - 0.6, cell2 - 0.6);
+      ctx.restore();
+    }
+
+    envelopePath(ctx, x, y, r);
+    ctx.strokeStyle = "rgba(30,36,52,0.30)";
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+
+    // ropes and basket
+    var mouthY = y + h * 0.86, bx = x, by = mouthY + r * 0.44;
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.32, mouthY); ctx.lineTo(bx - r * 0.20, by);
+    ctx.moveTo(x + r * 0.32, mouthY); ctx.lineTo(bx + r * 0.20, by);
+    ctx.strokeStyle = "rgba(60,64,74,0.45)"; ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(bx - r * 0.22, by, r * 0.44, r * 0.26, 3);
+    ctx.fillStyle = "#c99154"; ctx.fill();
+    ctx.strokeStyle = "rgba(110,74,30,0.45)"; ctx.stroke();
+  }
+
+  /* --------------------------------------------------------------- engine */
+  var scenes = [];
+  function register(canvas, obj) {
+    var ctx = canvas.getContext("2d");
+    var h = parseInt(canvas.getAttribute("data-h"), 10) || 220;
+    function size() {
+      var w = canvas.clientWidth || 320;
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      obj.w = w; obj.h = h;
+    }
+    size();
+    window.addEventListener("resize", size);
+    obj.ctx = ctx; obj.canvas = canvas;
+    scenes.push(obj);
+    return obj;
+  }
+
+  var t0 = performance.now();
+  function frame(now) {
+    var t = (now - t0) / 1000;
+    for (var i = 0; i < scenes.length; i++) {
+      var s = scenes[i];
+      s.ctx.clearRect(0, 0, s.w, s.h);
+      try { s.draw(s.ctx, s.w, s.h, t); } catch (e) { /* keep the loop alive */ }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function groundLine(ctx, w, h) {
+    var gy = h - 26;
+    ctx.beginPath();
+    ctx.moveTo(0, gy); ctx.lineTo(w, gy);
+    ctx.strokeStyle = "rgba(30,36,52,0.10)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    return gy;
+  }
+
+  function valueTag(ctx, x, y, text, tone) {
+    ctx.save();
+    ctx.font = "600 12px -apple-system, system-ui, sans-serif";
+    var wpx = ctx.measureText(text).width + 16;
+    ctx.beginPath();
+    ctx.roundRect(x - wpx / 2, y - 10, wpx, 20, 10);
+    ctx.fillStyle = tone === "down" ? "rgba(255,69,58,0.12)" : tone === "flat" ? "rgba(0,0,0,0.06)" : "rgba(48,209,88,0.16)";
+    ctx.fill();
+    ctx.fillStyle = tone === "down" ? "#c62c22" : tone === "flat" ? "#6e6e73" : "#1a7a37";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function canvasFor(name) { return $('canvas[data-scene="' + name + '"]'); }
+
+  /* ------------------------------------------------------------ a inflate */
+  register(canvasFor("inflate"), {
+    draw: function (ctx, w, h, t) {
+      var gy = groundLine(ctx, w, h);
+      var p = (t % 6) / 6;
+      var k = ease(clamp(p * 1.4, 0, 1));
+      var r = lerp(20, 42, k);
+      var y = lerp(gy - 62, gy - 118, k);
+      var hx = w / 2;
+      drawHand(ctx, hx, gy - 6, 0.82);
+      drawBalloon(ctx, {
+        x: hx, y: y, r: r, col: PAL.green, skin: 0,
+        anchor: [hx, gy - 20], sway: Math.sin(t * 1.3) * 0.9
+      });
+      valueTag(ctx, hx + r + 44, y, money(lerp(120, 420, k)), "up");
+      // rising arrow ticks
+      ctx.globalAlpha = 0.5;
+      for (var i = 0; i < 3; i++) {
+        var a = ((t * 0.55 + i / 3) % 1);
+        ctx.beginPath();
+        var ax = hx - r - 40, ay = gy - 40 - a * 80;
+        ctx.moveTo(ax, ay + 6); ctx.lineTo(ax + 5, ay); ctx.lineTo(ax + 10, ay + 6);
+        ctx.strokeStyle = "rgba(26,122,55," + (0.9 - a) + ")";
+        ctx.lineWidth = 1.6; ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  /* ------------------------------------------------------------ b deflate */
+  register(canvasFor("deflate"), {
+    draw: function (ctx, w, h, t) {
+      var gy = groundLine(ctx, w, h);
+      var p = (t % 6) / 6;
+      var k = ease(clamp(p * 1.4, 0, 1));
+      var r = lerp(42, 20, k);
+      var y = lerp(gy - 118, gy - 58, k);
+      var hx = w / 2;
+      drawHand(ctx, hx, gy - 6, 0.82);
+      drawBalloon(ctx, {
+        x: hx, y: y, r: r, col: PAL.orange, skin: -k * 0.9,
+        anchor: [hx, gy - 20], sway: Math.sin(t * 1.1) * 0.7
+      });
+      valueTag(ctx, hx + r + 44, y, money(lerp(420, 120, k)), "down");
+      ctx.globalAlpha = 0.5;
+      for (var i = 0; i < 3; i++) {
+        var a = ((t * 0.55 + i / 3) % 1);
+        ctx.beginPath();
+        var ax = hx - r - 40, ay = gy - 120 + a * 80;
+        ctx.moveTo(ax, ay); ctx.lineTo(ax + 5, ay + 6); ctx.lineTo(ax + 10, ay);
+        ctx.strokeStyle = "rgba(198,44,34," + (0.9 - a) + ")";
+        ctx.lineWidth = 1.6; ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  /* ----------------------------------------------------- c/d hand of five */
+  var HOLDINGS = [
+    { n: "Nova", v: 620, col: PAL.blue },
+    { n: "Cane", v: 180, col: PAL.orange },
+    { n: "Volt", v: 340, col: PAL.purple },
+    { n: "Kelp", v: 90, col: PAL.green },
+    { n: "Ferro", v: 240, col: PAL.pink }
+  ];
+  function radiusFor(v) { return clamp(9 + Math.sqrt(v) * 1.30, 10, 60); }
+
+  function drawFive(ctx, w, h, t, shrink, frost) {
+    var gy = groundLine(ctx, w, h);
+    var hx = w / 2;
+    var spread = Math.min(w * 0.36, 132);
+    for (var i = 0; i < HOLDINGS.length; i++) {
+      var b = HOLDINGS[i];
+      var v = b.v * (1 - shrink * (0.30 + i * 0.02));
+      var r = radiusFor(v);
+      var off = (i - 2) / 2;
+      var x = hx + off * spread;
+      var y = gy - 40 - r - (r * 1.35) + Math.sin(t * 1.1 + i) * 3 + shrink * 26;
+      drawBalloon(ctx, {
+        x: x, y: y, r: r, col: b.col, skin: -shrink * 0.5,
+        anchor: [hx, gy - 22], sway: Math.sin(t * 1.2 + i * 1.4) * 1.1,
+        label: b.n
+      });
+    }
+    drawHand(ctx, hx, gy - 8, 0.92);
+    if (frost > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = frost * 0.5;
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "rgba(150,205,240,0.85)");
+      g.addColorStop(1, "rgba(210,235,250,0.1)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = frost * 0.8;
+      ctx.fillStyle = "#2a6ea8";
+      ctx.font = "600 12px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("cold snap, every balloon at once", 14, 22);
+      ctx.restore();
+    }
+  }
+
+  register(canvasFor("hand"), {
+    draw: function (ctx, w, h, t) { drawFive(ctx, w, h, t, 0, 0); }
+  });
+
+  var cold = { t: -99 };
+  register(canvasFor("cold"), {
+    draw: function (ctx, w, h, t) {
+      var e = t - cold.t;                 // seconds since the snap
+      var shrink = 0, frost = 0;
+      if (e >= 0 && e < 9) {
+        if (e < 1.1) { shrink = ease(e / 1.1); frost = ease(e / 0.7); }
+        else if (e < 3.4) { shrink = 1; frost = 1; }
+        else { var k = clamp((e - 3.4) / 4.2, 0, 1); shrink = 1 - ease(k); frost = (1 - ease(k)) * 0.9; }
+      }
+      drawFive(ctx, w, h, t, shrink * 0.85, frost);
+    }
+  });
+  $('[data-act="cold"]').addEventListener("click", function () { cold.t = (performance.now() - t0) / 1000; });
+
+  /* ---------------------------------------------------------------- e pop */
+  var popRun = { t0: 0 };
+  function resetPop() { popRun.t0 = (performance.now() - t0) / 1000; }
+  resetPop();
+  $('[data-act="pop"]').addEventListener("click", resetPop);
+
+  register(canvasFor("pop"), {
+    draw: function (ctx, w, h, t) {
+      var gy = groundLine(ctx, w, h);
+      var e = t - popRun.t0;
+      var lx = w * 0.29, rx = w * 0.71;
+
+      // left: deflated but alive
+      var dk = clamp(e / 3.2, 0, 1);
+      var dr = lerp(38, 17, ease(dk));
+      drawHand(ctx, lx, gy - 6, 0.7);
+      drawBalloon(ctx, {
+        x: lx, y: gy - 46 - dr * 1.5, r: dr, col: PAL.blue, skin: -ease(dk) * 0.9,
+        anchor: [lx, gy - 18], sway: Math.sin(t) * 0.8, label: "deflated, still yours"
+      });
+
+      // right: over-inflates fast, thin skin, then pops for good
+      var POPAT = 3.0;
+      drawHand(ctx, rx, gy - 6, 0.7);
+      if (e < POPAT) {
+        var k = ease(clamp(e / POPAT, 0, 1));
+        var r = lerp(20, 52, k);
+        var skin = clamp((r - 30) / 24, 0, 1);
+        var wob = e > POPAT - 0.7 ? Math.sin(e * 42) * 1.6 : 0;
+        drawBalloon(ctx, {
+          x: rx + wob, y: gy - 52 - r * 1.45, r: r, col: PAL.red, skin: skin,
+          anchor: [rx, gy - 18], sway: Math.sin(t * 1.4) * 0.8,
+          label: skin > 0.5 ? "skin going thin" : "inflating fast"
+        });
+      } else {
+        if (e < POPAT + 0.6) drawBurst(ctx, rx, gy - 52 - 52 * 1.45, 52, PAL.red, (e - POPAT) / 0.6);
+        drawScrap(ctx, rx + 46, gy, PAL.red, null, 1.45);
+        ctx.fillStyle = "rgba(110,110,115,0.95)";
+        ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("popped, permanent", rx + 46, gy - 32);
+      }
+    }
+  });
+
+  /* ---------------------------------------------------------- g dividend */
+  register(canvasFor("dividend"), {
+    draw: function (ctx, w, h, t) {
+      var gy = groundLine(ctx, w, h);
+      var hx = w / 2;
+      var cyc = 5.5, p = (t % cyc) / cyc;
+      var r = 36 - (p > 0.42 && p < 0.62 ? 2.2 : 0);
+      var by = gy - 54 - r * 1.5;
+      drawHand(ctx, hx, gy - 6, 0.82);
+      drawBalloon(ctx, {
+        x: hx, y: by, r: r, col: PAL.teal, skin: 0,
+        anchor: [hx, gy - 20], sway: Math.sin(t * 1.2) * 0.9
+      });
+      // basket travels down the string
+      var travel = clamp((p - 0.12) / 0.45, 0, 1);
+      if (p > 0.10 && p < 0.80) {
+        var sy = lerp(by + r * 1.2, gy - 26, ease(travel));
+        var sx = lerp(hx, hx, travel) + Math.sin(t * 1.2) * (1 - travel) * 3;
+        drawBasket(ctx, sx, sy, 1);
+      }
+      if (p > 0.56 && p < 0.86) {
+        ctx.save();
+        ctx.globalAlpha = 1 - (p - 0.56) / 0.30;
+        drawCoin(ctx, hx - 12, gy - 30 - (p - 0.56) * 30, 5);
+        drawCoin(ctx, hx + 11, gy - 26 - (p - 0.56) * 22, 5);
+        ctx.restore();
+      }
+      valueTag(ctx, w - 56, 26, "+$14 cash", "up");
+    }
+  });
+
+  /* --------------------------------------------------------- f the index */
+  var idx = { fail: null, nextFail: 3 };
+  register(canvasFor("index"), {
+    draw: function (ctx, w, h, t) {
+      var gy = groundLine(ctx, w, h);
+      // slow steady rise: never dramatic, resets softly
+      var cyc = 16, p = (t % cyc) / cyc;
+      var rise = p;
+      var y = lerp(gy - 168, gy - 204, rise) + Math.sin(t * 0.5) * 2;
+      var r = lerp(58, 66, rise);
+      var x = w / 2;
+
+      // a patch fails every few seconds and is stitched over
+      if (t > idx.nextFail && !idx.fail) {
+        var cell = Math.max(7, r * 0.155);
+        idx.fail = {
+          i: 6 + Math.floor(Math.random() * 6),
+          j: 4 + Math.floor(Math.random() * 6),
+          phase: "dark", t: t, k: 0
+        };
+      }
+      if (idx.fail) {
+        var e = t - idx.fail.t;
+        if (e < 1.1) idx.fail.phase = "dark";
+        else if (e < 3.2) { idx.fail.phase = "new"; idx.fail.k = clamp(1 - (e - 1.1) / 2.1, 0, 1); }
+        else { idx.fail = null; idx.nextFail = t + 2.2 + Math.random() * 2; }
+      }
+
+      drawIndexBalloon(ctx, x, y, r, t, idx.fail);
+
+      // steady climb ticks on the right
+      valueTag(ctx, w - 78, 28, "+0.4% today", "up");
+      ctx.fillStyle = "rgba(110,110,115,1)";
+      ctx.font = "600 11.5px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("cannot pop, only patched", 16, 26);
+
+      if (idx.fail) {
+        ctx.fillStyle = idx.fail.phase === "dark" ? "rgba(78,80,88,0.95)" : "rgba(26,122,55,0.95)";
+        ctx.font = "600 11.5px -apple-system, system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(idx.fail.phase === "dark" ? "one company fails" : "patched over, still rising", 16, 46);
+      }
+
+      // ground and a small hand tethering it, so scale reads
+      drawHand(ctx, x, gy - 6, 0.8);
+      drawString(ctx, x, y + r * 1.70, x, gy - 20, Math.sin(t) * 0.4, 1);
+    }
+  });
+
+  /* ------------------------------------------------------- h buy and sell */
+  register(canvasFor("trade"), {
+    draw: function (ctx, w, h, t) {
+      var gy = h - 46;
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy);
+      ctx.strokeStyle = "rgba(30,36,52,0.10)"; ctx.lineWidth = 1; ctx.stroke();
+      var cyc = 8, p = (t % cyc) / cyc;
+      var buying = p < 0.5;
+      var q = (buying ? p : p - 0.5) / 0.5;
+      var lx = w * 0.30, rx = w * 0.70;
+
+      ctx.fillStyle = "rgba(29,29,31,0.82)";
+      ctx.font = "600 13px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(buying ? "Buy: coins out, string on" : "Sell: string out, coins in", 16, 24);
+
+      drawHand(ctx, lx, gy - 6, 0.86);
+      drawHand(ctx, rx, gy - 6, 0.86);
+      ctx.fillStyle = "rgba(110,110,115,1)";
+      ctx.font = "500 11px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("you", lx, gy + 34);
+      ctx.fillText("someone else", rx, gy + 34);
+
+      var r = 32;
+      // balloon slides between the two hands
+      var k = ease(q);
+      var bx = buying ? lerp(rx, lx, k) : lerp(lx, rx, k);
+      var by = gy - 62 - r * 1.4 + Math.sin(t * 1.2) * 3;
+      var anchor = buying
+        ? [lerp(rx, lx, k), gy - 20]
+        : [lerp(lx, rx, k), gy - 20];
+      drawBalloon(ctx, { x: bx, y: by, r: r, col: PAL.purple, skin: 0, anchor: anchor, sway: Math.sin(t) });
+
+      // coins travel the other way
+      var cq = ease(clamp((q - 0.12) / 0.7, 0, 1));
+      var cxFrom = buying ? lx : rx, cxTo = buying ? rx : lx;
+      for (var i = 0; i < 3; i++) {
+        var s = clamp(cq - i * 0.10, 0, 1);
+        if (s <= 0 || s >= 1) continue;
+        var cx = lerp(cxFrom, cxTo, s);
+        var cy = gy - 24 - Math.sin(s * Math.PI) * 42 - i * 3;
+        drawCoin(ctx, cx, cy, 6.5);
+      }
+
+      // the knot moment
+      if (q > 0.86) {
+        ctx.fillStyle = "rgba(110,110,115,1)";
+        ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(buying ? "knotted on" : "handed over", buying ? lx : rx, gy - 34);
+      }
+    }
+  });
+
+  /* =========================================================== the level */
+  var ASSETS = [
+    {
+      id: "zep", name: "Zeppelin Labs", tag: "the fast one", col: PAL.red,
+      // per tick percent change, index 0 is tick 1
+      pct: [9, 12, 7, 14, 6, 11, 8, 5, -4, -9, -18, -32, -100, 0, 0, 0, 0, 0, 0, 0],
+      div: {}
+    },
+    {
+      id: "patch", name: "Patchwork Index", tag: "hundreds of patches", col: PAL.blue,
+      pct: [1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, -5, -2, 2.2, 2.2, 2.2, 1.6, 1.6, 1.6, 1.6, 1.6, 1.6],
+      div: {}
+    },
+    {
+      id: "cora", name: "Coral Foods", tag: "pays a dividend", col: PAL.green,
+      pct: [1, 0.5, -0.8, 1.2, 0.4, -0.5, 0.9, 0.6, -0.4, -3, -1, 1.1, 0.8, 0.6, 0.9, 0.7, 0.5, 0.8, 0.6, 0.7],
+      div: { 7: 0.045, 15: 0.045 }
+    }
+  ];
+  var NEWS = {
+    1: "Zeppelin Labs is the only balloon anyone is talking about.",
+    4: "Zeppelin doubles again. Its skin is visibly thin.",
+    7: "Coral Foods lowers a basket of coins down its string.",
+    9: "Zeppelin wobbles. First air out.",
+    10: "Cold snap. Every balloon in the sky shrinks at once.",
+    12: "Zeppelin is falling fast and the knot is straining.",
+    13: "Zeppelin Labs pops. What is left is a scrap on the ground.",
+    15: "Coral Foods pays again. The index just keeps climbing.",
+    20: "Twenty ticks done."
+  };
+
+  var L = null;
+  function newLevel() {
+    return {
+      tick: 0, cash: 400, tokens: 3, running: false, acc: 0, over: false,
+      hold: { zep: 600, patch: 0, cora: 0 },
+      base: { zep: 1, patch: 1, cora: 1 },
+      popped: {}, poppedAt: {}, flash: null, frost: 0, coldT: -99,
+      dividendT: -99, log: "Press play. You start holding one very fast balloon and a little cash.",
+      rodeToPop: false, boughtPatch: false
+    };
+  }
+  L = newLevel();
+
+  function total() { return L.cash + L.hold.zep + L.hold.patch + L.hold.cora; }
+
+  function stepTick(now) {
+    L.tick++;
+    var i = L.tick - 1;
+    for (var a = 0; a < ASSETS.length; a++) {
+      var A = ASSETS[a], id = A.id, p = A.pct[i] || 0;
+      if (L.popped[id]) continue;
+      if (p <= -100) {
+        if (L.hold[id] > 0) { L.rodeToPop = true; }
+        L.popped[id] = true;
+        L.poppedAt[id] = now;
+        L.flash = { id: id, t: now };
+        L.hold[id] = 0;
+        continue;
+      }
+      L.hold[id] = L.hold[id] * (1 + p / 100);
+      if (A.div[L.tick] && L.hold[id] > 0) {
+        var paid = L.hold[id] * A.div[L.tick];
+        L.hold[id] -= paid;
+        L.cash += paid;
+        L.dividendT = now;
+      }
+    }
+    if (L.tick === 10) { L.coldT = now; }
+    if (NEWS[L.tick]) L.log = NEWS[L.tick];
+    if (L.tick >= 20) { L.running = false; L.over = true; finish(); }
+    syncUI();
+  }
+
+  function trade(id, dir) {
+    if (L.tokens <= 0 || L.over) return;
+    if (dir === "buy") {
+      if (L.cash < 1 || L.popped[id]) return;
+      L.hold[id] += L.cash;
+      L.cash = 0;
+      if (id === "patch") L.boughtPatch = true;
+      L.log = "Tied on a " + nameOf(id) + " balloon with everything in hand.";
+    } else {
+      if (L.hold[id] < 1) return;
+      L.cash += L.hold[id];
+      L.hold[id] = 0;
+      L.log = "Handed the " + nameOf(id) + " string over and took the coins.";
+    }
+    L.tokens--;
+    syncUI();
+  }
+  function nameOf(id) { for (var i = 0; i < ASSETS.length; i++) if (ASSETS[i].id === id) return ASSETS[i].name; return id; }
+
+  function finish() {
+    var v = total();
+    var stars = v >= 1500 ? 3 : v >= 1200 ? 2 : v >= 1000 ? 1 : 0;
+    var line;
+    if (L.rodeToPop) line = "You held Zeppelin Labs all the way to the pop. The balloon that inflated fastest is the one that had nothing left to hold the air.";
+    else if (stars === 3) line = "You let go of the fast balloon and tied on the patchwork one. Slow and unpoppable did the work.";
+    else if (stars === 2) line = "Goal cleared. The patchwork balloon would have carried more of it if you had tied on sooner.";
+    else if (stars === 1) line = "You kept your money but barely grew it. Cash in the hand does not rise.";
+    else line = "Below where you started. Getting out of a thin balloon in time is most of this game.";
+    $("#result").classList.add("on");
+    $("#stars").innerHTML = "★★★".split("").map(function (s, i) {
+      return i < stars ? "<span>★</span>" : '<span class="off">★</span>';
+    }).join("");
+    $("#rl").textContent = money(v) + " final. " + line;
+  }
+
+  // ui build
+  var assetsEl = $("#assets");
+  ASSETS.forEach(function (A) {
+    var row = document.createElement("div");
+    row.className = "asset";
+    row.innerHTML =
+      '<span class="sw" style="background:' + rgba(A.col, 1) + '"></span>' +
+      '<span class="nm">' + A.name + '<small>' + A.tag + '</small></span>' +
+      '<span class="vl" data-v="' + A.id + '">$0</span>';
+    var buy = document.createElement("button");
+    buy.className = "pill"; buy.textContent = "Buy"; buy.style.padding = "5px 12px";
+    buy.addEventListener("click", function () { trade(A.id, "buy"); });
+    var sell = document.createElement("button");
+    sell.className = "pill"; sell.textContent = "Sell"; sell.style.padding = "5px 12px";
+    sell.addEventListener("click", function () { trade(A.id, "sell"); });
+    row.appendChild(buy); row.appendChild(sell);
+    A.buyEl = buy; A.sellEl = sell;
+    assetsEl.appendChild(row);
+  });
+
+  function syncUI() {
+    $("#tickLbl").textContent = "Tick " + L.tick + " of 20";
+    $("#cashV").textContent = money(L.cash);
+    $("#holdV").textContent = money(L.hold.zep + L.hold.patch + L.hold.cora);
+    $("#totV").textContent = money(total());
+    $("#ticker").textContent = L.log;
+    var tk = "";
+    for (var i = 0; i < 3; i++) tk += '<span class="tok' + (i < L.tokens ? "" : " spent") + '"></span>';
+    $("#tokens").innerHTML = tk;
+    ASSETS.forEach(function (A) {
+      $('[data-v="' + A.id + '"]').textContent = L.popped[A.id] ? "popped" : money(L.hold[A.id]);
+      A.buyEl.disabled = L.over || L.tokens <= 0 || L.cash < 1 || !!L.popped[A.id];
+      A.sellEl.disabled = L.over || L.tokens <= 0 || L.hold[A.id] < 1;
+    });
+    $("#playBtn").textContent = L.over ? "Finished" : L.running ? "Pause" : (L.tick ? "Resume" : "Play");
+    $("#playBtn").disabled = L.over;
+  }
+
+  $("#playBtn").addEventListener("click", function () {
+    if (L.over) return;
+    L.running = !L.running;
+    L.acc = 0;
+    syncUI();
+  });
+  $("#resetBtn").addEventListener("click", function () {
+    L = newLevel();
+    $("#result").classList.remove("on");
+    syncUI();
+  });
+
+  var lastNow = 0;
+  register(canvasFor("level"), {
+    draw: function (ctx, w, h, t) {
+      var dt = lastNow ? t - lastNow : 0; lastNow = t;
+      if (L.running) {
+        L.acc += dt;
+        while (L.acc >= 0.85 && L.running) { L.acc -= 0.85; stepTick(t); }
+      }
+
+      // sky
+      var sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#f7fbff"); sky.addColorStop(1, "#eef1f7");
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      var gy = h - 34;
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy);
+      ctx.strokeStyle = "rgba(30,36,52,0.12)"; ctx.lineWidth = 1; ctx.stroke();
+
+      // goal altitude line at $1,200
+      var scale = function (v) { return gy - 46 - clamp(v, 0, 2200) * 0.115; };
+      var goalY = scale(1200);
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath(); ctx.moveTo(12, goalY); ctx.lineTo(w - 12, goalY);
+      ctx.strokeStyle = "rgba(0,113,227,0.42)"; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(10,94,194,0.9)";
+      ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("goal altitude, $1,200 total", 14, goalY - 6);
+      ctx.restore();
+
+      var hx = w / 2;
+      var xs = [hx - Math.min(w * 0.28, 118), hx, hx + Math.min(w * 0.28, 118)];
+
+      // balloons
+      for (var i = 0; i < ASSETS.length; i++) {
+        var A = ASSETS[i], v = L.hold[A.id], x = xs[i];
+        if (L.popped[A.id]) {
+          drawScrap(ctx, x - 14, gy, A.col, A.name + ", popped");
+          continue;
+        }
+        if (v < 1) {
+          // available but untied: sitting on the ground, no string in your hand
+          drawBalloon(ctx, { x: x, y: gy - 22, r: 15, col: A.col, skin: -0.7, alpha: 0.45 });
+          ctx.fillStyle = "rgba(110,110,115,0.85)";
+          ctx.font = "500 11px -apple-system, system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(A.name + ", not held", x, gy + 18);
+          continue;
+        }
+        var r = clamp(11 + Math.sqrt(v) * 1.05, 12, 54);
+        var y = clamp(scale(v), 34, gy - 70);
+        // hype skin: how far above its start has it stretched
+        var skin = A.id === "zep" ? clamp((v - 800) / 500, 0, 1) : 0;
+        var wob = (A.id === "zep" && L.tick >= 11 && !L.popped.zep) ? Math.sin(t * 34) * 1.4 : 0;
+        if (A.id === "patch") {
+          drawString(ctx, x, y + r * 1.70, hx, gy - 22, Math.sin(t) * 0.5, 1);
+          drawIndexBalloon(ctx, x, y, r, t, null);
+          ctx.fillStyle = "rgba(29,29,31,0.78)";
+          ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(A.name + "  " + money(v), x, y + r * 1.70 + 16);
+        } else {
+          drawBalloon(ctx, {
+            x: x + wob, y: y, r: r, col: A.col, skin: skin,
+            anchor: [hx, gy - 22], sway: Math.sin(t * 1.2 + i) * 1.1,
+            label: A.name + "  " + money(v)
+          });
+          if (skin > 0.5) {
+            ctx.fillStyle = "rgba(198,44,34,0.9)";
+            ctx.font = "600 10.5px -apple-system, system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("skin thin", x, y - r * 1.4);
+          }
+        }
+      }
+
+      // pop burst
+      if (L.flash && t - L.flash.t < 0.6) {
+        var fi = ASSETS.map(function (a) { return a.id; }).indexOf(L.flash.id);
+        drawBurst(ctx, xs[fi], gy - 150, 48, ASSETS[fi].col, (t - L.flash.t) / 0.6);
+      }
+
+      // dividend basket sliding down cora's string
+      if (t - L.dividendT < 1.4) {
+        var q = clamp((t - L.dividendT) / 1.4, 0, 1);
+        drawBasket(ctx, lerp(xs[2], hx, q * 0.8), lerp(gy - 150, gy - 34, ease(q)), 1);
+      }
+
+      // hand and coins
+      drawHand(ctx, hx, gy - 8, 1);
+      var coins = Math.min(6, Math.round(L.cash / 220));
+      for (var c = 0; c < coins; c++) {
+        drawCoin(ctx, hx - 26 + (c % 3) * 12 + (c > 2 ? 6 : 0), gy + 6 - Math.floor(c / 3) * 7, 6);
+      }
+      ctx.fillStyle = "rgba(110,110,115,1)";
+      ctx.font = "600 11px -apple-system, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("your hand, " + money(L.cash) + " loose", hx, gy + 30);
+
+      // cold snap wash
+      if (t - L.coldT < 3.2) {
+        var f = 1 - clamp((t - L.coldT) / 3.2, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = f * 0.45;
+        var g2 = ctx.createLinearGradient(0, 0, 0, h);
+        g2.addColorStop(0, "rgba(150,205,240,0.9)");
+        g2.addColorStop(1, "rgba(210,235,250,0.05)");
+        ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+
+      // total readout
+      ctx.textAlign = "right";
+      ctx.font = "600 14px -apple-system, system-ui, sans-serif";
+      ctx.fillStyle = total() >= 1200 ? "#1a7a37" : "rgba(29,29,31,0.8)";
+      ctx.fillText(money(total()) + " total", w - 14, 26);
+      ctx.textAlign = "left";
+      ctx.font = "500 11.5px -apple-system, system-ui, sans-serif";
+      ctx.fillStyle = "rgba(110,110,115,1)";
+      ctx.fillText("tick " + L.tick + " of 20", 14, 26);
+    }
+  });
+
+  syncUI();
+})();
+</script>
+</body>
+</html>

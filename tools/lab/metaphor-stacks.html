@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Metaphor probe, coin stacks and skyline</title>
+<style>
+  :root { --ink: #1d1d1f; --ink2: #6e6e73; --bg: #f5f5f7; --accent: #0071e3; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header.top { margin-bottom: 30px; }
+  h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 8px; }
+  .sub { font-size: 15px; color: var(--ink2); max-width: 760px; line-height: 1.55; margin: 0; }
+  .secthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 44px 0 16px; }
+  .secthead h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .secthead .why { font-size: 13.5px; color: var(--ink2); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding: 16px 18px 18px;
+  }
+  .card.wide { grid-column: 1 / -1; }
+  .stage {
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fbfbfd 0%, #f1f2f6 100%);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+    position: relative;
+  }
+  canvas { display: block; width: 100%; }
+  .cname { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; margin: 13px 0 5px; }
+  .cname .k { color: var(--ink2); font-weight: 500; }
+  .cnote { font-size: 13px; line-height: 1.55; color: #3a3a3c; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 11px; }
+  button.pill {
+    border: 1px solid rgba(0,0,0,0.15); background: #fff; color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 500;
+    padding: 7px 15px; border-radius: 999px; cursor: pointer; transition: background .15s ease, opacity .15s ease;
+  }
+  button.pill:hover { background: rgba(0,0,0,0.05); }
+  button.pill.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  button.pill.primary:hover { filter: brightness(1.08); }
+  button.pill:disabled { opacity: .38; cursor: default; }
+  button.pill:disabled:hover { background: #fff; }
+  .hint { font-size: 12.5px; color: var(--ink2); }
+  .hud { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .hud .stat { font-size: 13px; color: var(--ink2); }
+  .hud .stat b { color: var(--ink); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .tokens { display: inline-flex; gap: 5px; vertical-align: middle; }
+  .tok { width: 16px; height: 16px; border-radius: 999px; background: radial-gradient(circle at 34% 30%, #ffe9a8, #e8b33c 60%, #b7862a);
+         box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+  .tok.spent { background: rgba(0,0,0,.07); box-shadow: none; }
+  .overlay {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(245,245,247,.82); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+  }
+  .overlay.on { display: flex; }
+  .panel { text-align: center; }
+  .panel .stars { font-size: 40px; letter-spacing: 6px; line-height: 1; }
+  .panel .big { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 12px 0 4px; font-variant-numeric: tabular-nums; }
+  .panel .small { font-size: 13.5px; color: var(--ink2); max-width: 420px; margin: 0 auto 14px; line-height: 1.5; }
+  footer.note { margin-top: 48px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; max-width: 760px; }
+  @media (max-width: 1080px) { .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 760px) { .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Metaphor probe &middot; coin stacks and the skyline</h1>
+    <p class="sub">
+      One holding is a stack of coins. Height is value. The portfolio is a skyline you read in one glance.
+      Everything below is drawn live, no images. Part 1 runs the foolproof checklist; part 2 is a sixty second level
+      that makes you feel the loop.
+    </p>
+  </header>
+
+  <div class="secthead">
+    <h2>Part 1 &middot; The foolproof checklist</h2>
+    <span class="why">Each panel is one claim the metaphor has to survive.</span>
+  </div>
+
+  <div class="grid3">
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="grow" data-h="230"></canvas></div>
+      <div class="cname">a &middot; One holding growing</div>
+      <div class="cnote">Teaches: growth is coins arriving one at a time on top of what you already had, not a line moving right.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="fall" data-h="230"></canvas></div>
+      <div class="cname">b &middot; The same holding declining</div>
+      <div class="cnote">Teaches: a decline lifts coins back off the top, and the stack you keep is still standing underneath.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="port" data-h="230"></canvas></div>
+      <div class="cname">c &middot; A five holding portfolio</div>
+      <div class="cnote">Teaches: size is instantly comparable, so you can see which company you actually own the most of.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="crash" data-h="230"></canvas></div>
+      <div class="cname">d &middot; A market wide crash</div>
+      <div class="cnote">Teaches: a crash shortens every stack at once, so it reads as weather over the whole city rather than one company's fault.</div>
+      <div class="row"><button class="pill" data-act="crash">Crash the market</button><span class="hint">Replays on its own too.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="bust" data-h="230"></canvas></div>
+      <div class="cname">e &middot; Bankruptcy, not a dip</div>
+      <div class="cnote">Teaches: a bankrupt company does not shrink, it falls over into rubble that never gets back up, unlike the neighbour that merely dipped.</div>
+      <div class="row"><button class="pill" data-act="bust">Run it</button><button class="pill" data-act="bustreset">Reset</button></div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="index" data-h="230"></canvas></div>
+      <div class="cname">f &middot; The index block</div>
+      <div class="cnote">Teaches: an index is hundreds of tiny stacks fused into one wide terrace, so single stacks wobbling barely move the top edge.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="div" data-h="230"></canvas></div>
+      <div class="cname">g &middot; A dividend arriving</div>
+      <div class="cnote">Teaches: a dividend is a coin popping off the top into your tray, cash you keep whether or not the stack grows again.</div>
+    </div>
+
+    <div class="card">
+      <div class="stage"><canvas data-scene="trade" data-h="230"></canvas></div>
+      <div class="cname">h &middot; Buy and sell as physical acts</div>
+      <div class="cnote">Teaches: buying is carrying coins from your tray onto a stack and selling is carrying them back, so nothing appears from nowhere.</div>
+      <div class="row">
+        <button class="pill primary" data-act="buy">Buy</button>
+        <button class="pill" data-act="sell">Sell</button>
+        <span class="hint">Total coins never change, only where they sit.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="secthead">
+    <h2>Part 2 &middot; A sixty second level</h2>
+    <span class="why">Twenty scripted ticks, three trades, one goal line. Rough on purpose.</span>
+  </div>
+
+  <div class="card wide">
+    <div class="hud">
+      <span class="stat">Cash <b id="hCash">$400</b></span>
+      <span class="stat">Total <b id="hTotal">$1,000</b></span>
+      <span class="stat">Goal <b>$1,200</b></span>
+      <span class="stat">Week <b id="hTick">0 / 20</b></span>
+      <span class="stat">Trades left <span class="tokens" id="hTok"><i class="tok"></i><i class="tok"></i><i class="tok"></i></span></span>
+    </div>
+    <div class="stage">
+      <canvas data-scene="level" data-h="330"></canvas>
+      <div class="overlay" id="ovl">
+        <div class="panel">
+          <div class="stars" id="ovStars">★★★</div>
+          <div class="big" id="ovBig">$1,703</div>
+          <div class="small" id="ovSmall"></div>
+          <button class="pill primary" data-act="again">Play again</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="pill primary" data-act="play" id="btnPlay">Play the twenty weeks</button>
+      <button class="pill" data-act="buyA">Buy Solaris $150</button>
+      <button class="pill" data-act="sellA">Sell Solaris $150</button>
+      <button class="pill" data-act="buyB">Buy Ledger $150</button>
+      <button class="pill" data-act="sellB">Sell Ledger $150</button>
+      <span class="hint" id="lvHint">Each trade costs one token. You can trade before you press play, or mid run.</span>
+    </div>
+  </div>
+
+  <footer class="note">
+    Everything here is one file of canvas drawing. The price series is a hard coded table, no randomness, so the
+    same play always gives the same score. Coin denomination is $50 throughout, which is why the total tower is
+    exactly the three stacks poured into one column.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- colour helpers ----------
+  function hex2rgb(h){ var n = parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+  function rgb2css(c,a){ return "rgba("+(c[0]|0)+","+(c[1]|0)+","+(c[2]|0)+","+(a===undefined?1:a)+")"; }
+  function mix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+  var WHITE=[255,255,255], BLACK=[10,12,18];
+  function coinPalette(hex){
+    var c = hex2rgb(hex);
+    return {
+      face: rgb2css(mix(c,WHITE,0.42)),
+      faceIn: rgb2css(mix(c,WHITE,0.66)),
+      edge: rgb2css(mix(c,BLACK,0.38)),
+      seam: rgb2css(mix(c,BLACK,0.46), 0.75),
+      body: rgb2css(mix(c,BLACK,0.10)),
+      bodyDark: rgb2css(mix(c,BLACK,0.34))
+    };
+  }
+  var GOLD = coinPalette("#e0a92b");
+  var GREY = coinPalette("#9a9aa2");
+
+  // ---------- coin + stack drawing ----------
+  function drawCoin(g, cx, topY, r, th, p, alpha, tilt){
+    g.save();
+    if (alpha !== undefined) g.globalAlpha = alpha;
+    if (tilt) { g.translate(cx, topY); g.rotate(tilt); g.translate(-cx, -topY); }
+    var ry = r*0.30;
+    // body
+    var grd = g.createLinearGradient(cx-r,0,cx+r,0);
+    grd.addColorStop(0, p.bodyDark); grd.addColorStop(0.42, p.body); grd.addColorStop(1, p.bodyDark);
+    g.fillStyle = grd;
+    g.beginPath();
+    g.moveTo(cx+r, topY);
+    g.lineTo(cx+r, topY+th);
+    g.ellipse(cx, topY+th, r, ry, 0, 0, Math.PI);
+    g.lineTo(cx-r, topY);
+    g.closePath();
+    g.fill();
+    // seam under this coin, so a stack never reads as one smooth cylinder
+    g.beginPath(); g.ellipse(cx, topY+th, r, ry, 0, 0, Math.PI);
+    g.strokeStyle = p.seam || p.bodyDark; g.lineWidth = Math.max(0.45, r*0.055); g.stroke();
+    // top face
+    g.beginPath(); g.ellipse(cx, topY, r, ry, 0, 0, Math.PI*2);
+    g.fillStyle = p.face; g.fill();
+    g.strokeStyle = p.edge; g.lineWidth = Math.max(0.5, r*0.06); g.stroke();
+    if (r > 9) {
+      g.beginPath(); g.ellipse(cx, topY, r*0.55, ry*0.55, 0, 0, Math.PI*2);
+      g.fillStyle = p.faceIn; g.fill();
+    }
+    g.restore();
+  }
+
+  function groundShadow(g, cx, baseY, r, alpha){
+    g.save();
+    g.globalAlpha = alpha === undefined ? 0.16 : alpha;
+    g.fillStyle = "#2b3350";
+    g.beginPath(); g.ellipse(cx, baseY+3, r*1.16, r*0.34, 0, 0, Math.PI*2); g.fill();
+    g.restore();
+  }
+
+  // A stack whose displayed height eases toward a target coin count.
+  function Stack(x, colorHex, n, r, th){
+    this.x = x; this.p = coinPalette(colorHex); this.hex = colorHex;
+    this.target = n; this.disp = n; this.r = r || 26; this.th = th || 11;
+    this.speed = 5; this.shake = 0; this.dead = false; this.rubble = null; this.label = ""; this.value = 0;
+  }
+  Stack.prototype.step = function(dt){
+    this.disp += (this.target - this.disp) * Math.min(1, dt*this.speed);
+    if (Math.abs(this.target-this.disp) < 0.002) this.disp = this.target;
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - dt*2.2);
+  };
+  Stack.prototype.topY = function(baseY){ return baseY - this.th*Math.max(0,this.disp) - this.r*0.30; };
+  Stack.prototype.draw = function(g, baseY){
+    if (this.dead) { drawRubble(g, this, baseY); return; }
+    var sx = this.shake > 0 ? Math.sin(this.shake*46)*this.shake*7 : 0;
+    var cx = this.x + sx;
+    var full = Math.floor(this.disp + 1e-6), frac = this.disp - full;
+    groundShadow(g, cx, baseY, this.r, 0.13 + Math.min(0.08, this.disp*0.004));
+    for (var i=0;i<full;i++) drawCoin(g, cx, baseY - this.th*(i+1), this.r, this.th, this.p);
+    if (frac > 0.01) {
+      var lift = (1-frac) * Math.min(30, this.th*3.2);
+      drawCoin(g, cx, baseY - this.th*(full+1) - lift, this.r, this.th, this.p, Math.min(1, frac*1.5));
+    }
+  };
+
+  function drawRubble(g, st, baseY){
+    var R = st.rubble; if (!R) return;
+    for (var i=0;i<R.length;i++){
+      var q = R[i];
+      var t = Math.min(1, q.t/q.dur), e = t;
+      var x = q.x0 + (q.x1-q.x0)*e;
+      var y = q.y0 + (baseY - q.lay - q.y0)*e - Math.sin(Math.PI*e)*q.arc;
+      var rot = q.rot0 + (q.rot1-q.rot0)*e;
+      var pal = t >= 1 ? GREY : st.p;
+      g.save();
+      g.globalAlpha = 0.9;
+      g.translate(x,y); g.rotate(rot);
+      g.beginPath(); g.ellipse(0,0, st.r*0.94, st.r*0.30, 0, 0, Math.PI*2);
+      g.fillStyle = pal.face; g.fill();
+      g.strokeStyle = pal.edge; g.lineWidth = 1.1; g.stroke();
+      g.restore();
+    }
+  }
+
+  function collapse(st, baseY, seed){
+    st.dead = true;
+    var n = Math.max(3, Math.round(st.disp));
+    var arr = [];
+    for (var i=0;i<n;i++){
+      var dir = (i%2===0) ? 1 : -1;
+      var sp = ((i*37+seed*11)%13)/13;
+      arr.push({
+        x0: st.x, y0: baseY - st.th*(i+1),
+        x1: st.x + dir*(14 + sp*st.r*2.4 + i*1.6),
+        lay: 4 + (i%3)*2.5,
+        arc: 12 + sp*26,
+        rot0: 0, rot1: (dir>0?1:-1)*(0.06 + sp*0.28),
+        t: 0, dur: 0.5 + i*0.045
+      });
+    }
+    st.rubble = arr;
+    st.disp = 0; st.target = 0;
+  }
+  function stepRubble(st, dt){
+    if (!st.rubble) return;
+    for (var i=0;i<st.rubble.length;i++){
+      var q = st.rubble[i]; if (q.t < q.dur) q.t = Math.min(q.dur, q.t + dt);
+    }
+  }
+
+  // ---------- text helpers ----------
+  function label(g, x, y, txt, size, col, weight, align){
+    g.save();
+    g.fillStyle = col || "#6e6e73";
+    g.font = (weight||500)+" "+(size||12)+"px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Helvetica, Arial, sans-serif";
+    g.textAlign = align || "center"; g.textBaseline = "alphabetic";
+    g.fillText(txt, x, y);
+    g.restore();
+  }
+  function money(v){ return "$" + Math.round(v).toLocaleString("en-US"); }
+  function floor(g, w, baseY){
+    g.save();
+    var grd = g.createLinearGradient(0, baseY-2, 0, baseY+16);
+    grd.addColorStop(0,"rgba(20,30,60,0.13)"); grd.addColorStop(1,"rgba(20,30,60,0)");
+    g.fillStyle = grd; g.fillRect(0, baseY, w, 16);
+    g.strokeStyle = "rgba(20,30,60,0.16)"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(0, baseY+0.5); g.lineTo(w, baseY+0.5); g.stroke();
+    g.restore();
+  }
+
+  // ---------- flying coins (buy / sell / dividend) ----------
+  function Flyer(x0,y0,x1,y1,pal,dur,lift){
+    this.x0=x0; this.y0=y0; this.x1=x1; this.y1=y1; this.p=pal; this.t=0; this.dur=dur||0.6; this.lift=lift||60;
+  }
+  Flyer.prototype.step = function(dt){ this.t += dt; return this.t >= this.dur; };
+  Flyer.prototype.draw = function(g, r, th){
+    var e = Math.min(1, this.t/this.dur);
+    var x = this.x0 + (this.x1-this.x0)*e;
+    var y = this.y0 + (this.y1-this.y0)*e - Math.sin(Math.PI*e)*this.lift;
+    drawCoin(g, x, y, r, th, this.p, 1, Math.sin(e*Math.PI*2)*0.16);
+  };
+
+  // ---------- scene registry ----------
+  var scenes = [];
+  function register(canvas, scene){
+    var g = canvas.getContext("2d");
+    var entry = { canvas: canvas, g: g, scene: scene, w: 0, h: 0 };
+    scenes.push(entry);
+    return entry;
+  }
+  function sizeAll(){
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (var i=0;i<scenes.length;i++){
+      var e = scenes[i], c = e.canvas;
+      var cssW = c.clientWidth || 320;
+      var cssH = parseInt(c.getAttribute("data-h"),10) || 200;
+      c.style.height = cssH + "px";
+      c.width = Math.round(cssW*dpr); c.height = Math.round(cssH*dpr);
+      e.w = cssW; e.h = cssH;
+      e.g.setTransform(dpr,0,0,dpr,0,0);
+      if (e.scene.resize) e.scene.resize(cssW, cssH);
+    }
+  }
+  var last = 0;
+  function frame(ts){
+    var dt = last ? Math.min(0.05, (ts-last)/1000) : 0.016; last = ts;
+    for (var i=0;i<scenes.length;i++){
+      var e = scenes[i];
+      if (e.scene.step) e.scene.step(dt);
+      e.g.clearRect(0,0,e.w,e.h);
+      e.scene.draw(e.g, e.w, e.h);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function q(sel){ return document.querySelector(sel); }
+  function canvasFor(name){ return document.querySelector('canvas[data-scene="'+name+'"]'); }
+  function acts(name, fn){
+    var list = document.querySelectorAll('[data-act="'+name+'"]');
+    for (var i=0;i<list.length;i++) list[i].addEventListener("click", fn);
+  }
+
+  // ================= a. growing =================
+  (function(){
+    var c = canvasFor("grow"); if (!c) return;
+    var st = new Stack(0, "#0071e3", 2, 24, 11);
+    var t = 0, base = 0;
+    register(c, {
+      resize: function(w,h){ st.x = w*0.5; base = h - 40; },
+      step: function(dt){
+        t += dt;
+        if (t > 0.75) { t = 0; st.target = st.target >= 12 ? 2 : st.target + 1; }
+        st.step(dt);
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        st.draw(g, base);
+        label(g, w*0.5, base+22, "Nova Systems", 12.5, "#1d1d1f", 600);
+        label(g, w*0.5, base+37, money(st.disp*50), 13, "#0071e3", 700);
+        label(g, w*0.5, 22, "each coin is $50 of what you own", 11.5, "#8a8a90", 500);
+      }
+    });
+  })();
+
+  // ================= b. declining =================
+  (function(){
+    var c = canvasFor("fall"); if (!c) return;
+    var st = new Stack(0, "#0071e3", 12, 24, 11);
+    var t = 0, base = 0;
+    register(c, {
+      resize: function(w,h){ st.x = w*0.5; base = h - 40; },
+      step: function(dt){
+        t += dt;
+        if (t > 0.75) { t = 0; st.target = st.target <= 4 ? 12 : st.target - 1; }
+        st.step(dt);
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        // ghost of the high water mark
+        g.save();
+        g.setLineDash([5,5]); g.strokeStyle = "rgba(0,113,227,0.35)"; g.lineWidth = 1;
+        var hy = base - 12*11;
+        g.beginPath(); g.moveTo(w*0.5-52, hy); g.lineTo(w*0.5+52, hy); g.stroke();
+        g.restore();
+        label(g, w*0.5+58, hy+4, "was $600", 11, "#9a9aa2", 500, "left");
+        st.draw(g, base);
+        label(g, w*0.5, base+22, "Nova Systems", 12.5, "#1d1d1f", 600);
+        label(g, w*0.5, base+37, money(st.disp*50), 13, "#c1121f", 700);
+        label(g, w*0.5, 22, "the coins come back off the top", 11.5, "#8a8a90", 500);
+      }
+    });
+  })();
+
+  // ================= c. portfolio =================
+  var PORT = [
+    { name: "Nova", col: "#0071e3", n: 14 },
+    { name: "Cedar", col: "#30d158", n: 6 },
+    { name: "Ember", col: "#ff9f0a", n: 20 },
+    { name: "Wex",   col: "#bf5af2", n: 4 },
+    { name: "Halo",  col: "#64d2ff", n: 9 }
+  ];
+  (function(){
+    var c = canvasFor("port"); if (!c) return;
+    var stacks = PORT.map(function(d){ var s = new Stack(0, d.col, d.n, 15, 6.6); s.label = d.name; return s; });
+    var base = 0, t = 0;
+    register(c, {
+      resize: function(w,h){
+        base = h - 40;
+        var gap = w/(stacks.length+1);
+        stacks.forEach(function(s,i){ s.x = gap*(i+1); });
+      },
+      step: function(dt){
+        t += dt;
+        stacks.forEach(function(s,i){ s.target = PORT[i].n + (Math.sin(t*0.8 + i*1.7) > 0.75 ? 1 : 0); s.step(dt); });
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        stacks.forEach(function(s,i){
+          s.draw(g, base);
+          label(g, s.x, base+22, PORT[i].name, 11.5, "#1d1d1f", 600);
+          label(g, s.x, s.topY(base)-13, money(s.disp*50), 11, "#6e6e73", 600);
+        });
+        label(g, w*0.5, 20, "one glance tells you Ember is five times Wex", 11.5, "#8a8a90", 500);
+      }
+    });
+  })();
+
+  // ================= d. crash =================
+  (function(){
+    var c = canvasFor("crash"); if (!c) return;
+    var stacks = PORT.map(function(d){ var s = new Stack(0, d.col, d.n, 15, 6.4); s.speed = 3.4; return s; });
+    var base = 0, t = 0, flash = 0, crashed = false;
+    function doCrash(){
+      if (crashed) return;
+      crashed = true; flash = 1;
+      stacks.forEach(function(s,i){ s.target = Math.max(1, Math.round(PORT[i].n*0.55)); s.shake = 1; });
+      setTimeout(function(){
+        stacks.forEach(function(s,i){ s.target = PORT[i].n; });
+        crashed = false;
+      }, 3400);
+    }
+    setInterval(doCrash, 6200);
+    acts("crash", doCrash);
+    register(c, {
+      resize: function(w,h){
+        base = h - 50;
+        var gap = w/(stacks.length+1);
+        stacks.forEach(function(s,i){ s.x = gap*(i+1); });
+      },
+      step: function(dt){ t += dt; flash = Math.max(0, flash - dt*1.1); stacks.forEach(function(s){ s.step(dt); }); },
+      draw: function(g,w,h){
+        if (flash > 0){ g.fillStyle = "rgba(255,69,58,"+(flash*0.13)+")"; g.fillRect(0,0,w,h); }
+        floor(g,w,base);
+        stacks.forEach(function(s,i){ s.draw(g, base); label(g, s.x, base+22, PORT[i].name, 11.5, "#1d1d1f", 600); });
+        var total = stacks.reduce(function(a,s){ return a + s.disp*50; }, 0);
+        label(g, w*0.5, 20, crashed ? "every stack loses coins at once" : "the whole city rebuilds together", 11.5, crashed?"#c1121f":"#8a8a90", 600);
+        label(g, w*0.5, base+36, "portfolio " + money(total), 12, crashed?"#c1121f":"#6e6e73", 600);
+      }
+    });
+  })();
+
+  // ================= e. bankruptcy =================
+  (function(){
+    var c = canvasFor("bust"); if (!c) return;
+    var defs = [ {name:"Cedar", col:"#30d158", n:12}, {name:"Wex", col:"#bf5af2", n:13}, {name:"Halo", col:"#64d2ff", n:11} ];
+    var stacks = defs.map(function(d){ return new Stack(0, d.col, d.n, 19, 9); });
+    var base = 0, timer = 0, phase = 0;
+    function reset(){
+      phase = 0; timer = 0;
+      stacks.forEach(function(s,i){ s.dead=false; s.rubble=null; s.target=defs[i].n; s.disp=defs[i].n; });
+    }
+    function run(){ if (phase === 0) { phase = 1; timer = 0; } }
+    acts("bust", run); acts("bustreset", reset);
+    register(c, {
+      resize: function(w,h){
+        base = h - 44;
+        var gap = w/(stacks.length+1);
+        stacks.forEach(function(s,i){ s.x = gap*(i+1); });
+      },
+      step: function(dt){
+        timer += dt;
+        if (phase === 1) {
+          stacks[0].target = 8; stacks[2].target = 7;    // neighbours merely dip
+          if (timer > 0.55) { collapse(stacks[1], base, 3); stacks[1].shake = 1; phase = 2; }
+        }
+        stacks.forEach(function(s){ s.step(dt); stepRubble(s, dt); });
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        stacks.forEach(function(s,i){
+          s.draw(g, base);
+          var gone = s.dead;
+          label(g, s.x, base+22, defs[i].name, 11.5, gone?"#9a9aa2":"#1d1d1f", 600);
+          label(g, s.x, base+36, gone ? "gone, $0" : (phase>=1 ? "down, "+money(s.disp*50) : money(s.disp*50)), 10.5, gone?"#c1121f":"#8a8a90", 500);
+        });
+        label(g, w*0.5, 22, phase===0 ? "three healthy stacks" : "two got shorter. one fell over.", 11.5, "#8a8a90", 600);
+      }
+    });
+    reset();
+  })();
+
+  // ================= f. index block =================
+  (function(){
+    var c = canvasFor("index"); if (!c) return;
+    var N = 26;
+    var heights = [];
+    for (var i=0;i<N;i++) heights.push(10 + Math.round(1.6*Math.sin(i*1.31) + 1.2*Math.sin(i*0.41+1.2)));
+    var micro = heights.map(function(n){ var s = new Stack(0,"#2f5d9e",n,6.2,4.0); s.speed = 2.2; return s; });
+    var solo = new Stack(0, "#ff9f0a", 9, 14, 6.2);
+    var base = 0, t = 0, divX = 0;
+    register(c, {
+      resize: function(w,h){
+        base = h - 42;
+        divX = w*0.30;
+        solo.x = divX*0.5;
+        var span = w - divX - 24, step = span/N;
+        micro.forEach(function(s,i){ s.x = divX + 14 + step*i + step*0.5; });
+      },
+      step: function(dt){
+        t += dt;
+        solo.target = 9 + Math.round(4*Math.sin(t*1.4));
+        solo.step(dt);
+        micro.forEach(function(s,i){
+          s.target = heights[i] + (Math.sin(t*1.1 + i*0.9) > 0.9 ? 1 : (Math.sin(t*1.3 + i*0.55) < -0.93 ? -1 : 0));
+          s.step(dt);
+        });
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        solo.draw(g, base);
+        label(g, solo.x, base+22, "one company", 11, "#1d1d1f", 600);
+        label(g, solo.x, base+35, "swings a lot", 10.5, "#8a8a90", 500);
+        g.save(); g.strokeStyle = "rgba(0,0,0,0.09)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(divX, 16); g.lineTo(divX, base+8); g.stroke(); g.restore();
+        micro.forEach(function(s){ s.draw(g, base); });
+        // the block's steady top edge
+        var avg = micro.reduce(function(a,s){ return a+s.disp; },0)/N;
+        var ty = base - avg*4.0 - 7;
+        g.save(); g.setLineDash([4,4]); g.strokeStyle = "rgba(0,113,227,0.55)"; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(divX+10, ty); g.lineTo(w-10, ty); g.stroke(); g.restore();
+        label(g, (divX+w)/2, base+22, "the index, twenty six stacks in one block", 11, "#1d1d1f", 600);
+        label(g, (divX+w)/2, base+35, "the dashed top edge barely moves", 10.5, "#8a8a90", 500);
+      }
+    });
+  })();
+
+  // ================= g. dividend =================
+  (function(){
+    var c = canvasFor("div"); if (!c) return;
+    var st = new Stack(0, "#30d158", 11, 22, 10);
+    var base = 0, t = 0, tray = 0, flyers = [], trayX = 0, trayY = 0, phase = 0;
+    register(c, {
+      resize: function(w,h){ base = h-44; st.x = w*0.34; trayX = w*0.74; trayY = base - 6; },
+      step: function(dt){
+        t += dt; st.step(dt);
+        if (phase === 0 && t > 1.9) {
+          phase = 1; t = 0;
+          st.target = 10;
+          flyers.push(new Flyer(st.x, base - st.th*11, trayX, trayY - tray*5 - 6, GOLD, 0.75, 66));
+        } else if (phase === 1 && t > 0.75) {
+          phase = 2; t = 0; tray = (tray + 1) % 7;
+        } else if (phase === 2 && t > 0.7) {
+          phase = 0; t = 0; st.target = 11;   // the business earns it back
+        }
+        flyers = flyers.filter(function(f){ return !f.step(dt); });
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        st.draw(g, base);
+        label(g, st.x, base+22, "Cedar Foods", 12, "#1d1d1f", 600);
+        label(g, st.x, st.topY(base)-13, money(st.disp*50), 11.5, "#6e6e73", 600);
+        // tray
+        g.save();
+        g.fillStyle = "rgba(255,255,255,0.9)"; g.strokeStyle = "rgba(0,0,0,0.12)"; g.lineWidth = 1;
+        g.beginPath(); g.ellipse(trayX, base+2, 46, 13, 0, 0, Math.PI*2); g.fill(); g.stroke();
+        g.restore();
+        for (var i=0;i<tray;i++) drawCoin(g, trayX + (i%2?7:-7), base - 3 - i*5, 15, 5, GOLD);
+        label(g, trayX, base+30, "your cash tray", 11, "#1d1d1f", 600);
+        label(g, trayX, base+43, money(tray*50)+" collected", 10.5, "#8a8a90", 500);
+        flyers.forEach(function(f){ f.draw(g, 15, 6); });
+        label(g, w*0.5, 22, "a coin pops off the top and it is yours to keep", 11.5, "#8a8a90", 500);
+      }
+    });
+  })();
+
+  // ================= h. buy / sell =================
+  (function(){
+    var c = canvasFor("trade"); if (!c) return;
+    var st = new Stack(0, "#0071e3", 5, 22, 10);
+    var trayN = 8, base = 0, trayX = 0, flyers = [];
+    function fly(from){
+      var topY = base - st.th*(st.target+1);
+      if (from === "tray") {
+        flyers.push(new Flyer(trayX, base - trayN*5, st.x, topY, GOLD, 0.55, 62));
+      } else {
+        flyers.push(new Flyer(st.x, base - st.th*st.target, trayX, base - trayN*5, GOLD, 0.55, 62));
+      }
+    }
+    acts("buy", function(){
+      if (trayN < 2) return;
+      fly("tray"); fly("tray");
+      trayN -= 2;
+      setTimeout(function(){ st.target += 2; }, 380);
+    });
+    acts("sell", function(){
+      if (st.target < 2) return;
+      fly("stack"); fly("stack");
+      st.target -= 2;
+      setTimeout(function(){ trayN += 2; }, 380);
+    });
+    register(c, {
+      resize: function(w,h){ base = h-46; st.x = w*0.68; trayX = w*0.28; },
+      step: function(dt){ st.step(dt); flyers = flyers.filter(function(f){ return !f.step(dt); }); },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        g.save();
+        g.fillStyle = "rgba(255,255,255,0.9)"; g.strokeStyle = "rgba(0,0,0,0.12)"; g.lineWidth = 1;
+        g.beginPath(); g.ellipse(trayX, base+2, 52, 14, 0, 0, Math.PI*2); g.fill(); g.stroke();
+        g.restore();
+        for (var i=0;i<trayN;i++) drawCoin(g, trayX + (i%2?8:-8), base - 3 - i*5, 17, 5, GOLD);
+        label(g, trayX, base+32, "cash tray", 12, "#1d1d1f", 600);
+        label(g, trayX, base+45, money(trayN*50), 11, "#8a8a90", 600);
+        st.draw(g, base);
+        label(g, st.x, base+32, "Nova Systems", 12, "#1d1d1f", 600);
+        label(g, st.x, base+45, money(st.target*50), 11, "#8a8a90", 600);
+        flyers.forEach(function(f){ f.draw(g, 17, 6); });
+        label(g, w*0.5, 22, "coins move, they never appear", 11.5, "#8a8a90", 500);
+      }
+    });
+  })();
+
+  // ================= Part 2, the level =================
+  (function(){
+    var c = canvasFor("level"); if (!c) return;
+    var PRICE_A = [100,94,88,80,76,74,78,86,96,108,120,132,146,158,168,176,182,188,192,196,200];
+    var PRICE_B = [100,106,112,118,124,128,130,126,112,92,74,62,56,52,50,50,50,50,50,50,50];
+    var COIN = 50, GOAL = 1200, STAR3 = 1450, TICKS = 20, TRADE = 150;
+
+    var S = {};
+    function reset(){
+      S.tick = 0; S.cash = 400; S.shA = 3; S.shB = 3; S.tokens = 3;
+      S.playing = false; S.done = false; S.acc = 0; S.flash = 0;
+      stA.target = valA()/COIN; stA.disp = stA.target;
+      stB.target = valB()/COIN; stB.disp = stB.target;
+      q("#ovl").classList.remove("on");
+      q("#btnPlay").disabled = false;
+      q("#btnPlay").textContent = "Play the twenty weeks";
+      hud();
+    }
+    function pA(){ return PRICE_A[Math.min(TICKS, S.tick)]; }
+    function pB(){ return PRICE_B[Math.min(TICKS, S.tick)]; }
+    function valA(){ return S.shA * pA(); }
+    function valB(){ return S.shB * pB(); }
+    function total(){ return S.cash + valA() + valB(); }
+
+    var stA = new Stack(0, "#0071e3", 6, 19, 8);
+    var stB = new Stack(0, "#ff9f0a", 6, 19, 8);
+    var stCash = new Stack(0, "#9a9aa2", 8, 19, 8);
+    [stA,stB,stCash].forEach(function(s){ s.speed = 6; });
+    var flyers = [], base = 0, totX = 0, divX = 0;
+
+    function hud(){
+      q("#hCash").textContent = money(S.cash);
+      q("#hTotal").textContent = money(total());
+      q("#hTick").textContent = S.tick + " / " + TICKS;
+      var toks = q("#hTok").children;
+      for (var i=0;i<toks.length;i++) toks[i].className = i < S.tokens ? "tok" : "tok spent";
+      var can = S.tokens > 0 && !S.done;
+      q('[data-act="buyA"]').disabled = !can || S.cash < TRADE;
+      q('[data-act="sellA"]').disabled = !can || valA() < TRADE;
+      q('[data-act="buyB"]').disabled = !can || S.cash < TRADE;
+      q('[data-act="sellB"]').disabled = !can || valB() < TRADE;
+    }
+    function trade(which, dir){
+      if (S.tokens <= 0 || S.done) return;
+      if (dir > 0) {
+        if (S.cash < TRADE) return;
+        S.cash -= TRADE;
+        if (which === "A") S.shA += TRADE / pA(); else S.shB += TRADE / pB();
+        for (var i=0;i<3;i++) flyers.push(new Flyer(stCash.x, base - 40, which==="A"?stA.x:stB.x, base - 60 - i*8, GOLD, 0.5+i*0.07, 54));
+      } else {
+        var v = which === "A" ? valA() : valB();
+        if (v < TRADE) return;
+        S.cash += TRADE;
+        if (which === "A") S.shA -= TRADE / pA(); else S.shB -= TRADE / pB();
+        for (var j=0;j<3;j++) flyers.push(new Flyer(which==="A"?stA.x:stB.x, base - 60 - j*8, stCash.x, base - 40, GOLD, 0.5+j*0.07, 54));
+      }
+      S.tokens--;
+      hud();
+    }
+    acts("buyA", function(){ trade("A", 1); });
+    acts("sellA", function(){ trade("A", -1); });
+    acts("buyB", function(){ trade("B", 1); });
+    acts("sellB", function(){ trade("B", -1); });
+    acts("play", function(){ if (S.done) return; S.playing = true; S.acc = 0; q("#btnPlay").disabled = true; q("#btnPlay").textContent = "Running…"; });
+    acts("again", reset);
+
+    function finish(){
+      S.done = true; S.playing = false;
+      var t = total();
+      var stars = t >= STAR3 ? 3 : (t >= GOAL ? 2 : 1);
+      q("#ovStars").textContent = "★★★".slice(0, stars) + "☆☆☆".slice(0, 3-stars);
+      q("#ovBig").textContent = money(t);
+      q("#ovSmall").textContent = stars === 3
+        ? "You sold the stack that was about to fall and moved those coins onto the one in the dip. That is the whole game."
+        : stars === 2
+        ? "Over the line. Now try selling Ledger before it collapses and pouring the coins into Solaris while it is short."
+        : "Holding still left you just under the line. Three trades were sitting there unused.";
+      q("#ovl").classList.add("on");
+      hud();
+    }
+
+    register(c, {
+      resize: function(w,h){
+        base = h - 52;
+        divX = w*0.62;
+        stCash.x = divX*0.20; stA.x = divX*0.50; stB.x = divX*0.80;
+        totX = divX + (w-divX)*0.46;
+      },
+      step: function(dt){
+        if (S.playing) {
+          S.acc += dt;
+          if (S.acc >= 0.62) {
+            S.acc = 0; S.tick++;
+            if (S.tick >= TICKS) { S.tick = TICKS; finish(); }
+            hud();
+          }
+        }
+        stA.target = valA()/COIN; stB.target = valB()/COIN; stCash.target = S.cash/COIN;
+        stA.step(dt); stB.step(dt); stCash.step(dt);
+        flyers = flyers.filter(function(f){ return !f.step(dt); });
+      },
+      draw: function(g,w,h){
+        floor(g,w,base);
+        // left region, the three stacks
+        stCash.draw(g, base); stA.draw(g, base); stB.draw(g, base);
+        label(g, stCash.x, base+22, "Cash", 12, "#1d1d1f", 600);
+        label(g, stCash.x, base+36, money(S.cash), 11, "#8a8a90", 600);
+        label(g, stA.x, base+22, "Solaris", 12, "#1d1d1f", 600);
+        label(g, stA.x, base+36, money(valA()) + "  (" + pA() + "c)", 11, "#8a8a90", 600);
+        label(g, stB.x, base+22, "Ledger", 12, "#1d1d1f", 600);
+        label(g, stB.x, base+36, money(valB()) + "  (" + pB() + "c)", 11, "#8a8a90", 600);
+        label(g, divX*0.5, 24, "your holdings", 12, "#8a8a90", 600);
+
+        g.save(); g.strokeStyle = "rgba(0,0,0,0.09)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(divX, 14); g.lineTo(divX, base+10); g.stroke(); g.restore();
+
+        // right region, the total tower poured from the three
+        var nCash = S.cash/COIN, nA = valA()/COIN, nB = valB()/COIN;
+        var th = 8, r = 25;
+        groundShadow(g, totX, base, r, 0.16);
+        var y = base, drawn = 0;
+        function pour(count, pal){
+          var full = Math.floor(count + 1e-6);
+          for (var i=0;i<full;i++){ drawCoin(g, totX, base - th*(drawn+1), r, th, pal); drawn++; }
+          var fr = count-full;
+          if (fr > 0.15) { drawCoin(g, totX, base - th*(drawn+1), r, th, pal, fr); }
+        }
+        pour(nCash, stCash.p); pour(nA, stA.p); pour(nB, stB.p);
+        var tv = total();
+        // the goal line
+        var gy = base - (GOAL/COIN)*th;
+        g.save();
+        g.setLineDash([6,5]);
+        g.strokeStyle = tv >= GOAL ? "rgba(48,209,88,0.95)" : "rgba(193,18,31,0.55)";
+        g.lineWidth = 1.6;
+        g.beginPath(); g.moveTo(divX+12, gy); g.lineTo(w-12, gy); g.stroke();
+        g.restore();
+        label(g, w-14, gy-7, "goal $1,200", 11, tv>=GOAL?"#1a8f3c":"#c1121f", 600, "right");
+        var gy3 = base - (STAR3/COIN)*th;
+        g.save(); g.setLineDash([2,5]); g.strokeStyle = "rgba(0,0,0,0.22)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(divX+12, gy3); g.lineTo(w-12, gy3); g.stroke(); g.restore();
+        label(g, w-14, gy3-6, "three stars $1,450", 10, "#9a9aa2", 500, "right");
+
+        label(g, totX, base+22, "your total", 12, "#1d1d1f", 600);
+        label(g, totX, base+36, money(tv), 12.5, tv>=GOAL?"#1a8f3c":"#1d1d1f", 700);
+        label(g, divX + (w-divX)*0.5, 24, "week " + S.tick + " of " + TICKS, 12, "#8a8a90", 600);
+        flyers.forEach(function(f){ f.draw(g, 13, 5); });
+      }
+    });
+    reset();
+  })();
+
+  // ---------- boot ----------
+  window.addEventListener("resize", sizeAll);
+  sizeAll();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wildcard 2, the Kite Field</title>
+<style>
+  :root { --ink:#1d1d1f; --ink2:#6e6e73; --bg:#f5f5f7; --blue:#0071e3; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 80px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  h1 { font-size:30px; line-height:1.1; letter-spacing:-0.02em; font-weight:600; margin:0 0 10px; }
+  .sub { font-size:15px; color:var(--ink2); max-width:820px; line-height:1.6; margin:0; }
+  .whycard {
+    background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:20px; padding:18px 20px;
+    margin-top:20px; box-shadow:0 10px 26px rgba(20,30,60,0.06);
+    display:grid; grid-template-columns: 1fr 1fr; gap:6px 28px;
+  }
+  .whycard h3 { margin:0 0 6px; font-size:14px; font-weight:600; letter-spacing:-0.01em; }
+  .whycard p { margin:0 0 8px; font-size:13.2px; line-height:1.55; color:#3a3a3c; }
+  .whycard b { font-weight:600; color:var(--ink); }
+  .secthead { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin:44px 0 16px; }
+  .secthead h2 { font-size:19px; font-weight:600; letter-spacing:-0.015em; margin:0; }
+  .secthead .why { font-size:13.5px; color:var(--ink2); }
+  .grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:20px; }
+  .card {
+    background:rgba(255,255,255,0.94); border:1px solid rgba(0,0,0,0.08); border-radius:22px;
+    box-shadow:0 12px 30px rgba(20,30,60,0.07), 0 2px 6px rgba(20,30,60,0.05);
+    padding:14px 16px 16px;
+  }
+  .stage { border-radius:16px; overflow:hidden; background:#e8f1fc; }
+  .stage.split { display:grid; grid-template-columns:1fr 1fr; gap:4px; background:transparent; }
+  .stage.split > canvas { border-radius:16px; }
+  canvas { display:block; width:100%; }
+  .tick { font-size:11.5px; font-weight:600; color:#fff; background:#1d1d1f; border-radius:999px; padding:2px 8px; display:inline-block; }
+  .cname { font-size:15.5px; font-weight:600; letter-spacing:-0.01em; margin:12px 0 5px; }
+  .cnote { font-size:13px; line-height:1.55; color:#3a3a3c; }
+  /* level */
+  .level { display:grid; grid-template-columns: minmax(0,1.55fr) minmax(300px,1fr); gap:20px; align-items:start; }
+  .hud { display:flex; flex-direction:column; gap:14px; }
+  .goal { font-size:15px; font-weight:600; }
+  .goal span { color:var(--ink2); font-weight:400; display:block; font-size:12.8px; margin-top:3px; line-height:1.5; }
+  .rowlab { font-size:11.5px; text-transform:none; letter-spacing:0.01em; color:var(--ink2); margin-bottom:6px; }
+  .tokens { display:flex; gap:7px; align-items:center; }
+  .tok { width:26px; height:26px; border-radius:999px; background:var(--blue); box-shadow:inset 0 -2px 0 rgba(0,0,0,0.14); transition:all .25s ease; }
+  .tok.spent { background:#e3e3e6; box-shadow:none; }
+  .money { display:flex; gap:18px; }
+  .money div { flex:1; }
+  .big { font-size:24px; font-weight:600; letter-spacing:-0.02em; }
+  .btns { display:flex; flex-direction:column; gap:8px; }
+  button.pill {
+    border:1px solid rgba(0,0,0,0.15); background:#fff; color:var(--ink);
+    font:inherit; font-size:13.5px; font-weight:500; padding:11px 16px; border-radius:14px;
+    cursor:pointer; text-align:left; transition:background .15s ease;
+  }
+  button.pill:hover:not(:disabled) { background:rgba(0,0,0,0.05); }
+  button.pill:disabled { opacity:.42; cursor:default; }
+  button.pill.primary:disabled { opacity:1; background:#a8cdf3; }
+  button.pill.primary { background:var(--blue); color:#fff; border-color:transparent; text-align:center; font-weight:600; }
+  button.pill.primary:hover:not(:disabled) { filter:brightness(1.08); }
+  button.pill .k { display:block; font-size:11.5px; color:var(--ink2); font-weight:400; margin-top:2px; }
+  button.pill.primary .k { color:rgba(255,255,255,0.85); }
+  .result { border-radius:16px; background:#fff; border:1px solid rgba(0,0,0,0.08); padding:14px 16px; }
+  .stars { font-size:26px; letter-spacing:4px; color:#ffb100; line-height:1.2; }
+  .stars i { color:#dcdce0; font-style:normal; }
+  .rtext { font-size:13px; line-height:1.55; color:#3a3a3c; margin-top:6px; }
+  footer.note { margin-top:46px; font-size:12.5px; color:var(--ink2); line-height:1.65; max-width:860px; }
+  @media (max-width:1080px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr));} .level{grid-template-columns:1fr;} .whycard{grid-template-columns:1fr;} }
+  @media (max-width:720px){ .grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Wildcard 2, the Kite Field</h1>
+    <p class="sub">
+      Every holding is a kite you are flying. Height above the field is what it is worth right now, read against one
+      shared ruler of altitude lines. The wind is the market: it moves every kite in the sky at once, and nobody in the
+      game gets to know which way it will blow next. Your job is simply to hold the line.
+    </p>
+    <div class="whycard">
+      <div>
+        <h3>Why kites beat the orb</h3>
+        <p>The orb hid change because value was <b>area</b>, and a 20% loss looks like almost nothing when it is spread
+        around a circle. Height is a <b>position on a ruler</b>. Two kites at different heights are compared instantly,
+        by a six year old, from across the room. Growth is literally upward motion.</p>
+        <p>Loss is survivable and visible at the same time: a sinking kite is still <b>on your line</b>. That is the
+        exact feeling a middle schooler needs about a down market.</p>
+      </div>
+      <div>
+        <h3>What it buys us</h3>
+        <p><b>Permanent failure</b> is a snapped line. The kite tumbles away and the string goes limp on the ground.
+        Nothing about that looks like "low", so bankruptcy can never be confused with a bad week.</p>
+        <p><b>The index</b> is one enormous box kite sewn from hundreds of small panels. The same gust that whips the
+        little kites around barely rocks it, which is the entire lesson in one picture.</p>
+        <p><b>Nothing predicts.</b> You cannot steer wind. The only skill the metaphor offers is letting out line and
+        not panicking, which is exactly the behavior we want to teach.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="secthead">
+    <h2>Part 1 &middot; The foolproof checklist</h2>
+    <span class="why">Eight things the metaphor must say without words. All live, no images.</span>
+  </div>
+  <div class="grid" id="checklist"></div>
+
+  <div class="secthead">
+    <h2>Part 2 &middot; A sixty second level</h2>
+    <span class="why">One windy afternoon, twenty gusts, three tokens.</span>
+  </div>
+  <div class="card">
+    <div class="level">
+      <div class="stage"><canvas id="lvl"></canvas></div>
+      <div class="hud">
+        <div class="goal">Goal: end the day above $1,200
+          <span>You start with $1,000 in hand and nothing in the air. Money in your hand never grows. A kite only
+          carries your money once you let the line out.</span>
+        </div>
+        <div>
+          <div class="rowlab">Trade tokens, one per launch or reel in. Each one also costs $8 of line.</div>
+          <div class="tokens" id="tokens"></div>
+        </div>
+        <div class="money">
+          <div><div class="rowlab">In your hand</div><div class="big" id="cash">$1,000</div></div>
+          <div><div class="rowlab">In the air</div><div class="big" id="air">$0</div></div>
+        </div>
+        <div class="btns">
+          <button class="pill" id="buySolo">Let out line to Solo Co<span class="k">One company. Jumpy.</span></button>
+          <button class="pill" id="buyIdx">Let out line to the Big Box Kite<span class="k">One of everything, all 500.</span></button>
+          <button class="pill" id="sell" disabled>Reel it back into your hand<span class="k">Turns the kite back into cash.</span></button>
+          <button class="pill primary" id="play">Start the wind</button>
+        </div>
+        <div class="result" id="result">
+          <div class="stars"><i>&#9733;</i><i>&#9733;</i><i>&#9733;</i></div>
+          <div class="rtext" id="rtext">Gust 0 of 20. Launch something before the day runs out.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">
+    Deterministic on purpose: the twenty gusts are a fixed script, identical every replay, so a class can compare
+    choices instead of luck. Note the trap it sets. On a replay you know exactly when Solo Co peaks, and timing it
+    beats holding the box kite by a mile. The result card says so out loud, and says the only reason you could do it is
+    that you had already seen the sky. Real wind never shows you the script.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var TAU = Math.PI * 2;
+
+  /* ---------- color ---------- */
+  function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function f(c) { return Math.max(0, Math.min(255, Math.round(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt))); }
+    return "rgb(" + f(r) + "," + f(g) + "," + f(b) + ")";
+  }
+
+  /* ---------- canvas plumbing ---------- */
+  function fit(cv, h) {
+    var w = cv.parentNode.clientWidth || 380;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.height = h + "px";
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  var panels = [];
+  function loop(now) {
+    var t = now / 1000;
+    for (var i = 0; i < panels.length; i++) {
+      var p = panels[i];
+      p.ctx.setTransform(p.dpr, 0, 0, p.dpr, 0, 0);
+      p.ctx.clearRect(0, 0, p.w, p.h);
+      p.draw(p.ctx, p.w, p.h, t);
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function register(cv, h, draw) {
+    var f = fit(cv, h);
+    panels.push({ ctx: f.ctx, w: f.w, h: f.h, dpr: Math.min(2, window.devicePixelRatio || 1), draw: draw });
+  }
+
+  /* ---------- scene pieces ---------- */
+  function sky(ctx, w, h, gust) {
+    var g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "#c9e0fa"); g.addColorStop(0.55, "#e6f0fb"); g.addColorStop(1, "#f7f8fa");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    // wind streaks, strength 0..1
+    if (gust > 0.02) {
+      ctx.save(); ctx.globalAlpha = 0.5 * gust; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2; ctx.lineCap = "round";
+      for (var i = 0; i < 7; i++) {
+        var y = 18 + i * (h - 50) / 7 + Math.sin(i * 2.1) * 6;
+        var x0 = ((i * 97 + gust * 260) % (w + 120)) - 60;
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.bezierCurveTo(x0 + 22, y - 5, x0 + 40, y + 5, x0 + 62, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // ground
+    ctx.fillStyle = "#dfe0d6"; ctx.fillRect(0, h - 13, w, 13);
+    ctx.fillStyle = "#cfd2c4"; ctx.fillRect(0, h - 13, w, 2);
+  }
+
+  function rungs(ctx, w, h, top, ground, labels) {
+    ctx.save();
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = "rgba(29,29,31,0.16)"; ctx.lineWidth = 1;
+    ctx.font = "500 10.5px -apple-system, Helvetica, Arial"; ctx.fillStyle = "rgba(29,29,31,0.42)";
+    ctx.textBaseline = "middle";
+    for (var i = 0; i < labels.length; i++) {
+      var y = Math.round(ground - (labels[i].f) * (ground - top)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(6, y); ctx.lineTo(w - 34, y); ctx.stroke();
+      ctx.fillText(labels[i].t, w - 30, y);
+    }
+    ctx.restore();
+  }
+
+  // returns the bridle point (where the string ties on)
+  function kite(ctx, x, y, s, color, tilt) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt);
+    var P = [[0, -1], [0.68, -0.14], [0, 1.1], [-0.68, -0.14]];
+    ctx.beginPath();
+    ctx.moveTo(P[0][0] * s, P[0][1] * s);
+    for (var i = 1; i < 4; i++) ctx.lineTo(P[i][0] * s, P[i][1] * s);
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -s); ctx.lineTo(0, 1.1 * s); ctx.lineTo(-0.68 * s, -0.14 * s); ctx.closePath();
+    ctx.fillStyle = shade(color, -0.16); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = Math.max(1, s * 0.055);
+    ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(0, 1.1 * s);
+    ctx.moveTo(-0.68 * s, -0.14 * s); ctx.lineTo(0.68 * s, -0.14 * s); ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.20)"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(P[0][0] * s, P[0][1] * s);
+    for (var j = 1; j < 4; j++) ctx.lineTo(P[j][0] * s, P[j][1] * s);
+    ctx.closePath(); ctx.stroke();
+    ctx.restore();
+    return [x - 1.1 * s * Math.sin(tilt), y + 1.1 * s * Math.cos(tilt)];
+  }
+
+  function tail(ctx, bx, by, s, t, color, drift) {
+    ctx.save(); ctx.strokeStyle = "rgba(29,29,31,0.30)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(bx, by);
+    var px = bx, py = by;
+    for (var k = 1; k <= 7; k++) {
+      px = bx + Math.sin(t * 2.2 + k * 0.9) * s * 0.16 + drift * k * 1.4;
+      py = by + k * s * 0.28;
+      ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = color;
+    for (var m = 2; m <= 7; m += 2) {
+      var qx = bx + Math.sin(t * 2.2 + m * 0.9) * s * 0.16 + drift * m * 1.4;
+      var qy = by + m * s * 0.28;
+      ctx.beginPath(); ctx.ellipse(qx, qy, s * 0.14, s * 0.07, 0.5, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function string(ctx, bx, by, hx, hy, taut, color) {
+    var sag = (1 - taut) * 46;
+    ctx.save();
+    ctx.strokeStyle = color || "rgba(29,29,31,0.34)";
+    ctx.lineWidth = taut > 0.9 ? 1.5 : 1.2;
+    ctx.beginPath(); ctx.moveTo(bx, by);
+    ctx.quadraticCurveTo((bx + hx) / 2 + sag * 0.3, (by + hy) / 2 + sag, hx, hy);
+    ctx.stroke(); ctx.restore();
+  }
+
+  function flyer(ctx, x, y, armUp) {
+    ctx.save();
+    ctx.strokeStyle = "#1d1d1f"; ctx.fillStyle = "#1d1d1f"; ctx.lineWidth = 2.1; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(x, y - 20, 4.2, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x, y - 16); ctx.lineTo(x, y - 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x - 4, y); ctx.moveTo(x, y - 6); ctx.lineTo(x + 4, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y - 14);
+    if (armUp) ctx.lineTo(x + 7, y - 22); else ctx.lineTo(x + 8, y - 12);
+    ctx.stroke();
+    ctx.restore();
+    return armUp ? [x + 7, y - 22] : [x + 8, y - 12];
+  }
+
+  // one of everything, sewn into panels
+  function boxKite(ctx, x, y, s, tilt) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt);
+    var w = s * 2, cellH = s * 0.62, gap = s * 0.78, dx = s * 0.44, dy = -s * 0.24;
+    var bands = [-gap / 2 - cellH, gap / 2];
+    // back edges
+    ctx.strokeStyle = "rgba(29,29,31,0.22)"; ctx.lineWidth = 1;
+    var b;
+    for (b = 0; b < 2; b++) {
+      ctx.strokeRect(-s + dx, bands[b] + dy, w, cellH);
+    }
+    // spars
+    ctx.strokeStyle = "rgba(29,29,31,0.45)"; ctx.lineWidth = 1.4;
+    var xs = [-s, s, -s + dx, s + dx], ys = [0, 0, dy, dy];
+    for (var i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(xs[i], bands[0] + ys[i]); ctx.lineTo(xs[i], bands[1] + cellH + ys[i]); ctx.stroke();
+    }
+    // front faces, packed with hundreds of little panels
+    var cols = 24, rows = 4;
+    for (b = 0; b < 2; b++) {
+      var y0 = bands[b];
+      ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.fillRect(-s, y0, w, cellH);
+      for (var c = 0; c < cols; c++) {
+        for (var r = 0; r < rows; r++) {
+          var hue = ((c * 37 + r * 91 + b * 53) % 360);
+          ctx.fillStyle = "hsl(" + hue + ",62%," + (56 + ((c + r) % 3) * 5) + "%)";
+          ctx.fillRect(-s + c * (w / cols) + 0.6, y0 + r * (cellH / rows) + 0.6, w / cols - 1.2, cellH / rows - 1.2);
+        }
+      }
+      ctx.strokeStyle = "rgba(29,29,31,0.35)"; ctx.lineWidth = 1.2;
+      ctx.strokeRect(-s, y0, w, cellH);
+      // top face sliver for depth
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.beginPath();
+      ctx.moveTo(-s, y0); ctx.lineTo(-s + dx, y0 + dy); ctx.lineTo(s + dx, y0 + dy); ctx.lineTo(s, y0);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+    return [x + Math.sin(-tilt) * (gap / 2 + cellH), y + (gap / 2 + cellH)];
+  }
+
+  function badge(ctx, x, y, text, bg) {
+    ctx.save(); ctx.font = "600 11.5px -apple-system, Helvetica, Arial";
+    var w = ctx.measureText(text).width + 14;
+    ctx.fillStyle = bg || "rgba(29,29,31,0.86)";
+    var r = 8, x0 = x - w / 2, y0 = y - 9;
+    ctx.beginPath();
+    ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + 18, r);
+    ctx.arcTo(x0 + w, y0 + 18, x0, y0 + 18, r); ctx.arcTo(x0, y0 + 18, x0, y0, r);
+    ctx.arcTo(x0, y0, x0 + w, y0, r); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y + 0.5); ctx.restore();
+  }
+
+  function caption(ctx, w, text) {
+    ctx.save(); ctx.font = "600 11.5px -apple-system, Helvetica, Arial";
+    ctx.fillStyle = "rgba(29,29,31,0.55)"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText(text, 10, 8); ctx.restore();
+  }
+
+  function saw(t, period) { return (t % period) / period; }
+
+  /* ---------- checklist ---------- */
+  var CELLS = [
+    { key: "a", name: "a. One kite growing", note: "The kite climbs. Higher in the sky means that company is worth more today than it was this morning.", h: 230 },
+    { key: "b", name: "b. One kite declining", note: "It sinks, but the line is still in your hand and the kite is still yours. You have not lost a thing unless you reel it in down here.", h: 230 },
+    { key: "c", name: "c. Five holdings at once", note: "One sky, one ruler. Five kites at five heights tell you your whole portfolio in a single glance, no math.", h: 230 },
+    { key: "d", name: "d. A market-wide gust", note: "One gust crosses the whole field and every kite dips together. Nobody caused it and nobody saw it coming.", h: 230 },
+    { key: "e", name: "e. A snapped line", note: "The company failed. The line breaks, the kite tumbles away, the string falls limp. No gust ever brings that one back, and it looks nothing like flying low.", h: 230 },
+    { key: "f", name: "f. The index, one box kite", note: "One of everything, sewn into hundreds of small panels on one huge box kite. The gust that whips the little kites around barely rocks it.", h: 230 },
+    { key: "g", name: "g. A dividend arriving", note: "Some kites send a messenger sliding down the line to your hand: a small cash payment, while the kite keeps right on flying.", h: 230 },
+    { key: "h", name: "h. Buy and sell", note: "Buy is letting line out until the kite catches the wind. Sell is cranking the reel until it is back in your hands as cash. Both are things you can mime.", h: 230 }
+  ];
+
+  var host = document.getElementById("checklist");
+  CELLS.forEach(function (c) {
+    var el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = '<div class="stage' + (c.key === "h" ? " split" : "") + '">' +
+      (c.key === "h" ? '<canvas></canvas><canvas></canvas>' : '<canvas></canvas>') +
+      '</div><div class="cname">' + c.name + '</div><div class="cnote">' + c.note + '</div>';
+    host.appendChild(el);
+    c.canvases = el.querySelectorAll("canvas");
+  });
+
+  var NAMES = ["Nova", "Bitrix", "Pace", "Halo", "Corvi"];
+  var COLORS = ["#ff9f0a", "#0071e3", "#30d158", "#bf5af2", "#ff453a"];
+
+  function get(k) { for (var i = 0; i < CELLS.length; i++) if (CELLS[i].key === k) return CELLS[i]; }
+
+  // a, growing
+  register(get("a").canvases[0], 230, function (ctx, w, h, t) {
+    var p = saw(t, 5), f = 0.22 + p * 0.62, ground = h - 13, top = 26;
+    sky(ctx, w, h, 0.25);
+    rungs(ctx, w, h, top, ground, [{ f: 0.22, t: "$40" }, { f: 0.55, t: "$70" }, { f: 0.84, t: "$95" }]);
+    var y = ground - f * (ground - top), x = w * 0.56 + Math.sin(t * 1.3) * 5;
+    // ghost of where it started
+    ctx.save(); ctx.globalAlpha = 0.28;
+    kite(ctx, x - 6, ground - 0.22 * (ground - top), 17, "#c7c7cc", 0.1); ctx.restore();
+    ctx.save(); ctx.strokeStyle = "rgba(48,209,88,0.9)"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x - 6, ground - 0.22 * (ground - top)); ctx.lineTo(x - 6, y + 20); ctx.stroke(); ctx.restore();
+    var b = kite(ctx, x, y, 20, COLORS[0], 0.16 + Math.sin(t) * 0.05);
+    tail(ctx, b[0], b[1], 20, t, COLORS[0], 2);
+    var hand = flyer(ctx, 26, ground, true);
+    string(ctx, b[0], b[1], hand[0], hand[1], 0.95);
+    badge(ctx, x, y - 34, "$" + Math.round(40 + (f - 0.22) * 89), "#30d158");
+    caption(ctx, w, "climbing");
+  });
+
+  // b, declining
+  register(get("b").canvases[0], 230, function (ctx, w, h, t) {
+    var p = saw(t, 5), f = 0.84 - p * 0.6, ground = h - 13, top = 26;
+    sky(ctx, w, h, 0.25);
+    rungs(ctx, w, h, top, ground, [{ f: 0.24, t: "$40" }, { f: 0.55, t: "$70" }, { f: 0.84, t: "$95" }]);
+    var y = ground - f * (ground - top), x = w * 0.56 + Math.sin(t * 1.3) * 5;
+    ctx.save(); ctx.globalAlpha = 0.28;
+    kite(ctx, x - 6, ground - 0.84 * (ground - top), 17, "#c7c7cc", 0.1); ctx.restore();
+    ctx.save(); ctx.strokeStyle = "rgba(255,69,58,0.85)"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x - 6, ground - 0.84 * (ground - top)); ctx.lineTo(x - 6, y - 26); ctx.stroke(); ctx.restore();
+    var b = kite(ctx, x, y, 20, COLORS[0], -0.3 + Math.sin(t * 1.6) * 0.08);
+    tail(ctx, b[0], b[1], 20, t, COLORS[0], 1);
+    var hand = flyer(ctx, 26, ground, true);
+    string(ctx, b[0], b[1], hand[0], hand[1], 0.92);
+    badge(ctx, x, y - 34, "$" + Math.round(40 + (f - 0.24) * 92), "#ff453a");
+    caption(ctx, w, "sinking, still on the line");
+  });
+
+  // c, five holdings
+  register(get("c").canvases[0], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 24;
+    sky(ctx, w, h, 0.18);
+    rungs(ctx, w, h, top, ground, [{ f: 0.25, t: "$25" }, { f: 0.55, t: "$60" }, { f: 0.85, t: "$95" }]);
+    var fs = [0.86, 0.62, 0.47, 0.33, 0.2];
+    var hand = flyer(ctx, 22, ground, true);
+    for (var i = 0; i < 5; i++) {
+      var x = 62 + i * ((w - 96) / 5) + Math.sin(t * 1.1 + i) * 3;
+      var y = ground - (fs[i] + Math.sin(t * 1.4 + i * 1.7) * 0.012) * (ground - top);
+      var b = kite(ctx, x, y, 15, COLORS[i], 0.14 + Math.sin(t + i) * 0.06);
+      tail(ctx, b[0], b[1], 15, t + i, COLORS[i], 1.6);
+      string(ctx, b[0], b[1], hand[0], hand[1], 0.9);
+      ctx.save(); ctx.font = "600 10px -apple-system, Helvetica, Arial"; ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(29,29,31,0.7)"; ctx.fillText(NAMES[i], x, y - 24); ctx.restore();
+    }
+    caption(ctx, w, "five kites, one ruler");
+  });
+
+  // d, market shock
+  register(get("d").canvases[0], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 24, p = saw(t, 6);
+    // gust window 0.25..0.55, then partial recovery
+    var hit = p < 0.25 ? 0 : p < 0.42 ? (p - 0.25) / 0.17 : Math.max(0.55, 1 - (p - 0.42) * 1.1);
+    var gust = p > 0.18 && p < 0.6 ? 1 : 0;
+    sky(ctx, w, h, gust ? (t * 1.4) % 1 + 0.2 : 0.1);
+    rungs(ctx, w, h, top, ground, [{ f: 0.25, t: "$25" }, { f: 0.55, t: "$60" }, { f: 0.85, t: "$95" }]);
+    var fs = [0.86, 0.62, 0.47, 0.33, 0.2];
+    var hand = flyer(ctx, 22, ground, true);
+    for (var i = 0; i < 5; i++) {
+      var f = fs[i] * (1 - 0.34 * hit);
+      var x = 62 + i * ((w - 96) / 5) + Math.sin(t * 1.1 + i) * 3 - hit * 10;
+      var y = ground - f * (ground - top);
+      var b = kite(ctx, x, y, 15, COLORS[i], 0.14 - hit * 0.75 + Math.sin(t * 3 + i) * 0.07 * (1 + hit * 3));
+      tail(ctx, b[0], b[1], 15, t + i, COLORS[i], 1.6 + hit * 4);
+      string(ctx, b[0], b[1], hand[0], hand[1], 0.9);
+    }
+    if (hit > 0.15) badge(ctx, w / 2, 20, "one gust, every kite", "#ff453a");
+    caption(ctx, w, "");
+  });
+
+  // e, snapped line
+  register(get("e").canvases[0], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 24, p = saw(t, 6);
+    sky(ctx, w, h, 0.3);
+    rungs(ctx, w, h, top, ground, [{ f: 0.3, t: "$30" }, { f: 0.62, t: "$65" }, { f: 0.88, t: "$95" }]);
+    var hand = flyer(ctx, 22, ground, true);
+    var fs = [0.75, 0.55, 0.4], xs = [w * 0.34, w * 0.58, w * 0.8];
+    for (var i = 0; i < 3; i++) {
+      if (i === 1) continue;
+      var y = ground - (fs[i] + Math.sin(t * 1.5 + i) * 0.014) * (ground - top);
+      var b = kite(ctx, xs[i], y, 15, COLORS[i], 0.14 + Math.sin(t + i) * 0.06);
+      tail(ctx, b[0], b[1], 15, t + i, COLORS[i], 1.6);
+      string(ctx, b[0], b[1], hand[0], hand[1], 0.9);
+    }
+    // the doomed one
+    var y1 = ground - 0.55 * (ground - top), x1 = xs[1];
+    if (p < 0.3) {
+      var b1 = kite(ctx, x1, y1, 15, COLORS[1], 0.14 + Math.sin(t * 2) * 0.06);
+      tail(ctx, b1[0], b1[1], 15, t, COLORS[1], 1.6);
+      string(ctx, b1[0], b1[1], hand[0], hand[1], 0.95);
+      if (p > 0.24) {
+        ctx.save(); ctx.strokeStyle = "#ff453a"; ctx.lineWidth = 3;
+        var mx = (b1[0] + hand[0]) / 2, my = (b1[1] + hand[1]) / 2 + 14;
+        ctx.beginPath(); ctx.arc(mx, my, 9, 0, TAU); ctx.stroke(); ctx.restore();
+      }
+    } else {
+      var q = (p - 0.3) / 0.7;
+      var kx = x1 + q * (w * 0.55), ky = y1 - q * 140 + q * q * 40;
+      ctx.save(); ctx.globalAlpha = Math.max(0, 1 - q * 1.15);
+      var b2 = kite(ctx, kx, ky, 15 * (1 - q * 0.45), COLORS[1], q * 16);
+      tail(ctx, b2[0], b2[1], 15 * (1 - q * 0.45), t, COLORS[1], 5);
+      ctx.restore();
+      // limp string collapsing to the ground
+      ctx.save(); ctx.strokeStyle = "rgba(29,29,31,0.4)"; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(hand[0], hand[1]);
+      var ex = hand[0] + 70 + Math.min(1, q * 3) * 26;
+      ctx.quadraticCurveTo(hand[0] + 34, hand[1] + 40 - (1 - Math.min(1, q * 3)) * 30, ex, ground - 2 - Math.sin(q * 9) * 1.5);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(ex + 8, ground - 4, 5, 0, TAU); ctx.stroke(); ctx.restore();
+      badge(ctx, w * 0.5, 22, "gone for good", "#ff453a");
+    }
+    caption(ctx, w, "");
+  });
+
+  // f, the index
+  register(get("f").canvases[0], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 22, p = saw(t, 6);
+    var hit = p < 0.3 ? 0 : p < 0.45 ? (p - 0.3) / 0.15 : Math.max(0, 1 - (p - 0.45) * 1.4);
+    sky(ctx, w, h, p > 0.24 && p < 0.7 ? (t * 1.4) % 1 + 0.2 : 0.1);
+    rungs(ctx, w, h, top, ground, [{ f: 0.3, t: "" }, { f: 0.62, t: "" }, { f: 0.88, t: "" }]);
+    var hand = flyer(ctx, 20, ground, true);
+    // small kites, whipped around
+    var sf = [0.86, 0.62, 0.4, 0.83, 0.55, 0.36];
+    var sx = [30, 54, 34, w - 30, w - 54, w - 34];
+    for (var i = 0; i < 6; i++) {
+      var f = sf[i] * (1 - 0.3 * hit) + Math.sin(t * 3.4 + i * 2) * 0.035 * (1 + hit * 2);
+      var x = sx[i] + Math.sin(t * 2 + i) * 4;
+      var y = ground - f * (ground - top);
+      var b = kite(ctx, x, y, 9, COLORS[i % 5], -hit * 0.8 + Math.sin(t * 4 + i) * 0.25);
+      tail(ctx, b[0], b[1], 9, t + i, COLORS[i % 5], 2 + hit * 4);
+    }
+    // the box kite, barely moved
+    var bf = 0.6 * (1 - 0.05 * hit) + Math.sin(t * 1.1) * 0.006;
+    var by = ground - bf * (ground - top);
+    var bb = boxKite(ctx, w / 2 - 6, by, Math.min(50, w * 0.17), -0.03 + Math.sin(t * 0.9) * 0.02 - hit * 0.04);
+    string(ctx, bb[0], bb[1], hand[0], hand[1], 1, "rgba(0,113,227,0.7)");
+    badge(ctx, w / 2, 20, "one of everything, all 500", "#0071e3");
+    caption(ctx, w, "same gust");
+  });
+
+  // g, dividend
+  register(get("g").canvases[0], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 26, p = saw(t, 4);
+    sky(ctx, w, h, 0.2);
+    rungs(ctx, w, h, top, ground, [{ f: 0.3, t: "" }, { f: 0.6, t: "" }, { f: 0.86, t: "" }]);
+    var y = ground - (0.74 + Math.sin(t * 1.2) * 0.012) * (ground - top), x = w * 0.6;
+    var b = kite(ctx, x, y, 21, COLORS[3], 0.14 + Math.sin(t) * 0.05);
+    tail(ctx, b[0], b[1], 21, t, COLORS[3], 2);
+    var hand = flyer(ctx, 26, ground, true);
+    string(ctx, b[0], b[1], hand[0], hand[1], 0.96);
+    // messenger sliding down the line
+    var q = Math.min(1, p / 0.72);
+    var mx = b[0] + (hand[0] - b[0]) * q, my = b[1] + (hand[1] - b[1]) * q + Math.sin(q * Math.PI) * 6;
+    ctx.save();
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "rgba(29,29,31,0.4)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(mx, my, 8, 6, -0.5, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    if (p > 0.72) {
+      var e = (p - 0.72) / 0.28;
+      ctx.save(); ctx.globalAlpha = 1 - e;
+      badge(ctx, hand[0] + 30, hand[1] - 18 - e * 22, "+$3 cash", "#30d158");
+      ctx.restore();
+    }
+    caption(ctx, w, "kite keeps flying");
+  });
+
+  // h, buy and sell
+  var hc = get("h").canvases;
+  register(hc[0], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 30, p = saw(t, 4.5);
+    sky(ctx, w, h, 0.25);
+    var f = 0.06 + Math.min(1, p / 0.75) * 0.72;
+    var y = ground - f * (ground - top), x = 40 + Math.min(1, p / 0.75) * (w * 0.45);
+    var b = kite(ctx, x, y, 17, COLORS[1], 0.2 + Math.sin(t * 2) * 0.06);
+    tail(ctx, b[0], b[1], 17, t, COLORS[1], 2);
+    var hand = flyer(ctx, 22, ground, true);
+    string(ctx, b[0], b[1], hand[0], hand[1], 0.35 + Math.min(1, p / 0.75) * 0.6, "rgba(0,113,227,0.8)");
+    badge(ctx, w / 2, 20, "BUY, let out line", "#0071e3");
+    ctx.save(); ctx.font = "600 10.5px -apple-system, Helvetica, Arial"; ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(29,29,31,0.6)";
+    ctx.fillText("$200 of cash leaves your hand", w / 2, h - 30); ctx.restore();
+  });
+  register(hc[1], 230, function (ctx, w, h, t) {
+    var ground = h - 13, top = 30, p = saw(t, 4.5);
+    sky(ctx, w, h, 0.25);
+    var f = 0.78 - Math.min(1, p / 0.75) * 0.72;
+    var y = ground - f * (ground - top), x = w * 0.62 - Math.min(1, p / 0.75) * (w * 0.4);
+    var hand = flyer(ctx, 22, ground, p < 0.75);
+    if (p < 0.9) {
+      var b = kite(ctx, x, y, 17, COLORS[2], -0.2 + Math.sin(t * 2) * 0.06);
+      tail(ctx, b[0], b[1], 17, t, COLORS[2], 2);
+      string(ctx, b[0], b[1], hand[0], hand[1], 0.95, "rgba(29,29,31,0.45)");
+      // reel coil in the hand
+      ctx.save(); ctx.strokeStyle = "rgba(29,29,31,0.35)"; ctx.lineWidth = 1;
+      for (var r = 1; r <= 3; r++) { ctx.beginPath(); ctx.arc(hand[0], hand[1] + 2, r * 2.4 * Math.min(1, p / 0.75), 0, TAU); ctx.stroke(); }
+      ctx.restore();
+    } else {
+      badge(ctx, hand[0] + 34, hand[1] - 14, "+$260 cash", "#30d158");
+    }
+    badge(ctx, w / 2, 20, "SELL, reel it in", "#1d1d1f");
+    ctx.save(); ctx.font = "600 10.5px -apple-system, Helvetica, Arial"; ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(29,29,31,0.6)";
+    ctx.fillText("the kite becomes cash again", w / 2, h - 30); ctx.restore();
+  });
+
+  /* ---------- Part 2, the level ---------- */
+  // fixed scripts, 21 entries each, price per share. No randomness anywhere.
+  var IDX = [100, 101.2, 102.1, 101.5, 103.4, 105.0, 106.1, 105.2, 107.4, 109.2, 110.9,
+             110.0, 112.3, 114.1, 115.8, 114.9, 117.2, 119.4, 121.3, 123.4, 126.0];
+  var SOL = [100, 108, 117, 112, 128, 140, 133, 148, 155, 132, 110,
+             96, 88, 101, 94, 106, 118, 112, 104, 109, 105];
+  var GOAL = 1200, FEE = 8, TICKMS = 620;
+
+  var L = { t: 0, cash: 1000, held: null, shares: 0, tokens: 3, running: false, done: false, flash: 0 };
+
+  var lvlCv = document.getElementById("lvl");
+  var elCash = document.getElementById("cash"), elAir = document.getElementById("air");
+  var elTok = document.getElementById("tokens"), elRes = document.getElementById("rtext");
+  var elStars = document.querySelector(".stars");
+  var bSolo = document.getElementById("buySolo"), bIdx = document.getElementById("buyIdx");
+  var bSell = document.getElementById("sell"), bPlay = document.getElementById("play");
+
+  function price(which) { return which === "idx" ? IDX[L.t] : SOL[L.t]; }
+  function airValue() { return L.held ? L.shares * price(L.held) : 0; }
+  function total() { return L.cash + airValue(); }
+  function fmt(n) { return "$" + Math.round(n).toLocaleString("en-US"); }
+
+  function syncHud() {
+    elCash.textContent = fmt(L.cash);
+    elAir.textContent = fmt(airValue());
+    elTok.innerHTML = "";
+    for (var i = 0; i < 3; i++) {
+      var d = document.createElement("div");
+      d.className = "tok" + (i < 3 - L.tokens ? " spent" : "");
+      elTok.appendChild(d);
+    }
+    var canTrade = L.tokens > 0 && !L.done;
+    bSolo.disabled = !canTrade || L.held !== null;
+    bIdx.disabled = !canTrade || L.held !== null;
+    bSell.disabled = !canTrade || L.held === null;
+    bPlay.disabled = L.running;
+    if (!L.done) elRes.textContent = "Gust " + L.t + " of 20. " +
+      (L.held ? "You are flying the " + (L.held === "idx" ? "box kite" : "Solo Co kite") + ", worth " + fmt(airValue()) + "."
+              : "Nothing in the air. Cash in your hand does not move.");
+  }
+
+  function buy(which) {
+    if (L.tokens <= 0 || L.held || L.done) return;
+    L.tokens--; L.cash -= FEE;
+    L.shares = L.cash / price(which);
+    L.held = which; L.cash = 0; L.flash = 1;
+    syncHud();
+  }
+  function sell() {
+    if (L.tokens <= 0 || !L.held || L.done) return;
+    L.tokens--;
+    L.cash = L.shares * price(L.held) - FEE;
+    L.held = null; L.shares = 0; L.flash = 1;
+    syncHud();
+  }
+
+  var timer = null;
+  function play() {
+    if (L.done) { reset(); return; }
+    if (L.running) return;
+    L.running = true; bPlay.textContent = "The wind is blowing";
+    timer = setInterval(function () {
+      L.t++;
+      if (L.t >= 20) { L.t = 20; clearInterval(timer); finish(); }
+      syncHud();
+    }, TICKMS);
+  }
+
+  function finish() {
+    L.running = false; L.done = true;
+    var end = total(), win = end > GOAL, stars = 1, msg;
+    if (!L.held && L.tokens === 3) {
+      stars = 0;
+      msg = "You never let the line out, so your $1,000 stayed exactly $1,000 while the whole sky rose. Cash in your hand is safe and completely still.";
+    } else if (win && L.tokens >= 2) {
+      stars = 3;
+      msg = "Beat the goal with " + L.tokens + " tokens still in your pocket. One launch, no panic, no line wasted. That is the whole skill.";
+    } else if (win) {
+      stars = 2;
+      msg = "You beat the goal, but you spent every token to do it, and the only reason you knew when to reel in is that you had already seen this sky. Real wind never shows you the script.";
+    } else {
+      stars = 1;
+      msg = "You ended at " + fmt(end) + ", under the goal. Solo Co gave you the wildest ride in the sky and finished barely above where it started. Jumpy is not the same as good.";
+    }
+    elStars.innerHTML = "";
+    for (var i = 0; i < 3; i++) elStars.innerHTML += i < stars ? "&#9733;" : "<i>&#9733;</i>";
+    elRes.textContent = "Final: " + fmt(end) + ". " + msg;
+    bPlay.textContent = "Fly again";
+    syncHud();
+  }
+
+  function reset() {
+    clearInterval(timer);
+    L = { t: 0, cash: 1000, held: null, shares: 0, tokens: 3, running: false, done: false, flash: 0 };
+    bPlay.textContent = "Start the wind";
+    elStars.innerHTML = "<i>&#9733;</i><i>&#9733;</i><i>&#9733;</i>";
+    syncHud();
+  }
+
+  bSolo.onclick = function () { buy("sol"); };
+  bIdx.onclick = function () { buy("idx"); };
+  bSell.onclick = sell;
+  bPlay.onclick = play;
+
+  var LH = 400;
+  register(lvlCv, LH, function (ctx, w, h, t) {
+    var ground = h - 14, top = 40;
+    var VMAX = 170;
+    function yf(v) { return ground - (v / VMAX) * (ground - top); }
+    var gustNow = L.running ? 0.5 + Math.sin(t * 3) * 0.3 : 0.12;
+    sky(ctx, w, h, gustNow);
+    rungs(ctx, w, h, top, ground, [
+      { f: 50 / VMAX, t: "$50" }, { f: 100 / VMAX, t: "$100" }, { f: 150 / VMAX, t: "$150" }
+    ]);
+    var hand = flyer(ctx, 34, ground, true);
+
+    // past-altitude trails
+    function trail(arr, color, xEnd) {
+      ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 2.6; ctx.globalAlpha = 0.6;
+      ctx.setLineDash([]); ctx.lineJoin = "round";
+      ctx.beginPath();
+      for (var i = 0; i <= L.t; i++) {
+        var x = 90 + (xEnd - 90) * (L.t === 0 ? 1 : i / L.t);
+        if (i === 0) ctx.moveTo(x, yf(arr[i])); else ctx.lineTo(x, yf(arr[i]));
+      }
+      ctx.stroke(); ctx.restore();
+    }
+    var xS = w * 0.52, xI = w * 0.82;
+    trail(SOL, COLORS[0], xS);
+    trail(IDX, "#0071e3", xI);
+
+    // solo kite
+    var sy = yf(SOL[L.t]) + Math.sin(t * 2.1) * 3;
+    var sb = kite(ctx, xS, sy, 20, COLORS[0], 0.12 + Math.sin(t * 2.4) * 0.12);
+    tail(ctx, sb[0], sb[1], 20, t, COLORS[0], 2.5);
+    ctx.save(); ctx.font = "600 11px -apple-system, Helvetica, Arial"; ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(29,29,31,0.65)"; ctx.fillText("Solo Co", xS, sy - 30); ctx.restore();
+
+    // box kite
+    var iy = yf(IDX[L.t]) + Math.sin(t * 1.05) * 1.2;
+    var bs = Math.min(52, w * 0.11);
+    var ib = boxKite(ctx, xI, iy, bs, -0.02 + Math.sin(t * 0.8) * 0.015);
+    ctx.save(); ctx.font = "600 11px -apple-system, Helvetica, Arial"; ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(29,29,31,0.65)"; ctx.fillText("Big Box Kite", xI, iy - bs * 1.15 - 12); ctx.restore();
+
+    // your line goes to whatever you hold
+    if (L.held) {
+      var pt = L.held === "idx" ? ib : sb;
+      string(ctx, pt[0], pt[1], hand[0], hand[1], 1, "rgba(0,113,227,0.85)");
+      badge(ctx, (pt[0] + hand[0]) / 2, (pt[1] + hand[1]) / 2 - 6, "your line, " + fmt(airValue()), "#0071e3");
+    } else {
+      ctx.save(); ctx.font = "600 11px -apple-system, Helvetica, Arial"; ctx.textAlign = "left";
+      ctx.fillStyle = "rgba(29,29,31,0.5)";
+      ctx.fillText("no line out", 52, ground - 30); ctx.restore();
+    }
+
+    // goal line and readouts
+    ctx.save();
+    ctx.font = "600 12px -apple-system, Helvetica, Arial"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillStyle = "rgba(29,29,31,0.75)";
+    ctx.fillText("Gust " + L.t + " / 20", 12, 12);
+    ctx.textAlign = "right";
+    ctx.fillStyle = total() > GOAL ? "#1a8f3c" : "rgba(29,29,31,0.75)";
+    ctx.fillText("You: " + fmt(total()) + "   Goal: " + fmt(GOAL), w - 12, 12);
+    ctx.restore();
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>
