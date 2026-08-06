@@ -86,6 +86,29 @@ export default function OrbSelect() {
           </Link>
         </div>
 
+        <div className="mt-6 rounded-2xl bg-white border border-black/8 shadow-sm p-5">
+          <div className="flex items-baseline gap-2">
+            <div className="text-[15px] font-semibold tracking-tight">Start here: the basics</div>
+            <div className="text-[12px]" style={{ color: "#6e6e73" }}>about two minutes each, one marble each</div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {([
+              ["share", "What a share is", "#0a84ff"],
+              ["fund", "What a fund is", "#bf5af2"],
+              ["cash", "What cash does", "#8e8e93"],
+              ["coin", "What a coin is", "#ff9f0a"],
+            ] as const).map(([id, label, c]) => (
+              <Link key={id} to={`/orb/mini/${id}`}
+                className="rounded-xl border border-black/8 p-3 flex flex-col items-start gap-2 transition hover:shadow-md hover:-translate-y-0.5"
+                style={{ background: "#fafafc" }}>
+                <span className="w-8 h-8 rounded-full"
+                  style={{ background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${c}55 55%, ${c}bb)`, boxShadow: "inset 0 0 0 1px rgba(30,45,80,0.1)" }} />
+                <span className="text-[12.5px] font-medium leading-tight">{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-8 flex flex-col gap-4">
           {SCENARIOS.map((s) => (
             <Link key={s.to} to={s.to}
