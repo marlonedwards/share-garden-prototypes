@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnsweredItem, CheckItem, gradeCheckAnswer, saveAnsweredRun } from "../lib/checkpoints";
 import { LessonConfig } from "../lessons/types";
 
@@ -65,7 +65,12 @@ function LessonCheck({ item, picked, onPick }: {
 export default function LessonShell({ lesson }: { lesson: LessonConfig }) {
   const nav = useNavigate();
   const total = lesson.screens.length;
-  const [step, setStep] = useState(0);
+  // The step index lives in the URL (?step=N, 1-based), so browser Back and
+  // Forward walk the lesson one step at a time instead of leaving it. Only
+  // the search param changes between steps, so the component stays mounted
+  // and every stage keeps its state under history navigation, exactly as it
+  // does under the in-lesson arrows.
+  const [searchParams, setSearchParams] = useSearchParams();
   // Continue-permission per screen, persisted across back-and-forward so a
   // revisited stage never re-locks the path. Stages gate by default; only an
   // explicit `gated: false` starts a screen unlocked.
@@ -79,6 +84,24 @@ export default function LessonShell({ lesson }: { lesson: LessonConfig }) {
   );
   // The aggregated beta-checks row is written exactly once per run.
   const savedRef = useRef(false);
+
+  // Derive the step from the URL: clamp the param to [1..total], and never
+  // past the first still-locked screen, so a hand-typed URL cannot jump the
+  // gating. A clamped or malformed param is repaired in place below.
+  const parsed = parseInt(searchParams.get("step") ?? "1", 10);
+  const urlStep = (Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), total) : 1) - 1;
+  const firstLocked = ready.findIndex((v) => !v);
+  const step = Math.min(urlStep, firstLocked === -1 ? total - 1 : firstLocked);
+
+  useEffect(() => {
+    if (urlStep !== step) setSearchParams({ step: String(step + 1) }, { replace: true });
+  }, [urlStep, step, setSearchParams]);
+
+  // Each in-lesson step change pushes a history entry carrying its step
+  // number, which is what lets the browser's own Back and Forward retrace it.
+  const goTo = useCallback((i: number) => {
+    setSearchParams({ step: String(i + 1) });
+  }, [setSearchParams]);
 
   const isLast = step === total - 1;
 
@@ -116,13 +139,13 @@ export default function LessonShell({ lesson }: { lesson: LessonConfig }) {
   const advance = useCallback(() => {
     if (!ready[step]) return;
     if (isLast) finish();
-    else setStep((s) => s + 1);
-  }, [ready, step, isLast, finish]);
+    else goTo(step + 1);
+  }, [ready, step, isLast, finish, goTo]);
 
   const back = useCallback(() => {
-    if (step > 0) setStep((s) => s - 1);
+    if (step > 0) goTo(step - 1);
     else nav("/orb");
-  }, [step, nav]);
+  }, [step, goTo, nav]);
 
   // Right arrow advances; left arrow returns one step. Sliders keep their
   // own arrow keys while focused.
@@ -135,12 +158,12 @@ export default function LessonShell({ lesson }: { lesson: LessonConfig }) {
         advance();
       } else if (e.key === "ArrowLeft" && step > 0) {
         e.preventDefault();
-        setStep((s) => s - 1);
+        goTo(step - 1);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [advance, step]);
+  }, [advance, step, goTo]);
 
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: INK, colorScheme: "light" }}>

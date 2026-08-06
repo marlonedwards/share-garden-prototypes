@@ -41,7 +41,7 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
   {
     id: "compounding", title: "Compounding", rail: "spread", color: "#ffd60a",
-    copy: "Compounding is interest earning interest of its own. The bank pays you on your money in year one, and in year two it pays you on the interest too, so the payment grows without you adding a dime. Given enough years, that growing payment bends a straight line into a curve.",
+    copy: "Compounding is what happens when the interest you have already earned starts earning interest itself. The bank pays you on your money in year one, and in year two it pays you on the interest too, so the payment grows without you adding a dime. Given enough years, that growing payment bends a straight line into a curve.",
     url: "https://en.wikipedia.org/wiki/Compound_interest",
   },
   {

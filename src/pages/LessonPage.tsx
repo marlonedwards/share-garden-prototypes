@@ -19,7 +19,10 @@ export default function LessonPage() {
   if (isLegacyPath || canon !== id) return <Navigate to={`/orb/learn/${canon}`} replace />;
 
   const lesson = getLesson(canon)!;
-  // Keyed by the navigation itself, not just the lesson id, so navigating to a
-  // lesson URL you are already inside remounts the shell back at step 1.
-  return <LessonShell key={`${lesson.id}:${location.key}`} lesson={lesson} />;
+  // Keyed by the lesson id ONLY. The step lives in the URL (?step=N), and the
+  // shell must stay mounted while that param changes so browser Back and
+  // Forward walk the steps without wiping stage state. Navigating to the bare
+  // lesson URL you are already inside still lands on step 1, because no
+  // ?step param means step 1.
+  return <LessonShell key={lesson.id} lesson={lesson} />;
 }
