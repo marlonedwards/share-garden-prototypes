@@ -9,6 +9,7 @@ mkdirSync(OUT, { recursive: true });
 const problems = [];
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => problems.push("PAGEERROR " + e.message));
 await page.goto(`${BASE}/#/orb/learn/cash`);
 await page.evaluate(() => localStorage.clear());

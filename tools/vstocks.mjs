@@ -59,6 +59,7 @@ async function drive(page, label, shot) {
 // ---- mobile 390x844
 {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   await page.goto(`${BASE}/#/orb`);
   await page.evaluate(() => localStorage.clear());
   await page.goto(`${BASE}/#/orb/learn/stocks`);

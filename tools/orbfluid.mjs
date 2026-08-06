@@ -6,6 +6,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch();
 for (const style of ["waves", "blobs"]) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 950 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   await page.addInitScript((s) => localStorage.setItem("orbFluid", s), style);
   for (const beat of ["mid", "crash"]) {
     await page.goto("about:blank");

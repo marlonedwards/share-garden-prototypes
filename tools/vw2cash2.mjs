@@ -11,6 +11,7 @@ mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 for (const vp of [{ n: "mob", w: 390, h: 844 }, { n: "desk", w: 1280, h: 720 }]) {
   const page = await browser.newPage({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   const errors = [];
   page.on("pageerror", (e) => errors.push("PAGEERROR: " + e.message));
   page.on("console", (m) => { if (m.type() === "error") errors.push("CONSOLE.ERR: " + m.text()); });

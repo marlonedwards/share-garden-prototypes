@@ -9,6 +9,7 @@ const TAG = process.argv[2] === "m" ? "m" : "d";
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: VP, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 const errs = [];
 page.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 page.on("console", (m) => { if (m.type() === "error") errs.push("console: " + m.text()); });

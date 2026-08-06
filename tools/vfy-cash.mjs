@@ -153,6 +153,7 @@ for (const vp of VIEWPORTS) {
 // Legacy route + step clamp checks
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   await page.goto(`${BASE}/#/orb/mini/cash`); await wait(600);
   console.log("\nlegacy /orb/mini/cash ->", page.url());
   await page.goto(`${BASE}/#/orb/learn/cash?step=7`); await wait(600);

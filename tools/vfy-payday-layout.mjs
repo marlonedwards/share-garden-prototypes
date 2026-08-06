@@ -6,6 +6,7 @@ const browser = await chromium.launch();
 
 for (const vp of [{ width: 1280, height: 800, tag: "1280" }, { width: 1600, height: 1000, tag: "1600" }]) {
   const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
   await page.goto("http://localhost:4329/#/orb/s/payday");
   await wait(1000);

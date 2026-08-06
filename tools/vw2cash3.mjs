@@ -7,6 +7,7 @@ const browser = await chromium.launch();
 
 for (const vp of [{ n: "mob", w: 390, h: 844 }, { n: "desk", w: 1280, h: 720 }]) {
   const page = await browser.newPage({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   await page.goto(`${BASE}/#/orb/learn/cash`);
   await wait(700);
   const card = () => page.locator("main .rounded-2xl.bg-white:visible").first();

@@ -4,6 +4,7 @@ const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 const B = "http://localhost:4332";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 await page.goto(B + "/#/orb/s/dotcom");
 await wait(1400);

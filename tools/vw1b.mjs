@@ -11,6 +11,7 @@ const bad = (s) => { V.push(s); console.log("  VIOLATION: " + s); };
 // ---- mobile sweep, every screen of every lesson
 for (const vp of [{ w: 390, h: 844, tag: "mob" }, { w: 1280, h: 720, tag: "short" }]) {
   const page = await browser.newPage({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   page.on("pageerror", (e) => bad("PAGEERROR " + e.message));
   console.log(`\n===== ${vp.tag} ${vp.w}x${vp.h}`);
   for (const id of ["cash", "savings", "stocks", "funds", "coins"]) {

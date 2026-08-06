@@ -6,6 +6,7 @@ const BASE = process.env.ORB_BASE ?? "http://localhost:4336";
 const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
 await page.goto(`${BASE}/#/orb/learn/cash`);
 await wait(800);

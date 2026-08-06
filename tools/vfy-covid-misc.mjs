@@ -5,6 +5,7 @@ const browser = await chromium.launch();
 
 // real names toggle on the covid cast
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 await page.goto("http://localhost:4333/#/orb/s/covid");
 await wait(900);

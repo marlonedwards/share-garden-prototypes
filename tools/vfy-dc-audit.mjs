@@ -5,6 +5,7 @@ const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 const B = "http://localhost:4332";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE ERR:", m.text()); });
 

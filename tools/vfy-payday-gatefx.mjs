@@ -5,6 +5,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 980 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 await page.goto("http://localhost:4329/#/orb/s/payday");
 await wait(1000);

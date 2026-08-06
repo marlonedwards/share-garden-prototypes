@@ -5,6 +5,7 @@ const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 const browser = await chromium.launch();
 for (const [w, h, tag] of [[390, 844, "mobile"], [1440, 1000, "desktop"]]) {
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   for (const [route, name] of [["/orb", "select"], ["/objectives", "onepager"], ["/orb/learn/stocks", "stocks"], ["/orb/s/inflation", "inflation"]]) {
     await page.goto(BASE + "/#" + route);
     await wait(900);

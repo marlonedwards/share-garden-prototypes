@@ -6,6 +6,7 @@ const browser = await chromium.launch();
 
 for (const vp of [{ width: 1440, height: 950 }, { width: 430, height: 900 }]) {
   const page = await browser.newPage({ viewport: vp, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   await page.goto(`${BASE}/#/orb/s/dotcom`);
   await wait(1400);
   const worst = [];

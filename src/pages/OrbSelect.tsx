@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { SCENARIOS as ERAS } from "../lib/scenarios";
 import { useOrbName } from "../lib/orbIdentity";
@@ -69,6 +70,10 @@ function LessonMarble({ state, color }: { state: MarbleState; color: string }) {
   } else if (state === "cloudy") {
     base.background = "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(228,230,236,0.7) 55%, rgba(206,210,220,0.85))";
     base.boxShadow = "inset 0 0 0 1px rgba(30,45,80,0.10)";
+  } else if (state === "claimed") {
+    // said they know it: the color rings still-empty glass until a check proves it
+    base.background = "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(240,242,246,0.5))";
+    base.boxShadow = `0 0 0 2.5px ${color}`;
   } else {
     base.background = "transparent";
     base.border = "1.5px dashed rgba(0,0,0,0.18)";
@@ -84,6 +89,13 @@ function LessonMarble({ state, color }: { state: MarbleState; color: string }) {
 
 export default function OrbSelect() {
   const [orbName, setOrbName] = useOrbName();
+  const navigate = useNavigate();
+  // first visit: the intro ritual runs before the course screen
+  useEffect(() => {
+    try { if (!localStorage.getItem("onboarded")) navigate("/orb/intro", { replace: true }); } catch { /* fine */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const reco = (() => { try { return localStorage.getItem("orb-reco"); } catch { return null; } })();
   // re-read the field guide whenever a check clears a marble elsewhere
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
@@ -159,6 +171,9 @@ export default function OrbSelect() {
           <div className="flex items-baseline gap-2">
             <div className="text-[15px] font-semibold tracking-tight">Start here: the basics</div>
             <div className="text-[12px]" style={{ color: "#6e6e73" }}>Five short lessons run in order, and together they clear nine marbles.</div>
+            <Link to="/orb/intro" className="ml-auto text-[12px] font-medium transition hover:opacity-75" style={{ color: "#0071e3" }}>
+              Replay the intro
+            </Link>
           </div>
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-3">
             {LESSON_LADDER.map((l, i) => {
@@ -174,8 +189,13 @@ export default function OrbSelect() {
                   </div>
                   <span className="text-[12.5px] font-medium leading-tight">{l.title}</span>
                   <span className="text-[11px] leading-tight" style={{ color: "#6e6e73" }}>
-                    {st === "cleared" ? "The marble is cleared." : st === "cloudy" ? "The marble is still setting." : "The marble is waiting."}
+                    {st === "cleared" ? "The marble is cleared." : st === "cloudy" ? "The marble is still setting." : st === "claimed" ? "You said you know this. Prove it here." : "The marble is waiting."}
                   </span>
+                  {reco === `lesson-${l.id}` && (
+                    <span className="text-[10.5px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
+                      Start here, for you
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -203,7 +223,14 @@ export default function OrbSelect() {
                 <div className="absolute rounded-full" style={{ left: "22%", top: "16%", width: "18%", height: "10%", background: "rgba(255,255,255,0.9)", transform: "rotate(-25deg)" }} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>{s.lesson}</div>
+                <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>
+                  {s.lesson}
+                  {reco && reco.startsWith("era-") && s.to === `/orb/s/${reco.slice(4)}` && (
+                    <span className="ml-2 text-[10.5px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
+                      Start here, for you
+                    </span>
+                  )}
+                </div>
                 <div className="text-[19px] font-semibold tracking-tight">{s.title}</div>
                 <div className="text-[13.5px] mt-0.5" style={{ color: "#6e6e73" }}>{s.line}</div>
                 <div className="text-[12.5px] mt-1.5" style={{ color: "#3a3a3c" }} title={s.learn}>

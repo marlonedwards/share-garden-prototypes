@@ -14,6 +14,7 @@ const browser = await chromium.launch();
 
 async function runViewport(label, width, height) {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   page.on("pageerror", (e) => bad(`${label} PAGEERROR ${e.message}`));
   page.on("console", (m) => { if (m.type() === "error") bad(`${label} CONSOLE ${m.text()}`); });
 

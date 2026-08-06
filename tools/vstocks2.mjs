@@ -6,6 +6,7 @@ const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 const cur = () => page.evaluate(() => {
   const divs = [...document.querySelectorAll("main > div")].filter((d) => !d.classList.contains("hidden") && d.querySelector("p"));
   return divs.map((d) => d.innerText).join("\n@@@\n");

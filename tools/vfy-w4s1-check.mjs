@@ -6,6 +6,7 @@ const browser = await chromium.launch();
 const errs = [];
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("console", (m) => { if (m.type() === "error") errs.push("console: " + m.text()); });
 page.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 

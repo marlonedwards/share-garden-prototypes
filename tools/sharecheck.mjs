@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import { wait, scout, rideGates, waitForEnd, DOTCOM_GATES } from "./walkkit.mjs";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 950 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 const OUT = new URL("./shots/orb/", import.meta.url).pathname;
 await page.goto("http://localhost:4318/#/orb/era");

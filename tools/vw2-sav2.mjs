@@ -7,6 +7,7 @@ const OUT = new URL("./shots/overnight/", import.meta.url).pathname;
 const browser = await chromium.launch();
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 const errors = [];
 page.on("pageerror", (e) => errors.push("PAGEERROR: " + e.message));
 await page.goto(`${BASE}/#/orb/learn/savings`);

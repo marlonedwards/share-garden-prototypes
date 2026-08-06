@@ -27,6 +27,10 @@ function Marble({ entry, state, active, onClick }: {
   } else if (state === "cloudy") {
     base.background = "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(228,230,236,0.7) 55%, rgba(206,210,220,0.85))";
     base.boxShadow = "inset 0 0 0 1.5px rgba(30,45,80,0.10), 0 8px 16px -10px rgba(24,34,60,0.3)";
+  } else if (state === "claimed") {
+    // the intro answer claims it: colored ring, still-empty glass
+    base.background = "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(240,242,246,0.5))";
+    base.boxShadow = `0 0 0 3px ${entry.color}`;
   } else {
     base.background = "transparent";
     base.border = "2px dashed rgba(0,0,0,0.16)";
@@ -49,6 +53,7 @@ export default function FieldGuidePage() {
   const stateLine = (st: MarbleState, unlocked: boolean) =>
     st === "cleared" ? "You proved this one."
       : st === "cloudy" ? "Still setting. Get its quick-check question right to clear it."
+      : st === "claimed" ? "You said you know this one in the intro. Its first quick check makes it official."
       : unlocked ? "Card open. Its marble clears when you answer its quick-check question right."
       : "You have not met this one in play yet.";
 

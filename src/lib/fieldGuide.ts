@@ -86,12 +86,13 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
 ];
 
-export type MarbleState = "cleared" | "cloudy" | "empty";
+export type MarbleState = "cleared" | "cloudy" | "claimed" | "empty";
 
 interface GuideStore {
   unlocked: string[];
   cleared: string[];
   cloudy: string[];
+  claimed: string[];   // said they know it in onboarding; first check confirms or busts
 }
 
 const KEY = "field-guide";
@@ -99,9 +100,9 @@ const KEY = "field-guide";
 function load(): GuideStore {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? "{}");
-    return { unlocked: s.unlocked ?? [], cleared: s.cleared ?? [], cloudy: s.cloudy ?? [] };
+    return { unlocked: s.unlocked ?? [], cleared: s.cleared ?? [], cloudy: s.cloudy ?? [], claimed: s.claimed ?? [] };
   } catch {
-    return { unlocked: [], cleared: [], cloudy: [] };
+    return { unlocked: [], cleared: [], cloudy: [], claimed: [] };
   }
 }
 
@@ -124,10 +125,22 @@ export function unlockEntry(id: string): void {
   save(s);
 }
 
+// onboarding answers can claim a concept: the marble wears its color as a
+// ring around empty glass until the first quick check confirms or busts it
+export function markClaimed(id: string): void {
+  const s = load();
+  if (!s.unlocked.includes(id)) s.unlocked.push(id);
+  if (!s.cleared.includes(id) && !s.cloudy.includes(id) && !s.claimed.includes(id)) {
+    s.claimed.push(id);
+  }
+  save(s);
+}
+
 // only the quick check moves a marble: right clears it, wrong leaves it cloudy
 export function markCheck(id: string, correct: boolean): void {
   const s = load();
   if (!s.unlocked.includes(id)) s.unlocked.push(id);
+  s.claimed = s.claimed.filter((c) => c !== id);
   if (correct) {
     if (!s.cleared.includes(id)) s.cleared.push(id);
     s.cloudy = s.cloudy.filter((c) => c !== id);
@@ -140,5 +153,6 @@ export function markCheck(id: string, correct: boolean): void {
 export function marbleState(id: string, s: GuideStore = load()): MarbleState {
   if (s.cleared.includes(id)) return "cleared";
   if (s.cloudy.includes(id)) return "cloudy";
+  if (s.claimed.includes(id)) return "claimed";
   return "empty";
 }

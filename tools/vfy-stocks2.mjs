@@ -3,6 +3,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const BASE = "http://localhost:4324";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 const errs = [];
 page.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 page.on("console", (m) => { if (m.type() === "error") errs.push("console: " + m.text()); });

@@ -39,6 +39,7 @@ const ROUTES = [
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
 
 let failures = 0;
 const fail = (msg) => { console.log("FAIL:", msg); failures++; };

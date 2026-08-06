@@ -68,6 +68,12 @@ export default function Landing() {
           </Link>
         </div>
 
+        <div className="mt-4 text-center">
+          <Link to="/orb/intro" className="text-[12.5px] font-medium transition hover:opacity-75" style={{ color: "#0071e3" }}>
+            New here, or showing a friend? Play the Orb's intro.
+          </Link>
+        </div>
+
         <p className="mt-10 text-[12.5px]" style={{ color: "#a1a1a6" }}>
           Everything here is free and open source, with no accounts and no logins, and it runs
           in a browser on a Chromebook. A deterministic simulation engine replays real historical

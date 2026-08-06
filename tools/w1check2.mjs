@@ -11,6 +11,7 @@ const browser = await chromium.launch();
 // ---------- 1. mobile layout ----------
 {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { try { localStorage.setItem("onboarded", "1"); } catch (e) {} });
   await page.goto(`${BASE}/#/orb/learn/savings`);
   await wait(700);
   await page.getByRole("button", { name: /Wait one year/ }).click();
