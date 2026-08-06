@@ -6,14 +6,16 @@ page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE.ERR:", m.text()); });
 const OUT = new URL("./shots/orb/", import.meta.url).pathname;
 
+const BASE = process.env.ORB_BASE ?? "http://localhost:4318";
+
 // crypto era: buy, gates, end, then scrub + quiz focus
-await page.goto("http://localhost:4318/#/orb/s/crypto");
+await page.goto(`${BASE}/#/orb/s/crypto`);
 await wait(1000);
 await page.getByText("Start in 2018").click();
 await wait(400);
 await page.getByRole("button", { name: "Pause" }).click();
 await wait(300);
-await page.getByText("Coin Alpha").first().click();
+await page.getByRole("button", { name: "Coin Alpha" }).first().click();
 await wait(250);
 await page.getByRole("button", { name: "Buy $250" }).last().click();
 await wait(300);
@@ -43,9 +45,10 @@ await page.mouse.move(box.x + box.width / 2, box.y - 200);
 await wait(400);
 console.log("pill gone after leave:", await page.getByText("· rewind").count() === 0);
 
-// quiz focus: first crypto item focuses step 58 (Nov 2022)
-const buttons = page.locator("button.text-left.text-\\[13px\\]");
-await wait(300);
+// quiz focus: open the quick check (it replaces the debrief card), then the
+// first crypto item focuses step 58 (Nov 2022)
+await page.getByRole("button", { name: "Quick check" }).click();
+await wait(500);
 console.log("quiz focus pill (Nov 2022):", await page.getByText("Nov 2022 · rewind").count());
 await page.screenshot({ path: OUT + "scrub-quizfocus.png", fullPage: true });
 

@@ -125,6 +125,9 @@ export default function OrbScenario() {
     }),
   });
   const [beat, setBeat] = useState<Beat>("brief");
+  // the end beat shows one card at a time: the debrief first, then the quiz
+  // replaces it, per the one-idea-per-screen layout law
+  const [endPhase, setEndPhase] = useState<"debrief" | "quiz">("debrief");
   const [fluid, setFluid] = useFluidPref();
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
@@ -295,6 +298,7 @@ export default function OrbScenario() {
   const restart = () => {
     reset();
     setBeat("brief");
+    setEndPhase("debrief");
     setTradeRow(null);
     setPayMode("unset");
     setActiveGate(null);
@@ -482,7 +486,7 @@ export default function OrbScenario() {
               </Card>
             )}
             {beat === "run" && pausedForMove && speed === 0 && (
-              <Caption>Paused for your move. Trade on the right, then press Play when you are ready.</Caption>
+              <Caption>The tape is paused for your move. Trade on the right, then press Play when you are ready.</Caption>
             )}
             {beat === "run" && speed > 0 && m.step < 4 && !cfg.income && (
               <Caption>Pause anytime to trade. The tape runs to the end either way.</Caption>
@@ -517,7 +521,7 @@ export default function OrbScenario() {
               </Card>
             )}
             {beat === "payday" && (
-              <Card title={`Payday. ${fmtMoney(cfg.income ?? 0)} arrived.`}>
+              <Card title={`Your payday of ${fmtMoney(cfg.income ?? 0)} just arrived.`}>
                 <p>Invest it into your colors in their current mix, or keep it as cash.</p>
                 <Actions>
                   <Btn onClick={() => { investIncomeNow(); setPayMode("auto"); setBeat("run"); setSpeed(1); }}>Invest, and do this automatically</Btn>
@@ -526,7 +530,7 @@ export default function OrbScenario() {
                 </Actions>
               </Card>
             )}
-            {beat === "end" && (
+            {beat === "end" && endPhase === "debrief" && (
               <Card title={cfg.endTitle} wide>
                 <div className="flex gap-3 my-3">
                   <div className="flex-1 rounded-xl px-4 py-3 border"
@@ -580,22 +584,32 @@ export default function OrbScenario() {
                   ))}
                 </ul>
                 <Actions>
-                  <Btn onClick={saveCard}>Save your orb</Btn>
+                  <Btn onClick={() => setEndPhase("quiz")}>Quick check</Btn>
+                  <GhostBtn onClick={saveCard}>Save your orb</GhostBtn>
                   <GhostBtn onClick={restart}>Play again</GhostBtn>
                 </Actions>
+              </Card>
+            )}
+            {beat === "end" && endPhase === "quiz" && (
+              <Card title="Prove what this era taught you." wide>
                 <QuickCheck scenario={cfg.id} items={checkItems} gateMs={gateAnswers.map((a) => a.ms)}
                   onFocus={setQuizFocus} />
+                <Actions>
+                  <GhostBtn onClick={() => { setQuizFocus(null); setEndPhase("debrief"); }}>Back to the debrief</GhostBtn>
+                  <GhostBtn onClick={restart}>Play again</GhostBtn>
+                </Actions>
               </Card>
             )}
           </div>
         </div>
 
+        {beat !== "end" && (
         <div className="w-full max-w-xs flex flex-col gap-4">
           <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
             <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>Inside your orb</div>
             {holdings.length === 0 && (
               <div className="text-sm py-1" style={{ color: "#6e6e73" }}>
-                {beat === "end" ? "Empty. You sold everything." : "Nothing here yet. Clear glass."}
+                Nothing is here yet. The glass is clear.
               </div>
             )}
             {holdings.map((h, hi) => {
@@ -683,13 +697,14 @@ export default function OrbScenario() {
               </div>
             </div>
           )}
-          {beat !== "brief" && beat !== "end" && m.net.length > 10 && (
+          {beat !== "brief" && m.net.length > 10 && (
             <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
               <div className="text-[13px] font-semibold mb-2" style={{ color: "#6e6e73" }}>Growth</div>
               <GrowthChart net={m.net} bench={m.bench} width={272} height={80} xLabels={[m.monthLabel(0), m.monthLabel()]} />
             </div>
           )}
         </div>
+        )}
       </main>
     </div>
   );

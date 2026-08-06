@@ -21,12 +21,12 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
   {
     id: "market-price", title: "Market price", rail: "own", color: "#64d2ff",
-    copy: "The price is just what the last person paid. It changes every time somebody new decides a share is worth more or less than that. Nobody in charge sets it, and it can be too high or too low for years.",
+    copy: "The market price of a share is just what the last person paid for it. It changes every time somebody new decides a share is worth more or less than that. Nobody in charge sets it, and it can be too high or too low for years.",
     url: "https://en.wikipedia.org/wiki/Market_price",
   },
   {
     id: "dividend", title: "Dividend", rail: "own", color: "#30d158",
-    copy: "Some companies hand out part of their profit to their owners in cash, a few times a year. You get it whether the price went up or down. Spend it, or buy more shares with it and let the pile grow itself.",
+    copy: "A dividend is a piece of a company's profit, handed to its owners in cash a few times a year. You get it whether the price went up or down. You can spend it, or you can buy more shares with it and let the pile grow itself.",
     url: "https://en.wikipedia.org/wiki/Dividend",
   },
   {
@@ -36,7 +36,7 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
   {
     id: "diversification", title: "Diversification", rail: "spread", color: "#ff9f0a",
-    copy: "Spreading your money over many different things so one bad one cannot sink you. It will never make you the biggest winner in the room. It is what keeps you in the game long enough to have a winner at all.",
+    copy: "Diversification is spreading your money over many different things so that one bad one cannot sink you. It will never make you the biggest winner in the room. It is what keeps you in the game long enough to have a winner at all.",
     url: "https://en.wikipedia.org/wiki/Diversification_(finance)",
   },
   {
@@ -46,7 +46,7 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
   {
     id: "dca", title: "Dollar cost averaging", rail: "spread", color: "#ffd60a",
-    copy: "Putting in the same amount on a schedule, no matter what prices are doing. When prices fall, that same money buys more shares. You never have to pick the right day, because every day on the list is your day.",
+    copy: "Dollar cost averaging is putting in the same amount on a schedule, no matter what prices are doing. When prices fall, that same money buys more shares. You never have to pick the right day, because every day on the list is your day.",
     url: "https://en.wikipedia.org/wiki/Dollar_cost_averaging",
   },
   {
@@ -61,7 +61,7 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
   {
     id: "panic-selling", title: "Panic selling", rail: "wrong", color: "#ff6482",
-    copy: "Selling because the falling scares you, not because anything about the company changed. It turns a loss on paper into a real one, and it usually happens closest to the bottom. The hard part is that it feels like the smart move at the time.",
+    copy: "Panic selling is selling because the fall scares you, not because anything about the company changed. It turns a loss on paper into a real one, and it usually happens closest to the bottom. The hard part is that it feels like the smart move at the time.",
     url: "https://en.wikipedia.org/wiki/Panic_selling",
   },
   {
@@ -71,17 +71,17 @@ export const FIELD_ENTRIES: FieldEntry[] = [
   },
   {
     id: "survivorship", title: "Survivorship bias", rail: "wrong", color: "#5e5ce6",
-    copy: "Old charts only show the companies that made it. The ones that went to zero got quietly deleted, so the past always looks safer than it was. Two names on the 2000 menu never came back, and nobody at the time knew which two.",
+    copy: "Survivorship bias is the trick old charts play: they only show the companies that made it. The ones that went to zero got quietly deleted, so the past always looks safer than it was. Two names on the 2000 menu never came back, and nobody at the time knew which two.",
     url: "https://en.wikipedia.org/wiki/Survivorship_bias",
   },
   {
     id: "ponzi", title: "The Ponzi promise", rail: "wrong", color: "#ff375f",
-    copy: "If something promises a big return, guaranteed, every single day, the payouts are coming from new customers and not from a business. It works perfectly until new customers stop arriving, and then it is gone overnight. Guaranteed and high do not go together.",
+    copy: "A Ponzi promise is a big return, guaranteed, every single day: the payouts come from new customers, not from a business. It works perfectly until new customers stop arriving, and then it is gone overnight. Guaranteed and high do not go together.",
     url: "https://en.wikipedia.org/wiki/Ponzi_scheme",
   },
   {
     id: "inflation", title: "Inflation", rail: "wrong", color: "#8e8e93",
-    copy: "Cash keeps its number and quietly loses its power. A hundred dollars in a jar is still a hundred dollars in eight years, but the sneakers it used to buy two of now cost the whole jar. Safe from crashes is not the same as safe.",
+    copy: "Inflation is prices rising over time, so cash keeps its number and quietly loses its power. A hundred dollars in a jar is still a hundred dollars in eight years, but the sneakers it used to buy two of now cost the whole jar. Safe from crashes is not the same as safe.",
     url: "https://en.wikipedia.org/wiki/Inflation",
   },
 ];

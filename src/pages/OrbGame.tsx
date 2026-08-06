@@ -11,7 +11,7 @@ import {
   RAINBOW_DOT, Sparkline, SpeedBtn, StageLabel, TradeChip, useFluidPref,
 } from "../components/OrbUI";
 
-// The Orb — Game B tutorial slice. Your portfolio is a glass marble of
+// The Orb: Game B tutorial slice. Your portfolio is a glass marble of
 // colored essence; the sealed rainbow orb beside it is the index. The market
 // crash (day 48) drives the hold-vs-panic fork; recovery is the stay-in lesson.
 
@@ -21,7 +21,7 @@ const STAGE_W = 1080;
 const STAGE_H = 440;
 const END_STEP = 144;
 
-// The Orb's own event season, in plain market language — no weather or
+// The Orb's own event season, in plain market language: no weather or
 // garden metaphors. Tuned so the story lands: hold beats panic-sell
 // decisively, and the rainbow orb wins overall.
 const ORB_EVENTS: MarketEvent[] = [
@@ -216,7 +216,7 @@ export default function OrbGame() {
               fluid={fluid}
             />
             <FluidCycler fluid={fluid} setFluid={setFluid} />
-            {/* hero number — during the crash it shows the fall from the high, in red */}
+            {/* hero number: during the crash it shows the fall from the high, in red */}
             <div className="absolute left-6 top-5">
               <div className="text-[12px] font-medium" style={{ color: "#6e6e73" }}>Net worth</div>
               <div className="flex flex-col items-start gap-1">

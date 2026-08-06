@@ -6,15 +6,17 @@ page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE.ERR:", m.text()); });
 const OUT = new URL("./shots/orb/", import.meta.url).pathname;
 
+const BASE = process.env.ORB_BASE ?? "http://localhost:4318";
+
 // crypto is the fastest era (84 steps): start, answer gates, buy the doomed
 // Promise Coin era-start, panic-sell mid-winter, reach the end, take the check
-await page.goto("http://localhost:4318/#/orb/s/crypto");
+await page.goto(`${BASE}/#/orb/s/crypto`);
 await wait(1000);
 await page.getByText("Start in 2018").click();
 await wait(400);
 await page.getByRole("button", { name: "Pause" }).click();
 await wait(300);
-await page.getByText("Coin Alpha").first().click();
+await page.getByRole("button", { name: "Coin Alpha" }).first().click();
 await wait(250);
 await page.getByRole("button", { name: "Buy $250" }).last().click();
 await wait(400);
@@ -31,16 +33,23 @@ for (let i = 0; i < 20; i++) { await wait(1000); if (await page.getByText("Novem
 console.log("gate 2:", await page.getByText("November 2022.").count());
 await page.getByRole("button", { name: "Sell what's left" }).click();
 await wait(300);
-await page.getByRole("button", { name: "Pause" }).click();
+// an act gate answer already pauses the tape for the move; only click Pause
+// if the tape is actually running
+if (await page.getByRole("button", { name: "Pause" }).count()) {
+  await page.getByRole("button", { name: "Pause" }).click();
+}
 await wait(300);
-await page.getByText("Coin Alpha").first().click();
+await page.getByRole("button", { name: "Coin Alpha" }).first().click();
 await wait(300);
 await page.getByRole("button", { name: "Sell half" }).click();
 await wait(400);
 await page.getByText("4×", { exact: true }).click();
 
-// run to end + quick check
+// run to end, open the quick check from the debrief (the quiz card replaces
+// the debrief card)
 for (let i = 0; i < 25; i++) { await wait(1000); if (await page.getByText("Quick check").count()) break; }
+await page.getByRole("button", { name: "Quick check" }).click();
+await wait(500);
 console.log("quick check present:", await page.getByText("Quick check").count());
 await page.screenshot({ path: OUT + "check-start.png", fullPage: true });
 

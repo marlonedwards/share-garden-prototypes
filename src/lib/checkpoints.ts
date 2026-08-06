@@ -60,15 +60,17 @@ export function saveAnsweredRun(scenario: string, items: AnsweredItem[], gateMs:
 const STATIC_ITEMS: Record<string, CheckItem[]> = {
   dotcom: [
     {
+      // CEE Investing 12-5c ladder (downturns move asset prices); concept: crash
       id: "dotcom-recovery",
       focus: 93,
       concept: "crash",
-      prompt: "The index peaked in early 2000, then crashed. How long until it reached a new high?",
+      prompt: "The index peaked in early 2000, then crashed. How long did it take to reach a new high?",
       options: ["About one year", "About three years", "About seven years", "It never did"],
       answer: 2,
-      explain: "About seven years. Recoveries are measured in years, not weeks, and that is why the money you invest needs time.",
+      explain: "It took about seven years. Recoveries are measured in years, not weeks, and that is why the money you invest needs time.",
     },
     {
+      // CEE Investing 12-5b ladder (expectations are already in the price); concept: bubble
       id: "dotcom-pricedin",
       focus: 1,
       concept: "bubble",
@@ -83,6 +85,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "A price is a bundle of expectations. When everyone already believes the story, believing it too buys you nothing.",
     },
     {
+      // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
       id: "dotcom-survivors",
       focus: 30,
       concept: "survivorship",
@@ -99,6 +102,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
   ],
   payday: [
     {
+      // CEE Investing 8-7c (future value of a regular series); concept: dca
       id: "payday-bestbuys",
       focus: 33,
       concept: "dca",
@@ -113,6 +117,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "The months that felt worst bought the most shares for the money. The plan works precisely when it feels wrong.",
     },
     {
+      // CEE Investing 8-7 (compounding rewards regular investing); concept: dca
       id: "payday-dca",
       focus: 3,
       concept: "dca",
@@ -124,20 +129,22 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
         "Guaranteeing a profit",
       ],
       answer: 1,
-      explain: "Fixed dollars divided by a lower price equals more shares. No prediction required.",
+      explain: "Fixed dollars divided by a lower price equals more shares, and no prediction is required.",
     },
     {
+      // CEE Investing 8-7 with the 12-5c ladder (nobody can time the bottom); concept: dca
       id: "payday-bell",
       focus: 33,
       concept: "dca",
       prompt: "October 2002 turned out to be the bottom of the market. Who knew that at the time?",
-      options: ["Experienced investors", "The people on TV", "Nobody. Bottoms are only visible afterward", "The companies themselves"],
+      options: ["Experienced investors", "The people on TV", "Nobody, because bottoms are only visible afterward", "The companies themselves"],
       answer: 2,
       explain: "Nobody rings a bell at the bottom. That is the whole argument for a plan that does not need one.",
     },
   ],
   gfc: [
     {
+      // CEE Investing 12-5c ladder (downturns move asset prices); concept: crash
       id: "gfc-arc",
       focus: 20,
       concept: "crash",
@@ -149,9 +156,10 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
         "Went to zero",
       ],
       answer: 1,
-      explain: "Down about half by March 2009, then a recovery to new records. The system bent hard. It did not break.",
+      explain: "The index fell by about half into March 2009, then recovered to new records. The system bent hard. It did not break.",
     },
     {
+      // CEE Investing 8-5a (diversification within and among asset classes); concept: diversification
       id: "gfc-safe",
       focus: 26,
       concept: "diversification",
@@ -166,6 +174,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "Fame and size tell you a company is important, not that its stock is safe. Safety comes from spreading out.",
     },
     {
+      // CEE Investing 12-5c ladder (downturns and investor mood); concept: panic-selling
       id: "gfc-bottom",
       focus: 26,
       concept: "panic-selling",
@@ -182,6 +191,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
   ],
   crypto: [
     {
+      // CEE Investing 12-2c ladder (cryptocurrencies are speculative); concept: position-size
       id: "crypto-size",
       focus: 58,
       concept: "position-size",
@@ -196,6 +206,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "Bet size decides whether you can wait. An investor who must sell in winter never sees spring.",
     },
     {
+      // CEE Investing 12-2c ladder (speculative promises); concept: ponzi
       id: "crypto-promise",
       focus: 1,
       concept: "ponzi",
@@ -210,6 +221,7 @@ const STATIC_ITEMS: Record<string, CheckItem[]> = {
       explain: "Real investments pay for risk taken. Anything guaranteeing riches is paying old investors with new investors' money, until it can't.",
     },
     {
+      // CEE Investing 8-5b (diversified fund versus individual assets); concept: index-fund
       id: "crypto-boring",
       focus: 46,
       concept: "index-fund",
@@ -257,6 +269,7 @@ function runItems(
       .map((v) => Math.round(v))
       .sort((a, b) => a - b);
     const answer = opts.indexOf(Math.round(panicNow));
+    // CEE Investing 12-5c ladder (downturns and investor mood); concept: panic-selling
     out.push({
       id: "run-panic",
       focus: firstPanicStep,
@@ -264,7 +277,7 @@ function runItems(
       prompt: `During the crash you sold shares for ${fmtMoney(panicSold)}. Held to the end of the era, what would those same shares be worth?`,
       options: opts.map((v) => fmtMoney(v)),
       answer,
-      explain: `${fmtMoney(panicNow)}. The debrief showed this number. Selling in a panic locks the low price in forever.`,
+      explain: `They would be worth ${fmtMoney(panicNow)}, and the debrief showed that number. Selling in a panic locks the low price in forever.`,
     });
   }
 
@@ -273,13 +286,14 @@ function runItems(
     const deadName = cfg.assets.filter((a) => deadHeld.has(a.id)).map((a) => name(a)).join(" and ");
     const firstDeadId = [...deadHeld][0];
     const deathStep = firstDeadId ? Math.max(0, (m.history[firstDeadId] ?? []).findIndex((p) => p <= 0)) : undefined;
+    // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
     out.push({
       id: "run-dead",
       focus: deathStep,
       concept: "survivorship",
       prompt: `You put money into ${deadName}, which went to zero. How much of it comes back if you wait long enough?`,
       options: [
-        "None. Zero is forever",
+        "None of it, because zero is forever",
         "About half, eventually",
         "All of it, given enough years",
         "It depends on the next bull market",
@@ -291,6 +305,7 @@ function runItems(
 
   if (out.length < 2) {
     const gain = m.benchmark - m.bench[0];
+    // CEE Investing 8-5b (diversified fund versus individual assets); concept: index-fund
     out.push({
       id: "run-index",
       concept: "index-fund",

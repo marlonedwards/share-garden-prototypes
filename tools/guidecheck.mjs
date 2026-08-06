@@ -5,9 +5,10 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1050 }, de
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE.ERR:", m.text()); });
 const OUT = new URL("./shots/orb/", import.meta.url).pathname;
+const BASE = process.env.ORB_BASE ?? "http://localhost:4318";
 
 // 1. gate act-option pauses the tape for the move
-await page.goto("http://localhost:4318/#/orb/s/gfc");
+await page.goto(`${BASE}/#/orb/s/gfc`);
 await wait(1000);
 await page.getByText("Start in 2007").click();
 await wait(300);
@@ -15,7 +16,7 @@ await page.getByText("4×", { exact: true }).click();
 for (let i = 0; i < 20; i++) { await wait(1000); if (await page.getByText("September 2008.").count()) break; }
 await page.getByRole("button", { name: "Sell everything" }).click();
 await wait(600);
-console.log("paused-for-move caption:", await page.getByText("Paused for your move").count());
+console.log("paused-for-move caption:", await page.getByText("paused for your move").count());
 const monthBefore = await page.locator("header span.tnum").first().textContent();
 await wait(1500);
 const monthAfter = await page.locator("header span.tnum").first().textContent();
@@ -23,16 +24,16 @@ console.log("tape actually paused:", monthBefore === monthAfter, `(${monthBefore
 await page.screenshot({ path: OUT + "gate-act-pause.png" });
 await page.getByRole("button", { name: "Play", exact: true }).click();
 await wait(600);
-console.log("caption cleared after play:", (await page.getByText("Paused for your move").count()) === 0);
+console.log("caption cleared after play:", (await page.getByText("paused for your move").count()) === 0);
 
 // 2. run crypto to end for tooltip + pin + marble clearing
-await page.goto("http://localhost:4318/#/orb/s/crypto");
+await page.goto(`${BASE}/#/orb/s/crypto`);
 await wait(800);
 await page.getByText("Start in 2018").click();
 await wait(300);
 await page.getByRole("button", { name: "Pause" }).click();
 await wait(200);
-await page.getByText("Coin Alpha").first().click();
+await page.getByRole("button", { name: "Coin Alpha" }).first().click();
 await wait(250);
 await page.getByRole("button", { name: "Buy $250" }).last().click();
 await wait(300);
@@ -60,6 +61,10 @@ await wait(400);
 console.log("pinned after click + leave:", await page.getByText("· pinned").count());
 await page.screenshot({ path: OUT + "chart-pinned.png" });
 
+// the quiz replaces the debrief card; open it from the debrief actions
+await page.getByRole("button", { name: "Quick check" }).click();
+await wait(500);
+
 // answer quiz correctly to clear marbles (correct answers: idx 1,1,1 then run-index 1)
 for (let q = 0; q < 6; q++) {
   if (!(await page.getByText(/^\d of \d$/).count())) break;
@@ -71,9 +76,9 @@ for (let q = 0; q < 6; q++) {
 await wait(300);
 
 // 3. field guide shelf shows cleared marbles
-await page.goto("http://localhost:4318/#/orb/guide");
+await page.goto(`${BASE}/#/orb/guide`);
 await wait(800);
-const proved = await page.getByText(/of 13 proved/).textContent();
+const proved = await page.getByText(/of \d+ proved/).textContent();
 console.log("guide header:", proved);
 await page.getByRole("button", { name: "Position size" }).click();
 await wait(400);

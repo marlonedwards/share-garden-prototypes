@@ -63,6 +63,6 @@ console.log("disaster line:", await page.getByText("A disaster you live.").count
 // marbles: guide should show cleared share marble
 await page.goto("http://localhost:4318/#/orb/guide");
 await wait(600);
-console.log("guide proved count:", await page.getByText(/of 13 proved/).textContent());
+console.log("guide proved count:", await page.getByText(/of \d+ proved/).textContent());
 console.log("start-here strip on select:", await page.goto("http://localhost:4318/#/orb").then(() => wait(600)).then(() => page.getByText("Start here: the basics").count()));
 await browser.close();

@@ -144,7 +144,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
         <div className="flex items-baseline gap-3">
           <span className="text-lg font-semibold tracking-tight">Freeplay</span>
           <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>
-            {era ? `${era.headerSub}, no script` : "a toy market, no script"}
+            {era ? `${era.headerSub}, with no script` : "this is a toy market, with no script"}
           </span>
         </div>
         <div className="flex items-center rounded-full bg-white border border-black/10 overflow-hidden shadow-sm">
@@ -228,7 +228,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
                     comp,
                     value: net,
                     headline: orbName ? `This is ${orbName}.` : "This is your orb.",
-                    subline: era ? `Freeplay · ${era.cardSubline}` : `Freeplay · day ${m.step}`,
+                    subline: era ? "This run freeplayed real era prices with no script." : `This run freeplayed a toy market for ${m.step} days.`,
                     index: { label: "The rainbow orb", value: m.benchmark },
                     rows: [
                       ...holdings.slice().sort((a, b) => b.value - a.value).slice(0, 4)
