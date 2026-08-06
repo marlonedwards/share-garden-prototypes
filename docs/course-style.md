@@ -17,7 +17,7 @@ Example of the required pattern:
 
 > **A share is one small piece of a real company.** Maya's lemonade stand has
 > been divided into 100 equal pieces, and Jordan just bought one of them. From
-> today, one hundredth of everything the stand earns belongss to Jordan, and so
+> today, one hundredth of everything the stand earns belongs to Jordan, and so
 > does one hundredth of everything the stand is worth.
 
 ## Banned

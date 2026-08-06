@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+import { wait, scout } from "./walkkit.mjs";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 950 }, deviceScaleFactor: 2 });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
@@ -9,11 +9,19 @@ const OUT = new URL("./shots/orb/", import.meta.url).pathname;
 // dotcom scenario: start, buy, flip real names on
 await page.goto("http://localhost:4318/#/orb/s/dotcom");
 await wait(1200);
+await scout(page);
 await page.getByText("Start in 2000").click();
 await wait(600);
-await page.getByRole("button", { name: "Pause" }).click();
+// the era opens straight onto its first gate; answer it to reach the tape
+await page.getByRole("button", { name: "Spread across everything" }).click();
+await wait(500);
+if (await page.getByRole("button", { name: "Pause" }).count()) {
+  await page.getByRole("button", { name: "Pause" }).click();
+}
 await wait(300);
-await page.getByText("The Everything Store").first().click();
+// scope to buttons: the scrolling ticker repeats the same names in spans that
+// never hold still, so getByText would wait on a moving target forever
+await page.getByRole("button", { name: "The Everything Store" }).first().click();
 await wait(250);
 await page.getByRole("button", { name: "Buy $250" }).last().click();
 await wait(400);
