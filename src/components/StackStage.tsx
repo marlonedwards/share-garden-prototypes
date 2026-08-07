@@ -10,7 +10,8 @@ export interface StackBand {
   key: string;
   color: string;
   value: number;
-  dead?: boolean;   // render as the permanent seam
+  dead?: boolean;     // render as the permanent seam
+  striped?: boolean;  // the index fund inside your stack: micro-band stripes
 }
 
 export interface StackStageProps {
@@ -91,9 +92,22 @@ function drawColumn(g: CanvasRenderingContext2D, cx: number, baseY: number, rx: 
     const h = Math.max(0, b.value * scale);
     if (h < 0.6) continue;
     const y0 = y - h;
-    slabPath(g, cx, y0, y, rx, ry);
-    g.fillStyle = bodyGrad(g, cx, rx, b.color);
-    g.fill();
+    if (b.striped) {
+      slabPath(g, cx, y0, y, rx, ry);
+      g.save();
+      g.clip();
+      const nS = Math.max(3, Math.round(h / 4));
+      const hS = (h + ry * 2) / nS;
+      for (let i = 0; i < nS; i++) {
+        g.fillStyle = MICRO[i % MICRO.length];
+        g.fillRect(cx - rx, y + ry - (i + 1) * hS, rx * 2, hS + 0.5);
+      }
+      g.restore();
+    } else {
+      slabPath(g, cx, y0, y, rx, ry);
+      g.fillStyle = bodyGrad(g, cx, rx, b.color);
+      g.fill();
+    }
     g.beginPath();
     g.ellipse(cx, y0, rx, ry, 0, 0, Math.PI * 2);
     g.fillStyle = tint(b.color, 0.34);

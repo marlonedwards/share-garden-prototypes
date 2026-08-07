@@ -13,7 +13,6 @@ import OrbFree from "./pages/OrbFree";
 import FieldGuidePage from "./pages/FieldGuidePage";
 import LessonPage from "./pages/LessonPage";
 import Onboarding from "./pages/Onboarding";
-import StackGame from "./pages/StackGame";
 import OnePager from "./pages/OnePager";
 import OrbSelect from "./pages/OrbSelect";
 import EraBriefing from "./pages/EraBriefing";
@@ -25,6 +24,12 @@ import Archive from "./pages/Archive";
 function ScenarioRoute() {
   const { id } = useParams();
   return <OrbScenario key={id ?? "era"} />;
+}
+
+// The Stack: the same lesson flow on the cylinder stage with the goal band
+function StackRoute() {
+  const { id } = useParams();
+  return <OrbScenario key={`stack-${id ?? "gfc"}`} variant="stack" />;
 }
 
 // remount the lesson page whenever the lesson id changes, so step state never
@@ -51,7 +56,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/free" element={<OrbFree />} />
         <Route path="/orb/guide" element={<FieldGuidePage />} />
         <Route path="/orb/intro" element={<Onboarding />} />
-        <Route path="/stack" element={<StackGame />} />
+        <Route path="/stack/s/:id" element={<StackRoute />} />
+        <Route path="/stack" element={<Navigate to="/stack/s/gfc" replace />} />
         <Route path="/orb/learn/:id" element={<LessonRoute />} />
         <Route path="/orb/mini/:id" element={<LessonRoute />} />
         {/* the finale: one door, two paths, one mirror */}

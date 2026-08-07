@@ -12,7 +12,8 @@ import { ClippingCard, Ticker, TickerItem } from "../components/NewsBits";
 import { useOrbSettings } from "../lib/settings";
 import { useStageScale } from "../lib/useStageScale";
 import SettingsMenu from "../components/SettingsMenu";
-import { Gate, ScenarioConfig, getScenario, hasScouting } from "../lib/scenarios";
+import { Gate, ScenarioConfig, getScenario, hasScouting, withIndexFund } from "../lib/scenarios";
+import StackStage, { StackBand } from "../components/StackStage";
 import ScoutingCards from "../components/ScoutingCards";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
@@ -113,6 +114,65 @@ const RAINBOW_COMP: CompSlice[] = [
   ["#64d2ff", "#b0e8ff"], ["#0a84ff", "#7cc0ff"], ["#bf5af2", "#e0a9ff"],
 ].map(([color, glow], i) => ({ key: `r${i}`, color, glow, frac: 1 / 7 }));
 
+// The Stack's three named stars, judged from the trade log after the tape
+// ends. They score the process, never the ending: how spread out the stack
+// stayed, whether the money kept working without a fear-driven sell, and
+// whether the run finished inside the goal band around the index.
+function stackStars(m: HistoryMarket, cfg: ScenarioConfig) {
+  const last = cfg.lastStep ?? cfg.dataset.months.length - 1;
+  const buys = m.trades.filter((t) => t.side === "buy");
+  if (buys.length === 0) return { spread: false, stayed: false, panicSells: 0 };
+  const firstBuy = Math.min(...buys.map((t) => t.step));
+  const shares: Record<string, number> = {};
+  let ti = 0, investedMonths = 0, concentratedMonths = 0, months = 0, hw = 0;
+  const netAt: number[] = [], hwAt: number[] = [];
+  let buySpent = 0, sellGot = 0;
+  for (let t = 0; t <= last; t++) {
+    while (ti < m.trades.length && m.trades[ti].step <= t) {
+      const tr = m.trades[ti++];
+      if (tr.side === "buy") { shares[tr.id] = (shares[tr.id] ?? 0) + tr.shares; buySpent += tr.dollars; }
+      else { shares[tr.id] = (shares[tr.id] ?? 0) - tr.shares; sellGot += tr.dollars; }
+    }
+    let invested = 0, top = 0;
+    for (const id of Object.keys(shares)) {
+      const v = shares[id] * (m.history[id]?.[t] ?? 0);
+      invested += v;
+      top = Math.max(top, v);
+    }
+    const cash = Math.max(0, cfg.startCash + (cfg.income ?? 0) * t - buySpent + sellGot);
+    const net = cash + invested;
+    hw = Math.max(hw, net);
+    netAt.push(net);
+    hwAt.push(hw);
+    if (t > firstBuy) {
+      months++;
+      if (net > 0 && invested / net >= 0.6) investedMonths++;
+      if (invested > 250 && top / invested > 0.6) concentratedMonths++;
+    }
+  }
+  let panicSells = 0;
+  for (const tr of m.trades) {
+    if (tr.side === "sell" && hwAt[tr.step] > 0 && netAt[tr.step] / hwAt[tr.step] < 0.85) panicSells++;
+  }
+  return {
+    spread: concentratedMonths <= 12,
+    stayed: months > 0 && investedMonths / months >= 0.75 && panicSells === 0,
+    panicSells,
+  };
+}
+
+function StarRow({ ok, name: label, detail }: { ok: boolean; name: string; detail: string }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className="text-[16px] leading-tight" style={{ color: ok ? "#e8a800" : "#c7c7cc" }}>{ok ? "★" : "☆"}</span>
+      <div>
+        <div className="text-[13.5px] font-semibold">{label}</div>
+        <div className="text-[12px]" style={{ color: "#6e6e73" }}>{detail}</div>
+      </div>
+    </div>
+  );
+}
+
 // A gate is a teaching beat, so its card opens with the definition sentence
 // in a heavier weight than the story below it. Eras that have had their
 // depth pass carry the definition in the gate's `definition` field; gates
@@ -147,9 +207,15 @@ function stateAt(m: HistoryMarket, cfg: ScenarioConfig, t: number) {
   return { comp, invested, cash: Math.max(0, cash), bench: m.bench[t] ?? m.benchmark };
 }
 
-export default function OrbScenario() {
+export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "stack" }) {
   const { id } = useParams();
-  const cfg = getScenario(id);
+  // The Stack runs the exact same flow with two differences: the stage draws
+  // cylinders instead of orbs, and the win is a goal band around the index,
+  // which is itself on the menu as a buyable fund.
+  const cfg = useMemo(
+    () => (variant === "stack" ? withIndexFund(getScenario(id)) : getScenario(id)),
+    [id, variant],
+  );
   const lastStep = cfg.lastStep ?? cfg.dataset.months.length - 1;
 
   // companies that go public mid-era (EraAsset.listedAtStep) cannot be
@@ -384,7 +450,8 @@ export default function OrbScenario() {
     if (!m.listed(assetId)) return;
     const ea = cfg.assets.find((a) => a.id === assetId)!;
     let spend = Math.min(dollars, m.cash);
-    if (!fractional) {
+    // fund shares are always dollar-based: nobody buys an index by the unit
+    if (!fractional && assetId !== cfg.indexKey) {
       const n = Math.floor(spend / m.prices[assetId]);
       if (n < 1) return;
       spend = n * m.prices[assetId];
@@ -397,7 +464,7 @@ export default function OrbScenario() {
   const sellFrac = (assetId: string, frac: number) => {
     const ea = cfg.assets.find((a) => a.id === assetId)!;
     let f = frac;
-    if (!fractional) {
+    if (!fractional && assetId !== cfg.indexKey) {
       const h = m.holdings[assetId];
       if (!h || h.shares < 1) f = 1;
       else f = Math.max(1, Math.floor(h.shares * frac + 1e-9)) / h.shares;
@@ -493,6 +560,28 @@ export default function OrbScenario() {
   const dCash = review ? review.cash : m.cash;
   const dBench = review ? review.bench : m.benchmark;
   const dNet = review ? review.cash + review.invested : net;
+
+  // The Stack's stage data: bands from the live holdings (or the rewind), the
+  // index fund as a striped band, dead holdings as permanent seams, and a
+  // monotonic ruler top so the scale never jumps.
+  const stackMaxRef = useRef(1500);
+  stackMaxRef.current = Math.max(stackMaxRef.current, dNet * 1.15, dBench * 1.2);
+  const stackBands: StackBand[] =
+    variant !== "stack"
+      ? []
+      : review
+      ? review.comp.map((c) => {
+          const ea = cfg.assets.find((a) => a.id === c.key);
+          return { key: c.key, color: ea?.color ?? c.color, value: c.frac * review.invested, striped: c.key === cfg.indexKey };
+        })
+      : cfg.assets.flatMap((ea): StackBand[] => {
+          const hh = m.holdings[ea.id];
+          const shares = hh?.shares ?? 0;
+          if (shares <= 1e-6) return [];
+          const price = m.prices[ea.id] ?? 0;
+          if (price <= 0) return [{ key: ea.id, color: ea.color, value: 0, dead: true }];
+          return [{ key: ea.id, color: ea.color, value: shares * price, striped: ea.id === cfg.indexKey }];
+        });
   const markers: ChartMarker[] = useMemo(
     () =>
       beat !== "end"
@@ -519,7 +608,7 @@ export default function OrbScenario() {
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <div className="flex items-baseline gap-3">
-          <span className="text-lg font-semibold tracking-tight">{cfg.title}</span>
+          <span className="text-lg font-semibold tracking-tight">{variant === "stack" ? `The Stack · ${cfg.title}` : cfg.title}</span>
           <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>{cfg.headerSub}</span>
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -546,6 +635,20 @@ export default function OrbScenario() {
           <div style={{ width: STAGE_W * stageScale, height: stageH * stageScale, transition: "height 0.4s ease" }}>
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
             style={{ width: STAGE_W, height: stageH, transform: `scale(${stageScale})`, transformOrigin: "top left", background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)", transition: "height 0.4s ease" }}>
+            {variant === "stack" ? (
+              <StackStage
+                key={runId}
+                width={STAGE_W}
+                height={stageH}
+                cash={dCash}
+                bands={stackBands}
+                indexValue={dBench}
+                playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "your stack"}
+                corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "goal · finish inside this band" } : undefined}
+                maxDollars={stackMaxRef.current}
+              />
+            ) : (
+              <>
             <OrbScene
               key={runId}
               ref={sceneRef}
@@ -561,6 +664,8 @@ export default function OrbScenario() {
               radiusScale={radiusScale}
             />
             <FluidCycler fluid={fluid} setFluid={setFluid} />
+              </>
+            )}
             <button onClick={() => setFractional(!fractional)}
               className="absolute right-4 top-14 text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
               style={{ color: "#6e6e73" }}>
@@ -592,17 +697,21 @@ export default function OrbScenario() {
                   : Math.abs(net - contributed) >= 1 && <DeltaChip value={(net - contributed) / contributed} />}
               </div>
             </div>
-            {crashSeen.current && peakInvested.current > invested * 1.08 && (
+            {variant === "orb" && crashSeen.current && peakInvested.current > invested * 1.08 && (
               <div className="absolute -translate-x-1/2 text-[12px] tnum"
                 style={{ left: `${LAYOUT.playerX * 100}%`, top: stageH * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) * radiusScale - 22, color: "#6e6e73" }}>
                 the high · {fmtMoney(peakInvested.current)}
               </div>
             )}
+            {variant === "orb" && (
+              <>
             <StageLabel x={LAYOUT.playerX} title={orbName || "Your orb"} sub={dInvested > 0 ? fmtMoney(dInvested) : "empty"} />
             {beat !== "brief" && (
               <StageLabel x={LAYOUT.indexX} title="The rainbow orb" sub={`${fmtMoney(dBench)} · ${cfg.income ? "same income, all-in" : "$1,000 all-in day one"}`} />
             )}
             <StageLabel x={LAYOUT.resX} title="Cash" sub={fmtMoney(dCash)} />
+              </>
+            )}
             {running && clip && <ClippingCard clip={clip} />}
             {running && !clip && ev && (
               <div className="absolute left-1/2 -translate-x-1/2 top-5 px-4 py-2 rounded-full text-[13px] shadow-md pop-in border border-black/5"
@@ -611,7 +720,7 @@ export default function OrbScenario() {
                 <span style={{ color: "#6e6e73" }}> · {ev.blurb}</span>
               </div>
             )}
-            {running && settings.ticker && <Ticker items={tickerItems} />}
+            {running && settings.ticker && variant === "orb" && <Ticker items={tickerItems} />}
           </div>
           </div>
           )}
@@ -669,7 +778,7 @@ export default function OrbScenario() {
                 stacks below it otherwise, so the caption names the panel
                 instead of a direction */}
             {beat === "run" && pausedForMove && speed === 0 && (
-              <Caption>The tape is paused for your move. Trade in the &ldquo;Inside your orb&rdquo; panel, then press Play when you are ready.</Caption>
+              <Caption>The tape is paused for your move. Trade in the &ldquo;Inside your {variant === "stack" ? "stack" : "orb"}&rdquo; panel, then press Play when you are ready.</Caption>
             )}
             {beat === "run" && speed > 0 && m.step < 4 && !cfg.income && (
               <Caption>Pause anytime to trade. The tape runs to the end either way.</Caption>
@@ -759,6 +868,31 @@ export default function OrbScenario() {
                     <div className="text-[24px] tracking-tight tnum" style={{ fontWeight: m.benchmark > net ? 700 : 600 }}>{fmtMoney(m.benchmark)}</div>
                   </div>
                 </div>
+                {variant === "stack" && (() => {
+                  const s = stackStars(m, cfg);
+                  const pathOk = net >= m.benchmark * 0.88;
+                  const above = net > m.benchmark * 1.12;
+                  return (
+                    <div className="mb-3 flex flex-col gap-2.5">
+                      <StarRow ok={s.spread} name="Spread out"
+                        detail={s.spread
+                          ? "No single company carried your stack for long."
+                          : "One company carried most of your stack for over a year. That is a coin flip wearing your name."} />
+                      <StarRow ok={s.stayed} name="Stayed in"
+                        detail={s.stayed
+                          ? "Your money kept working, and no sell happened deep in the red."
+                          : s.panicSells > 0
+                          ? `Fear made ${s.panicSells === 1 ? "one sell" : `${s.panicSells} sells`} while your stack was far below its high.`
+                          : "Too much of the era went by with your money sitting out of the market."} />
+                      <StarRow ok={pathOk} name="On the goal"
+                        detail={pathOk
+                          ? above
+                            ? "You finished above the goal band. Enjoy it, and know the index would not repeat the favor."
+                            : "You finished inside the goal band around the index. That is the whole game."
+                          : "You fell out of the goal band. The index walked the same era and finished it without a single trade."} />
+                    </div>
+                  );
+                })()}
                 {gateAnswers.length > 0 && (
                   <div className="mb-1 rounded-xl px-4 py-3" style={{ background: "#f5f5f7" }}>
                     <div className="text-[12px] font-semibold mb-1" style={{ color: "#6e6e73" }}>At the crossroads, you said</div>
@@ -852,7 +986,7 @@ export default function OrbScenario() {
         {beat !== "end" && beat !== "brief" && beat !== "gate" && beat !== "payday" && (
         <div className="w-full max-w-xs flex flex-col gap-4">
           <div ref={railCardRef} style={{ scrollMarginBlock: 16 }} className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
-            <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>Inside your orb</div>
+            <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>{variant === "stack" ? "Inside your stack" : "Inside your orb"}</div>
             {holdings.length === 0 && (
               <div className="text-sm py-1" style={{ color: "#6e6e73" }}>
                 Nothing is here yet. The glass is clear.
@@ -867,7 +1001,7 @@ export default function OrbScenario() {
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.ea.color, boxShadow: `0 0 0 3px ${h.ea.color}22` }} />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{name(h.ea)}</div>
-                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtShares(h.shares, fractional)}</div>
+                      <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{fmtShares(h.shares, fractional || h.ea.id === cfg.indexKey)}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold tnum">{fmtMoney(h.value)}</div>
@@ -881,7 +1015,7 @@ export default function OrbScenario() {
                     <div className="ml-6 mt-2 flex flex-wrap items-center gap-1.5 pop-in">
                       <div className="w-full"><Sparkline width={180} height={40} data={m.history[h.ea.id].slice(h.ea.listedAtStep ?? 0)} color={h.ea.color} /></div>
                       {[100, 250].map((a) => (
-                        <TradeChip key={a} disabled={fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[h.ea.id]) < 1}
+                        <TradeChip key={a} disabled={fractional || h.ea.id === cfg.indexKey ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[h.ea.id]) < 1}
                           onClick={() => buy(h.ea.id, Math.min(a, m.cash))}>
                           Buy ${Math.min(a, Math.floor(m.cash))}
                         </TradeChip>
@@ -921,7 +1055,7 @@ export default function OrbScenario() {
                             <div className="mb-1.5"><Sparkline width={180} height={40} data={m.history[ea.id].slice(ea.listedAtStep ?? 0)} color={ea.color} /></div>
                             <div className="flex gap-1.5">
                               {[100, 250].map((a) => (
-                                <TradeChip key={a} disabled={dead || (fractional ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
+                                <TradeChip key={a} disabled={dead || (fractional || ea.id === cfg.indexKey ? m.cash < 1 : Math.floor(Math.min(a, m.cash) / m.prices[ea.id]) < 1)}
                                   onClick={() => { buy(ea.id, Math.min(a, m.cash)); setTradeRow(null); }}>
                                   Buy ${Math.min(a, Math.floor(m.cash))}
                                 </TradeChip>
@@ -946,7 +1080,7 @@ export default function OrbScenario() {
             <div className="flex items-center gap-3">
               <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: RAINBOW_DOT }} />
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium">The rainbow orb</div>
+                <div className="text-sm font-medium">{variant === "stack" ? "The index" : "The rainbow orb"}</div>
                 <div className="text-[12px]" style={{ color: "#6e6e73" }}>{cfg.indexSub}</div>
               </div>
               <div className="text-sm font-semibold tnum">{fmtMoney(m.benchmark)}</div>

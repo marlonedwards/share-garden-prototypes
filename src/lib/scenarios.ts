@@ -21,6 +21,32 @@ export { hasScouting } from "../content/types";
 // and the OnePager both state that count the same way.
 export const SCENARIOS: ScenarioConfig[] = [dotcom, payday, gfc, crypto, covid, inflation];
 
+// The Stack variant sells the index itself as a row on the menu: buying it
+// holds the era's real total-return index inside your own column as a striped
+// band. Without this, "be the index" would be a goal the game never lets you
+// choose.
+export function withIndexFund(cfg: ScenarioConfig): ScenarioConfig {
+  if (cfg.assets.some((a) => a.id === cfg.indexKey)) return cfg;
+  return {
+    ...cfg,
+    assets: [
+      ...cfg.assets,
+      {
+        id: cfg.indexKey,
+        name: "The Index Fund",
+        real: "an S&P 500 index fund",
+        desc: "One purchase that buys a small piece of hundreds of companies at once.",
+        color: "#64748b",
+        glow: "#b3bdc9",
+        founded: 1976,
+        history: "The first index fund opened in 1976 and was mocked as settling for average. It holds a slice of every large company at once and never picks a winner.",
+        believers: "Owning everything and holding on beats almost everyone who tries to do better.",
+        doubters: "Settling for the market's average feels like giving up before you start.",
+      },
+    ],
+  };
+}
+
 export function getScenario(id: string | undefined): ScenarioConfig {
   return SCENARIOS.find((s) => s.id === id) ?? SCENARIOS[0];
 }
