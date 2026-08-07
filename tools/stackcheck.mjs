@@ -14,24 +14,34 @@ await wait(500);
 await page.getByRole("button", { name: "Pause" }).click();
 await wait(300);
 
-// buy the doomed Old Bank plus two survivors: 3 tokens spent
-for (const nm of ["The Old Bank", "Everything Mart", "The Everything Store"]) {
-  const row = page.locator("div", { hasText: nm }).locator("button", { hasText: "Buy" }).last();
-  await row.click();
+// diversify across four names, answering gates as they come
+for (const nm of ["Everything Mart", "The Everything Store", "Fruit Computers", "Giant Oil"]) {
+  const row = page.locator("div.flex.items-center", { has: page.getByText(nm, { exact: true }) }).first();
+  await row.getByRole("button", { name: "Buy" }).click();
   await wait(250);
 }
-const tokensLeft = await page.locator("span[style*='rgb(0, 113, 227)'][class*='w-3.5']").count();
-console.log("tokens spent (want 2 left):", tokensLeft);
+console.log("paused for move:", await page.getByText("Paused for your move").count());
 await page.screenshot({ path: OUT + "stack-bought.png" });
 await page.getByRole("button", { name: "Play", exact: true }).click();
 
-// ride the whole tape (108 months at ~310ms/step)
-for (let i = 0; i < 50; i++) {
+// ride the tape, answering each gate with the calm option
+for (let i = 0; i < 90; i++) {
   await wait(1000);
+  const hold = page.getByRole("button", { name: /Hold and ride it out|Hold everything|Keep holding everything|^Hold$|Stay with the plan/ }).first();
+  if (await hold.count()) {
+    await hold.click();
+    await wait(300);
+    const play = page.getByRole("button", { name: "Play", exact: true });
+    if (await play.count()) await play.click();
+  }
   if (await page.getByText("December 2015.").count()) break;
+  if (i % 10 === 9) {
+    console.log("tick", i, "month:", await page.locator("header span.tnum").first().textContent());
+    await page.screenshot({ path: OUT + `stack-debug-${i}.png` });
+  }
 }
 console.log("end card:", await page.getByText("December 2015.").count());
-console.log("stars shown:", await page.locator("div", { hasText: /★/ }).count() > 0);
+console.log("named stars:", await page.getByText("Spread out").count(), await page.getByText("Stayed in").count(), await page.getByText("On the path").count());
 await page.screenshot({ path: OUT + "stack-end.png" });
 
 await browser.close();

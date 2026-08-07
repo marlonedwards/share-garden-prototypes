@@ -21,6 +21,8 @@ export interface StackStageProps {
   indexValue: number;
   playerLabel: string;
   goalLine?: { value: number; label: string };
+  // the corridor around the index: the win is finishing inside it, not above it
+  corridor?: { lo: number; hi: number; label: string };
   maxDollars: number;     // ruler top; parent keeps it monotonic so the scale never jumps around
 }
 
@@ -215,6 +217,24 @@ export default function StackStage(p: StackStageProps) {
       g.font = font(11);
       g.textAlign = "right";
       g.fillText(`$${v.toLocaleString("en-US")}`, 52, y);
+    }
+
+    // the corridor: a soft band the player's stack should live inside
+    if (p.corridor) {
+      const yHi = baseY - p.corridor.hi * scale;
+      const yLo = baseY - p.corridor.lo * scale;
+      g.fillStyle = "rgba(0,113,227,0.07)";
+      g.fillRect(58, yHi, p.width - 74, Math.max(2, yLo - yHi));
+      g.strokeStyle = "rgba(0,113,227,0.35)";
+      g.lineWidth = 1;
+      g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(58, yHi); g.lineTo(p.width - 16, yHi); g.stroke();
+      g.beginPath(); g.moveTo(58, yLo); g.lineTo(p.width - 16, yLo); g.stroke();
+      g.setLineDash([]);
+      g.fillStyle = "#0057b8";
+      g.font = font(11.5, 600);
+      g.textAlign = "left";
+      g.fillText(p.corridor.label, 64, yHi - 9);
     }
 
     // goal line
