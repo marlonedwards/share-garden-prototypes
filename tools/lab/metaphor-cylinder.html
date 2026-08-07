@@ -283,7 +283,9 @@
     g.beginPath();
     g.moveTo(cx - rx, y0);
     g.lineTo(cx - rx, y1);
-    g.ellipse(cx, y1, rx, ry, 0, Math.PI, 0, false);
+    /* counterclockwise so the bottom edge sweeps through the FRONT (downward)
+       bulge; clockwise traced the back rim and cut every cylinder flat */
+    g.ellipse(cx, y1, rx, ry, 0, Math.PI, 0, true);
     g.lineTo(cx + rx, y0);
     g.ellipse(cx, y0, rx, ry, 0, 0, Math.PI, true);
     g.closePath();
