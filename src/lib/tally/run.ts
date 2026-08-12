@@ -1543,6 +1543,9 @@ export interface ChapterSummary {
   runId: string;
   chapterId: number;
   chapterName: string;
+  // the one sentence the chapter was built to teach, which is the thing a
+  // player leaves a chapter with and therefore the loudest line on the panel
+  teaches: string;
   target: number;
   finishedAt: number;
   cleared: boolean;
@@ -1588,6 +1591,7 @@ export function chapterSummary(run: RunState): ChapterSummary {
     runId: run.runId,
     chapterId: ch.id,
     chapterName: ch.name,
+    teaches: ch.teaches,
     target: ch.target,
     finishedAt: worth,
     cleared,
@@ -1644,6 +1648,9 @@ export interface Forensics {
   runId: string;
   chapterId: number;
   chapterName: string;
+  // the one sentence the chapter was built to teach, which is the thing a
+  // player leaves a chapter with and therefore the loudest line on the panel
+  teaches: string;
   target: number;
   finishedAt: number;
   // the single most concentrated moment of the chapter, from the trade log
@@ -1719,6 +1726,7 @@ export function runReport(run: RunState, box: BoxState = loadBox()): Forensics {
     runId: run.runId,
     chapterId: ch.id,
     chapterName: ch.name,
+    teaches: ch.teaches,
     target: ch.target,
     finishedAt: worthOf(run),
     peak,

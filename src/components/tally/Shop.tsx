@@ -224,9 +224,6 @@ function tabHeight(ui: number, small: boolean): number {
   return (small ? 4 : 6) + pad * 2 + line + 3;
 }
 
-function lotsHeight(ui: number): number {
-  return 2 + Math.round(3 * ui) * 2 + Math.round(10.5 * ui * 1.25) + 3;
-}
 
 // The payment, in flight. However many blocks a purchase really costs, no more
 // than this many ever cross the counter: ten blocks read as a stream, and a
@@ -362,15 +359,12 @@ export default function Shop(p: ShopProps) {
   const type = (n: number) => Math.round(n * ui * 2) / 2;
   const cardMax = Math.round(CARD_W * ui);
   const cardH = Math.round(CARD_H * ui);
-  // the tallest sell column any stack in this till needs, applied to all of
-  // them, so the row is one height and stays it
-  const anyMany = p.stacks.some((st) => !st.stone && st.cards.length > 1);
-  const anyFive = p.stacks.some((st) => !st.stone && st.cards.length >= 5);
-  const anyLots = p.stacks.some((st) => (lotsBy.get(st.asset.id)?.length ?? 0) > 1);
-  const sellH = tabHeight(ui, false)
-    + (anyMany ? tabHeight(ui, true) : 0)
-    + (anyFive ? tabHeight(ui, true) : 0)
-    + (anyLots ? lotsHeight(ui) : 0);
+  // The sell column, reserved at its full height whatever is standing in the
+  // till right now: Sell 1, Sell 5, Sell all and the line that opens the lots.
+  // It is deliberately not measured off the stacks, because a shelf whose
+  // height is a fact about what is on it moves every time a card is bought or
+  // sold, and the whole till and the counter above it move with it.
+  const sellH = tabHeight(ui, false) + tabHeight(ui, true) * 2;
   const tillRowH = stackBoxHeight(cardH) + sellH;
 
   const grid = p.width - Math.round(22 * ui);
@@ -597,20 +591,30 @@ export default function Shop(p: ShopProps) {
         )}
       </div>
 
-      {/* the till */}
+      {/* The till, drawn as the tray it is. The row it reserves is a fixed
+          height whatever is standing in it, so a tray a step deeper than the
+          panel is what makes an empty shelf read as an empty shelf. */}
       <div
         style={{
-          ...panel({ fill: FILL_PLAQUE, radius: R.panel }),
+          ...panel({ fill: FILL_DEEP, radius: R.panel, inset: true }),
           flex: "none",
           padding: `${Math.round(7 * ui)}px ${Math.round(10 * ui)}px ${Math.round(7 * ui)}px`,
           opacity: p.paying ? 0.45 : 1,
           pointerEvents: p.paying ? "none" : "auto",
         }}
       >
-        <div style={{ fontSize: type(12), fontWeight: 650, color: SUB, marginBottom: 5 }}>
-          {p.stacks.length === 0
-            ? "Your cards will show here, and you can sell any of them back at today's price."
-            : "Your cards. Sell any of them back at today's price."}
+        {/* The label keeps its line whether or not it has anything to say, so an
+            empty till is the same shelf at the same height as a full one. */}
+        <div
+          style={{
+            fontSize: type(12),
+            fontWeight: 650,
+            color: SUB,
+            marginBottom: 5,
+            minHeight: Math.round(type(12) * 1.35),
+          }}
+        >
+          {p.stacks.length === 0 ? "" : "Your cards. Sell any of them back at today's price."}
         </div>
         <div
           className="tally-scroll"
@@ -632,6 +636,20 @@ export default function Shop(p: ShopProps) {
             margin: "0 -7px",
           }}
         >
+          {p.stacks.length === 0 && (
+            <span
+              style={{
+                fontSize: type(13),
+                color: SUB,
+                fontWeight: 600,
+                lineHeight: 1.5,
+                margin: "auto",
+                textAlign: "center",
+              }}
+            >
+              Your cards will show here, and you can sell any of them back at today&rsquo;s price.
+            </span>
+          )}
           {p.stacks.map((st) => {
             const lots = lotsBy.get(st.asset.id) ?? [];
             const opened = fanId === st.asset.id && lots.length > 1;
@@ -773,7 +791,23 @@ export default function Shop(p: ShopProps) {
                 >
                   <CardStack
                     cards={st.cards.length}
-                    collar={`${st.cards.length} ${st.cards.length === 1 ? "card" : "cards"} · ${st.totalBlocks} ${blockWord(st.totalBlocks)}`}
+                    // A stack made of one purchase says what it is worth in
+                    // blocks; a stack made of several says how many purchases
+                    // it is, and that line is the way into them.
+                    collar={
+                      lots.length > 1
+                        ? `${st.cards.length} cards · ${lots.length} lots`
+                        : `${st.cards.length} ${st.cards.length === 1 ? "card" : "cards"} · ${st.totalBlocks} ${blockWord(st.totalBlocks)}`
+                    }
+                    collarAction={
+                      lots.length > 1
+                        ? {
+                            title: "These cards were bought on different turns, and this shows each purchase on its own.",
+                            mark: { "data-lots": st.asset.id },
+                            onPress: () => setFanId(st.asset.id),
+                          }
+                        : undefined
+                    }
                     name={displayName(st.asset, p.realNames)}
                     suit={st.asset.suit}
                     sector={st.asset.sector}
@@ -835,25 +869,6 @@ export default function Shop(p: ShopProps) {
                       p.onSellMany(st.cards.map((c) => c.card.uid));
                     }}
                   />
-                )}
-                {lots.length > 1 && (
-                  <button
-                    type="button"
-                    data-lots={st.asset.id}
-                    className={btn("ghost")}
-                    onClick={() => setFanId(st.asset.id)}
-                    title="These cards were bought on different turns, and this shows each purchase on its own."
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: 2,
-                      padding: `${Math.round(3 * ui)}px 4px`,
-                      fontSize: type(10.5),
-                      borderRadius: R.chip,
-                    }}
-                  >
-                    {lots.length} lots
-                  </button>
                 )}
               </div>
             );

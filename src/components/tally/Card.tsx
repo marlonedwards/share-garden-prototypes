@@ -365,6 +365,11 @@ export interface StackPunch {
 export interface StackProps extends CardFaceProps {
   cards: number;
   collar: string;
+  // The collar, made pressable. The line under a stack is already the line that
+  // describes the pile, so when a stack has something more to show about how it
+  // was bought, that line is where the offer belongs: it costs the row no
+  // height at all, and a quiet line of type is the quietest affordance there is.
+  collarAction?: { title: string; mark: Record<string, string>; onPress: () => void };
   offset?: number;
   // reserve the strip above the card that a chip is drawn in, so a chip never
   // has to overflow a row that scrolls
@@ -573,6 +578,9 @@ export function CardStack(p: StackProps) {
       {/* the collar is allowed the gutter beside the card, because a stack of
           seven cards has a longer thing to say than a stack of one */}
       <div
+        {...(p.collarAction ? { ...p.collarAction.mark, title: p.collarAction.title } : null)}
+        role={p.collarAction ? "button" : undefined}
+        onClick={p.collarAction?.onPress}
         style={{
           position: "absolute",
           left: -8,
@@ -586,6 +594,11 @@ export function CardStack(p: StackProps) {
           whiteSpace: "nowrap",
           fontVariantNumeric: "tabular-nums",
           fontFamily: SANS,
+          // a pressable collar says so the way a link does, and nothing else
+          // about it moves
+          cursor: p.collarAction ? "pointer" : undefined,
+          textDecoration: p.collarAction ? "underline dotted" : undefined,
+          textUnderlineOffset: p.collarAction ? 2 : undefined,
         }}
       >
         {p.collar}

@@ -778,7 +778,13 @@ export default function Tally() {
       setTourAt({
         left,
         top,
-        hole: { x: r.left - hr.left, y: r.top - hr.top, w: r.width, h: r.height },
+        // A beat that names a thing for the first time takes the board's light
+        // down to point at it. The beats that simply stand with the player,
+        // week after week of the same chapter, leave the board alone: the key
+        // they wait on is still wearing its own invitation.
+        hole: tourBeat.lit === false
+          ? null
+          : { x: r.left - hr.left, y: r.top - hr.top, w: r.width, h: r.height },
         hostW: hr.width,
         hostH: hr.height,
       });

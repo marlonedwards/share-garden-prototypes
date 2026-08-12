@@ -29,7 +29,10 @@ mkdirSync(OUT, { recursive: true });
 const DWELL = 600;
 const HOLD = 900;
 
-const SCRIPT_IDS = ["hello", "payday", "counter", "money", "wall", "target", "read", "play", "cleared"];
+const SCRIPT_IDS = [
+  "hello", "payday", "counter", "money", "wall", "target", "play", "read",
+  "week-two", "week-three", "week-four", "week-five", "week-last", "cleared",
+];
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const fails = [];
@@ -275,24 +278,15 @@ console.log("\n--------------------------------------------- the lit tour");
   check(await idOf(page) === "target", "and the same tap after them is", `at ${late}ms`);
   await lit(page, '[data-target-line="1"]', "the gold line");
 
-  // ------------------------------------------------------------- the read
-  await wait(DWELL + 200);
-  await tap(page);
-  await wait(240);
-  check(await bubble(page) === null, "the script has nothing to say on turn one");
-  check(await page.locator("[data-spotlight]").count() === 0,
-    "and the board is its own brightness again");
-  await page.locator('[data-play="1"]').click();
-  await wait(2600);
-  check(await idOf(page) === "read", "the read beat is where the piggy speaks again", await idOf(page));
-  await lit(page, '[data-read-line="1"]', "the read line");
-
   // ------------------------------------------------------- the Play beat
+
+  // The key is named before the first week is played rather than after it, so
+  // this is the beat the target hands over to.
   await wait(DWELL + 200);
   await tap(page);
   await wait(240);
   b = await bubble(page);
-  check(b?.id === "play", "the Play key is the last thing named", b?.id ?? "none");
+  check(b?.id === "play", "the Play key is named before it is needed", b?.id ?? "none");
   check(b?.gate === "action", "and it is the one beat its own press finishes", b?.gate ?? "none");
   check(b?.say === "The Play key runs the next week, and the wall writes down what happened.",
     "the sentence names the key rather than asking for it", b?.say ?? "");
@@ -316,11 +310,38 @@ console.log("\n--------------------------------------------- the lit tour");
 
   await page.locator('[data-play="1"]').click();
   await wait(2600);
-  check(await bubble(page) === null, "the key's own press finishes the beat");
   const after = (await page.locator('[data-play="1"]').textContent()) ?? "";
   check(after !== before, "and it played the week at the same time", `${before} to ${after}`);
-  check(await page.locator('[data-play="1"][data-invite="1"]').count() === 0,
-    "the invitation comes off the key once it has been pressed");
+  check(await idOf(page) === "read", "the key's own press finishes the beat and hands to the read line",
+    await idOf(page));
+  await lit(page, '[data-read-line="1"]', "the read line");
+
+  // ------------------------------------------------------- the weeks after
+
+  // The piggy does not leave after the first scoring. It stands by the key for
+  // every remaining week of the chapter, and from here on the board keeps its
+  // own light: the invitation is the ring on the key and nothing else.
+  await wait(DWELL + 200);
+  await tap(page);
+  await wait(240);
+  b = await bubble(page);
+  check(b?.id === "week-two", "the piggy stays for the second week", b?.id ?? "none");
+  check(b?.gate === "action", "and that beat is its own press again", b?.gate ?? "none");
+  check((await page.locator("[data-spotlight]").count()) === 0,
+    "the board is its own brightness from the second week on");
+  const r2 = await ring(page);
+  check(!!r2?.invited && r2.anim === "tally-invite-pulse",
+    "and the key is still the thing wearing the invitation", JSON.stringify(r2));
+  await page.screenshot({ path: OUT + "tally-r7-week.png" });
+
+  await wait(DWELL + 400);
+  await tap(page);
+  await wait(200);
+  check(await idOf(page) === "week-two", "a tap anywhere still cannot spend a week");
+  await page.locator('[data-play="1"]').click();
+  await wait(2600);
+  check(await idOf(page) === "week-three", "and the key's own press moves to the next week",
+    await idOf(page));
 
   await ctx.close();
 }

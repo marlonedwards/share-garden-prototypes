@@ -38,8 +38,13 @@ const SCRIPT = [
   ["money", "Every green block is five real dollars of yours."],
   ["wall", "The wall is the record of what your money is worth, one column for every week."],
   ["target", "That gold line is the target, and finishing above it clears the chapter."],
-  ["read", "A pile that does nothing does not grow, and a week has just passed."],
   ["play", "The Play key runs the next week, and the wall writes down what happened."],
+  ["read", "A pile that does nothing does not grow, and a week has just passed."],
+  ["week-two", "Payday comes again every week, so the only thing that changes here is what you were paid."],
+  ["week-three", "Nothing in this chapter can go wrong, and nothing in it grows on its own."],
+  ["week-four", "Every week you play is one more column the wall keeps for good."],
+  ["week-five", "The gold line has not moved, because a target is a fact about the chapter and not about you."],
+  ["week-last", "This is the last week of the chapter, and then we count it up."],
   ["cleared", "You cleared it, and chapter 2 opens the bank."],
 ];
 
@@ -169,20 +174,9 @@ async function playChapterOne(page, { shots = false, tapEvery = true } = {}) {
   await inside(page, "the gold line");
 
   await tap(page);
-  check((await bubble(page)) === null, "the script waits with nothing to say on turn one");
-
-  // the first scoring, then the read beat
-  await page.locator('[data-play="1"]').click();
-  await wait(2600);
   b = await note();
-  check(b?.id === "read", "the read beat is where the piggy speaks again", b?.id ?? "none");
-  check(b?.say === SCRIPT[6][1], "a pile that does nothing is named", b?.say ?? "");
-  await inside(page, "the read line");
-
-  await tap(page);
-  b = await note();
-  check(b?.id === "play", "the Play key is the last thing named", b?.id ?? "none");
-  check(b?.say === SCRIPT[7][1], "the key is named rather than pressed for", b?.say ?? "");
+  check(b?.id === "play", "the Play key is named before it is needed", b?.id ?? "none");
+  check(b?.say === SCRIPT[6][1], "the key is named rather than pressed for", b?.say ?? "");
   check(await page.locator('[data-play="1"][data-invite="1"]').count() === 1,
     "and the key it names is the one wearing the invitation");
   await inside(page, "the Play key");
@@ -193,9 +187,22 @@ async function playChapterOne(page, { shots = false, tapEvery = true } = {}) {
   check((await bubble(page))?.id === "play", "a tap anywhere leaves the Play beat standing");
   await page.locator('[data-play="1"]').click();
   await wait(2600);
-  check((await bubble(page)) === null, "and then it is quiet for the rest of the chapter");
-  check(await page.locator('[data-play="1"][data-invite="1"]').count() === 0,
-    "the invitation comes off the key once it has been pressed");
+
+  // the first scoring, then the read beat
+  b = await note();
+  check(b?.id === "read", "the read beat is where the piggy speaks next", b?.id ?? "none");
+  check(b?.say === SCRIPT[7][1], "a pile that does nothing is named", b?.say ?? "");
+  await inside(page, "the read line");
+
+  // and then the piggy stays for the rest of the chapter, one week at a time
+  await tap(page);
+  b = await note();
+  check(b?.id === "week-two", "the piggy stays for the second week", b?.id ?? "none");
+  check(b?.say === SCRIPT[8][1], "and says what a week here changes", b?.say ?? "");
+  check(await page.locator('[data-play="1"][data-invite="1"]').count() === 1,
+    "the key wears the invitation again");
+  check((await page.locator("[data-spotlight]").count()) === 0,
+    "and the board keeps its own light from the second week on");
 
   // the rest of chapter 1
   for (let i = 0; i < 40; i++) {
@@ -219,8 +226,28 @@ async function playChapterOne(page, { shots = false, tapEvery = true } = {}) {
 
   b = await note();
   check(b?.id === "cleared", "the summary is the piggy's last word", b?.id ?? "none");
-  check(b?.say === SCRIPT[8][1], "the last sentence names what opens next", b?.say ?? "");
+  check(b?.say === SCRIPT[13][1], "the last sentence names what opens next", b?.say ?? "");
   check(b?.pose === "celebrate", "and it celebrates", b?.pose ?? "");
+
+  // the lesson, which is the thing the chapter was for and is therefore the
+  // loudest thing on the screen the chapter ends on
+  const lesson = await page.evaluate(() => {
+    const box = document.querySelector('[data-overlay="1"]');
+    const el = [...(box?.querySelectorAll("div") ?? [])]
+      .find((d) => d.textContent?.trim().startsWith("A pile of money is a countable"));
+    if (!el) return null;
+    const heading = [...(box?.querySelectorAll("div") ?? [])]
+      .find((d) => /^Chapter \d+ (cleared|finished)$/.test(d.textContent?.trim() ?? ""));
+    return {
+      say: el.textContent.trim(),
+      size: parseFloat(getComputedStyle(el).fontSize),
+      headingSize: heading ? parseFloat(getComputedStyle(heading).fontSize) : 0,
+    };
+  });
+  check(!!lesson, "the chapter's own lesson is on the screen it ends on", lesson?.say ?? "missing");
+  check((lesson?.size ?? 0) >= 18, "and it is set at a size a person reads rather than skims",
+    `${lesson?.size}px`);
+  check((lesson?.headingSize ?? 0) >= 22, "under a heading that is a heading", `${lesson?.headingSize}px`);
   if (shots) await page.screenshot({ path: OUT + "tally-c2-celebrate.png" });
   await inside(page, "the summary");
 

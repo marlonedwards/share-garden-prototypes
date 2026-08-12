@@ -4,6 +4,12 @@
 // that closes tonight, and the front pages again, because the record is never
 // lost by dismissing it.
 //
+// The loudest thing on it is the lesson. A chapter is built around one sentence
+// and this is the screen a player leaves the chapter on, so that sentence is
+// set at the size of a heading in a frame of its own rather than as one more
+// grey line among the figures. Everything else on the panel is a fact about
+// what happened; the lesson is the thing that was for.
+//
 // Badges are never announced mid turn. They land here, one at a time, with a
 // single flip 300ms apart. Under prefers-reduced-motion they are simply
 // already there.
@@ -73,6 +79,12 @@ export default function ChapterSummaryOverlay({ summary, onContinue }: ChapterSu
         <div style={scoreLine}>
           You finished at <b style={num}>{money(summary.finishedAt)}</b>. The target was{" "}
           <b style={{ ...num, color: GOLD }}>{money(summary.target)}</b>.
+        </div>
+
+        {/* the one sentence the chapter was built to teach */}
+        <div style={lessonBox}>
+          <div style={lessonLabel}>the lesson</div>
+          <div style={lessonLine}>{summary.teaches}</div>
         </div>
 
         {summary.badges.length > 0 && (
@@ -170,32 +182,61 @@ const shell: React.CSSProperties = {
 };
 
 const panel: React.CSSProperties = {
-  width: "min(380px, 100%)",
+  // wider and set larger than it was: this is the one screen a chapter ends on
+  // and it was being read at the size of a footnote
+  width: "min(560px, 100%)",
   background: "#FFFEFB",
   border: `2px solid ${LINE_HARD}`,
   borderRadius: R.board,
   boxShadow: "0 10px 30px rgba(20,25,40,0.10)",
-  padding: "14px 18px 12px",
+  padding: "18px 24px 16px",
   textAlign: "center",
 };
 
 const eyebrow: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 700,
   color: SUB,
 };
 
 const heading: React.CSSProperties = {
-  fontSize: 17,
-  fontWeight: 750,
-  letterSpacing: "-0.02em",
+  fontSize: 24,
+  fontWeight: 800,
+  letterSpacing: "-0.025em",
   marginTop: 2,
 };
 
 const scoreLine: React.CSSProperties = {
-  fontSize: 14,
+  fontSize: 15.5,
   color: SUB,
-  marginTop: 4,
+  marginTop: 5,
+};
+
+// The lesson, in a frame of its own, in the gold the board keeps for the thing
+// being asked rather than the thing being reported.
+const lessonBox: React.CSSProperties = {
+  marginTop: 12,
+  padding: "11px 16px 13px",
+  borderRadius: R.panel,
+  border: "1.5px solid rgba(181,122,0,0.45)",
+  background: "linear-gradient(180deg, #FFFBF0, #FDF3DC)",
+  textAlign: "left",
+};
+
+const lessonLabel: React.CSSProperties = {
+  fontSize: 12.5,
+  fontWeight: 700,
+  color: GOLD,
+  letterSpacing: "0.01em",
+};
+
+const lessonLine: React.CSSProperties = {
+  marginTop: 3,
+  fontSize: 19,
+  fontWeight: 700,
+  lineHeight: 1.36,
+  letterSpacing: "-0.015em",
+  color: INK,
 };
 
 const num: React.CSSProperties = {
@@ -222,14 +263,14 @@ const badgeTile: React.CSSProperties = {
 };
 
 const badgeName: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 750,
   letterSpacing: "-0.01em",
   color: GOLD,
 };
 
 const badgeCopy: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 13.5,
   lineHeight: 1.4,
   color: SUB,
   marginTop: 2,
@@ -237,8 +278,8 @@ const badgeCopy: React.CSSProperties = {
 
 const notice: React.CSSProperties = {
   margin: "10px auto 0",
-  maxWidth: 440,
-  fontSize: 13,
+  maxWidth: 520,
+  fontSize: 14,
   lineHeight: 1.5,
   color: SUB,
 };
@@ -246,7 +287,7 @@ const notice: React.CSSProperties = {
 const pagesBox: React.CSSProperties = {
   marginTop: 10,
   textAlign: "left",
-  maxHeight: 84,
+  maxHeight: 96,
   overflowY: "auto",
 };
 
@@ -273,17 +314,17 @@ const pageHead: React.CSSProperties = {
 };
 
 const button: React.CSSProperties = {
-  marginTop: 10,
-  fontSize: 14,
-  padding: "8px 22px",
-  borderRadius: 9,
+  marginTop: 14,
+  fontSize: 15.5,
+  padding: "10px 30px",
+  borderRadius: 10,
 };
 
 // Where the run is on the ladder, which is what the panel says now that the
 // run's seed has left every player-facing screen.
 const ladder: React.CSSProperties = {
   marginTop: 6,
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 650,
   color: SUB,
   fontVariantNumeric: "tabular-nums",

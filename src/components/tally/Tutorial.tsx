@@ -1,13 +1,16 @@
 // Chapter 1 is the tutorial, and the piggy bank is the only thing in the game
 // that talks in the first person.
 //
-// The script is eight beats long and every beat is one sentence. The sentences
-// name things: what a block is, what the wall is, what the gold line is, what
-// payday is, what an empty shop means, and what a week of doing nothing does to
-// a pile of money. Not one of them tells the player to do anything, because the
-// reward function contract in docs/tally-spec.md section 8 binds the piggy
-// harder than it binds anything else on the board: a mascot that gives advice is
-// a mascot that has started scoring the game.
+// Every beat is one sentence, and the script runs the whole of chapter 1 rather
+// than the opening of it: the sentences name things, and then the piggy stands
+// by the Play key for every week of the chapter, because six presses of one key
+// is what chapter 1 is and a tutorial that goes quiet after the first one reads
+// as a tutorial that has ended. Not one sentence tells the player to do
+// anything with their money, because the reward function contract in
+// docs/tally-spec.md section 8 binds the piggy harder than it binds anything
+// else on the board: a mascot that gives advice is a mascot that has started
+// scoring the game. Naming the key that runs a week is not advice; what to buy
+// with the money would be.
 //
 // A beat knows two things: where on the screen it belongs, and what it points
 // at. It only shows when the game is on the screen it belongs to, so the script
@@ -91,7 +94,31 @@ export interface TourBeat {
   // it. An action beat's element is the anchor by default.
   gate?: Gate;
   act?: string;
+  // Whether the beat takes the board's light down to point at its thing. A
+  // sentence that is naming something for the first time does; the beats that
+  // stand with the player week after week do not, because a scrim on every
+  // turn of a chapter stops being a spotlight and starts being weather. The
+  // key it waits on still wears its own invitation either way.
+  lit?: boolean;
   fits: (w: TourWhere) => boolean;
+}
+
+// A week of chapter 1 that is not the first: the piggy stands by the Play key,
+// says one true thing about what a week here does, and waits for the press. The
+// board keeps its own light, and the key keeps the pulse, so the invitation is
+// in the object exactly as it was the first time.
+function week(id: string, say: string, fits: (w: TourWhere) => boolean): TourBeat {
+  return {
+    id,
+    say,
+    pose: "down",
+    place: "over",
+    anchor: '[data-play="1"]',
+    atX: 0.5,
+    gate: "action",
+    lit: false,
+    fits: (w) => w.phase === "plan" && w.beat === "table" && fits(w),
+  };
 }
 
 // The script. Its order is the order the game actually happens in: the chapter
@@ -149,6 +176,21 @@ export const TOUR: TourBeat[] = [
     fits: (w) => w.phase === "plan" && w.beat === "table" && w.turn === 0,
   },
   {
+    // The one beat that is about a press, and therefore the one beat that only
+    // that press can finish. It comes before the first week is played, because
+    // a key is worth naming before it is needed rather than after it has been
+    // found. The sentence says what the key does and stops there; the pulse is
+    // what does the inviting.
+    id: "play",
+    say: "The Play key runs the next week, and the wall writes down what happened.",
+    pose: "down",
+    place: "over",
+    anchor: '[data-play="1"]',
+    atX: 0.5,
+    gate: "action",
+    fits: (w) => w.phase === "plan" && w.beat === "table",
+  },
+  {
     id: "read",
     say: "A pile that does nothing does not grow, and a week has just passed.",
     pose: "up",
@@ -157,19 +199,16 @@ export const TOUR: TourBeat[] = [
     atX: 0.2,
     fits: (w) => w.phase === "plan" && w.beat === "table" && w.turn >= 1,
   },
-  {
-    // The one beat that is about a press, and therefore the one beat that only
-    // that press can finish. The sentence names what the key does and stops
-    // there; the pulse is what does the inviting.
-    id: "play",
-    say: "The Play key runs the next week, and the wall writes down what happened.",
-    pose: "down",
-    place: "over",
-    anchor: '[data-play="1"]',
-    atX: 0.5,
-    gate: "action",
-    fits: (w) => w.phase === "plan" && w.beat === "table" && w.turn >= 1,
-  },
+  // The rest of the chapter, week by week. The piggy does not leave after the
+  // first scoring: chapter 1 is six presses of one key, and a tutorial that
+  // says one thing and then goes quiet leaves the player wondering whether the
+  // game is over. Each week is one true sentence about a chapter where nothing
+  // can go wrong, and each one ends on the press that plays it.
+  week("week-two", "Payday comes again every week, so the only thing that changes here is what you were paid.", (w) => w.turn === 1),
+  week("week-three", "Nothing in this chapter can go wrong, and nothing in it grows on its own.", (w) => w.turn === 2),
+  week("week-four", "Every week you play is one more column the wall keeps for good.", (w) => w.turn === 3),
+  week("week-five", "The gold line has not moved, because a target is a fact about the chapter and not about you.", (w) => w.turn === 4),
+  week("week-last", "This is the last week of the chapter, and then we count it up.", (w) => w.turn >= 5),
   {
     id: "cleared",
     say: "You cleared it, and chapter 2 opens the bank.",
