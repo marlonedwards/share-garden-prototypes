@@ -14,6 +14,9 @@ import { useStageScale } from "../lib/useStageScale";
 import SettingsMenu from "../components/SettingsMenu";
 import { Gate, ScenarioConfig, getScenario, hasScouting, withIndexFund } from "../lib/scenarios";
 import StackStage, { StackBand } from "../components/StackStage";
+import TileStage from "../components/TileStage";
+import { tileColumns } from "../lib/tileColumns";
+import { stackStars } from "../lib/stackStars";
 import ScoutingCards from "../components/ScoutingCards";
 import { buildCheck } from "../lib/checkpoints";
 import QuickCheck from "../components/QuickCheck";
@@ -114,53 +117,6 @@ const RAINBOW_COMP: CompSlice[] = [
   ["#64d2ff", "#b0e8ff"], ["#0a84ff", "#7cc0ff"], ["#bf5af2", "#e0a9ff"],
 ].map(([color, glow], i) => ({ key: `r${i}`, color, glow, frac: 1 / 7 }));
 
-// The Stack's three named stars, judged from the trade log after the tape
-// ends. They score the process, never the ending: how spread out the stack
-// stayed, whether the money kept working without a fear-driven sell, and
-// whether the run finished inside the goal band around the index.
-function stackStars(m: HistoryMarket, cfg: ScenarioConfig) {
-  const last = cfg.lastStep ?? cfg.dataset.months.length - 1;
-  const buys = m.trades.filter((t) => t.side === "buy");
-  if (buys.length === 0) return { spread: false, stayed: false, panicSells: 0 };
-  const firstBuy = Math.min(...buys.map((t) => t.step));
-  const shares: Record<string, number> = {};
-  let ti = 0, investedMonths = 0, concentratedMonths = 0, months = 0, hw = 0;
-  const netAt: number[] = [], hwAt: number[] = [];
-  let buySpent = 0, sellGot = 0;
-  for (let t = 0; t <= last; t++) {
-    while (ti < m.trades.length && m.trades[ti].step <= t) {
-      const tr = m.trades[ti++];
-      if (tr.side === "buy") { shares[tr.id] = (shares[tr.id] ?? 0) + tr.shares; buySpent += tr.dollars; }
-      else { shares[tr.id] = (shares[tr.id] ?? 0) - tr.shares; sellGot += tr.dollars; }
-    }
-    let invested = 0, top = 0;
-    for (const id of Object.keys(shares)) {
-      const v = shares[id] * (m.history[id]?.[t] ?? 0);
-      invested += v;
-      top = Math.max(top, v);
-    }
-    const cash = Math.max(0, cfg.startCash + (cfg.income ?? 0) * t - buySpent + sellGot);
-    const net = cash + invested;
-    hw = Math.max(hw, net);
-    netAt.push(net);
-    hwAt.push(hw);
-    if (t > firstBuy) {
-      months++;
-      if (net > 0 && invested / net >= 0.6) investedMonths++;
-      if (invested > 250 && top / invested > 0.6) concentratedMonths++;
-    }
-  }
-  let panicSells = 0;
-  for (const tr of m.trades) {
-    if (tr.side === "sell" && hwAt[tr.step] > 0 && netAt[tr.step] / hwAt[tr.step] < 0.85) panicSells++;
-  }
-  return {
-    spread: concentratedMonths <= 12,
-    stayed: months > 0 && investedMonths / months >= 0.75 && panicSells === 0,
-    panicSells,
-  };
-}
-
 function StarRow({ ok, name: label, detail }: { ok: boolean; name: string; detail: string }) {
   return (
     <div className="flex items-start gap-2.5">
@@ -260,6 +216,12 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
     [cfg],
   );
   const [fluid, setFluid] = useFluidPref();
+  // The Stack has two stages for the same level. The cylinder puts value in a
+  // continuous height and redraws one shape a frame; the blocks put it in
+  // countable units and keep every past column. The toggle is the demo: the
+  // rules, the corridor, the stars, the gates and the quiz are all identical
+  // underneath, so anything that changes between them is the picture.
+  const [stackStage, setStackStage] = useState<"cylinder" | "blocks">("blocks");
   const [tradeRow, setTradeRow] = useState<string | null>(null);
   const [fractional, setFractional] = useState(cfg.fractionalDefault);
   const [payMode, setPayMode] = useState<"unset" | "auto" | "ask">("unset");
@@ -582,6 +544,21 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
           if (price <= 0) return [{ key: ea.id, color: ea.color, value: 0, dead: true }];
           return [{ key: ea.id, color: ea.color, value: shares * price, striped: ea.id === cfg.indexKey }];
         });
+  // The blocks stage keeps the run's past on screen, so it needs a column for
+  // every month up to the one being shown (the rewind scrubber included).
+  const shownStep = review && reviewStep !== null ? reviewStep : m.step;
+  const tileCols = useMemo(
+    () => (variant === "stack" && stackStage === "blocks" ? tileColumns(m, cfg, Math.max(0, shownStep - 1)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [variant, stackStage, shownStep, m.trades.length, cfg, runId, lastStep],
+  );
+  const yearMarks = useMemo(
+    () => cfg.dataset.months
+      .slice(0, lastStep + 1)
+      .map((mo, i) => ({ step: i, label: mo.slice(0, 4) }))
+      .filter((x, i) => i === 0 || cfg.dataset.months[i - 1].slice(0, 4) !== x.label),
+    [cfg, lastStep],
+  );
   const markers: ChartMarker[] = useMemo(
     () =>
       beat !== "end"
@@ -612,6 +589,17 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
           <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>{cfg.headerSub}</span>
         </div>
         <div className="ml-auto flex items-center gap-3">
+          {variant === "stack" && (
+            <div className="flex items-center rounded-full bg-white border border-black/10 overflow-hidden shadow-sm" role="group" aria-label="Stage">
+              {(["blocks", "cylinder"] as const).map((s) => (
+                <button key={s} onClick={() => setStackStage(s)} aria-pressed={stackStage === s}
+                  className="text-[12.5px] font-medium px-3 py-1.5 transition"
+                  style={stackStage === s ? { background: "#0071e3", color: "#fff" } : { color: "#6e6e73" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
           <span className="text-[13px] tnum" style={{ color: "#6e6e73" }}>{m.monthLabel()}</span>
           {running && (
             <div className="flex items-center rounded-full bg-white border border-black/10 overflow-hidden shadow-sm">
@@ -636,17 +624,37 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
           <div className="relative rounded-3xl overflow-hidden shadow-sm border border-black/5"
             style={{ width: STAGE_W, height: stageH, transform: `scale(${stageScale})`, transformOrigin: "top left", background: "linear-gradient(180deg, #fbfbfd 0%, #f2f3f6 68%, #e8eaef 100%)", transition: "height 0.4s ease" }}>
             {variant === "stack" ? (
-              <StackStage
-                key={runId}
-                width={STAGE_W}
-                height={stageH}
-                cash={dCash}
-                bands={stackBands}
-                indexValue={dBench}
-                playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "your stack"}
-                corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "goal · finish inside this band" } : undefined}
-                maxDollars={stackMaxRef.current}
-              />
+              stackStage === "blocks" ? (
+                <TileStage
+                  key={`tiles-${runId}`}
+                  width={STAGE_W}
+                  height={stageH}
+                  cash={dCash}
+                  bands={stackBands}
+                  indexValue={dBench}
+                  playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "your stack"}
+                  corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "goal band" } : undefined}
+                  maxDollars={stackMaxRef.current}
+                  columns={tileCols}
+                  totalSteps={lastStep + 1}
+                  yearMarks={yearMarks}
+                  /* the page's own net-worth readout and its two stage toggles
+                     already own these corners */
+                  chrome={{ top: 96, left: 262, right: 128 }}
+                />
+              ) : (
+                <StackStage
+                  key={runId}
+                  width={STAGE_W}
+                  height={stageH}
+                  cash={dCash}
+                  bands={stackBands}
+                  indexValue={dBench}
+                  playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "your stack"}
+                  corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "goal band" } : undefined}
+                  maxDollars={stackMaxRef.current}
+                />
+              )
             ) : (
               <>
             <OrbScene
@@ -989,7 +997,9 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
             <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>{variant === "stack" ? "Inside your stack" : "Inside your orb"}</div>
             {holdings.length === 0 && (
               <div className="text-sm py-1" style={{ color: "#6e6e73" }}>
-                Nothing is here yet. The glass is clear.
+                {variant === "stack" && stackStage === "blocks"
+                  ? "Nothing is here yet. The floor is empty."
+                  : "Nothing is here yet. The glass is clear."}
               </div>
             )}
             {holdings.map((h, hi) => {

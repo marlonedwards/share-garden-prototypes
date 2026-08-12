@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>The Tally: three characters for the same turn</title>
+<style>
+:root {
+  color-scheme: light;
+  --ground:      #F1F3F6;
+  --grid:        #DFE4EC;
+  --grid-strong: #CFD6E2;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7F9FC;
+  --line:        #D6DCE6;
+  --line-soft:   #E8ECF3;
+  --ink:         #14171C;
+  --ink-2:       #4E586A;
+  --ink-3:       #7F8A9B;
+  --accent:      #2a78d6;
+  --good:        #1baf7a;
+  --bad:         #C4362F;
+
+  --display: "Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --ground:      #101317; --grid: #1C2128; --grid-strong: #242B34;
+    --surface:     #171B21; --surface-2: #1B2029;
+    --line:        #2A313B; --line-soft: #222831;
+    --ink: #EEF1F6; --ink-2: #A3AEBE; --ink-3: #78838F;
+    --accent: #5A9BEE; --good: #199e70; --bad: #E06A62;
+  }
+}
+
+/* The product palette. Fixed in every mock, whatever theme the page is in,
+   because a mock of a light game has to look like the light game. */
+.p {
+  --pink:   #1D1D1F;
+  --psub:   #6E6E73;
+  --pline:  rgba(0,0,0,0.10);
+  --gold:   #B57A00;
+  --paccent:#0071E3;
+
+  --ring-save:  #2E9E63;
+  --ring-lend:  #2A72D6;
+  --ring-own:   #D98A00;
+  --ring-spec:  #D0453A;
+
+  color: var(--pink);
+  font-family: var(--display);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--ground);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px, 96px 96px, 96px 96px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; display: flex; flex-direction: column; gap: 40px; }
+
+.masthead { padding: 72px 0 8px; display: flex; flex-direction: column; gap: 18px; }
+.eyebrow {
+  font-family: var(--display); font-size: 13.5px; font-weight: 600;
+  color: var(--accent); display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+h1 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(34px, 5.4vw, 56px); letter-spacing: -0.033em; line-height: 1.03;
+  margin: 0; text-wrap: balance; max-width: 19ch;
+}
+.standfirst { font-size: 20px; line-height: 1.55; color: var(--ink-2); max-width: 62ch; margin: 0; }
+.standfirst strong { color: var(--ink); font-weight: 600; }
+
+section { display: flex; flex-direction: column; gap: 20px; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 27px; letter-spacing: -0.02em; line-height: 1.15; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 650; font-size: 18px; letter-spacing: -0.012em; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+p + p { margin-top: 0.9em; }
+.lede { color: var(--ink-2); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.panel.flush { padding: 22px; overflow: hidden; align-items: flex-start; width: fit-content; max-width: 100%; }
+.divider { height: 1px; background: var(--line-soft); }
+.cap { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); line-height: 1.55; max-width: 78ch; }
+.cap b { color: var(--ink-2); font-weight: 650; }
+.foot { font-family: var(--display); font-size: 13px; color: var(--ink-3); padding-top: 8px; }
+
+table.spec { width: 100%; border-collapse: collapse; font-family: var(--display); font-size: 13.5px; }
+table.spec th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12.5px; padding: 10px 12px 7px; border-bottom: 1px solid var(--line-soft); }
+table.spec td { padding: 8px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+table.spec tr:last-child td { border-bottom: 0; }
+table.spec td.k { font-weight: 650; white-space: nowrap; }
+
+ul.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+ul.plain li { font-family: var(--display); font-size: 14.5px; line-height: 1.5; display: flex; gap: 12px; }
+ul.plain li .k { color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 18px; flex: none; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+
+/* ================= shared game objects ================= */
+
+.blk {
+  width: var(--b, 12px); height: var(--b, 12px); border-radius: 2px;
+  position: relative; flex: none;
+}
+.blk::after {
+  content: ""; position: absolute; left: 1.5px; right: 1.5px; top: 1px; height: 2px;
+  background: rgba(255,255,255,0.42); border-radius: 1px;
+}
+.blk.cash::before {
+  content: "$"; position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: calc(var(--b, 12px) * 0.58); font-weight: 800; color: rgba(255,255,255,0.82); line-height: 1;
+  font-family: var(--display);
+}
+.tiny .blk::after, .tiny .blk.cash::before { display: none; }
+.blk.ghost { background: none; border: 1px solid rgba(0,0,0,0.18); }
+.blk.ghost::after { display: none; }
+
+.col { display: flex; flex-direction: column-reverse; align-items: center; gap: var(--bg, 2px); }
+.col .g5 { height: var(--g5, 4px); flex: none; }
+.row5 { display: flex; align-items: flex-end; gap: var(--bg, 2px); }
+.row5 .g5 { width: var(--g5, 4px); flex: none; }
+
+.card {
+  width: var(--cw, 92px); height: var(--ch, 104px); border-radius: 9px; background: #fff;
+  border: 1px solid var(--pline); position: relative; padding: 7px 8px;
+  display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(20,25,40,0.06); flex: none;
+}
+.card .ring { position: absolute; inset: 0; border-radius: 9px; border: 2.5px solid transparent; pointer-events: none; z-index: 1; }
+.card > *:not(.ring) { position: relative; z-index: 2; }
+.card.own .ring { border-color: var(--ring-own); }
+.card.save .ring { border-color: var(--ring-save); }
+.card.lend .ring { border-color: var(--ring-lend); }
+.card.spec .ring { border-color: var(--ring-spec); }
+.card.basket .ring {
+  border-color: transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(from 210deg, #ff453a, #ff9f0a, #ffd60a, #30d158, #64d2ff, #0a84ff, #bf5af2, #ff453a) border-box;
+  transition: filter .18s ease;
+}
+.card.basket::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 7px; pointer-events: none; z-index: 3;
+  background: radial-gradient(120% 80% at 20% 0%, rgba(255,255,255,0.9), rgba(255,255,255,0) 62%);
+  opacity: 0; transition: opacity .18s ease;
+}
+.stack:hover .card.basket .ring, .card.basket:hover .ring { filter: saturate(1.6) brightness(1.14); }
+.stack:hover .card.basket::after, .card.basket:hover::after { opacity: 1; }
+.stack.basket:hover { transform: translateY(-3px); }
+.stack { position: relative; flex: none; transition: transform .18s ease; }
+.stack .card { position: absolute; left: 0; }
+.stack .collar {
+  position: absolute; left: 0; bottom: 0; width: var(--cw, 92px); text-align: center;
+  font-size: 10px; font-weight: 700; color: var(--psub); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.card .top { display: flex; align-items: flex-start; gap: 5px; }
+.pip { width: 6px; height: 6px; border-radius: 50%; flex: none; margin-top: 3px; }
+.card .nm { font-size: 10px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.16; min-height: 23px; }
+.card .worth { display: flex; gap: 2px; flex-wrap: wrap; margin: 3px 0 auto; --b: 9px; max-width: 76px; }
+.card .px { font-size: 11.5px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.card .px.dot { border-bottom: 1px dotted var(--psub); align-self: flex-start; }
+.card .mv { font-size: 9.5px; font-weight: 650; font-variant-numeric: tabular-nums; color: #c0392b; }
+.card .mv.up { color: #1a8a52; }
+
+/* ================= board frames ================= */
+
+.board { position: relative; display: flex; flex-direction: column; flex: none; }
+.stagewrap { position: relative; overflow: hidden; }
+.drawer {
+  position: absolute; inset: 0; z-index: 8;
+  transform: translateY(100%); transition: transform .34s cubic-bezier(.22,.9,.28,1);
+  display: flex; flex-direction: column;
+}
+.drawer[data-open="1"] { transform: translateY(0); }
+.drawer .dhead { display: flex; align-items: center; gap: 10px; }
+.mktbtn { cursor: pointer; border: 0; background: none; font-family: inherit; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------------- direction A: the sketch, kept ---------------- */
+
+.vA {
+  width: 420px; background: #FAF9F7; border: 1px solid var(--pline); border-radius: 14px;
+  padding: 13px; gap: 8px;
+}
+.vA .hdr { display: flex; flex-direction: column; gap: 1px; }
+.vA .hdr .facts { display: flex; gap: 10px; font-size: 10.5px; color: var(--psub); font-weight: 600; }
+.vA .hdr .facts b { color: var(--pink); font-weight: 750; }
+.vA .hdr .read { font-size: 12px; font-weight: 650; color: var(--pink); }
+.vA .stage {
+  height: 372px; border-radius: 12px; padding: 10px;
+  background:
+    repeating-linear-gradient(to top, rgba(0,0,0,0.055) 0 1px, rgba(0,0,0,0) 1px 44px),
+    linear-gradient(180deg, #E9ECF1 0%, #DEE2E9 100%);
+  background-position: left bottom 10px, left top;
+  border: 1px solid rgba(0,0,0,0.07);
+}
+.vA .field { position: relative; height: 352px; display: flex; align-items: flex-end; gap: 1.75px; }
+.vA .field .col { --b: 8px; --bg: 0.8px; --g5: 1.4px; width: 8px; }
+.vA .slot { width: 8px; flex: none; }
+.vA .goldline {
+  position: absolute; left: 0; right: 0; bottom: 335px; border-top: 1.5px dashed var(--gold);
+}
+.vA .goldline span {
+  position: absolute; left: 0; top: -15px; font-size: 10px; font-weight: 750; color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.vA .yr { position: absolute; bottom: 0; top: 0; border-left: 1px solid rgba(0,0,0,0.09); }
+.vA .yr span { position: absolute; top: 1px; left: 3px; font-size: 9px; color: var(--psub); font-variant-numeric: tabular-nums; }
+.vA .readout { position: absolute; right: 2px; top: 32px; text-align: right; }
+.vA .readout .n { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.vA .readout .s { font-size: 10.5px; font-weight: 650; color: var(--psub); margin-top: 4px; }
+.vA .now { position: absolute; width: 8px; }
+.vA .now i { display: block; width: 8px; height: 3px; background: var(--gold); border-radius: 1px; }
+.vA .now span {
+  position: absolute; left: 14px; top: -5px; font-size: 9.5px; font-weight: 700; color: var(--gold); white-space: nowrap;
+}
+.vA .table { display: flex; align-items: flex-start; gap: 14px; height: 132px; padding: 0 1px; }
+.vA .foot2 { display: flex; align-items: center; gap: 10px; height: 30px; }
+.vA .money { display: flex; align-items: center; gap: 7px; }
+.vA .money .lab { font-size: 10px; font-weight: 650; color: var(--psub); }
+.vA .money .v { font-size: 14px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.vA .money .row5 { --b: 9px; --bg: 1.5px; --g5: 3px; }
+.vA .mktbtn {
+  font-size: 11px; font-weight: 650; color: var(--paccent);
+  border: 1px solid rgba(0,113,227,0.35); border-radius: 20px; padding: 4px 11px; background: rgba(0,113,227,0.05);
+}
+.vA .end {
+  margin-left: auto; font-size: 12px; font-weight: 700; color: #fff; background: var(--pink);
+  border: 0; border-radius: 8px; padding: 7px 16px; cursor: pointer; font-family: inherit;
+}
+.vA .drawer { background: rgba(246,247,250,0.95); padding: 11px; }
+.vA .drawer .dhead { font-size: 11px; font-weight: 650; color: var(--psub); margin-bottom: 9px; }
+.vA .drawer .cards { display: grid; grid-template-columns: repeat(4, 88px); gap: 8px; }
+.vA .drawer .card { --cw: 88px; --ch: 100px; }
+
+/* ---------------- direction B: the counting house ---------------- */
+
+.vB {
+  width: 860px; background: #FBF7EE; border: 1px solid #221E16; padding: 16px 18px 14px; gap: 0;
+  font-family: var(--body); color: #211D16;
+  --pline: rgba(34,30,22,0.32); --psub: #6B6154;
+}
+.vB .folio { display: flex; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 2px solid #221E16; }
+.vB .folio .t { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.vB .folio .facts { margin-left: auto; display: flex; gap: 16px; font-size: 12px; color: #5C5346; font-variant-numeric: tabular-nums; }
+.vB .folio .facts b { color: #211D16; }
+.vB .readline { font-size: 14.5px; line-height: 1.4; padding: 6px 0 7px; border-bottom: 1px solid rgba(34,30,22,0.28); }
+.vB .ledger { padding-top: 3px; }
+.vB .lrow {
+  display: grid; grid-template-columns: 96px 1fr 116px; align-items: center; gap: 10px;
+  height: 27px; border-bottom: 1px solid rgba(34,30,22,0.15);
+}
+.vB .lrow.head { height: 20px; border-bottom: 1px solid rgba(34,30,22,0.55); }
+.vB .lrow.head span { font-size: 10.5px; color: #6B6154; font-family: var(--display); font-weight: 600; }
+.vB .lrow .d { font-size: 12.5px; }
+.vB .lrow .t { text-align: right; font-size: 12.5px; font-variant-numeric: tabular-nums; font-weight: 700; }
+.vB .lrow .row5 { --b: 13px; --bg: 1.5px; --g5: 5px; }
+.vB .lrow.target { border-bottom: 2px solid var(--gold); height: 29px; }
+.vB .lrow.target .d, .vB .lrow.target .t { color: #8A5D00; }
+.vB .lrow.empty .d { color: #A79C8D; }
+.vB .lrow.empty .rule { height: 1px; background: repeating-linear-gradient(90deg, rgba(34,30,22,0.2) 0 3px, transparent 3px 8px); }
+.vB .blk { border-radius: 1px; box-shadow: inset 0 0 0 0.5px rgba(30,22,10,0.55); }
+.vB .blk::after { left: 1px; right: 1px; top: 0.5px; height: 1.5px; background: rgba(255,255,255,0.28); }
+.vB .blk.ghost { box-shadow: none; border-color: rgba(34,30,22,0.3); }
+.vB .table { display: flex; align-items: flex-start; gap: 14px; height: 150px; padding-top: 14px; }
+.vB .card { border-radius: 0; background: #FFFDF7; border: 1px solid #221E16; box-shadow: 1.5px 1.5px 0 rgba(34,30,22,0.18); }
+.vB .card .ring { border-radius: 0; border-width: 3px; }
+.vB .card.basket .ring { background: linear-gradient(#FFFDF7,#FFFDF7) padding-box, conic-gradient(from 210deg, #ff453a, #ff9f0a, #ffd60a, #30d158, #64d2ff, #0a84ff, #bf5af2, #ff453a) border-box; }
+.vB .card.basket::after { border-radius: 0; }
+.vB .card .nm { font-family: var(--body); font-size: 11.5px; font-weight: 700; }
+.vB .card .px { font-family: var(--body); font-size: 12.5px; }
+.vB .stack .collar { font-family: var(--display); color: #6B6154; }
+.vB .foot2 { display: flex; align-items: center; gap: 16px; height: 36px; border-top: 1px solid rgba(34,30,22,0.28); padding-top: 7px; }
+.vB .money { display: flex; align-items: baseline; gap: 7px; font-size: 13px; }
+.vB .money b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.vB .mktbtn { font-family: var(--body); font-size: 13px; color: #211D16; border-bottom: 1px solid #211D16; padding-bottom: 1px; }
+.vB .end {
+  margin-left: auto; font-family: var(--body); font-size: 14px; font-weight: 700; color: #FBF7EE;
+  background: #211D16; border: 0; padding: 7px 20px; cursor: pointer; box-shadow: 3px 3px 0 rgba(34,30,22,0.3);
+}
+.vB .end:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(34,30,22,0.3); }
+.vB .drawer { background: rgba(251,247,238,0.98); border-top: 2px solid #221E16; padding: 11px 12px; }
+.vB .drawer .dhead { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.vB .drawer .cards { display: flex; gap: 9px; }
+
+/* ---------------- direction C: the instrument ---------------- */
+
+.vC {
+  width: 900px; background: #F5F4F1; border: 1px solid #15171A; padding: 14px; gap: 9px;
+  --pline: rgba(21,23,26,0.3); --psub: #6A6E75;
+  color: #15171A;
+}
+.vC .hdr { display: grid; grid-template-columns: 1fr auto; gap: 3px 14px; align-items: baseline; }
+.vC .hdr .l { font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em; }
+.vC .hdr .r { font-size: 11.5px; font-variant-numeric: tabular-nums; color: #4A4E55; font-weight: 650; }
+.vC .hdr .read { grid-column: 1 / -1; font-size: 13px; font-weight: 600; }
+.vC .stage { height: 398px; background: #FDFDFC; border: 1px solid #15171A; padding: 8px 10px 6px 34px; position: relative; }
+.vC .field { position: relative; height: 384px; display: flex; align-items: flex-end; gap: 15px; }
+.vC .brick { width: 78px; flex: none; display: flex; flex-direction: column-reverse; gap: 1.5px; }
+.vC .brick .r { display: flex; gap: 1.5px; --b: 25px; }
+.vC .brick .band { height: 5px; }
+.vC .brick .cap { font-size: 9.5px; font-weight: 650; color: #9AA0A8; text-align: center; padding-bottom: 5px; font-variant-numeric: tabular-nums; }
+.vC .ghostslot { width: 78px; flex: none; position: relative; height: 100%; }
+.vC .ghostslot i { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: repeating-linear-gradient(90deg, rgba(21,23,26,0.3) 0 3px, transparent 3px 7px); }
+.vC .ghostslot span { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 9.5px; color: #A2A7AE; font-weight: 600; }
+.vC .axis { position: absolute; left: -30px; bottom: 0; top: 0; width: 30px; }
+.vC .axis i { position: absolute; left: 30px; width: 828px; height: 1px; background: rgba(21,23,26,0.075); }
+.vC .axis b {
+  position: absolute; left: 0; font-size: 9px; font-weight: 650; color: #9AA0A8;
+  font-variant-numeric: tabular-nums; transform: translateY(-50%);
+}
+.vC .goldline { position: absolute; left: -30px; right: 0; border-top: 2px solid #15171A; }
+.vC .goldline span { position: absolute; right: 0; top: -15px; font-size: 10px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.vC .readout { position: absolute; right: 6px; bottom: 108px; text-align: right; line-height: 0.9; }
+.vC .readout .n { font-size: 86px; font-weight: 800; letter-spacing: -0.055em; font-variant-numeric: tabular-nums; }
+.vC .readout .n em { font-style: normal; color: #BFC3C9; }
+.vC .readout .s { font-size: 10.5px; font-weight: 650; color: var(--psub); margin-top: 9px; }
+.vC .chips { display: flex; flex-direction: column; gap: 4px; }
+.vC .chip {
+  display: grid; grid-template-columns: 13px 1fr auto auto; align-items: center; gap: 10px;
+  border: 1px solid rgba(21,23,26,0.2); padding: 3px 9px; height: 28px; background: #FDFDFC;
+  transition: border-color .18s ease;
+}
+.vC .chip .rg { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--ring-own); }
+.vC .chip.basket .rg {
+  border-color: transparent;
+  background: linear-gradient(#FDFDFC,#FDFDFC) padding-box, conic-gradient(from 210deg, #ff453a, #ff9f0a, #ffd60a, #30d158, #64d2ff, #0a84ff, #bf5af2, #ff453a) border-box;
+  transition: filter .18s ease;
+}
+.vC .chip.basket:hover { border-color: #15171A; }
+.vC .chip.basket:hover .rg { filter: saturate(1.6) brightness(1.16); }
+.vC .chip .nm { font-size: 12px; font-weight: 650; }
+.vC .chip .nm i { font-style: normal; color: var(--psub); font-weight: 600; }
+.vC .chip .w { display: flex; gap: 2px; --b: 10px; }
+.vC .chip .px { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; width: 84px; text-align: right; }
+.vC .foot2 { display: flex; align-items: center; gap: 12px; height: 30px; }
+.vC .foot2 .money { font-size: 11.5px; font-variant-numeric: tabular-nums; color: #4A4E55; font-weight: 650; }
+.vC .foot2 .money b { color: #15171A; font-size: 13px; }
+.vC .mktbtn { font-size: 11px; font-weight: 650; color: #4A4E55; border: 1px solid rgba(21,23,26,0.3); padding: 4px 10px; }
+.vC .end {
+  margin-left: auto; font-family: inherit; font-size: 12px; font-weight: 700; color: #F5F4F1;
+  background: #15171A; border: 0; padding: 7px 18px; cursor: pointer;
+}
+.vC .drawer { background: rgba(253,253,252,0.98); border-top: 1px solid #15171A; padding: 10px 12px; }
+.vC .drawer .dhead { font-size: 11px; font-weight: 700; margin-bottom: 8px; }
+.vC .drawer .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; }
+.vC .drawer .chip { height: 27px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Share Garden &middot; The Tally &middot; visual directions &middot; 11 August 2026</div>
+  <h1>The game is right. The screen has no character yet.</h1>
+  <p class="standfirst">The build plays correctly and looks like nothing: too much air, columns like toothpicks, every object floating on its own. Before anything is rebuilt, here is <strong>one second of the game drawn three ways</strong>. Same chapter, same turn, same seven cards, same real prices. What changes is the character, and the character is the thing to pick.</p>
+</header>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The moment, held still</h2>
+  <p class="lede">September 2008 has just resolved. The wall stood at twenty four blocks on the October 2007 record and it stands at seventeen now, and not one card left the table. That is the whole metaphor in a single frame, which is why all three directions draw exactly this moment and nothing else.</p>
+
+  <div class="two">
+    <div class="panel">
+      <h3>What is true in all three</h3>
+      <table class="spec">
+        <tr><td class="k">Chapter</td><td>Six, the panic. Real prices from January 2007.</td></tr>
+        <tr><td class="k">Turn</td><td>Five of nine, in the read beat.</td></tr>
+        <tr><td class="k">Target</td><td>$2,960, which is 37 blocks.</td></tr>
+        <tr><td class="k">One block</td><td>$80.</td></tr>
+        <tr><td class="k">The wall</td><td>17 blocks, $1,403.40.</td></tr>
+        <tr><td class="k">On the table</td><td>3 Fruit Computers at $113.66, 2 Mega Bank at $22.35, 2 of The Index Fund at $1,861.44.</td></tr>
+        <tr><td class="k">Cash</td><td>$480, which is 6 green blocks.</td></tr>
+        <tr><td class="k">The read line</td><td>Seven blocks left the wall. Every card is still on the table.</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>The composition, cut down</h3>
+      <ul class="plain">
+        <li><span class="k">1</span><span>One board, no wider than 900 pixels, at a height that never changes.</span></li>
+        <li><span class="k">2</span><span>A thin header carrying the chapter, the turn, the target, the unit and the read line.</span></li>
+        <li><span class="k">3</span><span>The wall is the hero and takes more than half the board.</span></li>
+        <li><span class="k">4</span><span>Your cards are one row under it, and nothing else is.</span></li>
+        <li><span class="k">5</span><span>Cash and one End turn button close the board.</span></li>
+        <li><span class="k">6</span><span>The market is no longer a strip that sits there. It is a drawer you summon, and its affordance carries the count so nothing is hidden.</span></li>
+      </ul>
+      <div class="divider"></div>
+      <p class="cap">Every price here is the real monthly close from <b>src/data/eraGfc.json</b>, and every block count is that month's worth divided by $80 and rounded down. The seven cards were bought in January 2007, March 2007 and October 2007, so the wall is what those purchases were actually worth, month by month.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>Direction A. The sketch, kept</h2>
+  <p class="lede">This is the sketch's own language with nothing loosened: warm off-white, a lit stage for the wall, flat blocks with the one pixel highlight, white cards with suit rings, one gold line for the target. What changed is the shape of the board. A wall that has to hold forty blocks and only twenty one months is a portrait object, so the board turned portrait with it, and the sprawl had nowhere left to live.</p>
+
+  <div class="panel flush p">
+    <div class="board vA" id="boardA"></div>
+  </div>
+  <p class="cap">Press <b>End turn</b> to resolve turn six into March 2009: six months land one column at a time, the count steps down a digit at a time, and the board returns to where it was after a beat. Press <b>Market</b> to bring the eight cards up over the wall, and hover the rainbow stack. The pale rules across the stage are the wall's counting grid, one line every five blocks, so a glance gives you a number without counting to it.</p>
+
+  <h2 style="margin-top:22px">Direction B. The counting house</h2>
+  <p class="lede">Here the front page stops being one screen and becomes the whole game. Cream paper, a serif for every name and every sentence, hairline rules, and a wall that lies down as a ledger: one dated entry per resolved turn, blocks run out to the right, total in the margin. The target is the first entry on the page, ruled in gold, and the four turns you have not played are already ruled and waiting for their numbers.</p>
+
+  <div class="panel flush p">
+    <div class="board vB" id="boardB"></div>
+  </div>
+  <p class="cap">A row is easier to compare than a column, because the eye reads lengths against a shared left edge, and a target sitting at the top as an outlined row turns the gap into arithmetic. The cost is real and it is stated below: blocks stop stacking up, so growth reads as reaching rather than rising. Press <b>End turn</b> to write the March 2009 entry as it lands, and <b>Market</b> to see the market as a classified column.</p>
+
+  <h2 style="margin-top:22px">Direction C. The instrument</h2>
+  <p class="lede">Character from density instead of decoration. Ink on off-white, one strict grid, no rounded corners, and no colour anywhere except the blocks and the suit rings. A turn is laid three blocks wide so the blocks can be as large as they are, the count is set in numerals you could read across a room, and the cards fall back to slim chips carrying name, ring, worth and price.</p>
+
+  <div class="panel flush p">
+    <div class="board vC" id="boardC"></div>
+  </div>
+  <p class="cap">One column per turn is what the spec already says the wall does, and at this size a turn is a brick you could count from the sofa. The scale down the left counts in fives, the heavy rule is the target at thirty seven, and the four channels on the right are the turns still to play. Press <b>End turn</b>, and <b>Market</b> for the eight cards as a two column list.</p>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>What each one costs</h2>
+  <div class="panel">
+    <table class="spec">
+      <thead><tr><th></th><th>what it argues</th><th>what it buys</th><th>what it costs</th></tr></thead>
+      <tr>
+        <td class="k">A. The sketch</td>
+        <td>The drawing was never the problem. The layout was.</td>
+        <td>Nothing to relearn, the finest grain of history on screen, and a crash you can see as a shape in one look.</td>
+        <td>It is the safest of the three and the least memorable, and at eight pixels a block the wall is a texture before it is a count. A portrait board wastes a wide display.</td>
+      </tr>
+      <tr>
+        <td class="k">B. The counting house</td>
+        <td>Money has a print tradition, and this game is a record of what happened.</td>
+        <td>The most character by a distance, blocks big enough to count, and a target you compare by length instead of by height.</td>
+        <td>Growth stops rising, which weakens the one thing a wall does better than a chart. Serif at small sizes needs care on low resolution screens.</td>
+      </tr>
+      <tr>
+        <td class="k">C. The instrument</td>
+        <td>Confidence is the character. Take everything else away.</td>
+        <td>The biggest blocks, the loudest number, the calmest screen, and colour that only ever means something.</td>
+        <td>It reads as a tool before it reads as a toy, and a nine year old may find it stern. A turn laid three wide breaks counting in fives, so the printed number has to carry the precision.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <h3>What this breaks in the spec, said plainly</h3>
+      <p class="cap" style="font-size:14px;color:var(--ink-2)">Section 6.1 fixes four regions forever, and the third of them is a market strip that is always on screen. All three directions delete that region and summon the market instead, because a strip of eight cards you are not buying this turn was the largest single source of the sprawl.</p>
+      <p class="cap" style="font-size:14px;color:var(--ink-2)">The honest cost is that a market you cannot see is a market that could lie about what is available, and section 3.3 rests on never lying. Two things hold the line. The affordance always carries the count, so the number of buyable cards is on screen at all times, and the drawer opens over the wall inside region B, where every other overlay already lives. The four region law becomes a three region law, and 6.1 gets rewritten rather than quietly ignored.</p>
+    </div>
+    <div class="panel">
+      <h3>Two honest notes about the numbers</h3>
+      <p class="cap" style="font-size:14px;color:var(--ink-2)">The read line says seven blocks, not fourteen. At $80 a block, seven cards cost fourteen blocks in total, so fourteen blocks could only leave a wall that had roughly tripled first. Seven is what these real prices actually took: October 2007 to September 2008 turned $1,958.94 into $1,403.40.</p>
+      <p class="cap" style="font-size:14px;color:var(--ink-2)">Chapter six needs turns of different lengths. Turns one to four run two or three months each through 2007 so the record high gets its own beat, turn five carries the whole fall from October 2007 to September 2008, and the last four turns cover the recovery in years. Direction A keeps drawing one column per month underneath, which is why turn five landed eleven columns at once.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>The question for you</h3>
+    <p class="cap" style="font-size:15px;color:var(--ink-2)">Pick the character first and the rebuild follows it. If B wins, the ledger becomes the wall and the front page stops being a special screen. If C wins, the colour budget shrinks to blocks and rings and the whole app gets quieter. If A wins, the answer was composition all along, and the work is a week of tightening rather than a new visual system.</p>
+  </div>
+  <p class="foot">Sibling sketch: /sketches/tally.html. Full spec: docs/tally-spec.md. Prices: src/data/eraGfc.json, monthly closes, January 2007 to December 2015.</p>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------------------------------------------------------------- data
+  // Asset colours are the EraAsset colours already shipped in src/content/era-gfc.ts.
+  // The index fund has no company colour, so it takes a periwinkle of its own and
+  // carries the rainbow on its ring, which is where the basket has always lived.
+  var COL = { aapl: "#0a84ff", bank: "#30d158", idx: "#7a62e8", cash: "#1e7a57" };
+  var KEYS = ["aapl", "bank", "idx", "cash"];
+  var PIP = { bank: "#5e5ce6", tech: "#0a84ff", ind: "#a2845e", energy: "#8e8e93", retail: "#64d2ff", all: "#8e8e93" };
+
+  // month label, whole blocks, [fruit, bank, index, cash], dollars
+  var WALL = [
+    ["January 2007", 16, [4, 2, 2, 8], 1280.00],
+    ["February 2007", 15, [4, 1, 2, 8], 1260.33],
+    ["March 2007", 17, [4, 4, 4, 5], 1375.91],
+    ["April 2007", 17, [4, 4, 4, 5], 1429.51],
+    ["May 2007", 19, [6, 4, 4, 5], 1529.53],
+    ["June 2007", 19, [5, 4, 4, 6], 1587.46],
+    ["July 2007", 19, [6, 3, 4, 6], 1584.38],
+    ["August 2007", 21, [6, 4, 4, 7], 1699.65],
+    ["September 2007", 22, [7, 4, 4, 7], 1766.74],
+    ["October 2007", 24, [11, 3, 4, 6], 1958.94],
+    ["November 2007", 23, [10, 3, 4, 6], 1858.42],
+    ["December 2007", 23, [11, 2, 4, 6], 1904.52],
+    ["January 2008", 19, [7, 2, 4, 6], 1591.61],
+    ["February 2008", 18, [7, 2, 3, 6], 1505.84],
+    ["March 2008", 19, [8, 1, 4, 6], 1574.59],
+    ["April 2008", 21, [9, 2, 4, 6], 1753.00],
+    ["May 2008", 22, [11, 1, 4, 6], 1805.23],
+    ["June 2008", 20, [9, 1, 4, 6], 1647.72],
+    ["July 2008", 20, [9, 1, 4, 6], 1620.90],
+    ["August 2008", 20, [9, 1, 4, 6], 1675.44],
+    ["September 2008", 17, [6, 2, 3, 6], 1403.40]
+  ];
+  // turn six resolves into March 2009, the bottom
+  var NEXT = [
+    ["October 2008", 17, [6, 1, 3, 7], 1366.67],
+    ["November 2008", 15, [5, 1, 2, 7], 1246.93],
+    ["December 2008", 15, [5, 0, 3, 7], 1205.18],
+    ["January 2009", 14, [5, 0, 2, 7], 1188.54],
+    ["February 2009", 14, [5, 0, 2, 7], 1150.68],
+    ["March 2009", 15, [6, 0, 2, 7], 1244.91]
+  ];
+  // the five resolved turns, for the ledger and for the brick wall
+  var TURNS = [
+    ["March 2007", 17, [4, 4, 4, 5], 1375.91],
+    ["June 2007", 19, [5, 4, 4, 6], 1587.46],
+    ["August 2007", 21, [6, 4, 4, 7], 1699.65],
+    ["October 2007", 24, [11, 3, 4, 6], 1958.94],
+    ["September 2008", 17, [6, 2, 3, 6], 1403.40]
+  ];
+  var AHEAD = ["March 2009", "December 2010", "March 2013", "December 2015"];
+  var AHEAD_SHORT = ["turn 6", "turn 7", "turn 8", "turn 9"];
+
+  var HOLD = [
+    { name: "Fruit Computers", suit: "own", pip: PIP.tech, color: COL.aapl, price: "$113.66",
+      move: -40.2, cards: 3, blocks: 6 },
+    { name: "Mega Bank", suit: "own", pip: PIP.bank, color: COL.bank, price: "$22.35",
+      move: -48.3, cards: 2, blocks: 2 },
+    { name: "The Index Fund", suit: "basket", pip: PIP.all, color: COL.idx, price: "$1,861.44",
+      move: -23.2, cards: 2, blocks: 3 }
+  ];
+
+  var MARKET = [
+    { name: "Fruit Computers", suit: "own", pip: PIP.tech, color: COL.aapl, price: "$113.66", move: -40.2, worth: 2 },
+    { name: "Mega Bank", suit: "own", pip: PIP.bank, color: COL.bank, price: "$22.35", move: -48.3, worth: 2 },
+    { name: "The Index Fund", suit: "basket", pip: PIP.all, color: COL.idx, price: "$1,861.44", move: -23.2, worth: 2 },
+    { name: "The Insurance Giant", suit: "own", pip: PIP.bank, color: "#bf5af2", price: "$3.44", move: -94.6, worth: 2 },
+    { name: "The Carmaker", suit: "own", pip: PIP.ind, color: "#a2845e", price: "$5.20", move: -41.4, worth: 2 },
+    { name: "Everything Mart", suit: "own", pip: PIP.retail, color: "#64d2ff", price: "$61.83", move: 34.8, worth: 2 },
+    { name: "Giant Oil", suit: "own", pip: PIP.energy, color: "#8e8e93", price: "$80.05", move: -14.1, worth: 2 },
+    { name: "The Old Bank", suit: "own", pip: PIP.bank, color: "#5e5ce6", price: "$0.21", move: -99.7, worth: 2, recon: true }
+  ];
+
+  // ---------------------------------------------------------------- helpers
+  function el(tag, cls, txt) {
+    var d = document.createElement(tag);
+    if (cls) d.className = cls;
+    if (txt !== undefined) d.textContent = txt;
+    return d;
+  }
+  function blk(color, cash) {
+    var d = el("span", "blk" + (cash ? " cash" : ""));
+    d.style.background = color;
+    return d;
+  }
+  function flatten(segs) {
+    var out = [];
+    KEYS.forEach(function (k, i) { for (var j = 0; j < segs[i]; j++) out.push(k); });
+    return out;
+  }
+  // a run of blocks with a visible gap every five, in the sketch's own order
+  function fill(node, segs) {
+    node.innerHTML = "";
+    flatten(segs).forEach(function (k, n) {
+      if (n > 0 && n % 5 === 0) node.appendChild(el("span", "g5"));
+      node.appendChild(blk(COL[k], k === "cash"));
+    });
+  }
+  function money(n) { return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function cardEl(o) {
+    var c = el("div", "card " + o.suit);
+    c.appendChild(el("div", "ring"));
+    var top = el("div", "top");
+    var pip = el("span", "pip"); pip.style.background = o.pip;
+    top.appendChild(pip);
+    top.appendChild(el("span", "nm", o.name));
+    c.appendChild(top);
+    var w = el("div", "worth");
+    for (var i = 0; i < (o.worth || 2); i++) w.appendChild(blk(o.color));
+    c.appendChild(w);
+    c.appendChild(el("div", "px" + (o.recon ? " dot" : ""), o.price));
+    if (o.move !== undefined) {
+      c.appendChild(el("div", "mv" + (o.move >= 0 ? " up" : ""),
+        (o.move >= 0 ? "▲ " : "▼ ") + Math.abs(o.move).toFixed(1) + "%"));
+    }
+    return c;
+  }
+  // stacks bottom align, so the front faces and the collars line up across the row
+  function stackEl(o, w, h, off) {
+    var s = el("div", "stack" + (o.suit === "basket" ? " basket" : ""));
+    var lift = 2 * off;
+    s.style.width = w + "px";
+    s.style.height = (h + lift + 17) + "px";
+    s.style.setProperty("--cw", w + "px");
+    s.style.setProperty("--ch", h + "px");
+    for (var i = o.cards - 1; i >= 0; i--) {
+      var c = cardEl({ name: o.name, suit: o.suit, pip: o.pip, color: o.color, price: o.price,
+        move: i === 0 ? o.move : undefined, worth: i === 0 ? o.blocks : 2 });
+      c.style.top = (lift - i * off) + "px";
+      c.style.zIndex = String(o.cards - i);
+      s.appendChild(c);
+    }
+    var col = el("span", "collar", o.cards + " cards · " + o.blocks + " blocks");
+    s.appendChild(col);
+    return s;
+  }
+
+  // ---------------------------------------------------------------- drawer
+  function buildDrawer(host, kind) {
+    var d = el("div", "drawer");
+    d.setAttribute("data-open", "0");
+    var head = el("div", "dhead");
+    head.appendChild(el("span", null, "The market. Eight cards seen this run, every one buyable at today's price."));
+    var close = el("button", "mktbtn", "Close");
+    close.type = "button";
+    close.style.marginLeft = "auto";
+    head.appendChild(close);
+    d.appendChild(head);
+
+    var cards = el("div", "cards");
+    MARKET.forEach(function (o) {
+      if (kind === "chip") {
+        var c = el("div", "chip" + (o.suit === "basket" ? " basket" : ""));
+        c.appendChild(el("i", "rg"));
+        var nm = el("span", "nm");
+        nm.textContent = o.name;
+        c.appendChild(nm);
+        var w = el("span", "w");
+        for (var i = 0; i < 2; i++) w.appendChild(blk(o.color));
+        c.appendChild(w);
+        c.appendChild(el("span", "px", o.price));
+        cards.appendChild(c);
+      } else {
+        cards.appendChild(cardEl(o));
+      }
+    });
+    d.appendChild(cards);
+    host.appendChild(d);
+    close.addEventListener("click", function () { d.setAttribute("data-open", "0"); });
+    return d;
+  }
+  function wireMarket(btn, drawer) {
+    btn.addEventListener("click", function () {
+      drawer.setAttribute("data-open", drawer.getAttribute("data-open") === "1" ? "0" : "1");
+    });
+  }
+
+  var READ = "Seven blocks left the wall. Every card is still on the table.";
+  var READ_AFTER = "Two more blocks left the wall. Mega Bank no longer covers one block.";
+  var READ_DURING = "The months play out. Prices tick, and the wall counts.";
+
+  // ---------------------------------------------------------------- direction A
+  function buildA() {
+    var b = document.getElementById("boardA");
+    var PITCH = 9.75;
+
+    var hdr = el("div", "hdr");
+    var facts = el("div", "facts");
+    facts.innerHTML = "<b>Chapter 6 &middot; The panic</b><span>turn 5 of 9</span>" +
+      "<span>target <b>$2,960</b></span><span>one block <b>$80</b></span>";
+    hdr.appendChild(facts);
+    var read = el("div", "read", READ);
+    hdr.appendChild(read);
+    b.appendChild(hdr);
+
+    var wrap = el("div", "stagewrap");
+    var stage = el("div", "stage");
+    var field = el("div", "field");
+
+    var slots = [];
+    for (var i = 0; i < 38; i++) {
+      var s = el("div", i < WALL.length ? "col tiny" : "slot");
+      if (i < WALL.length) fill(s, WALL[i][2]);
+      field.appendChild(s);
+      slots.push(s);
+    }
+    [[24, "2009"], [36, "2010"]].forEach(function (y) {
+      var r = el("div", "yr");
+      r.style.left = (y[0] * PITCH) + "px";
+      r.appendChild(el("span", null, y[1]));
+      field.appendChild(r);
+    });
+
+    var gold = el("div", "goldline");
+    gold.appendChild(el("span", null, "target $2,960"));
+    field.appendChild(gold);
+
+    var now = el("div", "now");
+    now.style.left = (20 * PITCH) + "px";
+    now.style.bottom = (17 * 8 + 16 * 0.8 + 3 * 1.4 + 5) + "px";
+    now.appendChild(el("i"));
+    now.appendChild(el("span", null, "September 2008"));
+    field.appendChild(now);
+
+    var readout = el("div", "readout");
+    var rn = el("div", "n", "17 blocks");
+    readout.appendChild(rn);
+    var rs = el("div", "s", "$1,403.40 of $2,960");
+    readout.appendChild(rs);
+    field.appendChild(readout);
+
+    stage.appendChild(field);
+    wrap.appendChild(stage);
+    var drawer = buildDrawer(wrap, "card");
+    b.appendChild(wrap);
+
+    var table = el("div", "table");
+    HOLD.forEach(function (o) { table.appendChild(stackEl(o, 100, 100, 8)); });
+    b.appendChild(table);
+
+    var foot = el("div", "foot2");
+    var m = el("div", "money");
+    m.appendChild(el("span", "lab", "Your money"));
+    m.appendChild(el("span", "v", "$480"));
+    var r5 = el("div", "row5");
+    fill(r5, [0, 0, 0, 6]);
+    m.appendChild(r5);
+    foot.appendChild(m);
+    var mkt = el("button", "mktbtn", "Market · 8 cards");
+    mkt.type = "button";
+    foot.appendChild(mkt);
+    var end = el("button", "end", "End turn");
+    end.type = "button";
+    foot.appendChild(end);
+    b.appendChild(foot);
+
+    wireMarket(mkt, drawer);
+
+    var busy = false;
+    end.addEventListener("click", function () {
+      if (busy) return;
+      busy = true;
+      read.textContent = READ_DURING;
+      now.style.opacity = "0";
+      var i = 0;
+      function landOne() {
+        var s = slots[WALL.length + i];
+        s.className = "col tiny";
+        fill(s, NEXT[i][2]);
+        if (!RM) {
+          [].forEach.call(s.children, function (c, k) {
+            c.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }],
+              { duration: 200, delay: k * 14, fill: "backwards", easing: "cubic-bezier(.2,.9,.3,1)" });
+          });
+        }
+        rn.textContent = NEXT[i][1] + " blocks";
+        rs.textContent = money(NEXT[i][3]) + " of $2,960";
+        i++;
+        if (i < NEXT.length) setTimeout(landOne, RM ? 0 : 200);
+        else setTimeout(function () {
+          read.textContent = READ_AFTER;
+          setTimeout(function () {
+            for (var k = 0; k < NEXT.length; k++) {
+              slots[WALL.length + k].className = "slot";
+              slots[WALL.length + k].innerHTML = "";
+            }
+            rn.textContent = "17 blocks";
+            rs.textContent = "$1,403.40 of $2,960";
+            read.textContent = READ;
+            now.style.opacity = "1";
+            busy = false;
+          }, 1700);
+        }, 280);
+      }
+      landOne();
+    });
+  }
+
+  // ---------------------------------------------------------------- direction B
+  function buildB() {
+    var b = document.getElementById("boardB");
+
+    var folio = el("div", "folio");
+    folio.appendChild(el("span", "t", "Chapter six, the panic"));
+    var facts = el("div", "facts");
+    facts.innerHTML = "<span>turn <b>5</b> of 9</span><span>target <b>$2,960</b></span><span>one block <b>$80</b></span>";
+    folio.appendChild(facts);
+    b.appendChild(folio);
+
+    var read = el("div", "readline", READ);
+    b.appendChild(read);
+
+    var wrap = el("div", "stagewrap");
+    var led = el("div", "ledger");
+
+    var head = el("div", "lrow head");
+    head.appendChild(el("span", null, "the entry"));
+    head.appendChild(el("span", null, "what the wall held"));
+    var hs = el("span", null, "in money");
+    hs.style.textAlign = "right";
+    head.appendChild(hs);
+    led.appendChild(head);
+
+    var trow = el("div", "lrow target");
+    trow.appendChild(el("div", "d", "the target"));
+    var tb = el("div", "row5");
+    for (var i = 0; i < 37; i++) {
+      if (i > 0 && i % 5 === 0) tb.appendChild(el("span", "g5"));
+      tb.appendChild(el("span", "blk ghost"));
+    }
+    trow.appendChild(tb);
+    trow.appendChild(el("div", "t", "$2,960.00"));
+    led.appendChild(trow);
+
+    TURNS.forEach(function (t) {
+      var r = el("div", "lrow");
+      r.appendChild(el("div", "d", t[0]));
+      var run = el("div", "row5");
+      fill(run, t[2]);
+      r.appendChild(run);
+      r.appendChild(el("div", "t", money(t[3])));
+      led.appendChild(r);
+    });
+
+    var ahead = [];
+    AHEAD.forEach(function (name) {
+      var r = el("div", "lrow empty");
+      r.appendChild(el("div", "d", name));
+      r.appendChild(el("div", "rule"));
+      r.appendChild(el("div", "t", ""));
+      led.appendChild(r);
+      ahead.push(r);
+    });
+
+    wrap.appendChild(led);
+    var drawer = buildDrawer(wrap, "card");
+    b.appendChild(wrap);
+
+    var table = el("div", "table");
+    HOLD.forEach(function (o) { table.appendChild(stackEl(o, 92, 106, 9)); });
+    b.appendChild(table);
+
+    var foot = el("div", "foot2");
+    var m = el("div", "money");
+    m.innerHTML = "Your money <b>$480.00</b>, which is six blocks.";
+    foot.appendChild(m);
+    var mkt = el("button", "mktbtn", "Market · 8 cards");
+    mkt.type = "button";
+    foot.appendChild(mkt);
+    var end = el("button", "end", "End turn");
+    end.type = "button";
+    foot.appendChild(end);
+    b.appendChild(foot);
+
+    wireMarket(mkt, drawer);
+
+    var busy = false;
+    end.addEventListener("click", function () {
+      if (busy) return;
+      busy = true;
+      read.textContent = "The months play out, and the entry is written as it lands.";
+      var row = ahead[0];
+      row.className = "lrow";
+      row.innerHTML = "";
+      row.appendChild(el("div", "d", "March 2009"));
+      var run = el("div", "row5");
+      row.appendChild(run);
+      var tot = el("div", "t", "");
+      row.appendChild(tot);
+
+      var flat = flatten(NEXT[NEXT.length - 1][2]);
+      var n = 0;
+      function one() {
+        if (n > 0 && n % 5 === 0) run.appendChild(el("span", "g5"));
+        var k = flat[n];
+        var node = blk(COL[k], k === "cash");
+        run.appendChild(node);
+        if (!RM) node.animate([{ opacity: 0, transform: "translateX(-8px)" }, { opacity: 1, transform: "none" }],
+          { duration: 170, easing: "cubic-bezier(.2,.9,.3,1)" });
+        n++;
+        tot.textContent = n + " blocks";
+        if (n < flat.length) setTimeout(one, RM ? 0 : 64);
+        else setTimeout(function () {
+          tot.textContent = money(1244.91);
+          read.textContent = READ_AFTER;
+          setTimeout(function () {
+            row.className = "lrow empty";
+            row.innerHTML = "";
+            row.appendChild(el("div", "d", "March 2009"));
+            row.appendChild(el("div", "rule"));
+            row.appendChild(el("div", "t", ""));
+            ahead[0] = row;
+            read.textContent = READ;
+            busy = false;
+          }, 1700);
+        }, 260);
+      }
+      one();
+    });
+  }
+
+  // ---------------------------------------------------------------- direction C
+  function buildC() {
+    var b = document.getElementById("boardC");
+    var BW = 25, BG = 1.5, BAND = 5, WIDE = 3;
+
+    function rowY(r) { return r * (BW + BG) + Math.floor(r / 5) * BAND; }
+    function yForBlocks(n) { return rowY(n / WIDE); }
+
+    // a turn laid three blocks wide, filled bottom up, a band gap every five rows
+    function brick(segs, label) {
+      var wrapEl = el("div", "brick");
+      var flat = flatten(segs);
+      var rows = Math.ceil(flat.length / WIDE);
+      for (var r = 0; r < rows; r++) {
+        if (r > 0 && r % 5 === 0) wrapEl.appendChild(el("div", "band"));
+        var row = el("div", "r");
+        for (var c = 0; c < WIDE; c++) {
+          var idx = r * WIDE + c;
+          if (idx >= flat.length) break;
+          row.appendChild(blk(COL[flat[idx]], flat[idx] === "cash"));
+        }
+        wrapEl.appendChild(row);
+      }
+      wrapEl.appendChild(el("div", "cap", label));
+      return wrapEl;
+    }
+
+    var hdr = el("div", "hdr");
+    hdr.appendChild(el("div", "l", "Chapter 6, the panic"));
+    var r = el("div", "r");
+    r.innerHTML = "turn 5 / 9 &nbsp;&nbsp; target 37 blocks &nbsp;&nbsp; one block $80";
+    hdr.appendChild(r);
+    var read = el("div", "read", READ);
+    hdr.appendChild(read);
+    b.appendChild(hdr);
+
+    var wrap = el("div", "stagewrap");
+    var stage = el("div", "stage");
+    var field = el("div", "field");
+
+    var axis = el("div", "axis");
+    [5, 10, 15, 20, 25, 30, 35].forEach(function (n) {
+      var line = el("i");
+      line.style.bottom = yForBlocks(n) + "px";
+      axis.appendChild(line);
+      var lab = el("b", null, String(n));
+      lab.style.bottom = yForBlocks(n) + "px";
+      axis.appendChild(lab);
+    });
+    field.appendChild(axis);
+
+    var SHORT = ["Mar 2007", "Jun 2007", "Aug 2007", "Oct 2007", "Sep 2008"];
+    TURNS.forEach(function (t, i) { field.appendChild(brick(t[2], SHORT[i])); });
+    var ghosts = [];
+    AHEAD_SHORT.forEach(function (name) {
+      var g = el("div", "ghostslot");
+      g.appendChild(el("i"));
+      g.appendChild(el("span", null, name));
+      field.appendChild(g);
+      ghosts.push(g);
+    });
+
+    var gold = el("div", "goldline");
+    gold.style.bottom = yForBlocks(37) + "px";
+    gold.appendChild(el("span", null, "target 37 blocks, $2,960"));
+    field.appendChild(gold);
+
+    var readout = el("div", "readout");
+    var rn = el("div", "n");
+    rn.innerHTML = "17<em>/37</em>";
+    readout.appendChild(rn);
+    var rs = el("div", "s", "blocks on the wall, $1,403.40");
+    readout.appendChild(rs);
+    field.appendChild(readout);
+
+    stage.appendChild(field);
+    wrap.appendChild(stage);
+    var drawer = buildDrawer(wrap, "chip");
+    b.appendChild(wrap);
+
+    var chips = el("div", "chips");
+    HOLD.forEach(function (o) {
+      var c = el("div", "chip" + (o.suit === "basket" ? " basket" : ""));
+      c.appendChild(el("i", "rg"));
+      var nm = el("span", "nm");
+      nm.innerHTML = o.name + " <i>" + o.cards + " cards</i>";
+      c.appendChild(nm);
+      var w = el("span", "w");
+      for (var i = 0; i < o.blocks; i++) w.appendChild(blk(o.color));
+      c.appendChild(w);
+      c.appendChild(el("span", "px", o.price));
+      chips.appendChild(c);
+    });
+    b.appendChild(chips);
+
+    var foot = el("div", "foot2");
+    var m2 = el("div", "money");
+    m2.innerHTML = "cash <b>$480.00</b> · 6 blocks";
+    foot.appendChild(m2);
+    var mkt = el("button", "mktbtn", "Market · 8 cards");
+    mkt.type = "button";
+    foot.appendChild(mkt);
+    var end = el("button", "end", "End turn");
+    end.type = "button";
+    foot.appendChild(end);
+    b.appendChild(foot);
+
+    wireMarket(mkt, drawer);
+
+    var busy = false;
+    end.addEventListener("click", function () {
+      if (busy) return;
+      busy = true;
+      read.textContent = READ_DURING;
+      var g = ghosts[0];
+      var target = NEXT[NEXT.length - 1];
+      var newBrick = brick(target[2], "Mar 2009");
+      newBrick.style.opacity = "0";
+      field.replaceChild(newBrick, g);
+
+      var rowsEls = [].slice.call(newBrick.children);
+      newBrick.style.opacity = "1";
+      if (!RM) {
+        rowsEls.forEach(function (rw, k) {
+          rw.animate([{ opacity: 0, transform: "translateY(-10px)" }, { opacity: 1, transform: "none" }],
+            { duration: 240, delay: 70 * k, fill: "backwards", easing: "cubic-bezier(.2,.9,.3,1)" });
+        });
+      }
+      var steps = [17, 16, 15];
+      var si = 0;
+      var t = setInterval(function () {
+        rn.innerHTML = steps[si] + "<em>/37</em>";
+        if (si === steps.length - 1) rs.textContent = "blocks on the wall, " + money(1244.91);
+        si++;
+        if (si >= steps.length) {
+          clearInterval(t);
+          read.textContent = READ_AFTER;
+          setTimeout(function () {
+            field.replaceChild(g, newBrick);
+            rn.innerHTML = "17<em>/37</em>";
+            rs.textContent = "blocks on the wall, $1,403.40";
+            read.textContent = READ;
+            busy = false;
+          }, 1700);
+        }
+      }, RM ? 1 : 230);
+    });
+  }
+
+  buildA();
+  buildB();
+  buildC();
+})();
+</script>
+</body>
+</html>

@@ -88,3 +88,14 @@ body {
 
 /* Pixelify Sans sets tight; a little tracking keeps C-a-s-h legible */
 .font-game { letter-spacing: 0.055em; }
+
+/* The Tally's scroll strips (the till, the shop grid, the stack row) scroll
+   without showing a scrollbar: on macOS with visible scrollbars the default
+   track is a heavy dark bar that reads as broken chrome on a game board. */
+.tally-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tally-scroll::-webkit-scrollbar {
+  display: none;
+}

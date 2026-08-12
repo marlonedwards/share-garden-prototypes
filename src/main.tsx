@@ -18,6 +18,7 @@ import OrbSelect from "./pages/OrbSelect";
 import EraBriefing from "./pages/EraBriefing";
 import ReadyMode from "./pages/ReadyMode";
 import Archive from "./pages/Archive";
+import Tally from "./pages/Tally";
 
 // remount the scenario page whenever the scenario id changes, so the sim
 // engine never carries one era's state into another
@@ -26,7 +27,8 @@ function ScenarioRoute() {
   return <OrbScenario key={id ?? "era"} />;
 }
 
-// The Stack: the same lesson flow on the cylinder stage with the goal band
+// The Stack: the same lesson flow on the goal-band stage, with a toggle
+// between the cylinder and the countable blocks
 function StackRoute() {
   const { id } = useParams();
   return <OrbScenario key={`stack-${id ?? "gfc"}`} variant="stack" />;
@@ -58,6 +60,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/intro" element={<Onboarding />} />
         <Route path="/stack/s/:id" element={<StackRoute />} />
         <Route path="/stack" element={<Navigate to="/stack/s/gfc" replace />} />
+        {/* The Tally runs a whole ladder of chapters, so it takes no era in
+            its path. Links to the retired era prototype land on the game. */}
+        <Route path="/tally" element={<Tally />} />
+        <Route path="/tally/s/:id" element={<Navigate to="/tally" replace />} />
         <Route path="/orb/learn/:id" element={<LessonRoute />} />
         <Route path="/orb/mini/:id" element={<LessonRoute />} />
         {/* the finale: one door, two paths, one mirror */}

@@ -1,8 +1,49 @@
 import { Link } from "react-router-dom";
 
-// The demo's front door: two games, one curriculum, one honest engine.
+// The demo's front door: three games, one curriculum, one honest engine.
 
 const S = (name: string) => `${import.meta.env.BASE_URL}sprites/t/${name}.png`;
+
+// The Tally's motif, in the game's own language and nothing else: a short wall
+// of cash green blocks standing beside one white card with an amber ring. It is
+// vector, so it stays crisp on a large display.
+const TALLY_WALL: number[] = [3, 5, 4, 6];
+
+function TallyMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      {TALLY_WALL.map((count, col) =>
+        Array.from({ length: count }, (_, i) => (
+          <g key={`${col}-${i}`}>
+            <rect
+              x={6 + col * 13}
+              y={90 - 11 - i * 13}
+              width="11"
+              height="11"
+              rx="2"
+              fill="#3FAE6B"
+            />
+            <rect
+              x={6 + col * 13}
+              y={90 - 11 - i * 13}
+              width="11"
+              height="3"
+              rx="1.5"
+              fill="rgba(255,255,255,0.42)"
+            />
+          </g>
+        )),
+      )}
+      <g transform="rotate(-5 90 58)">
+        <rect x="68" y="26" width="44" height="64" rx="6" fill="#ffffff" stroke="rgba(0,0,0,0.14)" />
+        <rect x="71.5" y="29.5" width="37" height="57" rx="4" fill="none" stroke="#D98A00" strokeWidth="2.5" />
+        <circle cx="78" cy="36.5" r="2.6" fill="#D98A00" />
+        <rect x="76" y="72" width="21" height="3" rx="1.5" fill="rgba(0,0,0,0.14)" />
+        <rect x="76" y="78" width="14" height="3" rx="1.5" fill="rgba(0,0,0,0.10)" />
+      </g>
+    </svg>
+  );
+}
 
 export default function Landing() {
   return (
@@ -10,12 +51,26 @@ export default function Landing() {
       <main className="max-w-4xl mx-auto px-6 pt-16 pb-20">
         <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Financial literacy games</h1>
         <p className="mt-3 text-[17px] max-w-2xl" style={{ color: "#6e6e73" }}>
-          Two visually beautiful games teach investing concepts and fundamentals. Each one
+          Three visually beautiful games teach investing concepts and fundamentals. Each one
           turns the market into something you can see and play with: shares, prices, crashes,
           and what it takes to hold through them.
         </p>
 
-        <div className="mt-10 grid sm:grid-cols-2 gap-5">
+        <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <Link to="/tally" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <TallyMotif />
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: "#B57A00" }}>Game one</div>
+            <div className="text-[22px] font-semibold tracking-tight">The Tally</div>
+            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+              Cards are what you own, and blocks are what it is worth. A crash strips the wall
+              down and leaves every card sitting on the table. Eight chapters carry you from a
+              piggy bank to real market history.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Tally</div>
+          </Link>
+
           <Link to="/orb" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
             <div className="h-28 flex items-center justify-center mb-4">
               <div className="w-24 h-24 rounded-full relative"
@@ -26,7 +81,7 @@ export default function Landing() {
                 <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
               </div>
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>Game one</div>
+            <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>Game two</div>
             <div className="text-[22px] font-semibold tracking-tight">The Orb</div>
             <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
               Your portfolio is one glass marble. Companies are colors, the sealed rainbow orb is
@@ -41,7 +96,7 @@ export default function Landing() {
             <div className="h-28 flex items-center justify-center mb-4">
               <img src={S("pumpkin")} alt="" style={{ height: 104 }} />
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#3f6b3a" }}>Game two</div>
+            <div className="text-[12px] font-semibold" style={{ color: "#3f6b3a" }}>Game three</div>
             <div className="text-[22px] font-semibold tracking-tight">Share Garden</div>
             <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
               Share Garden teaches the same first lesson in a garden. Plant size is the market price, selling is
@@ -61,9 +116,9 @@ export default function Landing() {
             </p>
           </Link>
           <Link to="/archive" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
-            <div className="text-[15px] font-semibold tracking-tight">First-week prototypes</div>
+            <div className="text-[15px] font-semibold tracking-tight">Experiments</div>
             <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
-              The earlier explorations are kept here for reference.
+              Design sketches made before a build, and the first-week prototypes kept for reference.
             </p>
           </Link>
         </div>

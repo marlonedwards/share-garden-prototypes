@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Share Garden: change the stage, not the game</title>
+<style>
+:root {
+  color-scheme: light;
+  --ground:        #F1F3F6;
+  --grid:          #DFE4EC;
+  --grid-strong:   #CFD6E2;
+  --surface:       #FFFFFF;
+  --surface-2:     #F7F9FC;
+  --line:          #D6DCE6;
+  --line-soft:     #E8ECF3;
+  --ink:           #14171C;
+  --ink-2:         #4E586A;
+  --ink-3:         #7F8A9B;
+  --accent:        #2a78d6;
+  --accent-soft:   #E6EFFA;
+  --good:          #1baf7a;
+  --bad:           #C4362F;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e87ba4;
+  --idx: #4E586A;
+
+  --display: "Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --ground:      #101317;
+    --grid:        #1C2128;
+    --grid-strong: #242B34;
+    --surface:     #171B21;
+    --surface-2:   #1B2029;
+    --line:        #2A313B;
+    --line-soft:   #222831;
+    --ink:         #EEF1F6;
+    --ink-2:       #A3AEBE;
+    --ink-3:       #78838F;
+    --accent:      #5A9BEE;
+    --accent-soft: #1A2735;
+    --good:        #199e70;
+    --bad:         #E06A62;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #d55181;
+    --idx: #98A4B4;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground:      #101317;
+  --grid:        #1C2128;
+  --grid-strong: #242B34;
+  --surface:     #171B21;
+  --surface-2:   #1B2029;
+  --line:        #2A313B;
+  --line-soft:   #222831;
+  --ink:         #EEF1F6;
+  --ink-2:       #A3AEBE;
+  --ink-3:       #78838F;
+  --accent:      #5A9BEE;
+  --accent-soft: #1A2735;
+  --good:        #199e70;
+  --bad:         #E06A62;
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --s4: #c98500;
+  --s5: #d55181;
+  --idx: #98A4B4;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--ground);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px, 96px 96px, 96px 96px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  padding: 72px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.eyebrow {
+  font-family: var(--display);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(34px, 5.4vw, 58px);
+  letter-spacing: -0.033em;
+  line-height: 1.02;
+  margin: 0;
+  text-wrap: balance;
+  max-width: 17ch;
+}
+.standfirst {
+  font-size: 20px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 60ch;
+  margin: 0;
+}
+.standfirst strong { color: var(--ink); font-weight: 600; }
+
+/* ---------- generic blocks ---------- */
+
+section { display: flex; flex-direction: column; gap: 20px; }
+
+h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: 18px;
+  letter-spacing: -0.012em;
+  margin: 0;
+}
+p { margin: 0; max-width: 68ch; }
+p + p { margin-top: 0.9em; }
+.lede { color: var(--ink-2); }
+a { color: var(--accent); text-underline-offset: 2px; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.panel.flush { padding: 0; overflow: hidden; }
+
+.divider { height: 1px; background: var(--line-soft); }
+
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+
+/* ---------- chart module ---------- */
+
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 0;
+}
+.chart-title {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.006em;
+}
+.chart-sub { font-family: var(--display); font-size: 13px; color: var(--ink-3); }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 0 24px;
+  align-items: center;
+}
+.ctl { display: flex; align-items: center; gap: 9px; }
+.ctl-label { font-family: var(--display); font-size: 13px; color: var(--ink-3); }
+.seg { display: flex; border: 1px solid var(--line); background: var(--surface-2); }
+.seg button {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 11px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-right: 1px solid var(--line);
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
+
+.playrow { display: flex; align-items: center; gap: 14px; padding: 0 24px; }
+.play {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 15px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  cursor: pointer;
+  min-width: 92px;
+}
+.play:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="range"] { flex: 1; accent-color: var(--accent); min-width: 120px; }
+
+.plotwrap { position: relative; padding: 4px 24px 0; }
+svg.plot { display: block; width: 100%; height: auto; overflow: visible; }
+
+.warnchip {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0 24px;
+  padding: 9px 13px;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  font-family: var(--display);
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.warnchip[data-on="1"] { display: flex; }
+
+.readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-top: 20px;
+}
+.stat { background: var(--surface); padding: 14px 24px; display: flex; flex-direction: column; gap: 3px; }
+.stat-k { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); }
+.stat-v { font-family: var(--display); font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+table.holdings { width: 100%; border-collapse: collapse; font-family: var(--display); font-size: 13.5px; }
+table.holdings th {
+  text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12.5px;
+  padding: 12px 24px 8px; border-bottom: 1px solid var(--line-soft);
+}
+table.holdings td { padding: 7px 24px; border-bottom: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+table.holdings tr:last-child td { border-bottom: 0; }
+table.holdings td.n, table.holdings th.n { text-align: right; }
+.chip { display: inline-block; width: 11px; height: 11px; margin-right: 9px; vertical-align: -1px; border-radius: 2px; }
+tr.idxrow td { color: var(--ink-2); font-style: italic; }
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .1s;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 22px rgba(10,15,25,.14);
+  padding: 10px 12px;
+  font-family: var(--display);
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  z-index: 5;
+  min-width: 168px;
+}
+.tooltip b { font-weight: 650; }
+.tt-row { display: flex; justify-content: space-between; gap: 14px; }
+
+/* ---------- tests ---------- */
+
+.tests { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 780px) { .tests { grid-template-columns: 1fr; } }
+
+ol.testlist, ul.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 11px; }
+ol.testlist li { display: flex; gap: 12px; font-family: var(--display); font-size: 14.5px; line-height: 1.45; }
+ol.testlist li .k { color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 16px; }
+ol.testlist li .t { color: var(--ink); }
+ol.testlist li .t em { font-style: normal; color: var(--ink-3); }
+
+/* ---------- game cards ---------- */
+
+.game { display: flex; flex-direction: column; gap: 0; }
+.game-head { display: flex; flex-direction: column; gap: 10px; padding: 24px 24px 18px; }
+.game-tag {
+  font-family: var(--display); font-size: 12.5px; font-weight: 600; color: var(--accent);
+}
+.game-name { font-family: var(--display); font-size: 25px; font-weight: 700; letter-spacing: -0.024em; }
+.game-one { color: var(--ink-2); max-width: 62ch; }
+.mock { padding: 4px 24px 22px; }
+.mock svg { display: block; width: 100%; height: auto; overflow: visible; }
+.mock-cap { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); padding: 10px 0 0; max-width: 70ch; }
+
+.gcols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--line); }
+.gcols > div { padding: 20px 24px; }
+.gcols > div:first-child { border-right: 1px solid var(--line); }
+@media (max-width: 780px) {
+  .gcols { grid-template-columns: 1fr; }
+  .gcols > div:first-child { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+.gcol-h { font-family: var(--display); font-size: 12.5px; font-weight: 600; color: var(--ink-3); margin-bottom: 12px; }
+ul.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+ul.checks li { font-family: var(--display); font-size: 14px; line-height: 1.45; display: flex; gap: 10px; align-items: baseline; }
+.mark { font-weight: 700; font-size: 13px; min-width: 44px; flex: 0 0 44px; }
+.mark.y { color: var(--good); }
+.mark.n { color: var(--bad); }
+.mark.p { color: var(--ink-3); }
+
+.turn { font-family: var(--display); font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.turn ol { margin: 8px 0 0; padding-left: 19px; display: flex; flex-direction: column; gap: 5px; }
+
+.verdict {
+  border-top: 1px solid var(--line);
+  padding: 18px 24px;
+  font-family: var(--display);
+  font-size: 14.5px;
+  line-height: 1.5;
+  background: var(--surface-2);
+}
+.verdict b { font-weight: 650; }
+
+blockquote {
+  margin: 0;
+  padding: 4px 0 4px 20px;
+  border-left: 2px solid var(--accent);
+  color: var(--ink-2);
+  font-size: 18px;
+  max-width: 62ch;
+}
+
+.foot { font-family: var(--display); font-size: 13px; color: var(--ink-3); padding-top: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Share Garden v3 &middot; design sketch &middot; 9 August 2026</div>
+  <h1>Change the stage, not the game</h1>
+  <p class="standfirst">The orb and the cylinder both put value in <strong>volume</strong>, the channel people read worst, and showed one shape at a time, so there was nothing to compare against. This is the alternative: a portfolio drawn as <strong>countable blocks</strong>. The first sketch is not a new game, it is a new stage under the game that already exists at <span class="num">/stack</span>. The other two are chapters that would sit around it.</p>
+</header>
+
+<section>
+  <h2>The two tests, stated before the ideas</h2>
+  <p class="lede">Jared gave two critiques on 6 August. Turning them into pass/fail lists first means nothing gets to be judged on how pretty it is.</p>
+  <div class="tests">
+    <div class="panel">
+      <h3>Metaphor test</h3>
+      <p class="lede" style="font-size:15px">The picture has to be foolproof for all six of these, using a physical experience a twelve year old already has.</p>
+      <ol class="testlist">
+        <li><span class="k num">1</span><span class="t">Growth <em>reads instantly, without a number</em></span></li>
+        <li><span class="k num">2</span><span class="t">Decline <em>same, and it must sting</em></span></li>
+        <li><span class="k num">3</span><span class="t">Many stocks <em>composition is visible at a glance</em></span></li>
+        <li><span class="k num">4</span><span class="t">One stock <em>looks obviously fragile before anything bad happens</em></span></li>
+        <li><span class="k num">5</span><span class="t">Diversification <em>visible as a change over time, not just right now</em></span></li>
+        <li><span class="k num">6</span><span class="t">Crash and recovery <em>you still own the same things, they are worth less</em></span></li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h3>Gamification test</h3>
+      <p class="lede" style="font-size:15px">The Candy Crush skeleton, plus one rule the reference games do not have.</p>
+      <ol class="testlist">
+        <li><span class="k num">1</span><span class="t">A clear objective per level</span></li>
+        <li><span class="k num">2</span><span class="t">Constrained moves <em>scarcity is where decisions live</em></span></li>
+        <li><span class="k num">3</span><span class="t">Escalating difficulty</span></li>
+        <li><span class="k num">4</span><span class="t">Visible progression between sessions</span></li>
+        <li><span class="k num">5</span><span class="t">A fail state that teaches <em>and doubles as the assessment</em></span></li>
+        <li><span class="k num">6</span><span class="t">A share artifact worth showing someone</span></li>
+        <li><span class="k num">7</span><span class="t">The reward function teaches the truth <em>the one that Insider Trading fails</em></span></li>
+      </ol>
+    </div>
+  </div>
+  <blockquote>Insider Trading, the Balatro-for-stocks game released this February, is a good game and a terrible teacher: the optimal play is to dump everything, crash the price, and buy the dip. Reviewers finish it saying they still do not understand the market. Theming a deckbuilder in stocks teaches nothing by itself. The reward function is the curriculum.</blockquote>
+</section>
+
+<section>
+  <h2>The substrate</h2>
+  <p class="lede">One block is a fixed amount of money. A column is one month. Colour is which company. Band order never changes, so blue is always on the floor and you read composition by position as well as by hue. Scrub it, switch the portfolio, and change what a block is worth.</p>
+
+  <div class="panel flush">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title">Portfolio value, five years, one block at a time</div>
+        <div class="chart-sub">Starting stake $1,000 &middot; simulated monthly prices &middot; a sector crash lands in year four</div>
+      </div>
+      <div class="chart-sub" id="denomNote">Every block is $50</div>
+    </div>
+
+    <div class="controls">
+      <div class="ctl">
+        <span class="ctl-label">Portfolio</span>
+        <div class="seg" id="segPort" role="group" aria-label="Portfolio">
+          <button type="button" data-v="conc" aria-pressed="false">All in on one</button>
+          <button type="button" data-v="bal" aria-pressed="true">Spread over five</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="ctl-label">A block is worth</span>
+        <div class="seg" id="segDenom" role="group" aria-label="Block value">
+          <button type="button" data-v="10" aria-pressed="false">$10</button>
+          <button type="button" data-v="25" aria-pressed="false">$25</button>
+          <button type="button" data-v="50" aria-pressed="true">$50</button>
+          <button type="button" data-v="100" aria-pressed="false">$100</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="playrow">
+      <button class="play" id="playBtn" type="button">Play</button>
+      <input type="range" id="scrub" min="1" max="60" value="60" aria-label="Month">
+      <span class="chart-sub num" id="monthLabel" style="min-width:78px;text-align:right">Month 60</span>
+    </div>
+
+    <div class="warnchip" id="warnChip"><span id="warnText"></span></div>
+
+    <div class="plotwrap">
+      <svg class="plot" id="plot" viewBox="0 0 960 620" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Portfolio value drawn as stacked blocks over sixty months"></svg>
+      <div class="tooltip" id="tip"></div>
+    </div>
+
+    <div class="readout">
+      <div class="stat"><span class="stat-k">Value</span><span class="stat-v" id="stValue">$0</span></div>
+      <div class="stat"><span class="stat-k">Blocks</span><span class="stat-v" id="stBlocks">0</span></div>
+      <div class="stat"><span class="stat-k">Biggest holding</span><span class="stat-v" id="stConc">0%</span></div>
+      <div class="stat"><span class="stat-k">Against the index</span><span class="stat-v" id="stIdx">0</span></div>
+    </div>
+
+    <table class="holdings">
+      <thead><tr><th>Holding</th><th class="n">Value</th><th class="n">Blocks</th><th class="n">Share</th></tr></thead>
+      <tbody id="hbody"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>What the block value control is really for</h3>
+    <p class="lede">This is the one thing that can kill the whole idea, so it is the first control on the page. Blocks only teach if you can count them. Set a block to $10 and by year five the column is a hundred blocks tall and you are back to reading a shape, which is the orb's failure in a different costume. Set it to $100 and the early game moves in invisible steps.</p>
+    <p class="lede">The answer I would build: a block has a fixed value for a long stretch, and when the column gets too tall the game <strong>stops, says "from now on every block is $100," and visibly fuses four blocks into one</strong>. The ruler changing is not a rendering problem to hide. It is the moment a kid feels how much bigger the number got, and it is free curriculum.</p>
+  </div>
+</section>
+
+<section>
+  <h2>One stage swap, and two chapters that could follow</h2>
+  <p class="lede">These are not three prototypes to choose between. Presenting another choose-one-of-three is the pattern that has been getting rejected. The first is a component swap inside the game that already exists; the other two are optional chapters that would reuse it.</p>
+
+  <div class="panel game">
+    <div class="game-head">
+      <div class="game-tag">Sketch one &middot; the drop-in</div>
+      <div class="game-name">The Stack, re-staged</div>
+      <p class="game-one">Not a new game. The loop at <span class="num">/stack</span> already works: a goal corridor around the index, the three behaviour stars, scouting cards, real eras, bankruptcy seams. The only thing that fails Jared's first critique is the picture. So change the picture and keep everything else.</p>
+    </div>
+    <div class="mock"><svg id="mockA" viewBox="0 0 960 300" role="img" aria-label="Mockup: a block column growing toward a dashed target line, with three trade tokens"></svg>
+      <div class="mock-cap">The same run, drawn in blocks instead of a cylinder. The goal corridor becomes a countable line, the history stays on screen instead of being thrown away every frame, and you can see your own composition drift toward one colour long before the crash arrives.</div>
+    </div>
+    <div class="turn" style="padding:0 24px 20px">What actually changes in the codebase:
+      <ol>
+        <li><span class="num">StackStage.tsx</span> gets a sibling, <span class="num">TileStage.tsx</span>, taking the identical props: bands, cash, indexValue, goalLine, corridor, maxDollars.</li>
+        <li>Height stops being a continuous cylinder and becomes a count of blocks, at a stated dollar value each.</li>
+        <li>The stage keeps a column per step instead of redrawing one shape, so the run has a visible past.</li>
+        <li>The monotonic ruler you already keep in the parent becomes the block denomination, which is the same problem you have already solved once.</li>
+        <li>Everything above the stage, the scenario flow, the stars, the gates, the quiz, is untouched.</li>
+      </ol>
+    </div>
+    <div class="gcols">
+      <div>
+        <div class="gcol-h">Metaphor test</div>
+        <ul class="checks">
+          <li><span class="mark y">yes</span><span>Growth is blocks appearing. Decline is blocks falling off. Both countable, which continuous height never was.</span></li>
+          <li><span class="mark y">yes</span><span>Composition is the colour of the current column, read bottom up.</span></li>
+          <li><span class="mark y">yes</span><span>One stock is a solid column. It looks wrong next to everyone else's before anything happens.</span></li>
+          <li><span class="mark y">yes</span><span>Diversification drifts visibly across the whole chart, which is the thing the orb could never show.</span></li>
+          <li><span class="mark y">yes</span><span>Crash removes blocks and keeps every colour. You own the same things, worth less.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="gcol-h">Gamification test</div>
+        <ul class="checks">
+          <li><span class="mark y">yes</span><span>Already built and already tested: finish inside the corridor around the index.</span></li>
+          <li><span class="mark y">yes</span><span>Already built. Trade scarcity and the era gates are the engineered temptations.</span></li>
+          <li><span class="mark y">yes</span><span>Levels and eras exist. The corridor tightens as the eras get nastier.</span></li>
+          <li><span class="mark y">yes</span><span>The three behaviour stars are the progression, and they reward habits rather than returns.</span></li>
+          <li><span class="mark y">yes</span><span>Falling out of the corridor shows your blocks beside the index. That screenshot is the assessment.</span></li>
+          <li><span class="mark p">watch</span><span>Share artifact improves a lot: a block chart screenshots far better than a cylinder, but it is still less of a trophy than a Balatro score.</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><b>Verdict.</b> This is the whole proposal, and it is a day of work rather than a rebuild. Every gamification item is already shipped, so the change is aimed squarely at the one critique that is still open. It also means you walk into the room having thrown away nothing.</div>
+  </div>
+
+  <div class="panel game">
+    <div class="game-head">
+      <div class="game-tag">Sketch two &middot; optional chapter one</div>
+      <div class="game-name">Block Drop</div>
+      <p class="game-one">The Candy Crush shaped one. You are dealt blocks from a cash tray and you drop them where you want. Then the market takes its turn, and a shock can delete an entire colour off the board.</p>
+    </div>
+    <div class="mock"><svg id="mockB" viewBox="0 0 960 320" role="img" aria-label="Mockup: a block grid with a cash tray below and a sector shock removing one colour"></svg>
+      <div class="mock-cap">Left: the board before the shock. Right: an energy shock has taken the orange column out. The player who spread across five colours lost the top of one stack. The player who went all in lost the stack.</div>
+    </div>
+    <div class="turn" style="padding:0 24px 20px">A turn is one round:
+      <ol>
+        <li>Three blocks arrive in the cash tray. They are not new money, they are your money in a different place.</li>
+        <li>You drop them into whichever colour columns you want.</li>
+        <li>The market resolves. Some columns grow a block, some lose one, and roughly one round in six a sector shock hits a whole colour.</li>
+        <li>Clear the level by reaching a marked height before you run out of rounds.</li>
+      </ol>
+    </div>
+    <div class="gcols">
+      <div>
+        <div class="gcol-h">Metaphor test</div>
+        <ul class="checks">
+          <li><span class="mark y">yes</span><span>Same block language, so everything the re-staged Stack passes, this passes.</span></li>
+          <li><span class="mark y">yes</span><span>Concentration risk is felt, not stated: the shock erases what you piled up.</span></li>
+          <li><span class="mark p">watch</span><span>Dropping blocks can read as creating value. Fix: blocks always come out of a visible cash tray that empties, so placing is moving, never making.</span></li>
+          <li><span class="mark n">no</span><span>Time is rounds, not dates. You lose the real price history, so this cannot be the game that teaches staying in the market.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="gcol-h">Gamification test</div>
+        <ul class="checks">
+          <li><span class="mark y">yes</span><span>The most legibly game-like of the three. A six year old could open it.</span></li>
+          <li><span class="mark y">yes</span><span>Limited blocks and limited rounds. Two scarcities.</span></li>
+          <li><span class="mark y">yes</span><span>Levels, star ratings, the whole casual scaffold works here.</span></li>
+          <li><span class="mark y">yes</span><span>The best onboarding: it teaches the block language before any money words appear.</span></li>
+          <li><span class="mark p">watch</span><span>Reward function is the hazard. Any objective phrased as "use at least four colours" teaches obedience, not risk. The shock has to do the teaching, never a rule.</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><b>Verdict.</b> The strongest answer to critique two and the weakest to critique one. Do not ship it as the game. Ship it as chapter one, the five minute thing that teaches a player to read a block before the game starts using real years.</div>
+  </div>
+
+  <div class="panel game">
+    <div class="game-head">
+      <div class="game-tag">Sketch three &middot; optional finale</div>
+      <div class="game-name">Forty Years</div>
+      <p class="game-one">Your whole working life in one screen, and six trades to spend on all of it. The only real decision is whether to touch anything at all.</p>
+    </div>
+    <div class="mock"><svg id="mockC" viewBox="0 0 960 250" role="img" aria-label="Mockup: a forty year block chart with two crash notches and six trade tokens, four unspent"></svg>
+      <div class="mock-cap">Two crashes, both survived. Four trades still unspent at year thirty-one. The green band is the automatic monthly contribution, which never asked permission and quietly became most of the chart.</div>
+    </div>
+    <div class="turn" style="padding:0 24px 20px">A turn is a year, and most years you do nothing:
+      <ol>
+        <li>The year plays out. You watch blocks stack.</li>
+        <li>You may spend one of your six lifetime trades. The counter is always on screen.</li>
+        <li>When a crash starts, the game offers you a very easy Sell Everything button and starts a short timer.</li>
+        <li>At the end you see the run you had, and the run you would have had if you had left it alone.</li>
+      </ol>
+    </div>
+    <div class="gcols">
+      <div>
+        <div class="gcol-h">Metaphor test</div>
+        <ul class="checks">
+          <li><span class="mark y">yes</span><span>All six, at the scale where compounding is finally visible as a shape.</span></li>
+          <li><span class="mark y">yes</span><span>The single best picture of recovery: the notch fills back in and keeps going.</span></li>
+          <li><span class="mark y">yes</span><span>Dollar cost averaging shows up as a band that thickens on its own. Nothing else visualises that well.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="gcol-h">Gamification test</div>
+        <ul class="checks">
+          <li><span class="mark y">yes</span><span>Six moves in forty years is the most extreme constraint of the three, and constraint is the pleasure.</span></li>
+          <li><span class="mark p">watch</span><span>Objective is soft. Needs a stated goal at the start, a number you retire on, or there is nothing to fail.</span></li>
+          <li><span class="mark n">no</span><span>Not much escalating difficulty. It is one long arc, so it works as an ending, not as a level system.</span></li>
+          <li><span class="mark y">yes</span><span>Best share artifact by far: one image, forty years, two crashes, and a number.</span></li>
+          <li><span class="mark y">yes</span><span>The Sell Everything button is the whole curriculum. It is the fail state, and almost every kid presses it once.</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><b>Verdict.</b> Not a standalone game, and it does not need to be. It is the last chapter, the one that pays off everything the earlier chapters taught, and it is the one that would actually get screenshotted.</div>
+  </div>
+</section>
+
+<section>
+  <h2>What I would take into the room</h2>
+  <div class="panel">
+    <p>The headline is that this is <strong>not a third pivot and not a third prototype</strong>. The game you already built at <span class="num">/stack</span> stays exactly as it is. One canvas component gets swapped, and the thing Jared said was not foolproof becomes countable.</p>
+    <p>Say it in that order. The loop was never the open question after v3: the corridor, the stars and the gates already answer critique two. What is still open is critique one, and the answer is the oldest rule in visual public education, which is that you show a bigger quantity with more units and never with a bigger shape.</p>
+    <p>Then, if there is appetite for more, <strong>Block Drop</strong> is a five minute chapter one that teaches the block language before any money words appear, and <strong>Forty Years</strong> is a finale where the constraint becomes absolute and the lesson is that the correct move is almost always nothing. Both reuse the same stage. Neither is needed for the next meeting.</p>
+    <div class="divider"></div>
+    <h3>Build order</h3>
+    <ul class="plain">
+      <li><span class="num" style="color:var(--ink-3)">1&nbsp;&nbsp;</span><span class="num">TileStage.tsx</span> with the same props as <span class="num">StackStage.tsx</span>, half a day. Answer the block denomination question by feel on the real 2008 era. If it is ugly, the idea dies cheap and nothing else was touched.</li>
+      <li><span class="num" style="color:var(--ink-3)">2&nbsp;&nbsp;</span>A stage toggle on the scenario page so the cylinder and the blocks run the same level side by side. That toggle is the demo.</li>
+      <li><span class="num" style="color:var(--ink-3)">3&nbsp;&nbsp;</span>Send the reasoning to Jared before the meeting, so the meeting is about the loop instead of another defence of a picture.</li>
+      <li><span class="num" style="color:var(--ink-3)">4&nbsp;&nbsp;</span>Ask for a paper review this round rather than a built demo. Polish keeps getting rejected on structure, and a paper prototype cannot be rejected on polish.</li>
+    </ul>
+  </div>
+  <p class="foot">Colour slots validated for colour vision deficiency and contrast in both light and dark. Band order is fixed, so position carries identity alongside hue, and every holding is named in the table under the chart.</p>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5"];
+  function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+  var ASSETS = [
+    { id: "brk", name: "Bricklayer Co.",  drift: 0.060, vol: 0.15, beta: 0.85, shock: 0.10, post: 0 },
+    { id: "grn", name: "Greenrow Foods",  drift: 0.050, vol: 0.11, beta: 0.50, shock: 0.04, post: 0 },
+    { id: "sol", name: "Solstice Power",  drift: 0.075, vol: 0.26, beta: 1.25, shock: 0.26, post: -0.02 },
+    { id: "pxl", name: "Pixelworks",      drift: 0.170, vol: 0.34, beta: 1.55, shock: 0.66, post: -0.06 },
+    { id: "atl", name: "Atlas Rail",      drift: 0.055, vol: 0.16, beta: 0.95, shock: 0.12, post: 0 }
+  ];
+
+  var N = 60, START = 1000, CRASH_AT = 41, CRASH_LEN = 5;
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function makeNormal(rnd) {
+    return function () {
+      var u = 0, v = 0;
+      while (u === 0) u = rnd();
+      while (v === 0) v = rnd();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    };
+  }
+
+  // Deterministic price paths.
+  var prices = (function () {
+    var rnd = mulberry32(7), nrm = makeNormal(rnd);
+    var mkt = [];
+    for (var t = 0; t < N; t++) {
+      var m = nrm() * 0.030;
+      if (t >= CRASH_AT && t < CRASH_AT + CRASH_LEN) m -= 0.072;
+      if (t >= CRASH_AT + CRASH_LEN && t < CRASH_AT + CRASH_LEN + 11) m += 0.034;
+      mkt.push(m);
+    }
+    var out = ASSETS.map(function (a) {
+      var p = [100], cur = 100;
+      for (var t = 0; t < N; t++) {
+        var r = a.drift / 12 + a.beta * mkt[t] + nrm() * (a.vol / Math.sqrt(12)) * 0.55;
+        if (t >= CRASH_AT && t < CRASH_AT + CRASH_LEN) r -= a.shock / CRASH_LEN;
+        if (t >= CRASH_AT + CRASH_LEN) r += a.post / 12;
+        cur = cur * (1 + r);
+        if (cur < 3) cur = 3;
+        p.push(cur);
+      }
+      return p;
+    });
+    return out;
+  })();
+
+  var WEIGHTS = {
+    conc: [0, 0, 0, 1, 0],
+    bal:  [0.2, 0.2, 0.2, 0.2, 0.2]
+  };
+  var IDX_W = [0.24, 0.18, 0.16, 0.22, 0.20];
+
+  function seriesFor(w) {
+    var shares = w.map(function (x, i) { return (START * x) / prices[i][0]; });
+    var vals = [];
+    for (var t = 0; t <= N; t++) {
+      vals.push(shares.map(function (s, i) { return s * prices[i][t]; }));
+    }
+    return vals;
+  }
+  var SERIES_DATA = { conc: seriesFor(WEIGHTS.conc), bal: seriesFor(WEIGHTS.bal), idx: seriesFor(IDX_W) };
+
+  function total(arr) { return arr.reduce(function (a, b) { return a + b; }, 0); }
+
+  // Largest-remainder allocation so per-holding blocks sum exactly to the column height.
+  function allocate(vals, denom) {
+    var tot = total(vals);
+    var blocks = Math.round(tot / denom);
+    if (blocks < 0) blocks = 0;
+    var exact = vals.map(function (v) { return (v / denom); });
+    var floors = exact.map(function (e) { return Math.floor(e); });
+    var used = floors.reduce(function (a, b) { return a + b; }, 0);
+    var left = blocks - used;
+    var order = exact.map(function (e, i) { return { i: i, r: e - Math.floor(e) }; })
+      .sort(function (a, b) { return b.r - a.r; });
+    for (var k = 0; k < order.length && left > 0; k++) { floors[order[k].i]++; left--; }
+    var k2 = order.length - 1;
+    while (left < 0 && k2 >= 0) {
+      if (floors[order[k2].i] > 0) { floors[order[k2].i]--; left++; } else { k2--; }
+    }
+    return floors;
+  }
+
+  var state = { port: "bal", denom: 50, month: N, playing: false };
+
+  var plot = document.getElementById("plot");
+  var tip = document.getElementById("tip");
+  var W = 960, H = 620, PAD_L = 46, PAD_R = 14, PAD_B = 26, PAD_T = 10;
+
+  function fmtMoney(v) {
+    return "$" + Math.round(v).toLocaleString("en-US");
+  }
+
+  function render() {
+    var data = SERIES_DATA[state.port];
+    var idx = SERIES_DATA.idx;
+    var denom = state.denom;
+
+    var maxBlocks = 1;
+    ["conc", "bal", "idx"].forEach(function (k) {
+      for (var t = 0; t <= N; t++) {
+        var b = Math.round(total(SERIES_DATA[k][t]) / denom);
+        if (b > maxBlocks) maxBlocks = b;
+      }
+    });
+
+    var plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+    var colW = plotW / N;
+    var side = Math.min(colW - 2, plotH / maxBlocks - 2);
+    if (side < 1.2) side = 1.2;
+    var step = side + 2;
+    var baseY = H - PAD_B;
+
+    var svg = [];
+    svg.push('<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="none"></rect>');
+
+    // recessive baseline + a light rule every 10 blocks
+    for (var g = 10; g <= maxBlocks; g += 10) {
+      var y = baseY - g * step;
+      svg.push('<line x1="' + PAD_L + '" y1="' + y.toFixed(1) + '" x2="' + (W - PAD_R) + '" y2="' + y.toFixed(1) + '" stroke="var(--line-soft)" stroke-width="1"></line>');
+      svg.push('<text x="' + (PAD_L - 9) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-family="' + "Helvetica Neue, system-ui, sans-serif" + '" font-size="11" fill="var(--ink-3)">' + g + '</text>');
+    }
+    svg.push('<line x1="' + PAD_L + '" y1="' + baseY + '" x2="' + (W - PAD_R) + '" y2="' + baseY + '" stroke="var(--line)" stroke-width="1"></line>');
+
+    // blocks
+    var upto = state.month;
+    for (var c = 1; c <= upto; c++) {
+      var alloc = allocate(data[c], denom);
+      var x = PAD_L + (c - 1) * colW + (colW - side) / 2;
+      var placed = 0;
+      for (var s = 0; s < alloc.length; s++) {
+        for (var k = 0; k < alloc[s]; k++) {
+          var yy = baseY - (placed + 1) * step + 2;
+          var isTop = (placed === (alloc.reduce(function (a, b) { return a + b; }, 0) - 1));
+          var r = side > 7 ? (isTop ? 3.5 : 1.5) : 0.5;
+          svg.push('<rect x="' + x.toFixed(2) + '" y="' + yy.toFixed(2) + '" width="' + side.toFixed(2) + '" height="' + side.toFixed(2) + '" rx="' + r + '" fill="var(' + SERIES[s] + ')"></rect>');
+          placed++;
+        }
+      }
+    }
+
+    // the other portfolio's peak, so the headroom carries information
+    var otherKey = state.port === "bal" ? "conc" : "bal";
+    var otherPeak = 0, otherAt = 0;
+    for (var op = 0; op <= N; op++) {
+      var ob = Math.round(total(SERIES_DATA[otherKey][op]) / denom);
+      if (ob > otherPeak) { otherPeak = ob; otherAt = op; }
+    }
+    var oy = baseY - otherPeak * step;
+    svg.push('<line x1="' + PAD_L + '" y1="' + oy.toFixed(1) + '" x2="' + (W - PAD_R) + '" y2="' + oy.toFixed(1) + '" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 5" opacity="0.75"></line>');
+    svg.push('<text x="' + PAD_L + '" y="' + (oy - 8).toFixed(1) + '" font-family="Helvetica Neue, system-ui, sans-serif" font-size="12" fill="var(--ink-3)">' +
+      (state.port === "bal" ? "where all in on one peaked, in month " + otherAt : "where spreading over five peaked, in month " + otherAt) + '</text>');
+
+    // index reference line, in blocks, same units
+    var pts = [];
+    for (var c2 = 1; c2 <= upto; c2++) {
+      var bi2 = Math.round(total(idx[c2]) / denom);
+      var xx = PAD_L + (c2 - 1) * colW + colW / 2;
+      pts.push(xx.toFixed(1) + "," + (baseY - bi2 * step).toFixed(1));
+    }
+    if (pts.length > 1) {
+      svg.push('<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--idx)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"></polyline>');
+      var last = pts[pts.length - 1].split(",");
+      svg.push('<text x="' + (parseFloat(last[0]) - 6) + '" y="' + (parseFloat(last[1]) - 9) + '" text-anchor="end" font-family="Helvetica Neue, system-ui, sans-serif" font-size="11.5" font-weight="600" fill="var(--idx)">the index</text>');
+    }
+
+    // year ticks
+    for (var yq = 0; yq < 5; yq++) {
+      var xt = PAD_L + (yq * 12) * colW + colW / 2;
+      svg.push('<text x="' + xt.toFixed(1) + '" y="' + (baseY + 17) + '" text-anchor="middle" font-family="Helvetica Neue, system-ui, sans-serif" font-size="11" fill="var(--ink-3)">year ' + (yq + 1) + '</text>');
+    }
+
+    // hover targets
+    for (var c3 = 1; c3 <= N; c3++) {
+      var hx = PAD_L + (c3 - 1) * colW;
+      svg.push('<rect class="hit" data-m="' + c3 + '" x="' + hx.toFixed(2) + '" y="' + PAD_T + '" width="' + colW.toFixed(2) + '" height="' + (H - PAD_T - PAD_B) + '" fill="transparent"></rect>');
+    }
+
+    plot.innerHTML = svg.join("");
+
+    // readout
+    var cur = data[upto];
+    var tot = total(cur);
+    var blocks = Math.round(tot / denom);
+    var biggest = Math.max.apply(null, cur) / (tot || 1);
+    var idxTot = total(idx[upto]);
+    document.getElementById("stValue").textContent = fmtMoney(tot);
+    document.getElementById("stBlocks").textContent = blocks;
+    document.getElementById("stConc").textContent = Math.round(biggest * 100) + "%";
+    var diff = Math.round(tot - idxTot);
+    var el = document.getElementById("stIdx");
+    el.textContent = (diff >= 0 ? "+" : "−") + "$" + Math.abs(diff).toLocaleString("en-US");
+    el.style.color = diff >= 0 ? "var(--good)" : "var(--bad)";
+    document.getElementById("denomNote").textContent = "Every block is $" + denom;
+    document.getElementById("monthLabel").textContent = "Month " + upto;
+
+    var alloc2 = allocate(cur, denom);
+    var rows = ASSETS.map(function (a, i) {
+      return '<tr><td><span class="chip" style="background:var(' + SERIES[i] + ')"></span>' + a.name + '</td>' +
+        '<td class="n">' + fmtMoney(cur[i]) + '</td><td class="n">' + alloc2[i] + '</td>' +
+        '<td class="n">' + Math.round((cur[i] / (tot || 1)) * 100) + '%</td></tr>';
+    }).join("");
+    rows += '<tr class="idxrow"><td>The index, for comparison</td><td class="n">' + fmtMoney(idxTot) + '</td><td class="n">' + Math.round(idxTot / denom) + '</td><td class="n">&mdash;</td></tr>';
+    document.getElementById("hbody").innerHTML = rows;
+
+    // the honest warning about countability
+    var chip = document.getElementById("warnChip"), wt = document.getElementById("warnText");
+    if (side < 6.5) {
+      chip.setAttribute("data-on", "1");
+      wt.textContent = "The column is " + maxBlocks + " blocks tall and the blocks are too small to count. This is exactly the failure the orb had. Raise the block value.";
+    } else if (maxBlocks < 6) {
+      chip.setAttribute("data-on", "1");
+      wt.textContent = "Only " + maxBlocks + " blocks at the tallest point, so a whole year of growth can pass without a single block appearing. Lower the block value.";
+    } else {
+      chip.setAttribute("data-on", "0");
+    }
+  }
+
+  // ---- interaction ----
+  plot.addEventListener("mousemove", function (e) {
+    var t = e.target;
+    if (!t.classList || !t.classList.contains("hit")) { tip.style.opacity = 0; return; }
+    var m = parseInt(t.getAttribute("data-m"), 10);
+    if (m > state.month) { tip.style.opacity = 0; return; }
+    var vals = SERIES_DATA[state.port][m];
+    var alloc = allocate(vals, state.denom);
+    var html = '<b>Month ' + m + '</b><div class="tt-row"><span>Value</span><span>' + fmtMoney(total(vals)) + '</span></div>' +
+      '<div class="tt-row"><span>Blocks</span><span>' + Math.round(total(vals) / state.denom) + '</span></div><div style="height:6px"></div>';
+    ASSETS.forEach(function (a, i) {
+      if (alloc[i] === 0 && vals[i] < 1) return;
+      html += '<div class="tt-row"><span><span class="chip" style="background:var(' + SERIES[i] + ')"></span>' + a.name + '</span><span>' + alloc[i] + '</span></div>';
+    });
+    tip.innerHTML = html;
+    var wrap = plot.parentElement.getBoundingClientRect();
+    var x = e.clientX - wrap.left + 14;
+    if (x > wrap.width - 190) x = e.clientX - wrap.left - 190;
+    tip.style.left = x + "px";
+    tip.style.top = Math.max(0, e.clientY - wrap.top - 40) + "px";
+    tip.style.opacity = 1;
+  });
+  plot.addEventListener("mouseleave", function () { tip.style.opacity = 0; });
+
+  function bindSeg(id, fn) {
+    document.getElementById(id).addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      [].forEach.call(this.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      fn(b.getAttribute("data-v"));
+      render();
+    });
+  }
+  bindSeg("segPort", function (v) { state.port = v; });
+  bindSeg("segDenom", function (v) { state.denom = parseInt(v, 10); });
+
+  var scrub = document.getElementById("scrub");
+  scrub.addEventListener("input", function () { state.month = parseInt(this.value, 10); stop(); render(); });
+
+  var timer = null, btn = document.getElementById("playBtn");
+  function stop() { if (timer) { clearInterval(timer); timer = null; } btn.textContent = "Play"; state.playing = false; }
+  btn.addEventListener("click", function () {
+    if (state.playing) { stop(); return; }
+    state.playing = true; btn.textContent = "Pause";
+    if (state.month >= N) { state.month = 1; scrub.value = 1; }
+    timer = setInterval(function () {
+      state.month++;
+      if (state.month >= N) { state.month = N; stop(); }
+      scrub.value = state.month;
+      render();
+    }, 55);
+  });
+
+  render();
+
+  // ---------- the three game mockups ----------
+  function sv(el, str) { document.getElementById(el).innerHTML = str; }
+  var FONT = 'font-family="Helvetica Neue, system-ui, sans-serif"';
+
+  function blockCol(x, baseY, side, step, counts) {
+    var out = "", placed = 0, tot = counts.reduce(function (a, b) { return a + b; }, 0);
+    for (var s = 0; s < counts.length; s++) {
+      for (var k = 0; k < counts[s]; k++) {
+        var isTop = (placed === tot - 1);
+        out += '<rect x="' + x.toFixed(1) + '" y="' + (baseY - (placed + 1) * step + (step - side)).toFixed(1) +
+          '" width="' + side.toFixed(1) + '" height="' + side.toFixed(1) + '" rx="' + (side > 6 ? (isTop ? 3.5 : 1.5) : 0.6) +
+          '" fill="var(' + SERIES[s] + ')"></rect>';
+        placed++;
+      }
+    }
+    return out;
+  }
+  // split n blocks across five colours by weight, exactly
+  function split(n, w) {
+    var per = [], acc = 0;
+    for (var q = 0; q < 5; q++) { var v = Math.floor(n * w[q]); per.push(v); acc += v; }
+    var i = 0;
+    while (acc < n) { per[i % 5]++; acc++; i++; }
+    return per;
+  }
+
+  // Sketch A: the re-staged Stack ---------------------------------------
+  (function () {
+    var VB = 400, baseY = 330, side = 8, step = 10, colW = 10.4, x0 = 44;
+    var LO = 24, HI = 30;
+    var rnd = mulberry32(7), h = 15, heights = [];
+    for (var i = 0; i < 36; i++) { h += (rnd() - 0.36) * 1.9; heights.push(Math.max(8, Math.round(h))); }
+    heights[35] = 25;
+    var s = [];
+    var yLo = baseY - LO * step, yHi = baseY - HI * step;
+    s.push('<rect x="34" y="' + yHi + '" width="526" height="' + (yLo - yHi) + '" fill="var(--accent)" opacity="0.09"></rect>');
+    s.push('<line x1="34" y1="' + baseY + '" x2="524" y2="' + baseY + '" stroke="var(--line)"></line>');
+    s.push('<line x1="34" y1="' + yHi + '" x2="560" y2="' + yHi + '" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 5"></line>');
+    s.push('<line x1="34" y1="' + yLo + '" x2="560" y2="' + yLo + '" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 5"></line>');
+    s.push('<text x="580" y="' + (yHi + 5) + '" ' + FONT + ' font-size="14" font-weight="650" fill="var(--accent)">the goal corridor, in blocks</text>');
+    s.push('<text x="580" y="' + (yHi + 28) + '" ' + FONT + ' font-size="13.5" fill="var(--ink-2)">24 to 30. finish inside it, not above it.</text>');
+    s.push('<text x="580" y="' + (yHi + 48) + '" ' + FONT + ' font-size="13.5" fill="var(--ink-2)">same rule the cylinder already uses,</text>');
+    s.push('<text x="580" y="' + (yHi + 66) + '" ' + FONT + ' font-size="13.5" fill="var(--ink-2)">except now you can count it.</text>');
+    s.push('<text x="580" y="' + (yHi + 96) + '" ' + FONT + ' font-size="13.5" font-weight="650" fill="var(--ink)">you finished at 25,</text>');
+    s.push('<text x="580" y="' + (yHi + 114) + '" ' + FONT + ' font-size="13.5" fill="var(--ink-2)">one block above the floor.</text>');
+    var w = [0.24, 0.16, 0.14, 0.28, 0.18];
+    for (var c = 0; c < heights.length; c++) s.push(blockCol(x0 + c * colW, baseY, side, step, split(heights[c], w)));
+    s.push('<text x="44" y="' + (baseY + 28) + '" ' + FONT + ' font-size="12.5" fill="var(--ink-3)">trades left</text>');
+    for (var t2 = 0; t2 < 3; t2++) {
+      s.push('<rect x="' + (128 + t2 * 22) + '" y="' + (baseY + 16) + '" width="15" height="15" rx="2" fill="' + (t2 < 2 ? "none" : "var(--ink)") + '" stroke="var(--ink-3)" stroke-width="1.2"></rect>');
+    }
+    s.push('<text x="228" y="' + (baseY + 28) + '" ' + FONT + ' font-size="12.5" fill="var(--ink-3)">scouting cards, one still face down</text>');
+    ["steady", "cyclical", "unproven"].forEach(function (lab, e) {
+      s.push('<rect x="' + (470 + e * 96) + '" y="' + (baseY + 12) + '" width="88" height="24" rx="2" fill="var(--surface-2)" stroke="var(--line)"></rect>');
+      s.push('<text x="' + (514 + e * 96) + '" y="' + (baseY + 28) + '" text-anchor="middle" ' + FONT + ' font-size="11.5" fill="var(--ink-2)">' + lab + '</text>');
+    });
+    s.push('<rect x="758" y="' + (baseY + 12) + '" width="88" height="24" rx="2" fill="var(--surface-2)" stroke="var(--ink-3)" stroke-dasharray="4 3"></rect>');
+    s.push('<text x="802" y="' + (baseY + 28) + '" text-anchor="middle" ' + FONT + ' font-size="11.5" fill="var(--ink-3)">face down</text>');
+    document.getElementById("mockA").setAttribute("viewBox", "0 0 960 " + VB);
+    sv("mockA", s.join(""));
+  })();
+
+  // Sketch B: Block Drop -------------------------------------------------
+  (function () {
+    var VB = 320, baseY = 238, side = 22, step = 26;
+    function board(ox, cols, ghost) {
+      var o = "";
+      for (var i = 0; i < cols.length; i++) {
+        var x = ox + i * (side + 52);
+        for (var k = 0; k < cols[i].n; k++) {
+          var faded = ghost && ghost.col === i && k >= ghost.keep;
+          o += faded
+            ? '<rect x="' + x + '" y="' + (baseY - (k + 1) * step + (step - side)) + '" width="' + side + '" height="' + side +
+              '" rx="2" fill="none" stroke="var(--line)" stroke-width="1.4" stroke-dasharray="3 3"></rect>'
+            : '<rect x="' + x + '" y="' + (baseY - (k + 1) * step + (step - side)) + '" width="' + side + '" height="' + side +
+              '" rx="' + (k === cols[i].n - 1 ? 4 : 2) + '" fill="var(' + SERIES[cols[i].c] + ')"></rect>';
+        }
+      }
+      return o;
+    }
+    var cols = [{ c: 0, n: 4 }, { c: 1, n: 5 }, { c: 2, n: 3 }, { c: 3, n: 4 }, { c: 4, n: 3 }];
+    var goalY = baseY - 6 * step;
+    var s = [];
+    s.push('<line x1="44" y1="' + baseY + '" x2="452" y2="' + baseY + '" stroke="var(--line)"></line>');
+    s.push('<line x1="508" y1="' + baseY + '" x2="916" y2="' + baseY + '" stroke="var(--line)"></line>');
+    s.push('<line x1="44" y1="' + goalY + '" x2="452" y2="' + goalY + '" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 5"></line>');
+    s.push('<line x1="508" y1="' + goalY + '" x2="916" y2="' + goalY + '" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 5"></line>');
+    s.push('<text x="452" y="' + (goalY - 10) + '" text-anchor="end" ' + FONT + ' font-size="12.5" font-weight="650" fill="var(--accent)">reach six</text>');
+    s.push('<text x="916" y="' + (goalY - 10) + '" text-anchor="end" ' + FONT + ' font-size="12.5" font-weight="650" fill="var(--accent)">reach six</text>');
+    s.push(board(60, cols));
+    s.push(board(524, cols, { col: 1, keep: 1 }));
+    s.push('<text x="60" y="30" ' + FONT + ' font-size="14" font-weight="650" fill="var(--ink)">before</text>');
+    s.push('<text x="524" y="30" ' + FONT + ' font-size="14" font-weight="650" fill="var(--ink)">after an energy shock</text>');
+    s.push('<text x="524" y="50" ' + FONT + ' font-size="12.5" fill="var(--ink-2)">the orange column loses four of its five blocks</text>');
+    s.push('<text x="60" y="' + (baseY + 32) + '" ' + FONT + ' font-size="12.5" fill="var(--ink-3)">cash tray, three blocks to place</text>');
+    for (var i2 = 0; i2 < 3; i2++) {
+      s.push('<rect x="' + (310 + i2 * 28) + '" y="' + (baseY + 15) + '" width="22" height="22" rx="2" fill="none" stroke="var(--ink-3)" stroke-width="1.4" stroke-dasharray="3 3"></rect>');
+    }
+    s.push('<text x="524" y="' + (baseY + 32) + '" ' + FONT + ' font-size="12.5" fill="var(--ink-3)">the tray empties as you place. no block is ever created.</text>');
+    document.getElementById("mockB").setAttribute("viewBox", "0 0 960 " + VB);
+    sv("mockB", s.join(""));
+  })();
+
+  // Sketch C: Forty Years ------------------------------------------------
+  (function () {
+    var VB = 300, baseY = 226, colW = 5.8, x0 = 44, n = 150, MAXB = 44;
+    var rnd = mulberry32(1984), v = 4, raw = [];
+    for (var i = 0; i < n; i++) {
+      var g = 0.030 + (rnd() - 0.5) * 0.075;
+      if (i > 62 && i < 70) g = -0.155;
+      if (i > 104 && i < 113) g = -0.185;
+      v = Math.max(1.5, v * (1 + g) + 0.05);
+      raw.push(v);
+    }
+    var peak = Math.max.apply(null, raw);
+    var blocks = raw.map(function (x) { return Math.max(1, Math.round((x / peak) * MAXB)); });
+    var side = 3.4, step = 4.4;
+    var s = [];
+    s.push('<line x1="34" y1="' + baseY + '" x2="926" y2="' + baseY + '" stroke="var(--line)"></line>');
+    var w = [0.20, 0.12, 0.42, 0.14, 0.12];
+    for (var c = 0; c < n; c++) s.push(blockCol(x0 + c * colW, baseY, side, step, split(blocks[c], w)));
+    [[66, "the first crash"], [109, "the second"]].forEach(function (m) {
+      var x = x0 + m[0] * colW;
+      s.push('<line x1="' + x.toFixed(1) + '" y1="72" x2="' + x.toFixed(1) + '" y2="' + (baseY + 6) + '" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 4"></line>');
+      s.push('<text x="' + (x + 7).toFixed(1) + '" y="68" ' + FONT + ' font-size="11.5" fill="var(--ink-2)">' + m[1] + '</text>');
+    });
+    s.push('<text x="44" y="26" ' + FONT + ' font-size="14" font-weight="650" fill="var(--ink)">year one to year thirty-eight, on one screen</text>');
+    s.push('<rect x="44" y="42" width="11" height="11" rx="2" fill="var(--s3)"></rect>');
+    s.push('<text x="62" y="52" ' + FONT + ' font-size="12" fill="var(--ink-2)">the automatic monthly contribution</text>');
+    s.push('<text x="44" y="' + (baseY + 32) + '" ' + FONT + ' font-size="12.5" fill="var(--ink-3)">lifetime trades</text>');
+    for (var t3 = 0; t3 < 6; t3++) {
+      s.push('<rect x="' + (146 + t3 * 22) + '" y="' + (baseY + 19) + '" width="15" height="15" rx="2" fill="' + (t3 < 2 ? "none" : "var(--ink)") + '" stroke="var(--ink-3)" stroke-width="1.2"></rect>');
+    }
+    s.push('<rect x="306" y="' + (baseY + 16) + '" width="152" height="22" rx="2" fill="var(--bad)" opacity="0.12"></rect>');
+    s.push('<rect x="306" y="' + (baseY + 16) + '" width="152" height="22" rx="2" fill="none" stroke="var(--bad)" stroke-width="1.2"></rect>');
+    s.push('<text x="382" y="' + (baseY + 31) + '" text-anchor="middle" ' + FONT + ' font-size="12" font-weight="650" fill="var(--bad)">Sell Everything</text>');
+    s.push('<text x="472" y="' + (baseY + 31) + '" ' + FONT + ' font-size="12.5" fill="var(--ink-3)">always one tap away. that is the point.</text>');
+    document.getElementById("mockC").setAttribute("viewBox", "0 0 960 " + VB);
+    sv("mockC", s.join(""));
+  })();
+})();
+</script>
+</body>
+</html>

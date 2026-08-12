@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>The Tally: cards are what you own, blocks are what it is worth</title>
+<style>
+:root {
+  color-scheme: light;
+  --ground:      #F1F3F6;
+  --grid:        #DFE4EC;
+  --grid-strong: #CFD6E2;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7F9FC;
+  --line:        #D6DCE6;
+  --line-soft:   #E8ECF3;
+  --ink:         #14171C;
+  --ink-2:       #4E586A;
+  --ink-3:       #7F8A9B;
+  --accent:      #2a78d6;
+  --good:        #1baf7a;
+  --bad:         #C4362F;
+
+  --display: "Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --ground:      #101317; --grid: #1C2128; --grid-strong: #242B34;
+    --surface:     #171B21; --surface-2: #1B2029;
+    --line:        #2A313B; --line-soft: #222831;
+    --ink: #EEF1F6; --ink-2: #A3AEBE; --ink-3: #78838F;
+    --accent: #5A9BEE; --good: #199e70; --bad: #E06A62;
+  }
+}
+
+/* The product palette. Fixed in every mock, whatever theme the page is in,
+   because a mock of a light game has to look like the light game. */
+.p {
+  --page:   #FAF9F7;
+  --stage:  #E8EBF0;
+  --stage2: #DFE3EA;
+  --pink:   #1D1D1F;
+  --psub:   #6E6E73;
+  --pline:  rgba(0,0,0,0.10);
+  --pcard:  #FFFFFF;
+  --gold:   #B57A00;
+  --paccent:#0071E3;
+  --cash:   #3FAE6B;
+  --stone:  #A9AFBA;
+
+  --ring-save:  #2E9E63;
+  --ring-lend:  #2A72D6;
+  --ring-own:   #D98A00;
+  --ring-spec:  #D0453A;
+
+  color: var(--pink);
+  font-family: var(--display);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--ground);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px, 96px 96px, 96px 96px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 96px; display: flex; flex-direction: column; gap: 40px; }
+
+.masthead { padding: 72px 0 8px; display: flex; flex-direction: column; gap: 18px; }
+.eyebrow {
+  font-family: var(--display); font-size: 13.5px; font-weight: 600;
+  color: var(--accent); display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+h1 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(34px, 5.4vw, 58px); letter-spacing: -0.033em; line-height: 1.02;
+  margin: 0; text-wrap: balance; max-width: 18ch;
+}
+.standfirst { font-size: 20px; line-height: 1.55; color: var(--ink-2); max-width: 62ch; margin: 0; }
+.standfirst strong { color: var(--ink); font-weight: 600; }
+
+section { display: flex; flex-direction: column; gap: 20px; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 27px; letter-spacing: -0.02em; line-height: 1.15; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 650; font-size: 18px; letter-spacing: -0.012em; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+p + p { margin-top: 0.9em; }
+.lede { color: var(--ink-2); }
+a { color: var(--accent); text-underline-offset: 2px; }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.panel.flush { padding: 0; overflow: hidden; }
+.divider { height: 1px; background: var(--line-soft); }
+.cap { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); line-height: 1.5; max-width: 74ch; }
+.foot { font-family: var(--display); font-size: 13px; color: var(--ink-3); padding-top: 8px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); background: var(--surface-2); }
+.seg button {
+  font-family: var(--display); font-size: 13px; font-weight: 550;
+  padding: 6px 12px; border: 0; background: transparent; color: var(--ink-2);
+  cursor: pointer; border-right: 1px solid var(--line);
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.go {
+  font-family: var(--display); font-size: 13px; font-weight: 600;
+  padding: 7px 15px; border: 1px solid var(--ink); background: var(--ink); color: var(--surface);
+  cursor: pointer;
+}
+.go.ghost { background: transparent; color: var(--ink); }
+
+/* ---------------- product mock shell ---------------- */
+
+.p .mock { background: var(--page); border: 1px solid var(--pline); padding: 18px; }
+.p .stage {
+  background: linear-gradient(180deg, var(--stage) 0%, var(--stage2) 100%);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---------------- blocks ---------------- */
+
+.blk { width: 15px; height: 15px; border-radius: 2px; position: relative; }
+.blk::after {
+  content: ""; position: absolute; left: 2px; right: 2px; top: 1px; height: 2.5px;
+  background: rgba(255,255,255,0.4); border-radius: 1px;
+}
+.blk.cash { background: var(--cash); }
+.blk.cash::before {
+  content: "$"; position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.95); line-height: 1;
+}
+.blk.hollow { background: none; border: 1.5px solid rgba(60,110,85,0.45); }
+.blk.hollow::after { display: none; }
+.blk.stone { background: var(--stone); }
+.blk.stone::after { display: none; }
+
+.col { display: flex; flex-direction: column-reverse; gap: 2px; align-items: center; }
+.col .gap5 { height: 5px; }
+.col.w7 { gap: 1.5px; }
+.col.w7 .blk { width: 7px; height: 7px; border-radius: 1.5px; }
+.col.w7 .blk::after { left: 1px; right: 1px; top: 0.5px; height: 1.5px; }
+.col.w7 .blk.cash::before { font-size: 5px; }
+.col.w7 .gap5 { height: 3px; }
+.col.w6 { gap: 1.5px; }
+.col.w6 .blk { width: 6px; height: 6px; border-radius: 1.5px; }
+.col.w6 .blk::after { display: none; }
+.col.w6 .blk.cash::before { display: none; }
+.col.w6 .gap5 { height: 2.5px; }
+
+/* ---------------- cards ---------------- */
+
+.card {
+  width: 104px; height: 140px; border-radius: 9px; background: var(--pcard);
+  border: 1px solid var(--pline); position: relative;
+  padding: 9px 9px 8px; display: flex; flex-direction: column;
+  box-shadow: 0 1px 2px rgba(20,25,40,0.06);
+  flex: none;
+}
+.card .ring { position: absolute; inset: 0; border-radius: 9px; border: 3px solid transparent; pointer-events: none; z-index: 1; }
+.card .top, .card .mid, .card .px, .card .mv { position: relative; z-index: 2; }
+.card.save  .ring { border-color: var(--ring-save); }
+.card.lend  .ring { border-color: var(--ring-lend); }
+.card.own   .ring { border-color: var(--ring-own); }
+.card.spec  .ring { border-color: var(--ring-spec); }
+.card.basket .ring {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--pcard), var(--pcard)) padding-box,
+    conic-gradient(from 210deg, #ff453a, #ff9f0a, #ffd60a, #30d158, #64d2ff, #0a84ff, #bf5af2, #ff453a) border-box;
+  transition: filter .18s ease, transform .18s ease;
+}
+.card.basket:hover .ring { filter: saturate(1.5) brightness(1.12); }
+.card.basket:hover { transform: translateY(-3px); }
+.card.basket::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 7px; pointer-events: none;
+  background: radial-gradient(120% 80% at 20% 0%, rgba(255,255,255,0.85), rgba(255,255,255,0) 60%);
+  opacity: 0; transition: opacity .18s ease;
+}
+.card.basket:hover::after { opacity: 1; }
+.card.basket::after { z-index: 3; }
+
+.card .top { display: flex; align-items: flex-start; gap: 5px; }
+.card .top .pip { margin-top: 3px; }
+.pip { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.card .nm { font-size: 10.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; min-height: 24px; }
+.card .mid { flex: 1; display: flex; align-items: center; justify-content: center; }
+.card .worth { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 84px; }
+.card .worth .blk { width: 11px; height: 11px; }
+.card .worth .blk::after { left: 1.5px; right: 1.5px; height: 2px; }
+.card .px { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.card .sh { font-size: 9.5px; color: var(--psub); font-variant-numeric: tabular-nums; position: relative; z-index: 2; }
+.card .mv { font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.card .mv.up { color: #1a8a52; }
+.card .mv.down { color: #c0392b; }
+.card .px.dotted { border-bottom: 1px dotted var(--psub); }
+
+.card.stoneface { background: #EDEFF3; }
+.card.stoneface .ring { border-color: var(--stone); }
+.card.stoneface .nm, .card.stoneface .px { color: #8A909C; }
+.card.stoneface .hatch { position: absolute; inset: 3px; border-radius: 7px; overflow: hidden; opacity: .5; }
+
+.stack { position: relative; flex: none; }
+.stack .card { position: absolute; left: 0; top: 0; }
+.stack .collar {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 10.5px; font-weight: 700; color: var(--psub);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+.tray {
+  border: 1px dashed rgba(0,0,0,0.18); border-radius: 9px; padding: 9px 11px;
+  display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.5);
+}
+.tray .lab, .disc .lab { font-size: 10.5px; font-weight: 650; color: var(--psub); }
+.tray .row { display: flex; gap: 3px; flex-wrap: wrap; max-width: 130px; }
+
+.lgd { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.lgd div { display: flex; align-items: center; gap: 7px; font-family: var(--display); font-size: 13px; color: var(--ink-2); }
+.lgd i { width: 13px; height: 13px; border-radius: 3px; border: 3px solid; box-sizing: border-box; }
+
+/* ---------------- the board ---------------- */
+
+.board { display: flex; flex-direction: column; gap: 8px; }
+.reg { position: relative; }
+.reg[data-out="1"]::after {
+  content: attr(data-lab); position: absolute; right: 6px; top: 5px;
+  font-family: var(--display); font-size: 10.5px; font-weight: 700; color: var(--accent);
+  background: rgba(255,255,255,0.85); padding: 1px 6px; border-radius: 3px;
+}
+.reg[data-out="1"] > * { outline: 1.5px dashed var(--accent); outline-offset: -1px; }
+
+.hdr {
+  height: 46px; display: flex; align-items: center; gap: 14px; padding: 0 14px;
+  background: var(--pcard); border: 1px solid var(--pline); border-radius: 10px;
+  font-size: 12px; color: var(--psub); font-weight: 600;
+}
+.hdr b { color: var(--pink); font-weight: 750; }
+.hdr .sp { margin-left: auto; }
+
+.wall { height: 300px; padding: 12px 14px; display: flex; align-items: flex-end; gap: 3px; }
+.wall .axis { position: absolute; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.14); }
+
+.mkt { height: 162px; display: flex; gap: 8px; align-items: center; padding: 0 2px; overflow-x: auto; }
+.tbl { height: 208px; display: flex; gap: 14px; align-items: flex-start; padding-top: 4px; }
+
+.ovl {
+  position: absolute; inset: 0; background: rgba(248,249,251,0.86);
+  display: grid; place-items: center; padding: 16px; text-align: center;
+}
+.ovl .h { font-size: 17px; font-weight: 750; letter-spacing: -0.02em; }
+.ovl .s { font-size: 12.5px; color: var(--psub); margin-top: 6px; line-height: 1.5; }
+.ovl .btn {
+  margin-top: 12px; font-size: 12.5px; font-weight: 700; padding: 7px 16px;
+  border-radius: 8px; background: var(--paccent); color: #fff; border: 0; cursor: pointer;
+}
+
+/* the front page */
+.fp { width: min(420px, 100%); background: #FCFBF7; border: 1px solid rgba(0,0,0,0.18); text-align: left; }
+.fp .mh { padding: 8px 12px; border-bottom: 2px solid var(--pink); font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+.fp .hl { padding: 9px 12px; border-bottom: 1px solid rgba(0,0,0,0.12); cursor: pointer; }
+.fp .hl:last-child { border-bottom: 0; }
+.fp .hl h4 { margin: 0; font-family: var(--body); font-size: 16px; font-weight: 700; line-height: 1.22; letter-spacing: -0.01em; }
+.fp .hl p { margin: 5px 0 0; font-family: var(--display); font-size: 12px; line-height: 1.45; color: var(--psub); display: none; max-width: none; }
+.fp .hl[data-open="1"] p { display: block; }
+.fp .hl .more { font-family: var(--display); font-size: 10.5px; color: var(--paccent); font-weight: 650; }
+
+/* the ladder */
+.ladder { display: flex; flex-direction: column; gap: 2px; }
+.rung {
+  display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: baseline;
+  padding: 8px 10px; font-family: var(--display); font-size: 13.5px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.rung .n { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.rung .t b { font-weight: 700; }
+.rung .t span { color: var(--ink-2); }
+.rung .u { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+
+/* the box */
+.box { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.slot {
+  aspect-ratio: 1; border: 1px solid var(--pline); border-radius: 10px; background: var(--pcard);
+  display: grid; place-items: center; gap: 4px; padding: 8px; text-align: center;
+}
+.slot.locked { background: #F2F3F6; border-style: dashed; }
+.slot .g { font-size: 22px; line-height: 1; }
+.slot .l { font-size: 10.5px; font-weight: 650; letter-spacing: -0.01em; }
+.slot.locked .g, .slot.locked .l { color: #B6BBC5; }
+
+table.spec { width: 100%; border-collapse: collapse; font-family: var(--display); font-size: 13.5px; }
+table.spec th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12.5px; padding: 10px 12px 7px; border-bottom: 1px solid var(--line-soft); }
+table.spec td { padding: 8px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+table.spec tr:last-child td { border-bottom: 0; }
+table.spec td.k { font-weight: 650; white-space: nowrap; }
+.yes { color: var(--good); font-weight: 700; }
+
+ul.plain, ol.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+ul.plain li, ol.plain li { font-family: var(--display); font-size: 14.5px; line-height: 1.5; display: flex; gap: 12px; }
+ul.plain li .k { color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 18px; flex: none; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+
+blockquote {
+  margin: 0; padding: 4px 0 4px 20px; border-left: 2px solid var(--accent);
+  color: var(--ink-2); font-size: 18px; max-width: 62ch;
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Share Garden &middot; The Tally &middot; design sketch &middot; 10 August 2026</div>
+  <h1>Cards are what you own. Blocks are what it is worth.</h1>
+  <p class="standfirst">The tile chart fixed the picture and left the game behind it unfinished. This is the game: a solitaire built out of real market history, where <strong>every asset is a card you can stack</strong> and <strong>every dollar is a block on the wall behind the table</strong>. Splitting those two units is the whole idea, and it settles the one metaphor test the orb and the cylinder both failed.</p>
+</header>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The exhibit: a crash takes blocks and leaves every card</h2>
+  <p class="lede">Jared's sixth test was crash and recovery: you still own the same things, they are worth less. A single shape can never show that, because the shape is the only object on screen. Two units can. Move the year.</p>
+
+  <div class="panel flush p">
+    <div class="mock" style="border:0">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <span style="font-size:12.5px;font-weight:650;color:var(--psub)">The tape</span>
+        <div class="seg" id="segCrash" role="group" aria-label="Month">
+          <button type="button" data-v="0" aria-pressed="true">Jan 2008</button>
+          <button type="button" data-v="1" aria-pressed="false">Sep 2008</button>
+          <button type="button" data-v="2" aria-pressed="false">Mar 2009</button>
+          <button type="button" data-v="3" aria-pressed="false">Dec 2013</button>
+        </div>
+      </div>
+
+      <div class="stage" style="padding:18px 20px 34px;height:352px;position:relative">
+        <div style="position:absolute;left:74px;top:18px">
+          <div style="font-size:11px;font-weight:650;color:var(--psub)">What it is worth</div>
+          <div style="font-size:30px;font-weight:800;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;line-height:1.1" id="crashVal">$1,150</div>
+          <div style="font-size:11.5px;font-weight:650;color:var(--gold)" id="crashBlocks">23 blocks of $50</div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:26px;height:1px;background:rgba(0,0,0,0.14)"></div>
+        <div class="col w7" id="wallCrash" style="position:absolute;left:28px;bottom:27px"></div>
+        <div style="position:absolute;right:20px;top:18px">
+          <div style="font-size:11px;font-weight:650;color:var(--psub);margin-bottom:8px;text-align:right">What you own</div>
+          <div style="display:flex;gap:14px;align-items:flex-start" id="tabCrash"></div>
+        </div>
+      </div>
+
+      <p class="cap" style="margin-top:12px" id="crashCap"></p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Everything else falls out of the same split</h3>
+    <table class="spec">
+      <tr><td class="k">A share</td><td>A card.</td></tr>
+      <tr><td class="k">A share price</td><td>The number printed on the card. Real, to the cent, for that month.</td></tr>
+      <tr><td class="k">Buying</td><td>Blocks leave the tray, a card arrives in your tableau. A card always costs two blocks, so the economy stays legible while the numbers grow.</td></tr>
+      <tr><td class="k">Selling</td><td>Drag a card to the discard, collect blocks at today's price. The discard stays face up, so your trading history is an object on the table you have to look at.</td></tr>
+      <tr><td class="k">Cash drag</td><td>Green blocks sitting in the tray, doing nothing, in plain sight.</td></tr>
+      <tr><td class="k">Dollar cost averaging</td><td>Two cards of one company bought two years apart are worth different amounts, and both are on the table. Nobody has to explain it.</td></tr>
+      <tr><td class="k">Bankruptcy</td><td>The card turns to stone. It stays in your tableau forever, worth nothing, and it cannot be discarded. Gone is different from down.</td></tr>
+      <tr><td class="k">Compounding</td><td>The wall runs off the top, and the unit upgrades. Twice, in the last chapter.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The card</h2>
+  <p class="lede">The ring is what the money does. The pip is what the company sells. Both are true groupings, and together they mean nothing on screen ever has to say the word diversify.</p>
+
+  <div class="panel p">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start" id="cardRow"></div>
+
+    <div class="divider"></div>
+
+    <div class="two">
+      <div>
+        <h3 style="margin-bottom:10px">Rings: the asset class</h3>
+        <div class="lgd">
+          <div><i style="border-color:#2E9E63"></i> Savings. Grows slowly, never falls.</div>
+          <div><i style="border-color:#2A72D6"></i> Lending. You lent it, they pay you back.</div>
+          <div><i style="border-color:#D98A00"></i> Ownership. A slice of one company.</div>
+          <div><i style="border-image:conic-gradient(from 210deg,#ff453a,#ff9f0a,#ffd60a,#30d158,#64d2ff,#0a84ff,#bf5af2,#ff453a) 1"></i> Baskets. One card that holds many.</div>
+          <div><i style="border-color:#D0453A"></i> Speculation. A price with nothing behind it yet.</div>
+        </div>
+        <p class="cap" style="margin-top:12px">The basket ring is the only radial gradient in the game and the only card that shines on hover. It is not mechanically wild. It is just the one card whose ring is every colour at once, because it is the one card that is every colour at once. Hover it above.</p>
+      </div>
+      <div>
+        <h3 style="margin-bottom:10px">Pips: the sector</h3>
+        <p class="cap" style="margin-bottom:10px">The pip earns its place on exactly one day. In September 2008 every card carrying a bank pip loses most of its worth in the same resolve. A player who spread across five ownership cards that all happen to be banks watches all five fall together, and nothing has to say a word.</p>
+        <div class="stage" style="padding:14px;display:flex;gap:10px;align-items:flex-end">
+          <div id="sectorDemo" style="display:flex;gap:8px;align-items:flex-end"></div>
+        </div>
+        <p class="cap" style="margin-top:10px">Sector correlation is real in the data we already ship. We are not inventing it. We are making it visible.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The board never moves</h2>
+  <p class="lede">The current build is three cards that swap out on every beat, so nothing feels like one place. The fix is structural: four regions, fixed heights, forever. Every overlay renders inside the wall panel, over a scrim, with the market and the table still visible and still correct underneath. Press the buttons and watch nothing below region B move by a pixel.</p>
+
+  <div class="panel flush p">
+    <div class="mock" style="border:0">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:14px">
+        <span style="font-size:12.5px;font-weight:650;color:var(--psub)">Show</span>
+        <div class="seg" id="segOvl" role="group" aria-label="Overlay">
+          <button type="button" data-v="none" aria-pressed="true">Playing</button>
+          <button type="button" data-v="chapter" aria-pressed="false">Chapter card</button>
+          <button type="button" data-v="news" aria-pressed="false">Front page</button>
+          <button type="button" data-v="unit" aria-pressed="false">Unit upgrade</button>
+          <button type="button" data-v="over" aria-pressed="false">Run over</button>
+        </div>
+        <button class="go ghost" id="btnOutline" type="button">Show regions</button>
+      </div>
+
+      <div class="board" id="board">
+        <div class="reg" data-lab="A header rail">
+          <div class="hdr">
+            <b>Chapter 6 &middot; The panic</b>
+            <span>turn 4 of 9</span>
+            <span>target <b>$1,300</b></span>
+            <span>one block <b>$50</b></span>
+            <span class="sp">collection</span>
+          </div>
+        </div>
+
+        <div class="reg" data-lab="B the wall">
+          <div class="stage wall" id="wallBoard" style="position:relative"></div>
+        </div>
+
+        <div class="reg" data-lab="C the market">
+          <div class="stage mkt" id="mktBoard" style="background:none;border:0"></div>
+        </div>
+
+        <div class="reg" data-lab="D your table">
+          <div class="tbl">
+            <div style="display:flex;flex-direction:column;gap:5px;padding-right:16px;border-right:1px solid rgba(0,0,0,0.08);margin-right:2px">
+              <span style="font-size:10.5px;font-weight:650;color:var(--psub)">Your money</span>
+              <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em">$300</span>
+              <div id="trayBoard" style="display:flex;flex-wrap:wrap;gap:3px;max-width:74px"></div>
+            </div>
+            <div id="tblBoard" style="display:flex;gap:14px;align-items:flex-start"></div>
+            <div style="margin-left:auto;display:flex;flex-direction:column;gap:5px">
+              <span style="font-size:10.5px;font-weight:650;color:var(--psub)">Sold</span>
+              <div id="discBoard" style="position:relative;width:56px;height:74px"></div>
+            </div>
+            <button class="go" style="align-self:flex-end;border-radius:8px">End turn</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <h3>Rules that hold at every size</h3>
+      <ul class="plain">
+        <li><span class="k">1</span><span>The four regions never reorder, never collapse, and never change height at any phase of any turn.</span></li>
+        <li><span class="k">2</span><span>Every overlay lives inside region B. The run over report is the only one allowed to take the viewport, and only after a beat.</span></li>
+        <li><span class="k">3</span><span>The market and the table scroll sideways. Nothing wraps to a second line.</span></li>
+        <li><span class="k">4</span><span>A block is always square. The wall decides how many turns one drawn column covers so the blocks stay square, which is the logic already built and working.</span></li>
+        <li><span class="k">5</span><span>Everything is vector. No raster background art, nothing that softens on a large display.</span></li>
+        <li><span class="k">6</span><span>The whole game fits one viewport at 1280 by 800 with no vertical scroll, and no horizontal scroll from 360 pixels up.</span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Sizes</h3>
+      <table class="spec">
+        <thead><tr><th></th><th>wall</th><th>market</th><th>table</th></tr></thead>
+        <tr><td class="k">1024 and up</td><td>16:7, 320 to 460</td><td>156, cards 104</td><td>200</td></tr>
+        <tr><td class="k">768 to 1023</td><td>3:2, min 300</td><td>140, cards 92</td><td>184</td></tr>
+        <tr><td class="k">under 768</td><td>4:3, min 260</td><td>132, cards 84</td><td>176</td></tr>
+      </table>
+      <p class="cap">Page is warm off-white. The wall is a single panel a few shades deeper, so the tiles read as objects in a lit case. Not a dark app. The pixel language lives in the tiles only; no pixel typeface anywhere.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>A turn, and the resolve that pays for it</h2>
+  <p class="lede">Fully turn-based. There is no play button, no speed control, and nothing that can be waited out. Nothing moves until you commit, and then the resolve is the payoff: blocks land one at a time with weight, and the count steps a digit at a time. No number ever tweens. Counting is the pleasure.</p>
+
+  <div class="panel flush p">
+    <div class="mock" style="border:0">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+        <button class="go" id="btnResolve" type="button">End turn</button>
+        <span style="font-size:12.5px;color:var(--psub)" id="resolveState">Plan. Drag blocks onto cards, or cards to the discard.</span>
+      </div>
+      <div class="stage" style="padding:16px 18px;min-height:258px;display:flex;align-items:flex-end;gap:22px;position:relative" id="resolveStage">
+        <div class="col w7" id="resolveWall"></div>
+        <div style="padding-bottom:4px">
+          <div style="font-size:30px;font-weight:800;letter-spacing:-0.03em;font-variant-numeric:tabular-nums" id="resolveNum">18</div>
+          <div style="font-size:11.5px;font-weight:650;color:var(--psub)">blocks</div>
+        </div>
+      </div>
+      <p class="cap" style="margin-top:12px">Income arrives every turn, in every chapter, so no turn is a skip and dollar cost averaging is the default rather than a strategy. Four beats, always the same order. <b>Plan</b>, and nothing is committed. <b>Commit</b>, one button. <b>Resolve</b>, about 1.2 seconds, skippable by tapping. <b>Read</b>, one line in the header rail. A player should be able to clear a chapter without reading a single sentence and still have learned something by the end of it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The unit is earned, never automatic</h2>
+  <p class="lede">The wall never goes over forty blocks, so it stays countable, which means the unit has to grow. It grows exactly four times, on its own screen, between chapters, never inside one. Four blocks fuse into one, and four cards of the same name fuse into one card, so a card is always two blocks and the economy never shifts under you.</p>
+
+  <div class="panel flush p">
+    <div class="mock" style="border:0">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+        <button class="go" id="btnFuse" type="button">Play the ceremony</button>
+        <span style="font-size:12.5px;color:var(--psub)">$5, then $20, then $80, then $320, then $1,280. Exactly four times in a life.</span>
+      </div>
+      <div class="stage" style="min-height:262px;display:grid;place-items:center;padding:18px" id="fuseStage">
+        <div style="display:flex;gap:34px;align-items:flex-end;justify-content:center;width:min(520px,100%);border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:18px 26px;background:rgba(255,255,255,0.5)">
+          <div style="text-align:center;flex:1">
+            <div class="col w7" id="fuseFrom" style="margin-bottom:10px"></div>
+            <div style="font-size:11.5px;font-weight:650;color:var(--psub)">24 blocks of $5</div>
+          </div>
+          <div style="font-size:22px;color:var(--psub);padding-bottom:34px">&rarr;</div>
+          <div style="text-align:center;flex:1">
+            <div class="col" id="fuseTo" style="margin-bottom:10px"></div>
+            <div style="font-size:11.5px;font-weight:650;color:var(--gold)">6 blocks of $20</div>
+          </div>
+        </div>
+      </div>
+      <p class="cap" style="margin-top:12px">The ruler changing is not a rendering problem to hide. It is the moment a kid feels how much bigger the number got, and it is free curriculum. It is also the only time the game ever changes the meaning of anything, which is why it gets a whole screen and a button press.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>History that nobody has to read</h2>
+  <p class="lede">The teaching layer stays. It stops being a wall of text. A dated moment resolves as a front page inside the wall panel: three headlines, each one line on its face, each opening to at most two sentences on tap. Nobody is ever made to read more than one line to continue.</p>
+
+  <div class="panel p" style="align-items:flex-start">
+    <div class="fp" id="frontPage">
+      <div class="mh">The record &middot; September 2008</div>
+      <div class="hl" data-i="0">
+        <h4>A 158-year-old bank files the largest bankruptcy in American history.</h4>
+        <span class="more">tap for more</span>
+        <p>The Old Bank survived the Civil War, two world wars, and the Great Depression. This weekend it ran out of money, and nobody saved it.</p>
+      </div>
+      <div class="hl" data-i="1">
+        <h4>The government lends $85 billion to the world's biggest insurer.</h4>
+        <span class="more">tap for more</span>
+        <p>It took most of the company's ownership in return. A small unit in London had sold insurance on mortgage bets nobody had added up.</p>
+      </div>
+      <div class="hl" data-i="2">
+        <h4>Congress votes down the rescue plan, and the Dow falls 777 points.</h4>
+        <span class="more">tap for more</span>
+        <p>It was the largest one-day point drop to that date. Banks stopped lending to each other, and nobody knew which giant fell next.</p>
+      </div>
+    </div>
+    <p class="cap">Headlines stay verbatim from named publications on named dates, per the honesty rule already in the course style contract. The definition sentences that currently sit in the gate cards move to the field guide, which unlocks the moment a concept first appears in play. A player who wants the textbook sentence gets it in two taps. A player who does not, never sees it. The old gate buttons are gone, because the decision now lives in the turn, where the money is.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The ladder, the target, and the run</h2>
+  <p class="lede">A chapter is a level with a block target on the wall from turn one. Clear it or the run ends. The first run is a whole life in order, and clearing a chapter unlocks it permanently as a start point, so later runs begin deeper.</p>
+
+  <div class="two">
+    <div class="panel">
+      <h3>Eight chapters</h3>
+      <div class="ladder">
+        <div class="rung"><span class="n">1</span><span class="t"><b>The piggy bank.</b> <span>A pile that does nothing stays the same size. Ninety seconds, unfailable, no decision in it.</span></span><span class="u">$5</span></div>
+        <div class="rung"><span class="n">2</span><span class="t"><b>Savings.</b> <span>One card that grows on its own, slowly, and never falls.</span></span><span class="u">$5</span></div>
+        <div class="rung"><span class="n">3</span><span class="t"><b>Prices.</b> <span>A price moves. Your card count does not move with it.</span></span><span class="u">$20</span></div>
+        <div class="rung"><span class="n">4</span><span class="t"><b>Two names.</b> <span>The first real choice, and one of the two falls hard.</span></span><span class="u">$20</span></div>
+        <div class="rung"><span class="n">5</span><span class="t"><b>The fund.</b> <span>One card that holds all of them, and it is not the fastest one.</span></span><span class="u">$80</span></div>
+        <div class="rung"><span class="n">6</span><span class="t"><b>The panic.</b> <span>2008 on real prices. A whole sector falls together.</span></span><span class="u">$80</span></div>
+        <div class="rung"><span class="n">7</span><span class="t"><b>The mania.</b> <span>What a price with nothing behind it eventually does.</span></span><span class="u">$320</span></div>
+        <div class="rung"><span class="n">8</span><span class="t"><b>The long run.</b> <span>Forty years, very few moves, and the unit upgrades twice.</span></span><span class="u">$320</span></div>
+      </div>
+      <p class="cap">Chapters one to five use illustrative numbers, the way the existing intro lessons use Maya's lemonade stand, and say so on their chapter card. Six to eight use the real datasets already shipped.</p>
+    </div>
+
+    <div class="panel">
+      <h3>The target is a floor, not a corridor</h3>
+      <p class="cap" style="font-size:14px;color:var(--ink-2)">The old corridor had a ceiling, and a ceiling reads as "investing well is wrong", which is not a thing we believe. The target is a number of blocks to reach, and nothing ever penalises finishing rich.</p>
+      <blockquote style="font-size:16px">A chapter's target is about 95% of what buying the basket on turn one and never touching it would have produced.</blockquote>
+      <p class="cap" style="font-size:14px;color:var(--ink-2)">That one rule does the teaching by arithmetic. Cash never clears a chapter after the second. Tracking the market clears every chapter with a small margin. One concentrated name clears a chapter spectacularly sometimes and misses badly more often, because that is what the real prices do. Over eight chapters the odds compound.</p>
+      <div class="divider"></div>
+      <p style="font-family:var(--display);font-size:15px;font-weight:650;margin:0">Concentration wins rounds. Spreading wins runs.</p>
+      <p class="cap">Balatro's ante structure does the pedagogy for us, so no rule ever has to.</p>
+    </div>
+  </div>
+
+  <div class="panel flush p">
+    <div class="mock" style="border:0">
+      <div class="stage" style="padding:22px 24px">
+        <div style="font-size:11.5px;font-weight:700;color:var(--gold);margin-bottom:4px">Chapter 6 &middot; target $1,300</div>
+        <div style="font-size:19px;font-weight:750;letter-spacing:-0.02em">You finished at $700. The target was $1,300.</div>
+        <div style="height:1px;background:rgba(0,0,0,0.1);margin:14px 0"></div>
+        <div style="display:grid;grid-template-columns:64px 1fr;gap:6px 14px;font-size:13px;align-items:center">
+          <span style="color:var(--psub);font-weight:650">turn 3</span><span>You put 14 of your 16 blocks on one card.</span>
+          <span style="color:var(--psub);font-weight:650">turn 6</span><span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">That card lost two thirds.
+            <span style="display:flex;gap:2px" id="overFrom"></span>
+            <span style="color:var(--psub)">to</span>
+            <span style="display:flex;gap:2px" id="overTo"></span>
+          </span>
+          <span style="color:var(--psub);font-weight:650">the card</span><span>The basket you passed on finished the chapter at 24 blocks.</span>
+        </div>
+        <div style="height:1px;background:rgba(0,0,0,0.1);margin:14px 0"></div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--psub)">
+          <span style="font-weight:650">Kept</span>
+          <span>the index fund card</span><span>the bond card</span><span>4 badges</span><span>chapters 1 to 5 unlocked</span>
+          <button class="go" style="border-radius:8px;margin-left:auto">New run, start at chapter 5</button>
+        </div>
+      </div>
+      <p class="cap" style="margin-top:12px">A forensic report, not a scold. It names what you did and what it cost, from your own trade log, in blocks. It shows the alternative you could see at the time and let go, once. It never says you should have, and it never scores you against it. One miss ends a run, and there are no retries with known prices, because replaying a known tape rewards memorising the future.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The collector's box</h2>
+  <p class="lede">Modelled on the Orb's silhouetted achievement slots: you can see the shape of everything you have not earned, which is most of the pull. Badges are where spreading is rewarded, and they sit deliberately outside the scoring loop, so no turn is ever won by obeying a rule.</p>
+
+  <div class="panel p">
+    <div class="box" id="boxDemo"></div>
+    <p class="cap">Three shelves: instruments, badges, eras. Nothing is ever announced mid-turn. Badges land on the chapter summary, one at a time, with a small flip. Compounding gets its reward here rather than on the card face, as the long hold badge: finish a run still holding a card you bought in the first chapter you played.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2>The two tests, answered</h2>
+  <div class="two">
+    <div class="panel">
+      <h3>Metaphor</h3>
+      <table class="spec">
+        <tr><td class="k">Growth, no number</td><td><span class="yes">yes</span> More blocks on the wall, countable.</td></tr>
+        <tr><td class="k">Decline, and it stings</td><td><span class="yes">yes</span> Blocks lift off and vanish, counted down one at a time.</td></tr>
+        <tr><td class="k">Many stocks at a glance</td><td><span class="yes">yes</span> A tableau of stacks in different rings.</td></tr>
+        <tr><td class="k">One stock looks fragile</td><td><span class="yes">yes</span> One tall stack, one ring, one pip. The rings do it without a word.</td></tr>
+        <tr><td class="k">Diversification over time</td><td><span class="yes">yes</span> The wall keeps every past column, so drift is a shape.</td></tr>
+        <tr><td class="k">Crash and recovery</td><td><span class="yes">yes</span> Every card stays. The blocks behind it go. This is the two unit split.</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>Gamification</h3>
+      <table class="spec">
+        <tr><td class="k">Clear objective</td><td><span class="yes">yes</span> A block target on the wall from turn one.</td></tr>
+        <tr><td class="k">Constrained moves</td><td><span class="yes">yes</span> Blocks are always scarcer than the market strip.</td></tr>
+        <tr><td class="k">Escalating difficulty</td><td><span class="yes">yes</span> Eight chapters, rising targets, eras that get nastier.</td></tr>
+        <tr><td class="k">Progression between sessions</td><td><span class="yes">yes</span> The collector's box and unlocked start chapters.</td></tr>
+        <tr><td class="k">A fail state that teaches</td><td><span class="yes">yes</span> One miss, and a forensic report built from your own log.</td></tr>
+        <tr><td class="k">A share artifact</td><td><span class="yes">yes</span> The final wall and the tableau, one image.</td></tr>
+        <tr><td class="k">The reward function</td><td><span class="yes">yes</span> Seven hard rules, and a verifier that rejects breaches.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>The reward function contract</h3>
+    <p class="cap" style="font-size:14px;color:var(--ink-2)">Insider Trading, the Balatro-for-stocks game released this February, is a good game and a terrible teacher: the optimal play is to dump, crash the price, and buy the dip, and reviewers finish it saying they still do not understand the market. Theming a deckbuilder in stocks teaches nothing by itself. These are the rules a verifier checks hardest, and a change that breaks one is rejected however well it plays.</p>
+    <ul class="plain">
+      <li><span class="k">1</span><span>No move may move a price. The player is a price taker in every chapter.</span></li>
+      <li><span class="k">2</span><span>No reward, badge, bonus or unlock may pay for trading volume, for timing, or for a correct prediction.</span></li>
+      <li><span class="k">3</span><span>Nothing is scored against a counterfactual. The run over screen may show an option you passed on, once. It may never rank your choice against it.</span></li>
+      <li><span class="k">4</span><span>No baseline bonus for holding several suits. Spreading is rewarded by the real prices, and outside the loop by a badge.</span></li>
+      <li><span class="k">5</span><span>Every unlock is an asset or a habit. Never a discount, never an edge, never information nobody had at the time.</span></li>
+      <li><span class="k">6</span><span>Every number a card shows existed on that date.</span></li>
+      <li><span class="k">7</span><span>A chapter can never be cleared by an action that would be bad practice with real money. If playtesting finds one, the target gets retuned. The rule does not get relaxed.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>What to build, in order</h2>
+  <div class="panel">
+    <ul class="plain">
+      <li><span class="k">1</span><span>The card model: suits, pips, lots, stone cards. Then the eight chapters with their targets, stakes and units.</span></li>
+      <li><span class="k">2</span><span>The four region shell, with the overlay layer inside region B. This is the thing that decides whether it feels like one place, so it comes before content.</span></li>
+      <li><span class="k">3</span><span>The wall, refactored from the tile stage that already works, plus the card face with its rings and its one radial gradient.</span></li>
+      <li><span class="k">4</span><span>The turn: drag to buy, drag to discard, commit, resolve, read. Build the resolve with the care a Balatro hand gets, because it is the whole payoff.</span></li>
+      <li><span class="k">5</span><span>Chapters one to five, which are illustrative and cheap. Play them before touching a real era.</span></li>
+      <li><span class="k">6</span><span>Chapters six to eight on the real datasets, then calibrate every target against the buy-the-basket rule.</span></li>
+      <li><span class="k">7</span><span>The collector's box, the badges, and the front door card. The Orb stays as game two.</span></li>
+    </ul>
+    <div class="divider"></div>
+    <p class="cap">Open in build: whether chapter seven is dotcom or crypto, where forty years of data for chapter eight comes from, whether income arrives every turn or only at chapter start, and whether one miss ending a run is too harsh at chapter seven. All four are written down rather than quietly resolved.</p>
+  </div>
+  <p class="foot">Full spec: docs/tally-spec.md. Colour slots validated for colour vision deficiency: the ring carries class, the pip carries sector, and the block colour carries identity, so no single channel is load bearing on its own. Every holding is named in text somewhere on screen.</p>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CASH = "#3FAE6B";
+  var el = function (id) { return document.getElementById(id); };
+
+  function blk(color, cls) {
+    var d = document.createElement("span");
+    d.className = "blk" + (cls ? " " + cls : "");
+    if (color) d.style.background = color;
+    return d;
+  }
+  // a column of blocks, bottom up, with a visible gap every five
+  function column(spec, into) {
+    into.innerHTML = "";
+    var n = 0;
+    spec.forEach(function (part) {
+      for (var i = 0; i < part.n; i++) {
+        if (n > 0 && n % 5 === 0) {
+          var g = document.createElement("span");
+          g.className = "gap5";
+          into.appendChild(g);
+        }
+        into.appendChild(blk(part.color, part.cls));
+        n++;
+      }
+    });
+    return n;
+  }
+
+  function card(o) {
+    var c = document.createElement("div");
+    c.className = "card " + (o.suit || "own") + (o.stone ? " stoneface" : "");
+    var ring = document.createElement("div"); ring.className = "ring"; c.appendChild(ring);
+
+    var top = document.createElement("div"); top.className = "top";
+    var pip = document.createElement("span"); pip.className = "pip";
+    pip.style.background = o.pip || "#8E8E93";
+    pip.title = o.sector || "";
+    var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = o.name;
+    top.appendChild(pip); top.appendChild(nm); c.appendChild(top);
+
+    var mid = document.createElement("div"); mid.className = "mid";
+    var w = document.createElement("div"); w.className = "worth";
+    if (o.stone) {
+      var s = blk(null, "stone"); w.appendChild(s);
+    } else {
+      for (var i = 0; i < (o.worth || 2); i++) w.appendChild(blk(o.color));
+    }
+    mid.appendChild(w); c.appendChild(mid);
+
+    var px = document.createElement("div"); px.className = "px" + (o.recon ? " dotted" : "");
+    px.textContent = o.price + (o.shares ? " a share" : "");
+    c.appendChild(px);
+    if (o.shares) {
+      var sh = document.createElement("div"); sh.className = "sh";
+      sh.textContent = "holds " + o.shares;
+      c.appendChild(sh);
+    }
+    if (o.move !== undefined) {
+      var mv = document.createElement("div");
+      mv.className = "mv " + (o.move >= 0 ? "up" : "down");
+      mv.textContent = (o.move >= 0 ? "▲ " : "▼ ") + Math.abs(o.move).toFixed(1) + "%";
+      c.appendChild(mv);
+    }
+    return c;
+  }
+
+  function stack(o, count) {
+    var s = document.createElement("div");
+    s.className = "stack";
+    s.style.width = "104px";
+    s.style.height = (152 + (count - 1) * 12) + "px";
+    for (var i = count - 1; i >= 0; i--) {
+      var c = card(o);
+      c.style.top = (i * 12) + "px";
+      c.style.zIndex = String(count - i);
+      s.appendChild(c);
+    }
+    var col = document.createElement("span");
+    col.className = "collar";
+    col.style.top = (152 + (count - 1) * 12 + 5) + "px";
+    col.textContent = count + (count === 1 ? " card" : " cards");
+    s.appendChild(col);
+    return s;
+  }
+
+  // ---------------------------------------------------------- the exhibit
+  var SEC = { bank: "#5E5CE6", tech: "#0A84FF", ind: "#A2845E", energy: "#8E8E93", retail: "#64D2FF" };
+
+  var CRASH = [
+    { label: "Jan 2008", fruit: 189.95, rail: 43.24, total: 1150, blocks: 23, cash: 3,
+      cap: "Three cards of Fruit Computers, two of Atlas Rail, and three blocks of cash in the tray. Twenty three blocks on the wall." },
+    { label: "Sep 2008", fruit: 113.66, rail: 22.35, total: 760, blocks: 15, cash: 3,
+      cap: "Eight blocks have gone. Five cards are still on the table. Nothing was sold, and nothing was bought." },
+    { label: "Mar 2009", fruit: 105.12, rail: 2.80, total: 505, blocks: 10, cash: 3,
+      cap: "Thirteen blocks gone since January. Still five cards. You own the same things. They are worth less. This is the sentence the orb could never draw." },
+    { label: "Dec 2013", fruit: 561.02, rail: 5.17, total: 1720, blocks: 34, cash: 3,
+      cap: "The blocks came back and then some, on the same five cards you never sold. Recovery is the wall refilling under a tableau that did not change." }
+  ];
+
+  function drawCrash(i) {
+    var s = CRASH[i];
+    var wall = el("wallCrash");
+    column([
+      { n: Math.max(0, s.blocks - s.cash), color: "#0A84FF" },
+      { n: s.cash, color: CASH, cls: "cash" }
+    ], wall);
+    el("crashVal").textContent = "$" + s.total.toLocaleString("en-US");
+    el("crashBlocks").textContent = s.blocks + " blocks of $50";
+    el("crashCap").textContent = s.cap;
+
+    var tab = el("tabCrash");
+    tab.innerHTML = "";
+    tab.appendChild(stack({ name: "Fruit Computers", suit: "own", pip: SEC.tech, sector: "tech",
+      color: "#0A84FF", price: "$" + s.fruit.toFixed(2), worth: Math.max(1, Math.round(s.fruit / 95)) }, 3));
+    tab.appendChild(stack({ name: "Atlas Rail", suit: "own", pip: SEC.ind, sector: "industry",
+      color: "#A2845E", price: "$" + s.rail.toFixed(2), worth: Math.max(1, Math.round(s.rail / 22)) }, 2));
+  }
+
+  bindSeg("segCrash", function (v) { drawCrash(parseInt(v, 10)); });
+  drawCrash(0);
+
+  // ---------------------------------------------------------- card row
+  var ROW = [
+    { name: "Savings Account", suit: "save", pip: "#2E9E63", sector: "cash", color: "#3FAE6B", price: "3.2% a year", worth: 2 },
+    { name: "Government Bond", suit: "lend", pip: "#2A72D6", sector: "lending", color: "#5AA2F5", price: "$98.40", move: 0.3, worth: 2 },
+    { name: "Mega Bank", suit: "own", pip: SEC.bank, sector: "banks", color: "#30D158", price: "$43.24", move: -6.2, worth: 1 },
+    { name: "The Index Fund", suit: "basket", pip: "#8E8E93", sector: "everything", color: "#0A84FF", price: "$2,219.19", move: 1.1, worth: 2 },
+    { name: "New Listing", suit: "spec", pip: SEC.tech, sector: "tech", color: "#FF9F0A", price: "$14.80", move: 22.4, worth: 3 },
+    { name: "The Old Bank", suit: "own", pip: SEC.bank, sector: "banks", color: "#5E5CE6", price: "$0.00", stone: true, recon: true }
+  ];
+  var cr = el("cardRow");
+  ROW.forEach(function (o) {
+    var box = document.createElement("div");
+    box.style.textAlign = "center";
+    box.appendChild(card(o));
+    var l = document.createElement("div");
+    l.style.cssText = "font-size:10.5px;color:var(--psub);margin-top:7px;max-width:104px";
+    l.textContent = o.stone ? "turned to stone, cannot be discarded"
+      : o.suit === "basket" ? "hover it" : o.suit === "save" ? "grows, never falls"
+      : o.suit === "spec" ? "nothing behind it yet" : o.suit === "lend" ? "they pay you back" : "one company";
+    box.appendChild(l);
+    cr.appendChild(box);
+  });
+
+  // ---------------------------------------------------------- sector demo
+  var SECDEMO = [
+    { n: "Mega Bank", pip: SEC.bank, c: "#30D158", before: 5, after: 1 },
+    { n: "The Insurance Giant", pip: SEC.bank, c: "#BF5AF2", before: 4, after: 1 },
+    { n: "The Old Bank", pip: SEC.bank, c: "#5E5CE6", before: 4, after: 0 },
+    { n: "Everything Mart", pip: SEC.retail, c: "#64D2FF", before: 4, after: 4 },
+    { n: "Giant Oil", pip: SEC.energy, c: "#8E8E93", before: 4, after: 3 }
+  ];
+  var sd = el("sectorDemo");
+  function drawSectors(after) {
+    sd.innerHTML = "";
+    SECDEMO.forEach(function (a) {
+      var wrap = document.createElement("div");
+      wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:6px";
+      var col = document.createElement("div");
+      col.className = "col";
+      column([{ n: after ? a.after : a.before, color: a.c }], col);
+      col.style.minHeight = "86px";
+      col.style.justifyContent = "flex-start";
+      wrap.appendChild(col);
+      var p = document.createElement("span");
+      p.className = "pip";
+      p.style.background = a.pip;
+      p.title = a.n;
+      wrap.appendChild(p);
+      sd.appendChild(wrap);
+    });
+  }
+  drawSectors(false);
+  var secOn = false;
+  sd.parentElement.style.cursor = "pointer";
+  sd.parentElement.title = "tap to resolve September 2008";
+  sd.parentElement.addEventListener("click", function () { secOn = !secOn; drawSectors(secOn); });
+
+  // ---------------------------------------------------------- the board
+  var MKT = [
+    { name: "Mega Bank", suit: "own", pip: SEC.bank, color: "#30D158", price: "$43.24", shares: "2.3 shares", move: -6.2, worth: 1 },
+    { name: "The Carmaker", suit: "own", pip: SEC.ind, color: "#A2845E", price: "$8.87", shares: "11.3 shares", move: -3.1, worth: 1 },
+    { name: "Fruit Computers", suit: "own", pip: SEC.tech, color: "#0A84FF", price: "$189.95", shares: "0.5 shares", move: 4.4, worth: 2 },
+    { name: "The Index Fund", suit: "basket", pip: "#8E8E93", color: "#0A84FF", price: "$2,219.19", shares: "0.05 units", move: 1.1, worth: 2 },
+    { name: "Government Bond", suit: "lend", pip: "#2A72D6", color: "#5AA2F5", price: "$98.40", shares: "1.0 bond", move: 0.3, worth: 2 },
+    { name: "Everything Mart", suit: "own", pip: SEC.retail, color: "#64D2FF", price: "$45.87", shares: "2.2 shares", move: 0.9, worth: 2 }
+  ];
+  var mkt = el("mktBoard");
+  MKT.forEach(function (o) { mkt.appendChild(card(o)); });
+
+  var tbl = el("tblBoard");
+  tbl.appendChild(stack({ name: "Fruit Computers", suit: "own", pip: SEC.tech, color: "#0A84FF", price: "$189.95", shares: "0.5 shares", worth: 2 }, 3));
+  tbl.appendChild(stack({ name: "The Index Fund", suit: "basket", pip: "#8E8E93", color: "#0A84FF", price: "$2,219.19", shares: "0.05 units", worth: 2 }, 2));
+
+  var tray = el("trayBoard");
+  for (var t = 0; t < 6; t++) tray.appendChild(blk(CASH, "cash"));
+
+  var disc = el("discBoard");
+  for (var d = 0; d < 3; d++) {
+    var back = document.createElement("div");
+    back.style.cssText = "position:absolute;left:" + (d * 3) + "px;top:" + (d * 3) + "px;width:48px;height:64px;border-radius:6px;background:#EEF1F5;border:1px solid rgba(0,0,0,0.12)";
+    disc.appendChild(back);
+  }
+
+  // the wall: history columns plus the target line
+  // a whole chapter of monthly columns, so the wall reads as the record it is
+  var WALLCOLS = (function () {
+    var out = [], N = 100;
+    for (var i = 0; i < N; i++) {
+      var wave = Math.sin(i * 0.16) * 1.5 + Math.sin(i * 0.061) * 1.2;
+      var fruit = Math.max(0, Math.round(3 + i * 0.11 + wave));
+      var rail = Math.max(0, Math.round(1 + i * 0.055 + wave * 0.5));
+      var cash = Math.max(1, 7 - Math.round(i * 0.06));
+      if (i > 58 && i < 74) { var k = 1 - 0.55 * Math.sin(((i - 58) / 16) * Math.PI); fruit = Math.round(fruit * k); rail = Math.round(rail * k); }
+      out.push([fruit, rail, cash]);
+    }
+    return out;
+  })();
+  var wallBoard = el("wallBoard");
+  function drawWall() {
+    wallBoard.innerHTML = "";
+    var strip = document.createElement("div");
+    strip.style.cssText = "display:flex;gap:2px;align-items:flex-end;height:100%;width:100%";
+    WALLCOLS.forEach(function (c, i) {
+      var col = document.createElement("div");
+      col.className = "col w6";
+      column([
+        { n: c[0], color: "#0A84FF" },
+        { n: c[1], color: "#A2845E" },
+        { n: c[2], color: CASH, cls: "cash" }
+      ], col);
+      col.style.opacity = i === WALLCOLS.length - 1 ? "1" : "0.92";
+      strip.appendChild(col);
+    });
+    wallBoard.appendChild(strip);
+
+    var line = document.createElement("div");
+    line.style.cssText = "position:absolute;left:0;right:0;bottom:" + (12 + 26 * 7.5 + 5 * 2.5) + "px;border-top:1.5px dashed #B57A00;pointer-events:none";
+    var lab = document.createElement("span");
+    lab.style.cssText = "position:absolute;right:8px;top:-16px;font-size:10.5px;font-weight:700;color:#B57A00";
+    lab.textContent = "$1,300";
+    line.appendChild(lab);
+    wallBoard.appendChild(line);
+  }
+  drawWall();
+
+  var OVL = {
+    chapter: '<div><div class="h">Chapter 6 &middot; The panic</div><div class="s">2007 to 2015, real prices.<br>target <b>$1,300</b> &middot; 9 turns &middot; one block is <b>$50</b><br>You start with 20 blocks and the cards you kept.</div><button class="btn">Begin</button></div>',
+    news: null,
+    unit: '<div><div class="h">You outgrew this unit</div><div class="s">Four blocks became one, and four cards of a name became one card.<br>From now on, one block is <b>$200</b>.</div><button class="btn">Continue</button></div>',
+    over: '<div><div class="h">You finished at $700 of $1,300.</div><div class="s">Turn 3, you put 14 of your 16 blocks on one card.<br>Turn 6, that card lost two thirds.</div><button class="btn">New run, start at chapter 5</button></div>'
+  };
+
+  function setOverlay(v) {
+    var old = wallBoard.querySelector(".ovl");
+    if (old) old.remove();
+    if (v === "none") return;
+    var o = document.createElement("div");
+    o.className = "ovl";
+    if (v === "news") {
+      o.innerHTML = el("frontPage").outerHTML.replace(/id="frontPage"/, "");
+      o.querySelector(".fp").style.transform = "scale(0.66)";
+      o.querySelector(".fp").style.transformOrigin = "center";
+    } else {
+      o.innerHTML = OVL[v];
+    }
+    wallBoard.appendChild(o);
+  }
+  bindSeg("segOvl", setOverlay);
+
+  var outlined = false;
+  el("btnOutline").addEventListener("click", function () {
+    outlined = !outlined;
+    [].forEach.call(document.querySelectorAll("#board .reg"), function (r) {
+      r.setAttribute("data-out", outlined ? "1" : "0");
+    });
+    this.textContent = outlined ? "Hide regions" : "Show regions";
+  });
+
+  // ---------------------------------------------------------- the resolve
+  var rw = el("resolveWall"), rn = el("resolveNum"), rs = el("resolveState");
+  var resolveTimer = null;
+  function resolveDraw(n, cash) {
+    column([{ n: n - cash, color: "#0A84FF" }, { n: cash, color: CASH, cls: "cash" }], rw);
+    rn.textContent = String(n);
+  }
+  resolveDraw(18, 4);
+  el("btnResolve").addEventListener("click", function () {
+    if (resolveTimer) return;
+    var n = 18, target = 25, cash = 4;
+    rs.textContent = "Resolve. The year plays out, and the blocks land one at a time.";
+    resolveTimer = setInterval(function () {
+      n++;
+      resolveDraw(n, cash);
+      if (n >= target) {
+        clearInterval(resolveTimer); resolveTimer = null;
+        rs.textContent = "Read. Seven blocks arrived. Your money kept working.";
+        setTimeout(function () {
+          resolveDraw(18, 4);
+          rs.textContent = "Plan. Drag blocks onto cards, or cards to the discard.";
+        }, 2400);
+      }
+    }, 110);
+  });
+
+  // ---------------------------------------------------------- the fuse
+  var ff = el("fuseFrom"), ft = el("fuseTo");
+  function fuseReset() {
+    column([{ n: 24, color: "#0A84FF" }], ff);
+    ff.style.transition = "none"; ff.style.opacity = "1"; ff.style.transform = "none";
+    ft.innerHTML = "";
+  }
+  fuseReset();
+  el("btnFuse").addEventListener("click", function () {
+    fuseReset();
+    setTimeout(function () {
+      ff.style.transition = "opacity .9s ease, transform .9s ease";
+      ff.style.opacity = "0.2";
+      ff.style.transform = "translateY(28px) scaleY(0.25)";
+      column([{ n: 6, color: "#0A84FF" }], ft);
+      [].forEach.call(ft.children, function (c, i) {
+        c.animate([{ opacity: 0, transform: "translateY(-14px) scale(0.5)" }, { opacity: 1, transform: "none" }],
+          { duration: 320, delay: 260 + i * 70, fill: "backwards", easing: "cubic-bezier(.2,.9,.3,1)" });
+      });
+    }, 40);
+  });
+
+  // ---------------------------------------------------------- run over blocks
+  column([{ n: 12, color: "#30D158" }], el("overFrom"));
+  el("overFrom").style.cssText = "display:inline-flex;gap:2px;flex-direction:row;align-items:center";
+  column([{ n: 4, color: "#30D158" }], el("overTo"));
+  el("overTo").style.cssText = "display:inline-flex;gap:2px;flex-direction:row;align-items:center";
+
+  // ---------------------------------------------------------- front page taps
+  [].forEach.call(document.querySelectorAll("#frontPage .hl"), function (h) {
+    h.addEventListener("click", function () {
+      var open = h.getAttribute("data-open") === "1";
+      h.setAttribute("data-open", open ? "0" : "1");
+      h.querySelector(".more").textContent = open ? "tap for more" : "";
+    });
+  });
+
+  // ---------------------------------------------------------- collector box
+  var BOX = [
+    { g: "◉", l: "Savings", got: 1 }, { g: "◉", l: "Bond", got: 1 },
+    { g: "◉", l: "Company", got: 1 }, { g: "✦", l: "Index fund", got: 1 },
+    { g: "◉", l: "Speculation", got: 0 }, { g: "◉", l: "Property", got: 0 },
+    { g: "★", l: "Wide open", got: 1 }, { g: "★", l: "Iron hand", got: 1 },
+    { g: "★", l: "Bought the fear", got: 0 }, { g: "★", l: "Still standing", got: 1 },
+    { g: "★", l: "Never idle", got: 0 }, { g: "★", l: "Stone carrier", got: 0 },
+    { g: "★", l: "Long hold", got: 0 }
+  ];
+  var box = el("boxDemo");
+  BOX.forEach(function (b) {
+    var s = document.createElement("div");
+    s.className = "slot" + (b.got ? "" : " locked");
+    s.innerHTML = '<span class="g">' + b.g + '</span><span class="l">' + (b.got ? b.l : "• • •") + "</span>";
+    s.title = b.got ? b.l : "not earned yet";
+    box.appendChild(s);
+  });
+
+  // ---------------------------------------------------------- helper
+  function bindSeg(id, fn) {
+    var g = document.getElementById(id);
+    if (!g) return;
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      [].forEach.call(g.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      fn(b.getAttribute("data-v"));
+    });
+  }
+})();
+</script>
+</body>
+</html>
