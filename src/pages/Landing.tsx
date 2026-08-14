@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-// The demo's front door: three games, one curriculum, one honest engine.
+// The demo's front door: four games, one curriculum, one honest engine.
 
 const S = (name: string) => `${import.meta.env.BASE_URL}sprites/t/${name}.png`;
 
@@ -45,18 +45,50 @@ function TallyMotif() {
   );
 }
 
+// Guess the Stock's motif, in that game's own language: a small terminal well
+// with one green line climbing across it, drawn the way the game draws.
+const GUESS_LINE =
+  "M10,74 L20,70 L28,76 L38,66 L46,69 L56,58 L64,62 L74,48 L82,53 L92,38 L100,43 L108,27";
+
+function GuessMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <rect x="3" y="14" width="112" height="76" rx="6" fill="#0C0F14" stroke="#1F2733" />
+      <path d="M10,40 H108 M10,60 H108" stroke="#1B2330" strokeWidth="1" />
+      <path d="M38,20 V84 M74,20 V84" stroke="#1B2330" strokeWidth="1" />
+      <path d={`${GUESS_LINE} L108,84 L10,84 Z`} fill="rgba(74,222,128,0.12)" />
+      <path d={GUESS_LINE} fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="108" cy="27" r="3" fill="#4ADE80" />
+    </svg>
+  );
+}
+
 export default function Landing() {
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
       <main className="max-w-4xl mx-auto px-6 pt-16 pb-20">
         <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Financial literacy games</h1>
         <p className="mt-3 text-[17px] max-w-2xl" style={{ color: "#6e6e73" }}>
-          Three visually beautiful games teach investing concepts and fundamentals. Each one
+          Four visually beautiful games teach investing concepts and fundamentals. Each one
           turns the market into something you can see and play with: shares, prices, crashes,
           and what it takes to hold through them.
         </p>
 
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <Link to="/guess" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <GuessMotif />
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: "#2C8A55" }}>New game</div>
+            <div className="text-[22px] font-semibold tracking-tight">Guess the Stock</div>
+            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+              Guess the company from one real year of its stock chart. Guesses are free, five
+              hints wait behind one button, and every answer comes with the one line of history
+              that made the year look like that.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Guess the Stock</div>
+          </Link>
+
           <Link to="/tally" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
             <div className="h-28 flex items-center justify-center mb-4">
               <TallyMotif />

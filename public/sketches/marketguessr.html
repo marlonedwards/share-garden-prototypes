@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Guess the stock: one puzzle, three looks</title>
+<style>
+:root {
+  color-scheme: light;
+  --ground:      #F1F3F6;
+  --grid:        #DFE4EC;
+  --grid-strong: #CFD6E2;
+  --surface:     #FFFFFF;
+  --line:        #D6DCE6;
+  --line-soft:   #E8ECF3;
+  --ink:         #14171C;
+  --ink-2:       #4E586A;
+  --ink-3:       #7F8A9B;
+  --accent:      #2a78d6;
+  --display: "Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --ground: #101317; --grid: #1C2128; --grid-strong: #242B34;
+    --surface: #171B21;
+    --line: #2A313B; --line-soft: #222831;
+    --ink: #EEF1F6; --ink-2: #A3AEBE; --ink-3: #78838F;
+    --accent: #5A9BEE;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background-color: var(--ground);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px, 96px 96px, 96px 96px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 96px; display: flex; flex-direction: column; gap: 44px; }
+.masthead { padding: 72px 0 8px; display: flex; flex-direction: column; gap: 18px; }
+.eyebrow { font-family: var(--display); font-size: 13.5px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 5.4vw, 54px); letter-spacing: -0.033em; line-height: 1.05; margin: 0; max-width: 24ch; }
+.standfirst { font-size: 20px; line-height: 1.55; color: var(--ink-2); max-width: 66ch; margin: 0; }
+.standfirst strong { color: var(--ink); font-weight: 600; }
+section { display: flex; flex-direction: column; gap: 20px; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 27px; letter-spacing: -0.02em; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.cap { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
+.cap b { color: var(--ink-2); font-weight: 650; }
+.trio { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.mockcol { display: flex; flex-direction: column; gap: 10px; width: 344px; flex: none; }
+.mocklabel { font-family: var(--display); font-size: 12px; font-weight: 700; color: var(--ink-3); }
+.spec { width: 100%; border-collapse: collapse; font-family: var(--display); font-size: 13.5px; }
+.spec th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12.5px; padding: 10px 12px 7px; border-bottom: 1px solid var(--line-soft); }
+.spec td { padding: 9px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.spec tr:last-child td { border-bottom: 0; }
+.spec td.k { font-weight: 650; white-space: nowrap; }
+.foot { font-family: var(--display); font-size: 13px; color: var(--ink-3); padding-top: 8px; }
+ul.delta { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+ul.delta li { font-family: var(--display); font-size: 14px; line-height: 1.5; display: flex; gap: 10px; }
+ul.delta li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; margin-top: 7px; }
+
+/* ============ variant A: the broadsheet ============ */
+.vA {
+  width: 344px; background: #FBF8F1; border: 1px solid #D8D2C4; border-radius: 4px;
+  padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 11px;
+  font-family: Georgia, "Times New Roman", serif; color: #1E1B16;
+}
+.vA .mast { display: flex; align-items: baseline; border-bottom: 2.5px solid #1E1B16; padding-bottom: 7px; }
+.vA .mast .t { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.vA .mast .no { margin-left: auto; font-size: 11px; font-style: italic; color: #6E675A; }
+.vA .q { font-size: 12.5px; font-style: italic; color: #4E483C; }
+.vA .scoreline { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: #6E675A; }
+.vA .scoreline .pips { display: flex; gap: 3.5px; }
+.vA .scoreline .pips i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid #9A927F; display: block; }
+.vA .scoreline .pips i.used { background: #1E1B16; border-color: #1E1B16; }
+.vA .scoreline .par { margin-left: auto; font-style: italic; }
+.vA .chartbox { border: 1px solid #D8D2C4; background: #FDFBF6; padding: 6px 4px 2px; }
+.vA .revealed { display: flex; flex-direction: column; gap: 4px; }
+.vA .rline { font-size: 11.5px; color: #4E483C; display: flex; gap: 7px; align-items: baseline; }
+.vA .rline::before { content: "\2713"; font-size: 10px; color: #8A8272; }
+.vA .rline b { font-weight: 700; }
+.vA .guessrow { display: flex; gap: 8px; }
+.vA .guessbox {
+  flex: 1; border: 1px solid #B7AF9C; background: #fff; padding: 9px 12px; font-size: 13px;
+  color: #8A8272; display: flex; align-items: center; gap: 7px;
+}
+.vA .guessbox .caret { width: 1px; height: 14px; background: #1E1B16; }
+.vA .hintbtn {
+  border: 1px solid #1E1B16; background: #1E1B16; color: #FBF8F1; font-family: inherit;
+  font-size: 12px; font-weight: 700; padding: 9px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.vA .hintbtn small { font-size: 8.5px; font-weight: 400; font-style: italic; opacity: 0.75; }
+.vA .past { font-size: 11px; color: #8A8272; font-style: italic; }
+.vA .past b { color: #4E483C; font-weight: 400; }
+
+/* ============ variant B: the terminal ============ */
+.vB {
+  width: 344px; background: #0C0F14; border: 1px solid #1F2733; border-radius: 8px;
+  padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 10px;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; color: #D7DEE8;
+}
+.vB .mast { display: flex; align-items: baseline; }
+.vB .mast .t { font-size: 13px; font-weight: 700; color: #E8EDF4; letter-spacing: 0.01em; }
+.vB .mast .no { margin-left: auto; font-size: 10px; color: #5B6979; }
+.vB .scoreline { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #5B6979; }
+.vB .scoreline .pips { display: flex; gap: 4px; }
+.vB .scoreline .pips i { width: 8px; height: 8px; border: 1px solid #3A4656; display: block; }
+.vB .scoreline .pips i.used { background: #E8B84B; border-color: #E8B84B; }
+.vB .scoreline .par { margin-left: auto; color: #E8B84B; }
+.vB .chartbox { border: 1px solid #1F2733; background: #090C10; padding: 6px 4px 2px; border-radius: 4px; }
+.vB .revealed { display: flex; flex-direction: column; gap: 4px; }
+.vB .rline { font-size: 10.5px; color: #93A1B4; display: flex; gap: 7px; align-items: baseline; }
+.vB .rline::before { content: ">"; color: #4ADE80; font-size: 10px; }
+.vB .rline b { color: #E8EDF4; font-weight: 700; }
+.vB .guessrow { display: flex; gap: 8px; }
+.vB .guessbox {
+  flex: 1; border: 1px solid #2A3546; background: #10151D; border-radius: 4px; padding: 9px 12px;
+  font-size: 12px; color: #5B6979; display: flex; align-items: center; gap: 7px;
+}
+.vB .guessbox .caret { width: 6px; height: 13px; background: #4ADE80; }
+.vB .hintbtn {
+  border: 1px solid #4ADE80; background: rgba(74,222,128,0.1); color: #4ADE80; font-family: inherit;
+  font-size: 11px; font-weight: 700; padding: 9px 13px; border-radius: 4px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.vB .hintbtn small { font-size: 8px; font-weight: 400; opacity: 0.8; }
+.vB .past { font-size: 10px; color: #5B6979; }
+.vB .past b { color: #93A1B4; font-weight: 400; }
+
+/* ============ variant C: the games page ============ */
+.vC {
+  width: 344px; background: #FFFFFF; border: 2.5px solid #121213; border-radius: 10px;
+  padding: 16px 15px 14px; display: flex; flex-direction: column; gap: 11px;
+  font-family: var(--display); color: #121213;
+}
+.vC .mast { display: flex; align-items: center; }
+.vC .mast .t { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.vC .mast .no { margin-left: auto; font-size: 11px; font-weight: 700; color: #787C7E; }
+.vC .q { font-size: 12.5px; font-weight: 600; color: #3A3A3C; }
+.vC .scoreline { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #787C7E; }
+.vC .scoreline .pips { display: flex; gap: 4px; }
+.vC .scoreline .pips i { width: 13px; height: 13px; border-radius: 3px; border: 2px solid #D3D6DA; display: block; }
+.vC .scoreline .pips i.used { background: #121213; border-color: #121213; }
+.vC .scoreline .par { margin-left: auto; color: #B59F3B; }
+.vC .chartbox { border: 2px solid #121213; border-radius: 6px; background: #fff; padding: 6px 4px 2px; }
+.vC .revealed { display: flex; flex-direction: column; gap: 5px; }
+.vC .rline { font-size: 12px; font-weight: 650; color: #3A3A3C; display: flex; gap: 8px; align-items: baseline; }
+.vC .rline::before { content: "\2713"; font-size: 11px; color: #6AAA64; font-weight: 800; }
+.vC .rline b { font-weight: 800; }
+.vC .guessrow { display: flex; gap: 8px; }
+.vC .guessbox {
+  flex: 1; border: 2.5px solid #121213; border-radius: 8px; padding: 10px 12px; font-size: 13.5px;
+  font-weight: 700; color: #787C7E; display: flex; align-items: center; gap: 8px;
+}
+.vC .guessbox .caret { width: 2px; height: 15px; background: #121213; }
+.vC .hintbtn {
+  border: 0; background: #E9C46A; color: #121213; font-family: inherit;
+  font-size: 12.5px; font-weight: 800; padding: 10px 15px; border-radius: 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  box-shadow: 0 2.5px 0 #B58E36;
+}
+.vC .hintbtn small { font-size: 8.5px; font-weight: 700; opacity: 0.75; }
+.vC .past { font-size: 11px; font-weight: 650; color: #787C7E; }
+.vC .past b { color: #3A3A3C; font-weight: 750; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Concept sketch, August 13 &middot; fifth draft: your five notes applied</div>
+  <h1>Guess the stock: one puzzle, three looks</h1>
+  <p class="standfirst">Rules frozen: full unlabeled year, free guesses, hints count against par, real names. Same mid-round moment (two hints bought, two wrong guesses made) in three skins. <strong>Pick a direction or mix pieces.</strong></p>
+</header>
+
+<section class="panel">
+  <h2 style="font-size:18px;">Your five notes, applied</h2>
+  <ul class="delta">
+    <li>The name is gone. The header just says what to do: guess the stock. That also made "Whose year is this?" redundant, so it is gone too.</li>
+    <li>The size hint is now a real number: the company's market cap at the end of the mystery year.</li>
+    <li>The Hint button says Hint and nothing else. All stroke talk is deleted; par is simply a hint count, and fewer is better.</li>
+    <li>You can type the company name or its ticker symbol.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>The same moment, three ways</h2>
+  <div class="trio">
+
+    <!-- A: broadsheet -->
+    <div class="mockcol">
+      <div class="mocklabel">A. The broadsheet: a financial paper's daily puzzle</div>
+      <div class="vA">
+        <div class="mast"><span class="t">Guess the stock</span><span class="no">No. 47</span></div>
+        <div class="scoreline">
+          <span>hints</span>
+          <span class="pips"><i class="used"></i><i class="used"></i><i></i><i></i><i></i></span>
+          <span class="par">par 3</span>
+        </div>
+        <div class="chartbox"><svg class="gen" data-skin="paper" width="304" height="168" viewBox="0 0 304 168"></svg></div>
+        <div class="revealed">
+          <div class="rline">sector: <b>Technology</b></div>
+          <div class="rline">size: <b>$174B at year end</b></div>
+        </div>
+        <div class="guessrow">
+          <div class="guessbox">Company or ticker <span class="caret"></span></div>
+          <button class="hintbtn">Hint</button>
+        </div>
+        <div class="past">Guessed so far: <b>Google</b>, <b>Amazon</b></div>
+      </div>
+      <p class="cap"><b>Cream paper, hairline rules, ink chart.</b> The crossword-page energy of a financial daily. Feels adult, collectible, quiet.</p>
+    </div>
+
+    <!-- B: terminal -->
+    <div class="mockcol">
+      <div class="mocklabel">B. The terminal: the chart as traders actually see it</div>
+      <div class="vB">
+        <div class="mast"><span class="t">guess the stock</span><span class="no">no. 47</span></div>
+        <div class="scoreline">
+          <span>hints</span>
+          <span class="pips"><i class="used"></i><i class="used"></i><i></i><i></i><i></i></span>
+          <span class="par">par 3</span>
+        </div>
+        <div class="chartbox"><svg class="gen" data-skin="term" width="308" height="168" viewBox="0 0 308 168"></svg></div>
+        <div class="revealed">
+          <div class="rline">sector: <b>technology</b></div>
+          <div class="rline">size: <b>$174B at year end</b></div>
+        </div>
+        <div class="guessrow">
+          <div class="guessbox">company or ticker <span class="caret"></span></div>
+          <button class="hintbtn">hint</button>
+        </div>
+        <div class="past">guessed: <b>google</b> &middot; <b>amazon</b></div>
+      </div>
+      <p class="cap"><b>Dark, dense, credible.</b> The mystery chart looks exactly like the thing it is: market data on a screen.</p>
+    </div>
+
+    <!-- C: games page -->
+    <div class="mockcol">
+      <div class="mocklabel">C. The games page: NYT-games energy, chart kept serious</div>
+      <div class="vC">
+        <div class="mast"><span class="t">Guess the stock</span><span class="no">No. 47</span></div>
+        <div class="scoreline">
+          <span>hints</span>
+          <span class="pips"><i class="used"></i><i class="used"></i><i></i><i></i><i></i></span>
+          <span class="par">par 3</span>
+        </div>
+        <div class="chartbox"><svg class="gen" data-skin="games" width="302" height="168" viewBox="0 0 302 168"></svg></div>
+        <div class="revealed">
+          <div class="rline">sector: <b>Technology</b></div>
+          <div class="rline">size: <b>$174B at year end</b></div>
+        </div>
+        <div class="guessrow">
+          <div class="guessbox">Company or ticker <span class="caret"></span></div>
+          <button class="hintbtn">Hint</button>
+        </div>
+        <div class="past">Guessed so far: <b>Google</b>, <b>Amazon</b></div>
+      </div>
+      <p class="cap"><b>White, chunky, tile-y.</b> Wordle's household grammar: heavy borders, square pips, one warm yellow button. The chart inside stays a straight serious chart.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The frozen rules</h2>
+  <div class="panel">
+    <table class="spec">
+      <tr><th>Piece</th><th>How it works</th></tr>
+      <tr><td class="k">The mystery</td><td>One real company, one real calendar year of daily closes, shown whole from the first second. Axis reads percent from January and the months; no year, no dollars, no ticker.</td></tr>
+      <tr><td class="k">Guessing</td><td>Type the company name or its ticker symbol. Free and unlimited; wrong guesses shake and join a quiet plain-text line.</td></tr>
+      <tr><td class="k">The Hint button</td><td>One button. Each press deals the next hint off the ladder: 1. Widen (a real year of context each side, mystery year shaded). 2. Sector. 3. The year, stamped onto the axis. 4. Price, real dollars replace the percents. 5. Size, the market cap at the end of the year.</td></tr>
+      <tr><td class="k">Par</td><td>Par is a hint count, usually 3. Solve with fewer and you finished under par; that is the brag.</td></tr>
+      <tr><td class="k">The pool</td><td>Curated icons and infamy, real names, dead companies included. Expands later.</td></tr>
+      <tr><td class="k">Daily shell</td><td>Same puzzle for everyone, streaks, share dots equal your hint count, practice archive behind one link. The game carries no name on screen; marketguessr stays only as the working file name.</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer class="foot">Concept sketch, fifth draft; nothing is built. All three charts render the same seeded series so only the skin differs. Companion game: Hold (docs/hold-spec.md).</footer>
+
+</div>
+
+<script>
+(function () {
+  // Seeded generator so every load and screenshot renders the identical series.
+  function lcg(seed) {
+    var s = seed >>> 0;
+    return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  }
+  // One year, 252 trading days, Apple-2007-like arc: grind, spring dip, monster autumn, November shakeout.
+  function makeSeries(seed) {
+    var rnd = lcg(seed);
+    var anchors = [[0,100],[38,109],[62,99],[95,112],[130,124],[160,143],[185,168],[205,196],[222,181],[238,205],[251,216]];
+    var pts = [], v = 0;
+    for (var d = 0; d <= 251; d++) {
+      var a0 = anchors[0], a1 = anchors[anchors.length - 1];
+      for (var i = 0; i < anchors.length - 1; i++) {
+        if (d >= anchors[i][0] && d <= anchors[i + 1][0]) { a0 = anchors[i]; a1 = anchors[i + 1]; break; }
+      }
+      var t = (d - a0[0]) / Math.max(1, a1[0] - a0[0]);
+      var base = a0[1] + (a1[1] - a0[1]) * (t * t * (3 - 2 * t));
+      var noise = (rnd() + rnd() - 1) * 2.1;
+      v = 0.72 * v + noise;
+      pts.push(base * (1 + v / 100));
+    }
+    return pts;
+  }
+  var pts = makeSeries(20070129);
+  var min = Math.min.apply(null, pts), max = Math.max.apply(null, pts);
+
+  var skins = {
+    paper: { grid: '#E4DCC9', axis: '#8A8272', line: '#1E1B16', lw: 1.4, fill: null },
+    term:  { grid: '#1B2330', axis: '#5B6979', line: '#4ADE80', lw: 1.5, fill: 'rgba(74,222,128,0.07)' },
+    games: { grid: '#E8EAED', axis: '#787C7E', line: '#121213', lw: 1.8, fill: null }
+  };
+
+  document.querySelectorAll('svg.gen').forEach(function (svg) {
+    var skin = skins[svg.getAttribute('data-skin')];
+    var W = +svg.getAttribute('width'), H = +svg.getAttribute('height');
+    var padL = 34, padR = 8, padT = 8, chartB = H - 18, axY = H - 5;
+    var iw = W - padL - padR;
+    function x(d) { return padL + (d / 251) * iw; }
+    function y(p) { return padT + (1 - (p - min) / (max - min)) * (chartB - padT); }
+    var ns = 'http://www.w3.org/2000/svg';
+    function el(name, attrs) {
+      var e = document.createElementNS(ns, name);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      svg.appendChild(e); return e;
+    }
+    // horizontal gridlines labeled as percent from January (100 = 0%)
+    [[100, '0%'], [150, '+50%'], [200, '+100%']].forEach(function (g) {
+      var lvl = g[0];
+      if (lvl < min || lvl > max) return;
+      el('line', { x1: padL, y1: y(lvl), x2: W - padR, y2: y(lvl), stroke: skin.grid, 'stroke-width': 1 });
+      var t = el('text', { x: padL - 4, y: y(lvl) + 3, fill: skin.axis, 'font-size': 8, 'text-anchor': 'end' });
+      t.textContent = g[1];
+    });
+    // vertical month gridlines; labels at Jan Apr Jul Oct and Dec at the end
+    var labels = { 0: 'Jan', 3: 'Apr', 6: 'Jul', 9: 'Oct' };
+    for (var m = 0; m < 12; m++) {
+      var d = Math.round(m * 251 / 12);
+      el('line', { x1: x(d), y1: padT, x2: x(d), y2: chartB, stroke: skin.grid, 'stroke-width': m % 3 === 0 ? 1 : 0.5 });
+      if (labels[m] !== undefined) {
+        var t2 = el('text', { x: x(d) + 2, y: axY, fill: skin.axis, 'font-size': 8 });
+        t2.textContent = labels[m];
+      }
+    }
+    var tDec = el('text', { x: W - padR, y: axY, fill: skin.axis, 'font-size': 8, 'text-anchor': 'end' });
+    tDec.textContent = 'Dec';
+    // the price line, all 252 closes
+    var path = 'M' + x(0) + ',' + y(pts[0]);
+    for (var d3 = 1; d3 < 252; d3++) path += 'L' + x(d3).toFixed(1) + ',' + y(pts[d3]).toFixed(1);
+    if (skin.fill) {
+      el('path', { d: path + 'L' + x(251) + ',' + chartB + 'L' + x(0) + ',' + chartB + 'Z', fill: skin.fill, stroke: 'none' });
+    }
+    el('path', { d: path, fill: 'none', stroke: skin.line, 'stroke-width': skin.lw, 'stroke-linejoin': 'round' });
+    el('circle', { cx: x(251), cy: y(pts[251]), r: 2.4, fill: skin.line });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>The next games: real money, proven forms</title>
+<style>
+:root {
+  color-scheme: light;
+  --ground:      #F1F3F6;
+  --grid:        #DFE4EC;
+  --grid-strong: #CFD6E2;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7F9FC;
+  --line:        #D6DCE6;
+  --line-soft:   #E8ECF3;
+  --ink:         #14171C;
+  --ink-2:       #4E586A;
+  --ink-3:       #7F8A9B;
+  --accent:      #2a78d6;
+  --good:        #1baf7a;
+  --bad:         #C4362F;
+  --display: "Helvetica Neue", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --ground: #101317; --grid: #1C2128; --grid-strong: #242B34;
+    --surface: #171B21; --surface-2: #1B2029;
+    --line: #2A313B; --line-soft: #222831;
+    --ink: #EEF1F6; --ink-2: #A3AEBE; --ink-3: #78838F;
+    --accent: #5A9BEE; --good: #199e70; --bad: #E06A62;
+  }
+}
+
+/* Product palette: every mock is the light game, whatever theme the page is in. */
+.p {
+  --pink:   #1D1D1F;
+  --psub:   #6E6E73;
+  --pline:  rgba(0,0,0,0.10);
+  --gold:   #B57A00;
+  --paccent:#0071E3;
+  --up:     #1a8a52;
+  --dn:     #c0392b;
+  --tech:   #2A72D6;
+  --energy: #D98A00;
+  --food:   #2E9E63;
+  --banks:  #7A4FC9;
+  --fund:   #B57A00;
+  color: var(--pink);
+  font-family: var(--display);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background-color: var(--ground);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px, 96px 96px, 96px 96px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px 96px; display: flex; flex-direction: column; gap: 44px; }
+.masthead { padding: 72px 0 8px; display: flex; flex-direction: column; gap: 18px; }
+.eyebrow {
+  font-family: var(--display); font-size: 13.5px; font-weight: 600;
+  color: var(--accent); display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+h1 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(34px, 5.4vw, 54px); letter-spacing: -0.033em; line-height: 1.05;
+  margin: 0; text-wrap: balance; max-width: 22ch;
+}
+.standfirst { font-size: 20px; line-height: 1.55; color: var(--ink-2); max-width: 64ch; margin: 0; }
+.standfirst strong { color: var(--ink); font-weight: 600; }
+section { display: flex; flex-direction: column; gap: 20px; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 27px; letter-spacing: -0.02em; margin: 0; }
+h3 { font-family: var(--display); font-weight: 650; font-size: 18px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--ink-2); }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.panel.flush { padding: 22px; overflow-x: auto; align-items: flex-start; }
+.cap { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); line-height: 1.55; max-width: 80ch; }
+.cap b { color: var(--ink-2); font-weight: 650; }
+ul.laws { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+ul.laws li { font-family: var(--display); font-size: 14.5px; line-height: 1.5; display: flex; gap: 12px; }
+ul.laws li .k { color: var(--accent); font-weight: 700; min-width: 18px; flex: none; font-variant-numeric: tabular-nums; }
+.pair { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.trio { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.mockcol { display: flex; flex-direction: column; gap: 10px; }
+.mocklabel { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: none; color: var(--ink-3); }
+
+/* ================= board mocks ================= */
+
+.boardbox {
+  width: 442px; background: #FAF9F7; border: 1px solid var(--pline); border-radius: 14px;
+  padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: none;
+}
+.boardbox .hdr { display: flex; align-items: baseline; gap: 10px; padding: 0 2px; }
+.boardbox .hdr .t { font-size: 13px; font-weight: 750; }
+.boardbox .hdr .s { font-size: 10.5px; font-weight: 600; color: var(--psub); margin-left: auto; font-variant-numeric: tabular-nums; }
+.ring {
+  position: relative;
+  display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(7, 1fr);
+  gap: 3px; width: 416px; height: 416px;
+}
+.sp {
+  background: #fff; border: 1px solid var(--pline); border-radius: 6px;
+  padding: 3px 4px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; position: relative;
+}
+.sp .sec { height: 4px; border-radius: 2px; margin-bottom: 1px; }
+.sp.tech .sec { background: var(--tech); }
+.sp.energy .sec { background: var(--energy); }
+.sp.food .sec { background: var(--food); }
+.sp.banks .sec { background: var(--banks); }
+.sp.fund .sec { background: repeating-linear-gradient(90deg, var(--fund) 0 4px, #E4C98A 4px 8px); }
+.sp .nm { font-size: 7.5px; font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; }
+.sp .px { font-size: 8px; font-weight: 750; font-variant-numeric: tabular-nums; margin-top: auto; }
+.sp .px em { font-style: normal; font-weight: 650; font-size: 7px; }
+.sp .px em.up { color: var(--up); }
+.sp .px em.dn { color: var(--dn); }
+.sp .rent { font-size: 7px; font-weight: 650; color: var(--psub); font-variant-numeric: tabular-nums; }
+.sp .owners { display: flex; gap: 2px; position: absolute; right: 3px; top: 3px; }
+.sp .owners i { width: 5px; height: 5px; border-radius: 50%; display: block; }
+.sp.corner { background: var(--surface-2, #F4F5F7); background: #F2F3F5; align-items: center; justify-content: center; gap: 2px; }
+.sp.corner .big { font-size: 8.5px; font-weight: 800; letter-spacing: 0.02em; text-align: center; line-height: 1.15; }
+.sp.corner .sub { font-size: 6.5px; font-weight: 600; color: var(--psub); text-align: center; line-height: 1.2; }
+.ctr {
+  grid-column: 2 / 7; grid-row: 2 / 7;
+  border: 1px dashed var(--pline); border-radius: 10px; background: #FCFBF9;
+  display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 8px; padding: 14px 16px;
+}
+.ctr .season { font-size: 10px; font-weight: 700; color: var(--psub); text-align: center; letter-spacing: 0.03em; }
+.ladder { display: flex; flex-direction: column; gap: 5px; }
+.ladder .lrow { display: flex; align-items: center; gap: 7px; }
+.ladder .lrow i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.ladder .lrow .who { font-size: 9.5px; font-weight: 650; color: var(--psub); width: 34px; }
+.ladder .lrow .bar { height: 8px; border-radius: 4px; opacity: 0.85; }
+.ladder .lrow .amt { font-size: 9.5px; font-weight: 750; font-variant-numeric: tabular-nums; margin-left: auto; }
+.tok { position: absolute; width: 13px; height: 13px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 3; }
+.tok.you::after {
+  content: "you"; position: absolute; left: 15px; top: -1px; font-size: 8px; font-weight: 800; color: var(--pink);
+}
+.walkline {
+  position: absolute; height: 2px; border-radius: 1px; background: rgba(0,0,0,0.12); z-index: 2;
+}
+.buycard {
+  position: absolute; z-index: 5; width: 128px; background: #fff; border: 1px solid var(--pline); border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(20,25,40,0.14); padding: 8px 9px; display: flex; flex-direction: column; gap: 5px;
+}
+.buycard .bn { font-size: 9.5px; font-weight: 750; }
+.buycard .bp { font-size: 9px; color: var(--psub); font-weight: 600; font-variant-numeric: tabular-nums; }
+.buycard .row { display: flex; gap: 5px; }
+.buycard .b {
+  flex: 1; text-align: center; font-size: 9px; font-weight: 750; border-radius: 6px; padding: 4px 0;
+  border: 1px solid var(--pline); color: var(--pink);
+}
+.buycard .b.go { background: var(--pink); color: #fff; border-color: var(--pink); }
+.toast {
+  position: absolute; z-index: 5; background: #fff; border: 1px solid var(--pline); border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(20,25,40,0.14); padding: 7px 10px; font-size: 9.5px; font-weight: 650; line-height: 1.35;
+}
+.toast b { font-weight: 800; }
+.toast .plus { color: var(--up); font-weight: 800; }
+
+/* ================= phone mocks ================= */
+
+.phone {
+  width: 262px; height: 468px; background: #FAF9F7; border: 1px solid var(--pline); border-radius: 22px;
+  padding: 14px 13px 12px; display: flex; flex-direction: column; gap: 9px; flex: none; position: relative; overflow: hidden;
+}
+.phone .ph-top { display: flex; align-items: baseline; }
+.phone .ph-top .t { font-size: 12px; font-weight: 750; }
+.phone .ph-top .s { font-size: 9.5px; font-weight: 600; color: var(--psub); margin-left: auto; font-variant-numeric: tabular-nums; }
+.bignum { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.bignum small { font-size: 12px; font-weight: 650; letter-spacing: 0; }
+.subnum { font-size: 10.5px; font-weight: 650; color: var(--psub); font-variant-numeric: tabular-nums; }
+.subnum .up { color: var(--up); font-weight: 750; }
+.subnum .dn { color: var(--dn); font-weight: 750; }
+.chart {
+  position: relative; border-radius: 10px; border: 1px solid rgba(0,0,0,0.07);
+  background: linear-gradient(180deg, #EFF2F6 0%, #E7EBF0 100%); overflow: hidden;
+}
+.chart svg { display: block; }
+.headline {
+  position: absolute; z-index: 4; background: #FFFDF6; border: 1px solid #E4DCC2; border-radius: 8px;
+  box-shadow: 0 5px 14px rgba(20,25,40,0.13); padding: 6px 9px; max-width: 168px;
+}
+.headline .hs { font-size: 7.5px; font-weight: 700; color: var(--psub); letter-spacing: 0.05em; }
+.headline .ht { font-family: Georgia, serif; font-size: 10.5px; font-weight: 700; line-height: 1.25; }
+.bigbtn {
+  border-radius: 12px; text-align: center; font-weight: 800; font-family: var(--display);
+  padding: 13px 0; font-size: 15px; letter-spacing: 0.01em;
+}
+.bigbtn.sell { background: #fff; color: var(--dn); border: 1.5px solid rgba(192,57,43,0.5); }
+.bigbtn.buy { background: var(--pink); color: #fff; border: 0; }
+.quiet { font-size: 9.5px; font-weight: 600; color: var(--psub); text-align: center; }
+.cashrow { display: flex; align-items: center; gap: 8px; }
+.cashrow .lab { font-size: 10px; font-weight: 650; color: var(--psub); }
+.cashrow .v { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; margin-left: auto; }
+.bills { display: flex; gap: 2.5px; }
+.bills i { width: 10px; height: 15px; border-radius: 2px; background: #3E9E6C; display: block; position: relative; }
+.bills i::after { content: ""; position: absolute; left: 1.5px; right: 1.5px; top: 1.5px; height: 2px; background: rgba(255,255,255,0.45); border-radius: 1px; }
+.arow {
+  display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid var(--pline);
+  border-radius: 11px; padding: 9px 11px;
+}
+.arow .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.arow .an { display: flex; flex-direction: column; gap: 1px; }
+.arow .an .n1 { font-size: 11px; font-weight: 750; }
+.arow .an .n2 { font-size: 8.5px; font-weight: 600; color: var(--psub); font-variant-numeric: tabular-nums; }
+.arow .drip { margin-left: auto; text-align: right; display: flex; flex-direction: column; gap: 1px; }
+.arow .drip .d1 { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--up); }
+.arow .drip .d2 { font-size: 8px; font-weight: 600; color: var(--psub); }
+.coin {
+  position: absolute; width: 15px; height: 15px; border-radius: 50%; background: #E8B84B; border: 1.5px solid #C79A2E;
+  display: grid; place-items: center; font-size: 8px; font-weight: 800; color: #7A5A0E; z-index: 4;
+}
+.spec { width: 100%; border-collapse: collapse; font-family: var(--display); font-size: 13.5px; }
+.spec th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12.5px; padding: 10px 12px 7px; border-bottom: 1px solid var(--line-soft); }
+.spec td { padding: 9px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.spec tr:last-child td { border-bottom: 0; }
+.spec td.k { font-weight: 650; white-space: nowrap; }
+.foot { font-family: var(--display); font-size: 13px; color: var(--ink-3); padding-top: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Concept round, August 13</div>
+  <h1>The next games: real money, proven forms</h1>
+  <p class="standfirst">Four candidates. Every one is <strong>literally about investing</strong>: real stocks, real dollars, real dividends. No metaphors, no translation layer, no tutorial. Each one borrows a game form players already know, so it reads in one look. The market data underneath is our real era engine in all four.</p>
+</header>
+
+<section class="panel">
+  <h3>The filter every candidate had to pass</h3>
+  <ul class="laws">
+    <li><span class="k">1</span>Fun as a game for someone with zero interest in finance. The lesson is a side effect, never the point.</li>
+    <li><span class="k">2</span>No metaphors. The things on screen are stocks, dollars, and dividends, called what they are.</li>
+    <li><span class="k">3</span>Understandable from one look, because the form is already in your head.</li>
+    <li><span class="k">4</span>Free to play badly. The game never blocks a mistake; it just lets the consequence arrive.</li>
+    <li><span class="k">5</span>Real time. The world ticks whether you act or not.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<section>
+  <h2>1. The Big Board</h2>
+  <p class="lede">Your idea, drawn twice. A Monopoly-shaped ring of stocks. Tokens stroll the board continuously, no dice and no turns; you make a decision when your token arrives somewhere. Three plain CPU tokens walk the same ring, buying by simple habits you can watch. Payday corner pays salary and dividends. A run is ten laps, one year per lap. At the final bell the highest net worth wins. The two mocks differ in one thing only: what the economy underneath is.</p>
+
+  <div class="pair">
+    <!-- Variant A: real market underneath -->
+    <div class="mockcol">
+      <div class="mocklabel">Variant A: real market underneath</div>
+      <div class="p boardbox">
+        <div class="hdr"><span class="t">The Big Board</span><span class="s">Lap 3 of 10 &middot; 2006</span></div>
+        <div class="ring">
+          <!-- top row, left to right -->
+          <div class="sp corner"><div class="big">PAYDAY</div><div class="sub">salary $400 + dividends</div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Fruit Computers</div><div class="px">$61 <em class="up">+8%</em></div><div class="owners"><i style="background:#1D1D1F"></i></div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Window Soft</div><div class="px">$27 <em class="up">+2%</em></div></div>
+          <div class="sp fund"><div class="sec"></div><div class="nm">Index Fund</div><div class="px">$128 <em class="up">+4%</em></div><div class="owners"><i style="background:#1D1D1F"></i><i style="background:#2A72D6"></i></div></div>
+          <div class="sp banks"><div class="sec"></div><div class="nm">Big Bank</div><div class="px">$54 <em class="up">+5%</em></div><div class="owners"><i style="background:#D98A00"></i></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Sunrise Oil</div><div class="px">$72 <em class="up">+11%</em></div></div>
+          <div class="sp corner"><div class="big">HEADLINES</div><div class="sub">draw the day's news</div></div>
+          <!-- side columns: DOM order alternates left cell, right cell, top to bottom -->
+          <div class="sp food"><div class="sec"></div><div class="nm">Fizzy Cola</div><div class="px">$44 <em class="up">+1%</em></div></div>
+          <div class="ctr" style="justify-content: flex-end; padding-bottom: 22px;">
+            <div class="season">YEAR 3 &middot; SPRING &middot; prices are real 2004 to 2014</div>
+            <div class="ladder">
+              <div class="lrow"><i style="background:#1D1D1F"></i><span class="who">you</span><span class="bar" style="width:96px;background:#1D1D1F"></span><span class="amt">$3,940</span></div>
+              <div class="lrow"><i style="background:#2A72D6"></i><span class="who">blue</span><span class="bar" style="width:104px;background:#2A72D6"></span><span class="amt">$4,180</span></div>
+              <div class="lrow"><i style="background:#D98A00"></i><span class="who">orange</span><span class="bar" style="width:82px;background:#D98A00"></span><span class="amt">$3,410</span></div>
+              <div class="lrow"><i style="background:#2E9E63"></i><span class="who">green</span><span class="bar" style="width:70px;background:#2E9E63"></span><span class="amt">$2,980</span></div>
+            </div>
+            <div class="season" style="letter-spacing:0">net worth, live at today's prices</div>
+          </div>
+          <div class="sp banks"><div class="sec"></div><div class="nm">Sterling Trust</div><div class="px">$38 <em class="dn">-3%</em></div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Corner Grocer</div><div class="px">$19 <em class="up">+2%</em></div><div class="owners"><i style="background:#2E9E63"></i></div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Phone Corp</div><div class="px">$47 <em class="up">+3%</em></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Copper Rail</div><div class="px">$31 <em class="up">+6%</em></div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Toy Barn</div><div class="px">$16 <em class="dn">-1%</em></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Steel Works</div><div class="px">$52 <em class="up">+9%</em></div><div class="owners"><i style="background:#D98A00"></i></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Air Lines</div><div class="px">$23 <em class="dn">-4%</em></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Ship Yards</div><div class="px">$29 <em class="up">+2%</em></div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Cable TV</div><div class="px">$35 <em class="up">+5%</em></div><div class="owners"><i style="background:#2A72D6"></i></div></div>
+          <!-- bottom row, left to right in DOM (grid auto places) -->
+          <div class="sp corner"><div class="big">DAY OFF</div><div class="sub">watch the market</div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Searchlight</div><div class="px">$203 <em class="up">+14%</em></div><div class="owners"><i style="background:#2A72D6"></i></div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Harvest Foods</div><div class="px">$25 <em>0%</em></div></div>
+          <div class="sp fund"><div class="sec"></div><div class="nm">Bond Desk</div><div class="px">$100 <em class="up">+2%</em></div></div>
+          <div class="sp banks"><div class="sec"></div><div class="nm">Home Loans Inc</div><div class="px">$66 <em class="up">+9%</em></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Gulf Drilling</div><div class="px">$58 <em class="up">+7%</em></div></div>
+          <div class="sp corner"><div class="big">TAX DAY</div><div class="sub">pay on this year's gains</div></div>
+          <div class="tok you" style="left: 156px; top: 22px; background:#1D1D1F"></div>
+          <div class="tok" style="left: 400px; top: 218px; background:#2A72D6"></div>
+          <div class="tok" style="left: 342px; top: 392px; background:#D98A00"></div>
+          <div class="tok" style="left: 42px; top: 210px; background:#2E9E63"></div>
+          <div class="buycard" style="left: 150px; top: 82px;">
+            <div class="bn">Window Soft &middot; $27</div>
+            <div class="bp">you have $310 cash &middot; pays a 2% dividend</div>
+            <div class="row"><span class="b go">Buy 5</span><span class="b">Buy 1</span><span class="b">Walk on</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="cap"><b>Variant A.</b> Spaces are companies at real era prices that move every lap; the board itself is the market. You stop on a space, you may buy shares at today's price, and that is the whole interaction. Payday pays salary plus real dividends from everything you hold. No rent: your money grows because the companies do, and the ladder in the middle is the only scoreboard. In 2008 the banks row goes red and the board visibly gets cheaper; whether that scares you or excites you is the lesson arriving.</p>
+    </div>
+
+    <!-- Variant B: monopoly rules -->
+    <div class="mockcol">
+      <div class="mocklabel">Variant B: house rules, Monopoly economy</div>
+      <div class="p boardbox">
+        <div class="hdr"><span class="t">The Big Board</span><span class="s">Lap 6 of 10</span></div>
+        <div class="ring">
+          <div class="sp corner"><div class="big">PAYDAY</div><div class="sub">collect $400</div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Fruit Computers</div><div class="px">$60</div><div class="rent">rent $24</div><div class="owners"><i style="background:#1D1D1F"></i></div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Window Soft</div><div class="px">$30</div><div class="rent">rent $12</div></div>
+          <div class="sp fund"><div class="sec"></div><div class="nm">Index Fund</div><div class="px">$120</div><div class="rent">rent $10</div><div class="owners"><i style="background:#2A72D6"></i></div></div>
+          <div class="sp banks"><div class="sec"></div><div class="nm">Big Bank</div><div class="px">$50</div><div class="rent">rent $20</div><div class="owners"><i style="background:#D98A00"></i></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Sunrise Oil</div><div class="px">$70</div><div class="rent">rent $28</div></div>
+          <div class="sp corner"><div class="big">HEADLINES</div><div class="sub">draw a card</div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Fizzy Cola</div><div class="px">$45</div><div class="rent">rent $18</div></div>
+          <div class="ctr">
+            <div class="season">LAP 6 &middot; fixed prices &middot; rent when rivals land on yours</div>
+            <div class="toast" style="position: static; align-self: center;">Blue landed on your <b>Fruit Computers</b>.<br/>They bought 2 shares. You collect <span class="plus">$24 rent</span>.</div>
+            <div class="ladder">
+              <div class="lrow"><i style="background:#1D1D1F"></i><span class="who">you</span><span class="bar" style="width:102px;background:#1D1D1F"></span><span class="amt">$2,860</span></div>
+              <div class="lrow"><i style="background:#2A72D6"></i><span class="who">blue</span><span class="bar" style="width:88px;background:#2A72D6"></span><span class="amt">$2,410</span></div>
+              <div class="lrow"><i style="background:#D98A00"></i><span class="who">orange</span><span class="bar" style="width:80px;background:#D98A00"></span><span class="amt">$2,200</span></div>
+              <div class="lrow"><i style="background:#2E9E63"></i><span class="who">green</span><span class="bar" style="width:60px;background:#2E9E63"></span><span class="amt">$1,690</span></div>
+            </div>
+          </div>
+          <div class="sp banks"><div class="sec"></div><div class="nm">Sterling Trust</div><div class="px">$40</div><div class="rent">rent $16</div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Corner Grocer</div><div class="px">$20</div><div class="rent">rent $8</div><div class="owners"><i style="background:#2E9E63"></i></div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Phone Corp</div><div class="px">$45</div><div class="rent">rent $18</div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Copper Rail</div><div class="px">$30</div><div class="rent">rent $12</div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Toy Barn</div><div class="px">$15</div><div class="rent">rent $6</div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Steel Works</div><div class="px">$50</div><div class="rent">rent $20</div><div class="owners"><i style="background:#D98A00"></i></div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Air Lines</div><div class="px">$25</div><div class="rent">rent $10</div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Ship Yards</div><div class="px">$30</div><div class="rent">rent $12</div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Cable TV</div><div class="px">$35</div><div class="rent">rent $14</div><div class="owners"><i style="background:#2A72D6"></i></div></div>
+          <div class="sp corner"><div class="big">DAY OFF</div><div class="sub">rest a beat</div></div>
+          <div class="sp tech"><div class="sec"></div><div class="nm">Searchlight</div><div class="px">$200</div><div class="rent">rent $80</div><div class="owners"><i style="background:#2A72D6"></i></div></div>
+          <div class="sp food"><div class="sec"></div><div class="nm">Harvest Foods</div><div class="px">$25</div><div class="rent">rent $10</div></div>
+          <div class="sp fund"><div class="sec"></div><div class="nm">Bond Desk</div><div class="px">$100</div><div class="rent">rent $6</div></div>
+          <div class="sp banks"><div class="sec"></div><div class="nm">Home Loans Inc</div><div class="px">$65</div><div class="rent">rent $26</div></div>
+          <div class="sp energy"><div class="sec"></div><div class="nm">Gulf Drilling</div><div class="px">$55</div><div class="rent">rent $22</div></div>
+          <div class="sp corner"><div class="big">TAX DAY</div><div class="sub">pay $100</div></div>
+          <div class="tok you" style="left: 30px; top: 332px; background:#1D1D1F"></div>
+          <div class="tok" style="left: 96px; top: 8px; background:#2A72D6"></div>
+          <div class="tok" style="left: 398px; top: 334px; background:#D98A00"></div>
+          <div class="tok" style="left: 40px; top: 145px; background:#2E9E63"></div>
+        </div>
+      </div>
+      <p class="cap"><b>Variant B.</b> Pure Monopoly economics wearing stock names: fixed prices, and when a rival token lands on a stock you own, they buy in and you collect rent for having been there first. Maximum familiarity and the rent moment feels great, but the teaching is shallower (own assets, collect income, manage cash) and the numbers are invented, which walks away from our every-price-is-real spine. The strongest possible body, the weakest possible truth.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table class="spec">
+      <tr><th></th><th>Variant A, real market</th><th>Variant B, house rules</th></tr>
+      <tr><td class="k">Prices</td><td>Real era data, reprice every lap</td><td>Fixed, invented</td></tr>
+      <tr><td class="k">Income</td><td>Salary at Payday plus real dividends</td><td>Salary plus rent from rival landings</td></tr>
+      <tr><td class="k">Rivals matter because</td><td>Same board, same decade, ladder shows who is ahead</td><td>They pay you directly; scarcity of first claim</td></tr>
+      <tr><td class="k">What leaks through</td><td>Diversification, dividends, crashes as sales, staying in</td><td>Own assets, income beats wages, cash management</td></tr>
+      <tr><td class="k">Risk</td><td>Slower dopamine than rent</td><td>Invented numbers; rent is not how stocks work</td></tr>
+    </table>
+    <p class="cap">A third path exists: variant A's real economy with variant B's rent moment reframed honestly (a rival landing on your stock buys shares and their broker fee routes to you as the market maker). Flagging it, not endorsing it; it needs a fun test, not a debate.</p>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+  <h2>2. Hold</h2>
+  <p class="lede">The one-button game. You start every round already invested: $10,000 in one real stock or the index, in a real dramatic year. The tape plays. The only button is SELL. That is the entire game: a staring contest with a real market, and the button is right there, big and red, daring you.</p>
+  <div class="trio">
+    <div class="mockcol">
+      <div class="mocklabel">Mid-round, the tape diving</div>
+      <div class="p phone">
+        <div class="ph-top"><span class="t">Hold</span><span class="s">day 41 &middot; Sep 2008</span></div>
+        <div>
+          <div class="bignum">$8,120</div>
+          <div class="subnum">started with $10,000 &middot; <span class="dn">-18.8%</span></div>
+        </div>
+        <div class="chart" style="height: 208px;">
+          <svg width="236" height="208" viewBox="0 0 236 208">
+            <polyline fill="none" stroke="#c0392b" stroke-width="2.5"
+              points="0,52 18,44 34,56 52,48 70,62 88,58 104,74 118,70 132,92 148,104 160,96 176,128 190,142 204,136 218,158 236,150"/>
+            <circle cx="236" cy="150" r="4" fill="#c0392b"/>
+          </svg>
+          <div class="headline" style="right: 8px; top: 12px;">
+            <div class="hs">AFTER THE DROP YOU JUST FELT</div>
+            <div class="ht">Bank fails, markets reel worldwide</div>
+          </div>
+        </div>
+        <div class="bigbtn sell">SELL EVERYTHING</div>
+        <div class="quiet">that's the only button</div>
+      </div>
+    </div>
+    <div class="mockcol">
+      <div class="mocklabel">Round over, the reveal</div>
+      <div class="p phone">
+        <div class="ph-top"><span class="t">Hold</span><span class="s">round over</span></div>
+        <div>
+          <div class="bignum">$13,450</div>
+          <div class="subnum">you held all 90 days &middot; <span class="up">+34.5%</span></div>
+        </div>
+        <div class="chart" style="height: 176px;">
+          <svg width="236" height="176" viewBox="0 0 236 176">
+            <polyline fill="none" stroke="#8B94A3" stroke-width="2" stroke-dasharray="4 3"
+              points="0,60 24,70 44,88 62,120 80,132 96,126 110,142"/>
+            <polyline fill="none" stroke="#1a8a52" stroke-width="2.5"
+              points="110,142 128,130 146,118 162,124 180,98 200,74 218,66 236,48"/>
+            <circle cx="110" cy="142" r="4" fill="#1D1D1F"/>
+          </svg>
+          <div class="headline" style="left: 10px; bottom: 12px;">
+            <div class="hs">THE REVEAL</div>
+            <div class="ht">This was March 2009. Most players sold on day 43.</div>
+          </div>
+        </div>
+        <div class="quiet" style="text-align:left">Tomorrow's round: a new real year, revealed only at the end. Some years, selling early was the survivable move; the game never says which kind you are in.</div>
+      </div>
+    </div>
+    <div class="mockcol" style="max-width: 300px;">
+      <div class="mocklabel">Why this works</div>
+      <div class="panel" style="gap: 10px;">
+        <p class="cap"><b>The form:</b> the do-not-press-the-button game, plus the daily-puzzle rhythm of Wordle. Everyone plays the same hidden year each day; compare with friends after.</p>
+        <p class="cap"><b>Playing badly is playing:</b> selling on the scary headline is always allowed, instantly executed, and frozen at that price for the reveal. Nobody scolds you. The chart just keeps going without you.</p>
+        <p class="cap"><b>Honest:</b> real days, real headlines that always arrive after the move they explain, no prediction rewarded. Some daily years reward the seller; history decides, not the designer.</p>
+        <p class="cap"><b>Scope:</b> the smallest build on this page. One tape, one button, one reveal screen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+  <h2>3. Every Payday</h2>
+  <p class="lede">The tap game. Money arrives on a rhythm: $100 lands in your cash tray every few seconds, a payday every game-month. One BUY button puts the tray into the index at today's real price. You can slam it every payday, or hoard cash waiting for a dip that may never come. The market ticks either way.</p>
+  <div class="trio">
+    <div class="mockcol">
+      <div class="mocklabel">Mid-run, cash piling while you wait</div>
+      <div class="p phone">
+        <div class="ph-top"><span class="t">Every Payday</span><span class="s">1996 &middot; month 31 of 120</span></div>
+        <div>
+          <div class="bignum">$4,270</div>
+          <div class="subnum">31 shares &middot; index at $86 <span class="up">+3% this month</span></div>
+        </div>
+        <div class="chart" style="height: 168px;">
+          <svg width="236" height="168" viewBox="0 0 236 168">
+            <polyline fill="none" stroke="#2A72D6" stroke-width="2.5"
+              points="0,140 20,132 38,136 56,124 74,118 92,124 108,110 124,102 140,108 156,94 172,88 188,92 204,78 220,70 236,62"/>
+            <g fill="#1D1D1F">
+              <circle cx="38" cy="136" r="3"/><circle cx="74" cy="118" r="3"/><circle cx="92" cy="124" r="3"/>
+              <circle cx="156" cy="94" r="3"/>
+            </g>
+          </svg>
+          <div class="headline" style="left: 10px; top: 10px;">
+            <div class="hs">YOUR MARKS</div>
+            <div class="ht">Black dots are the days you pressed BUY</div>
+          </div>
+        </div>
+        <div class="cashrow"><span class="lab">cash tray, 5 paydays hoarded</span><span class="bills"><i></i><i></i><i></i><i></i><i></i></span><span class="v">$500</span></div>
+        <div class="bigbtn buy">BUY at $86</div>
+      </div>
+    </div>
+    <div class="mockcol">
+      <div class="mocklabel">Run over, the cost line</div>
+      <div class="p phone">
+        <div class="ph-top"><span class="t">Every Payday</span><span class="s">10 years done</span></div>
+        <div>
+          <div class="bignum">$18,940</div>
+          <div class="subnum">your average share cost: <b>$91</b></div>
+        </div>
+        <div class="chart" style="height: 150px;">
+          <svg width="236" height="150" viewBox="0 0 236 150">
+            <polyline fill="none" stroke="#2A72D6" stroke-width="2.5"
+              points="0,128 24,118 48,108 72,112 96,92 120,80 144,86 168,64 192,52 216,44 236,36"/>
+            <line x1="0" y1="84" x2="236" y2="84" stroke="#B57A00" stroke-width="1.5" stroke-dasharray="5 4"/>
+          </svg>
+          <div class="headline" style="right: 8px; bottom: 10px;">
+            <div class="hs">THE GOLD LINE</div>
+            <div class="ht">$88: what a player who bought every single payday paid</div>
+          </div>
+        </div>
+        <div class="quiet" style="text-align:left">Your waiting won $3 a share this decade. Play 1974 or 2008 tomorrow and the same patience loses. The game keeps your lifetime record on both sides of the line.</div>
+      </div>
+    </div>
+    <div class="mockcol" style="max-width: 300px;">
+      <div class="mocklabel">Why this works</div>
+      <div class="panel" style="gap: 10px;">
+        <p class="cap"><b>The form:</b> a rhythm tapper. The satisfaction of the buy press (tray empties, share counter clicks up, dot lands on the chart) is the whole dopamine loop.</p>
+        <p class="cap"><b>Playing badly is playing:</b> hoard forever, market-time everything. The end screen never argues; it just prints your average cost next to the steady payday buyer's, and keeps score across your lifetime of runs.</p>
+        <p class="cap"><b>Honest:</b> real decades, and whether timing beat rhythm depends entirely on which real decade you drew. Over many runs the record tells its own story.</p>
+        <p class="cap"><b>Risk:</b> close to Hold in spirit; the two might be one game with two modes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section>
+  <h2>4. Payout</h2>
+  <p class="lede">The idle game, played straight. Four real places money can sit: savings, bonds, the index fund, single stocks. Each one visibly drips what it actually pays. Cash lands in the tray; you route it. That is all, and it is the exact loop that made AdVenture Capitalist compulsive, except every number is a real yield doing what it really does.</p>
+  <div class="trio">
+    <div class="mockcol">
+      <div class="mocklabel">The whole game on one screen</div>
+      <div class="p phone">
+        <div class="ph-top"><span class="t">Payout</span><span class="s">year 4 &middot; speed 2x</span></div>
+        <div>
+          <div class="bignum">$12,384</div>
+          <div class="subnum">total, growing <span class="up">$3.40 / sec</span></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:7px; position:relative;">
+          <div class="arow"><span class="dot" style="background:#2E9E63"></span><div class="an"><span class="n1">Savings</span><span class="n2">$800 &middot; pays 2% a year</span></div><div class="drip"><span class="d1">+1&cent;</span><span class="d2">every 4s</span></div></div>
+          <div class="arow"><span class="dot" style="background:#2A72D6"></span><div class="an"><span class="n1">Bonds</span><span class="n2">$2,400 &middot; pays 4% a year</span></div><div class="drip"><span class="d1">+8&cent;</span><span class="d2">every 3s</span></div></div>
+          <div class="arow" style="border-color: rgba(181,122,0,0.6);"><span class="dot" style="background:#B57A00"></span><div class="an"><span class="n1">Index fund</span><span class="n2">$7,200 &middot; 500 companies</span></div><div class="drip"><span class="d1">+$1.10</span><span class="d2">wobbles daily</span></div></div>
+          <div class="arow"><span class="dot" style="background:#C4362F"></span><div class="an"><span class="n1">Rocket Motors</span><span class="n2">$1,984 &middot; one company</span></div><div class="drip"><span class="d1" style="color:#c0392b">-$14 today</span><span class="d2">swings hard</span></div></div>
+          <div class="coin" style="right: 78px; top: 100px;">$</div>
+          <div class="coin" style="right: 94px; top: 132px;">$</div>
+        </div>
+        <div class="cashrow"><span class="lab">tray</span><span class="bills"><i></i><i></i><i></i></span><span class="v">$310</span><span class="quiet" style="margin-left:6px">drag it onto a row</span></div>
+        <div class="quiet">leave it running; come back to a bigger number, or a hole</div>
+      </div>
+    </div>
+    <div class="mockcol" style="max-width: 300px;">
+      <div class="mocklabel">Why this works</div>
+      <div class="panel" style="gap: 10px;">
+        <p class="cap"><b>The form:</b> idle numbers-go-up, the most proven hypercasual loop there is. The reinvest gesture (drag tray onto a row) is the only verb.</p>
+        <p class="cap"><b>Playing badly is playing:</b> shove everything into Rocket Motors because its good days are thrilling. Some runs that pays off. Then a real 2008 arrives on the tape and the row craters while savings drips on, one cent at a time.</p>
+        <p class="cap"><b>Honest:</b> yields and market rows run on the real era engine; the single stock is a real company's real path. No invented jackpots.</p>
+        <p class="cap"><b>What leaks through:</b> compounding (the per-second number grows because you fed it), and the risk ladder, lived rather than named.</p>
+        <p class="cap"><b>Risk:</b> idle games reward leaving, which fights the 5 to 15 minute session shape. Needs the speed dial tuned in hand.</p>
+      </div>
+    </div>
+    <div class="mockcol" style="max-width: 300px;">
+      <div class="mocklabel">Where the suite stands</div>
+      <div class="panel" style="gap: 10px;">
+        <table class="spec">
+          <tr><th>Game</th><th>Covers</th></tr>
+          <tr><td class="k">The Big Board</td><td>Ownership, dividends, diversification, rivals</td></tr>
+          <tr><td class="k">Hold</td><td>Staying in, panic, headlines come late</td></tr>
+          <tr><td class="k">Every Payday</td><td>Timing versus rhythm, cost basis</td></tr>
+          <tr><td class="k">Payout</td><td>Compounding, the risk ladder</td></tr>
+        </table>
+        <p class="cap">Kill any of these freely; each is a week-scale prototype, and the era engine under all four already exists.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">Concept sketches only; nothing here is built. Marks: kill, keep, or change anything. The board mocks are static frames of a continuously strolling game; nothing on this page is turn-based.</footer>
+
+</div>
+</body>
+</html>
