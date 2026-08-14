@@ -9,8 +9,8 @@
 //
 //   guess-stats     the running scorecard, so it survives a reload
 //   guess-cursor    the deal order and how far into it the player is
-//   guess-settings  easy mode, off until a player turns it on
-//   guess-shelf     which puzzles are solved and which were revealed
+//   guess-settings  which mode the player is in, easy until they change it
+//   guess-shelf     which puzzles are solved, which were revealed, and how
 //
 // Nothing here reaches for the DOM, so tools/guessSim.ts runs the same code the
 // browser runs.
@@ -36,6 +36,8 @@ export interface Puzzle {
   yearEndIndex: number;
   /** true when a split falls inside the baked window, so dollar labels drift from the era's quotes past it */
   splitAdjusted?: boolean;
+  /** five catalog tickers that easy mode offers alongside the answer */
+  decoys?: string[];
 }
 
 // ------------------------------------------------------------- the ladder
@@ -50,17 +52,27 @@ export type HintKey = "widen" | "sector" | "price" | "size";
  */
 export const HINT_LADDER: readonly HintKey[] = ["widen", "sector", "price", "size"];
 
+/**
+ * The pips on the scoreline, and the whole budget a puzzle has to spend. In
+ * hard mode only hints draw on it, so it is the ladder and nothing else. In
+ * easy mode a wrong pick costs the same as a hint, out of the same four, and
+ * running the budget out on a wrong pick ends the puzzle.
+ */
+export const PIP_BUDGET = HINT_LADDER.length;
+
 export interface PuzzleState {
   puzzleId: string;
-  /** how many hints have been dealt, 0 to 5 */
+  /** how many hints have been dealt, 0 to 4 */
   hints: number;
   /** wrong guesses, as typed, in the order they were made */
   guesses: string[];
+  /** tickers of the options picked wrong in easy mode, in the order picked */
+  picks: string[];
   status: "playing" | "solved" | "failed";
 }
 
 export function newPuzzle(puzzleId: string): PuzzleState {
-  return { puzzleId, hints: 0, guesses: [], status: "playing" };
+  return { puzzleId, hints: 0, guesses: [], picks: [], status: "playing" };
 }
 
 /** The hints dealt so far, in ladder order. Never repeats and never reorders. */
@@ -72,8 +84,17 @@ export function hasHint(state: PuzzleState, key: HintKey): boolean {
   return HINT_LADDER.indexOf(key) < state.hints;
 }
 
+/** Pips filled in on the scoreline: every hint dealt and every option missed. */
+export function pipsSpent(state: PuzzleState): number {
+  return Math.min(PIP_BUDGET, state.hints + state.picks.length);
+}
+
+export function pipsLeft(state: PuzzleState): number {
+  return PIP_BUDGET - pipsSpent(state);
+}
+
 export function canDealHint(state: PuzzleState): boolean {
-  return state.status === "playing" && state.hints < HINT_LADDER.length;
+  return state.status === "playing" && state.hints < HINT_LADDER.length && pipsLeft(state) > 0;
 }
 
 /** Deal the next hint. A finished puzzle and an exhausted ladder both no-op. */
@@ -167,6 +188,115 @@ export function giveUp(state: PuzzleState): PuzzleState {
   return { ...state, status: "failed" };
 }
 
+// ------------------------------------------------------------- the options
+
+/**
+ * Easy mode's six buttons: the answer and the puzzle's five curated decoys, in
+ * an order that is fixed for the puzzle and the same on every machine, so a
+ * player comparing notes and a screenshot taken a month apart both agree.
+ */
+
+/** FNV-1a over the puzzle id, so the shuffle below is the puzzle's own. */
+export function seedFromId(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** A small deterministic generator, the same one the deal-order tests pin. */
+export function seededRandom(seed: number): Random {
+  let s = seed >>> 0;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function byTicker(ticker: string, catalog: Company[]): Company | null {
+  return catalog.find((c) => c.ticker === ticker) ?? null;
+}
+
+/** The answer as the catalog writes it, falling back to the puzzle itself. */
+function answerCompany(puzzle: Puzzle, catalog: Company[]): Company {
+  return (
+    byTicker(puzzle.ticker, catalog) ?? {
+      name: puzzle.name,
+      ticker: puzzle.ticker,
+      sector: puzzle.sector,
+      aliases: puzzle.aliases,
+    }
+  );
+}
+
+/** The six options, shuffled by the puzzle's own seed. Buttons show the name. */
+export function puzzleOptions(puzzle: Puzzle, catalog: Company[] = COMPANIES): Company[] {
+  const options = [answerCompany(puzzle, catalog)];
+  for (const ticker of puzzle.decoys ?? []) {
+    const c = byTicker(ticker, catalog);
+    if (c && c.ticker !== puzzle.ticker && !options.some((o) => o.ticker === c.ticker)) options.push(c);
+  }
+  return shuffle(options, seededRandom(seedFromId(puzzle.id)));
+}
+
+/** Why an option is no longer pickable, or null while it still is. */
+export type OptionOut = "picked" | "sector" | null;
+
+export interface OptionView {
+  company: Company;
+  out: OptionOut;
+}
+
+/**
+ * What each button is doing. A pick that missed stays on screen greyed out, and
+ * once the sector hint is paid for, everything in the wrong trade goes with it,
+ * which is what that hint buys in easy mode.
+ */
+export function optionViews(
+  state: PuzzleState,
+  puzzle: Puzzle,
+  catalog: Company[] = COMPANIES,
+): OptionView[] {
+  const ruled = hasHint(state, "sector");
+  return puzzleOptions(puzzle, catalog).map((company) => {
+    let out: OptionOut = null;
+    if (state.picks.includes(company.ticker)) out = "picked";
+    else if (ruled && company.sector !== puzzle.sector) out = "sector";
+    return { company, out };
+  });
+}
+
+export function canPick(state: PuzzleState, puzzle: Puzzle, ticker: string, catalog: Company[] = COMPANIES): boolean {
+  if (state.status !== "playing") return false;
+  const view = optionViews(state, puzzle, catalog).find((o) => o.company.ticker === ticker);
+  return view !== undefined && view.out === null;
+}
+
+/**
+ * Picking an option. The right one solves it. A wrong one greys out and costs a
+ * pip, and a wrong one made with no pips left ends the puzzle the same way
+ * reveal answer does, because there was nothing left to spend.
+ */
+export function submitPick(
+  state: PuzzleState,
+  puzzle: Puzzle,
+  ticker: string,
+  catalog: Company[] = COMPANIES,
+): GuessResult {
+  if (!canPick(state, puzzle, ticker, catalog)) return { state, correct: false, ignored: true };
+  if (ticker === puzzle.ticker) {
+    return { state: { ...state, status: "solved" }, correct: true, ignored: false };
+  }
+  const spent = pipsLeft(state) === 0;
+  return {
+    state: { ...state, picks: [...state.picks, ticker], status: spent ? "failed" : "playing" },
+    correct: false,
+    ignored: false,
+  };
+}
+
 // ------------------------------------------------------------- the catalog
 
 /** Every string that names a catalog company, name and ticker and aliases. */
@@ -244,19 +374,26 @@ export function isSubmittable(text: string, catalog: Company[] = COMPANIES): boo
   return findCompany(text, catalog) !== null;
 }
 
-// ------------------------------------------------------------- easy mode
+// ------------------------------------------------------------- the two modes
+
+/**
+ * Easy deals six names and asks which one. Hard hands over an empty box and the
+ * whole market. Easy is where everybody starts, because a player who cannot
+ * name a single chart still gets to be right some of the time.
+ */
+export type Mode = "easy" | "hard";
 
 export interface Settings {
-  easy: boolean;
+  mode: Mode;
 }
 
-export const DEFAULT_SETTINGS: Settings = { easy: false };
+export const DEFAULT_SETTINGS: Settings = { mode: "easy" };
 
 export type SectorVerdict = "same" | "different" | null;
 
 /**
- * Easy mode's whole tell: does the company just guessed work in the same trade
- * as the answer. Unknown names get nothing rather than a guess.
+ * Does the company just guessed work in the same trade as the answer. Hard mode
+ * tags every wrong guess with it. Unknown names get nothing rather than a guess.
  */
 export function sectorVerdict(guess: string, puzzle: Puzzle, catalog: Company[] = COMPANIES): SectorVerdict {
   const company = findCompany(guess, catalog);
@@ -429,11 +566,16 @@ function hintWords(n: number): string {
   return n === 1 ? "1 hint" : `${n} hints`;
 }
 
-/** The reveal's result line. Under par is the brag; a fail is simply revealed. */
+/**
+ * The reveal's result line. Under par is the brag; a fail is simply revealed.
+ * Par counts pips, so in easy mode a name picked wrong reads as a hint spent,
+ * which is exactly what it cost.
+ */
 export function resultLine(state: PuzzleState, puzzle: Puzzle): string {
   if (state.status !== "solved") return "revealed";
-  const opened = state.hints === 0 ? "solved with no hints" : `solved with ${hintWords(state.hints)}`;
-  const diff = puzzle.par - state.hints;
+  const spent = pipsSpent(state);
+  const opened = spent === 0 ? "solved with no hints" : `solved with ${hintWords(spent)}`;
+  const diff = puzzle.par - spent;
   if (diff === 0) return `${opened}, at par`;
   const word = COUNT_WORDS[Math.min(Math.abs(diff), 5)];
   return `${opened}, ${word} ${diff > 0 ? "under" : "over"} par`;
@@ -443,30 +585,77 @@ export function resultLine(state: PuzzleState, puzzle: Puzzle): string {
 
 export type ShelfMark = "solved" | "revealed";
 
-/** What the collection knows: one mark per puzzle a player has finished. */
-export type Shelf = Record<string, ShelfMark>;
+/**
+ * One card's worth of memory. The mark is all a card has ever needed; the rest
+ * is how it went, and a card shelved before the game kept that record simply
+ * has none, so the detail line goes quiet rather than making anything up.
+ */
+export interface ShelfEntry {
+  mark: ShelfMark;
+  mode?: Mode;
+  /** wrong guesses in hard, wrong picks in easy */
+  guesses?: number;
+  hints?: number;
+}
+
+/** What the collection knows: one entry per puzzle a player has finished. */
+export type Shelf = Record<string, ShelfEntry>;
 
 export const EMPTY_SHELF: Shelf = {};
+
+/** The entry a finished puzzle earns, in whichever mode it was played. */
+export function shelfEntry(state: PuzzleState, mode: Mode): ShelfEntry {
+  return {
+    mark: state.status === "solved" ? "solved" : "revealed",
+    mode,
+    guesses: mode === "easy" ? state.picks.length : state.guesses.length,
+    hints: state.hints,
+  };
+}
 
 /**
  * Marking a puzzle. A solve is the better mark and outranks a reveal, so a
  * puzzle solved on a later pass stops reading as revealed, and nothing a
  * player has already earned is ever taken away.
  */
-export function markShelf(shelf: Shelf, id: string, mark: ShelfMark): Shelf {
-  if (shelf[id] === "solved") return shelf;
-  return { ...shelf, [id]: mark };
+export function markShelf(shelf: Shelf, id: string, entry: ShelfEntry): Shelf {
+  if (shelf[id]?.mark === "solved") return shelf;
+  return { ...shelf, [id]: entry };
 }
 
 export function shelfMark(shelf: Shelf, id: string): ShelfMark | null {
-  return shelf[id] ?? null;
+  return shelf[id]?.mark ?? null;
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * The quiet second line on a played card: which mode, what it cost, how it
+ * ended. A card from before the game recorded any of that gets nothing.
+ */
+export function shelfDetail(entry: ShelfEntry | null): string {
+  if (!entry || !entry.mode) return "";
+  const parts = [`${entry.mark} in ${entry.mode}`];
+  const wrong = entry.guesses ?? 0;
+  if (wrong > 0) {
+    parts.push(
+      entry.mode === "easy"
+        ? plural(wrong, "wrong pick", "wrong picks")
+        : plural(wrong, "wrong guess", "wrong guesses"),
+    );
+  }
+  const hints = entry.hints ?? 0;
+  if (hints > 0) parts.push(plural(hints, "hint", "hints"));
+  return parts.join(", ");
 }
 
 export function shelfCounts(shelf: Shelf, ids: string[]): { solved: number; revealed: number; locked: number } {
   let solved = 0;
   let revealed = 0;
   for (const id of ids) {
-    const mark = shelf[id];
+    const mark = shelf[id]?.mark;
     if (mark === "solved") solved++;
     else if (mark === "revealed") revealed++;
   }
@@ -564,25 +753,53 @@ export function saveStats(stats: Stats): void {
   writeJson(STATS_KEY, stats);
 }
 
+/**
+ * The stored settings, whatever shape they are in. The key used to hold an
+ * easy-mode flag that was off by default; nobody's browser should crash over
+ * that, and nobody should be dropped into hard mode by it either, so anything
+ * that is not the word hard reads as easy.
+ */
+export function readSettings(raw: unknown): Settings {
+  const mode = (raw as { mode?: unknown } | null)?.mode;
+  return { mode: mode === "hard" ? "hard" : "easy" };
+}
+
 export function loadSettings(): Settings {
-  const s = readJson<Partial<Settings>>(SETTINGS_KEY);
-  return { easy: s?.easy === true };
+  return readSettings(readJson<unknown>(SETTINGS_KEY));
 }
 
 export function saveSettings(settings: Settings): void {
   writeJson(SETTINGS_KEY, settings);
 }
 
-/** Only marks the pool still recognises survive a reload. */
-export function loadShelf(ids: string[]): Shelf {
-  const raw = readJson<Record<string, string>>(SHELF_KEY);
+/**
+ * The shelf as it was left, in either shape it has ever been written in: the
+ * bare "solved" strings of the first collection, and the entries the game
+ * writes now. Only puzzles the pool still recognises come back.
+ */
+export function readShelf(raw: unknown, ids: string[]): Shelf {
+  const stored = (raw ?? {}) as Record<string, unknown>;
   const shelf: Shelf = {};
-  if (!raw) return shelf;
   for (const id of ids) {
-    const mark = raw[id];
-    if (mark === "solved" || mark === "revealed") shelf[id] = mark;
+    const held = stored[id];
+    if (held === "solved" || held === "revealed") {
+      shelf[id] = { mark: held };
+      continue;
+    }
+    if (!held || typeof held !== "object") continue;
+    const e = held as Partial<ShelfEntry>;
+    if (e.mark !== "solved" && e.mark !== "revealed") continue;
+    const entry: ShelfEntry = { mark: e.mark };
+    if (e.mode === "easy" || e.mode === "hard") entry.mode = e.mode;
+    if (Number.isFinite(e.guesses)) entry.guesses = Number(e.guesses);
+    if (Number.isFinite(e.hints)) entry.hints = Number(e.hints);
+    shelf[id] = entry;
   }
   return shelf;
+}
+
+export function loadShelf(ids: string[]): Shelf {
+  return readShelf(readJson<unknown>(SHELF_KEY), ids);
 }
 
 export function saveShelf(shelf: Shelf): void {

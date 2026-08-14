@@ -12,10 +12,14 @@
 //   test 5  the scorecard records under par, at par, over par and fails
 //   test 6  the deal order repeats nothing until the pool is exhausted
 //   test 7  the company catalog behind the typeahead
-//   test 8  easy mode's sector comparator
-//   test 9  the collection shelf's state reducer
+//   test 8  the sector tag hard mode puts on a wrong guess
+//   test 9  the collection shelf's state reducer, new entries and legacy ones
 //   test 10 the stream order, most guessable first
-//   test 11 copy audit: no em dash anywhere in the new files
+//   test 11 the decoys: five per puzzle, all real, none of them the answer
+//   test 12 easy mode: the deterministic option order, the shared pip budget,
+//           the sector eliminator, and the miss that ends a spent puzzle
+//   test 13 settings: the two modes, and the old stored shape reading as easy
+//   test 14 copy audit: no em dash anywhere in the new files
 //
 // Run it with: npx tsx tools/guessSim.ts
 //
@@ -28,12 +32,14 @@ import { readFileSync } from "node:fs";
 import puzzleData from "../src/data/guessPuzzles.json";
 import { COMPANIES } from "../src/data/companyCatalog";
 import {
-  EMPTY_SHELF, EMPTY_STATS, HINT_LADDER, Order, Puzzle, PuzzleState, Shelf, Stats,
-  advanceOrder, answerKeys, canDealHint, companyKeys, currentId, dealHint,
+  DEFAULT_SETTINGS, EMPTY_SHELF, EMPTY_STATS, HINT_LADDER, Order, PIP_BUDGET, Puzzle, PuzzleState,
+  Shelf, Stats,
+  advanceOrder, answerKeys, canDealHint, canPick, companyKeys, currentId, dealHint,
   dealtHints, dollarAt, dollarTicks, findCompany, giveUp, hasHint, initialOrder, isCorrect,
-  isSubmittable, markShelf, monthMarks, newPuzzle, normalizeGuess, percentAt, percentTicks,
-  recordFail, recordSolve, resultLine, scorecardLine, sectorVerdict, shelfCounts, shelfLine,
-  shelfMark, submitGuess, suggestCompanies, verdictLabel, visibleWindow,
+  isSubmittable, markShelf, monthMarks, newPuzzle, normalizeGuess, optionViews, percentAt,
+  percentTicks, pipsLeft, pipsSpent, puzzleOptions, readSettings, readShelf, recordFail,
+  recordSolve, resultLine, scorecardLine, sectorVerdict, shelfCounts, shelfDetail, shelfEntry,
+  shelfLine, shelfMark, submitGuess, submitPick, suggestCompanies, verdictLabel, visibleWindow,
 } from "../src/lib/guess/model";
 
 const PUZZLES = puzzleData as Puzzle[];
@@ -123,6 +129,16 @@ report("test 1  matching");
     t = dealHint(t);
     check(`after ${HINT_LADDER[i]} it is seen`, hasHint(t, HINT_LADDER[i]));
   }
+
+  // the pips and the ladder are the same four
+  check("the budget is the ladder", PIP_BUDGET === HINT_LADDER.length, `${PIP_BUDGET}`);
+  let b = newPuzzle(p.id);
+  check("a fresh puzzle has spent nothing", pipsSpent(b) === 0 && pipsLeft(b) === PIP_BUDGET);
+  for (let i = 1; i <= PIP_BUDGET; i++) {
+    b = dealHint(b);
+    check(`hint ${i} spends a pip`, pipsSpent(b) === i && pipsLeft(b) === PIP_BUDGET - i);
+  }
+  check("a spent puzzle deals no more hints", !canDealHint(b));
 }
 report("test 2  the hint ladder");
 
@@ -369,6 +385,7 @@ report("test 7  the company catalog");
 {
   const apple = byId.get("aapl-2007");
   const tesla = byId.get("tsla-2020");
+  // hard mode tags every wrong guess with it, with nothing to switch on
   if (apple) {
     check("a technology guess on a technology year reads same",
       sectorVerdict("microsoft", apple) === "same");
@@ -394,17 +411,18 @@ report("test 7  the company catalog");
     if (entry) check(`${p.id} reads same against itself`, sectorVerdict(entry.name, p) === "same");
   }
 }
-report("test 8  easy mode");
+report("test 8  the sector tag");
 
 // -------------------------------------------------- test 9: the shelf
 
 {
+  const p = byId.get("aapl-2007") ?? PUZZLES[0];
   let shelf: Shelf = EMPTY_SHELF;
   check("an empty shelf knows nothing", shelfMark(shelf, IDS[0]) === null);
   check("an empty shelf counts every puzzle as locked", shelfCounts(shelf, IDS).locked === IDS.length);
 
-  shelf = markShelf(shelf, IDS[0], "solved");
-  shelf = markShelf(shelf, IDS[1], "revealed");
+  shelf = markShelf(shelf, IDS[0], { mark: "solved" });
+  shelf = markShelf(shelf, IDS[1], { mark: "revealed" });
   check("a solve is remembered", shelfMark(shelf, IDS[0]) === "solved");
   check("a reveal is remembered", shelfMark(shelf, IDS[1]) === "revealed");
   const counts = shelfCounts(shelf, IDS);
@@ -413,9 +431,9 @@ report("test 8  easy mode");
     JSON.stringify(counts));
 
   // a solve outranks a reveal, and nothing already earned is taken away
-  shelf = markShelf(shelf, IDS[1], "solved");
+  shelf = markShelf(shelf, IDS[1], { mark: "solved" });
   check("solving a revealed puzzle promotes it", shelfMark(shelf, IDS[1]) === "solved");
-  shelf = markShelf(shelf, IDS[1], "revealed");
+  shelf = markShelf(shelf, IDS[1], { mark: "revealed" });
   check("revealing a solved puzzle never demotes it", shelfMark(shelf, IDS[1]) === "solved");
 
   check("the shelf line reads plainly",
@@ -426,6 +444,55 @@ report("test 8  easy mode");
   const round: Shelf = JSON.parse(JSON.stringify(shelf));
   check("the shelf survives a round trip", shelfLine(round, IDS) === shelfLine(shelf, IDS));
   check("marking never mutates the shelf handed in", Object.keys(EMPTY_SHELF).length === 0);
+
+  // what a card records: the mode it was played in and what it cost
+  let hard: PuzzleState = newPuzzle(p.id);
+  hard = submitGuess(hard, p, "Alphabet").state;
+  hard = submitGuess(hard, p, "Amazon").state;
+  hard = dealHint(hard);
+  hard = submitGuess(hard, p, p.name).state;
+  check("a hard solve reads plainly",
+    shelfDetail(shelfEntry(hard, "hard")) === "solved in hard, 2 wrong guesses, 1 hint",
+    shelfDetail(shelfEntry(hard, "hard")));
+
+  let easy: PuzzleState = newPuzzle(p.id);
+  easy = submitPick(easy, p, (p.decoys ?? [])[0]).state;
+  check("an easy solve counts the pick",
+    shelfDetail(shelfEntry({ ...easy, status: "solved" }, "easy")) === "solved in easy, 1 wrong pick",
+    shelfDetail(shelfEntry({ ...easy, status: "solved" }, "easy")));
+  check("a clean solve says only that",
+    shelfDetail(shelfEntry(newPuzzle(p.id), "easy")) === "revealed in easy",
+    shelfDetail(shelfEntry(newPuzzle(p.id), "easy")));
+  check("a reveal in hard reads plainly",
+    shelfDetail(shelfEntry(giveUp(newPuzzle(p.id)), "hard")) === "revealed in hard",
+    shelfDetail(shelfEntry(giveUp(newPuzzle(p.id)), "hard")));
+  check("four hints pluralise", shelfDetail({ mark: "solved", mode: "hard", guesses: 0, hints: 4 })
+    === "solved in hard, 4 hints");
+
+  // the shelf as it was left in every shape the game has ever written
+  const legacy = readShelf({ [IDS[0]]: "solved", [IDS[1]]: "revealed", zzqqxx: "solved" }, IDS);
+  check("a legacy shelf still reads", shelfMark(legacy, IDS[0]) === "solved" && shelfMark(legacy, IDS[1]) === "revealed");
+  check("a legacy entry has no detail line to render", shelfDetail(legacy[IDS[0]]) === "");
+  check("a legacy shelf still counts", shelfCounts(legacy, IDS).solved === 1);
+  check("a mark for a puzzle the pool dropped is left behind", Object.keys(legacy).length === 2);
+
+  const stored = readShelf(
+    {
+      [IDS[0]]: { mark: "solved", mode: "easy", guesses: 1, hints: 2 },
+      [IDS[1]]: { mark: "revealed", mode: "hard" },
+      [IDS[2]]: { mark: "nonsense" },
+      [IDS[3]]: 7,
+    },
+    IDS,
+  );
+  check("a stored entry comes back whole",
+    shelfDetail(stored[IDS[0]]) === "solved in easy, 1 wrong pick, 2 hints", shelfDetail(stored[IDS[0]]));
+  check("a stored entry with no counts still reads",
+    shelfDetail(stored[IDS[1]]) === "revealed in hard", shelfDetail(stored[IDS[1]]));
+  check("a nonsense mark is dropped", stored[IDS[2]] === undefined);
+  check("a nonsense entry is dropped", stored[IDS[3]] === undefined);
+  check("nothing stored reads as an empty shelf", Object.keys(readShelf(null, IDS)).length === 0);
+  check("garbage in the key reads as an empty shelf", Object.keys(readShelf("wat", IDS)).length === 0);
 }
 report("test 9  the collection shelf");
 
@@ -447,7 +514,143 @@ report("test 9  the collection shelf");
 }
 report("test 10  the stream order");
 
-// ----------------------------------------------------- test 11: copy audit
+// ------------------------------------------------------- test 11: the decoys
+
+{
+  const catalog = new Map(COMPANIES.map((c) => [c.ticker, c]));
+  for (const p of PUZZLES) {
+    const decoys = p.decoys ?? [];
+    check(`${p.id} carries five decoys`, decoys.length === 5, `${decoys.length}`);
+    check(`${p.id} never offers a name twice`, new Set(decoys).size === decoys.length, decoys.join(", "));
+    for (const ticker of decoys) {
+      check(`${p.id} decoy ${ticker} is a real company`, catalog.has(ticker));
+      check(`${p.id} decoy ${ticker} is not the answer`, ticker !== p.ticker);
+    }
+    // the answer's own name is never quietly among the wrong ones either
+    const answer = catalog.get(p.ticker);
+    if (answer) {
+      for (const ticker of decoys) {
+        const c = catalog.get(ticker);
+        check(`${p.id} decoy ${ticker} is a different company`, c === undefined || c.name !== answer.name,
+          `${c?.name}`);
+      }
+    }
+    // between one and four decoys share the sector, so the sector hint always
+    // rules something out and never leaves the answer standing alone
+    const same = decoys.filter((t) => catalog.get(t)?.sector === p.sector).length;
+    check(`${p.id} the sector hint rules something out`, same <= 4, `${same} of 5 share the sector`);
+    check(`${p.id} the sector hint does not solve it`, same >= 1, `${same} of 5 share the sector`);
+  }
+}
+report("test 11  the decoys");
+
+// ------------------------------------------------------- test 12: easy mode
+
+{
+  const p = byId.get("aapl-2007") ?? PUZZLES[0];
+
+  for (const q of PUZZLES) {
+    const opts = puzzleOptions(q);
+    check(`${q.id} offers six names`, opts.length === 6, `${opts.length}`);
+    check(`${q.id} the answer is among them`, opts.some((o) => o.ticker === q.ticker),
+      opts.map((o) => o.ticker).join(", "));
+    check(`${q.id} no name twice`, new Set(opts.map((o) => o.ticker)).size === 6);
+    // the same six in the same places every time, on every machine
+    check(`${q.id} the order is the puzzle's own`,
+      puzzleOptions(q).map((o) => o.ticker).join(",") === opts.map((o) => o.ticker).join(","));
+  }
+  // and it is a shuffle, not the manifest order read back out
+  const scrambled = PUZZLES.filter((q) => puzzleOptions(q)[0].ticker !== q.ticker).length;
+  check("the answer is not always first", scrambled >= PUZZLES.length - 10, `${PUZZLES.length - scrambled} first`);
+  check("the answer is somewhere other than one place",
+    new Set(PUZZLES.map((q) => puzzleOptions(q).findIndex((o) => o.ticker === q.ticker))).size >= 4);
+
+  // picking the answer solves it, whatever else was picked before
+  check("the right name solves it", submitPick(newPuzzle(p.id), p, p.ticker).state.status === "solved");
+  check("the right name is correct", submitPick(newPuzzle(p.id), p, p.ticker).correct);
+  check("a name off the board does nothing", submitPick(newPuzzle(p.id), p, "ZZZZ").ignored);
+
+  // a wrong pick greys out, burns a pip, and never ends the puzzle while the
+  // budget still has something in it
+  const wrong = (p.decoys ?? []).slice();
+  let s: PuzzleState = newPuzzle(p.id);
+  for (let i = 0; i < PIP_BUDGET; i++) {
+    const res = submitPick(s, p, wrong[i]);
+    s = res.state;
+    check(`wrong pick ${i + 1} spends a pip`, pipsSpent(s) === i + 1, `${pipsSpent(s)}`);
+    check(`wrong pick ${i + 1} greys the name out`,
+      optionViews(s, p).find((o) => o.company.ticker === wrong[i])?.out === "picked");
+    check(`wrong pick ${i + 1} cannot be made twice`, submitPick(s, p, wrong[i]).ignored);
+    check(`wrong pick ${i + 1} leaves the puzzle running`, s.status === "playing", s.status);
+  }
+  check("four wrong picks leave nothing to spend", pipsLeft(s) === 0);
+  check("a spent puzzle deals no hint", !canDealHint(s));
+  const last = submitPick(s, p, wrong[4]);
+  check("a wrong pick with nothing left ends it", last.state.status === "failed", last.state.status);
+  check("that ending reads as revealed", resultLine(last.state, p) === "revealed");
+  check("a finished puzzle takes no more picks", submitPick(last.state, p, wrong[0]).ignored);
+
+  // hints and picks draw on the same four. Two of these hints are the sector,
+  // so the picks have to come off what the eliminator left standing.
+  const stillOpen = (st: PuzzleState): string[] =>
+    optionViews(st, p).filter((o) => o.out === null && o.company.ticker !== p.ticker).map((o) => o.company.ticker);
+  let mix: PuzzleState = newPuzzle(p.id);
+  mix = dealHint(mix);
+  mix = dealHint(mix);
+  check("two hints spend two pips", pipsSpent(mix) === 2 && pipsLeft(mix) === 2);
+  check("two names are still open", stillOpen(mix).length >= 2, stillOpen(mix).join(", "));
+  mix = submitPick(mix, p, stillOpen(mix)[0]).state;
+  mix = submitPick(mix, p, stillOpen(mix)[0]).state;
+  check("two picks spend the rest", pipsSpent(mix) === 4 && pipsLeft(mix) === 0);
+  check("the budget stops the hint button", !canDealHint(mix));
+  check("the puzzle is still open", mix.status === "playing");
+  check("the answer still solves it", submitPick(mix, p, p.ticker).state.status === "solved");
+  check("solving on the last pip reads at par plus",
+    resultLine(submitPick(mix, p, p.ticker).state, p) === "solved with 4 hints, two over par",
+    resultLine(submitPick(mix, p, p.ticker).state, p));
+  check("one more miss ends it", submitPick(mix, p, stillOpen(mix)[0]).state.status === "failed");
+
+  // the sector hint is the eliminator
+  let ruled: PuzzleState = newPuzzle(p.id);
+  ruled = dealHint(dealHint(ruled));
+  check("the sector hint is dealt", hasHint(ruled, "sector"));
+  const views = optionViews(ruled, p);
+  const out = views.filter((v) => v.out === "sector");
+  check("the sector hint rules names out", out.length >= 1, `${out.length}`);
+  check("it never rules out the answer", views.find((v) => v.company.ticker === p.ticker)?.out === null);
+  check("it only rules out the wrong trade", out.every((v) => v.company.sector !== p.sector));
+  check("a ruled out name cannot be picked", !canPick(ruled, p, out[0].company.ticker));
+  check("picking a ruled out name costs nothing", submitPick(ruled, p, out[0].company.ticker).ignored);
+  const open = views.find((v) => v.out === null && v.company.ticker !== p.ticker);
+  check("something is still to play for", open !== undefined);
+
+  // every puzzle in the pool can actually be won this way
+  for (const q of PUZZLES) {
+    check(`${q.id} can be solved by picking`, submitPick(newPuzzle(q.id), q, q.ticker).state.status === "solved");
+  }
+}
+report("test 12  easy mode");
+
+// -------------------------------------------------------- test 13: settings
+
+{
+  check("everybody starts in easy", DEFAULT_SETTINGS.mode === "easy");
+  check("nothing stored reads as easy", readSettings(null).mode === "easy");
+  check("easy reads back", readSettings({ mode: "easy" }).mode === "easy");
+  check("hard reads back", readSettings({ mode: "hard" }).mode === "hard");
+  // the key used to hold an easy-mode flag that was off by default
+  check("the old off flag reads as easy", readSettings({ easy: false }).mode === "easy");
+  check("the old on flag reads as easy", readSettings({ easy: true }).mode === "easy");
+  check("an empty object reads as easy", readSettings({}).mode === "easy");
+  check("garbage reads as easy", readSettings("wat").mode === "easy");
+  check("a nonsense mode reads as easy", readSettings({ mode: "medium" }).mode === "easy");
+  check("a number reads as easy", readSettings(7).mode === "easy");
+  const round = readSettings(JSON.parse(JSON.stringify({ mode: "hard" })));
+  check("a mode survives a round trip", round.mode === "hard");
+}
+report("test 13  settings");
+
+// ----------------------------------------------------- test 14: copy audit
 
 {
   const files = [
@@ -479,9 +682,9 @@ report("test 10  the stream order");
   check("no stroke language in the model", !/\bstrokes?\b/i.test(model));
   check("no stroke language in the page", !/\bstroke\b(?!-|s?[A-Z])/.test(page.replace(/stroke(Width|Linejoin)?=/g, "")));
 }
-report("test 11  copy audit");
+report("test 14  copy audit");
 
-// ------------------------- test 8: split disclosure and finished-state no-ops
+// ------------------------ test 15: split disclosure and finished-state no-ops
 
 {
   // the five puzzles with a split inside their mystery year, plus the two whose
@@ -499,7 +702,7 @@ report("test 11  copy audit");
   const after = submitGuess(failed, p, p.aliases[0]);
   check("a failed puzzle takes no guesses", after.state.status === failed.status && after.state.guesses.length === failed.guesses.length);
 }
-report("test 8  split disclosure and finished-state no-ops");
+report("test 15  split disclosure and finished-state no-ops");
 
 console.log(failures === 0 ? "\nall tests pass" : `\n${failures} checks failed`);
 if (failures > 0) process.exit(1);

@@ -1,48 +1,66 @@
 // The walk for Guess the Stock, per docs/guess-the-stock-spec.md section 8.
 //
-// It opens the pinned first puzzle cold, gets one guess wrong, buys two hints
-// and checks they came off the ladder in order, solves on an alias, reads the
-// reveal, takes the next puzzle, gives up on it, and reloads to prove the
-// scorecard is still there. Screenshots land in tools/shots/guess/.
+// The game opens in easy mode, so the walk does too: six real names under the
+// chart, one of them right. It picks a wrong one and watches it grey out and
+// take a pip, buys the widen hint and the sector hint and watches the sector
+// hint rule a name out, picks the answer, and reads the reveal. Then it spends
+// a whole budget on wrong names to prove the puzzle ends when there is nothing
+// left to spend, switches to hard mode for the typeahead and the sector tags
+// that are simply always on there, opens the collection to read how each card
+// went, and reloads to prove none of it was only in memory.
 //
-// If nothing is serving port 4318 it starts the dev server itself and stops it
-// again on the way out.
+// The shelf is seeded with an entry in the shape the collection used to be
+// written in, and the settings with the flag they used to be written in, so the
+// walk also proves a player who was here before the two modes existed comes
+// back to a game rather than a blank page.
+//
+// It serves the site itself: port 4318 if something is already there, and its
+// own vite preview on the next port up if not, which it stops on the way out.
 //
 // Run it with: node tools/guesscheck.mjs
 import { chromium } from "playwright";
 import { spawn } from "child_process";
 import { mkdirSync } from "fs";
 
-const PORT = 4318;
-const BASE = `http://localhost:${PORT}`;
+const MAIN = 4318;
 const OUT = new URL("./shots/guess/", import.meta.url).pathname;
+const ROOT = new URL("..", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function alive() {
+async function alive(port) {
   try {
-    const r = await fetch(BASE, { method: "GET" });
+    const r = await fetch(`http://localhost:${port}`, { method: "GET" });
     return r.ok;
   } catch {
     return false;
   }
 }
 
+// somebody else's dev server is never touched, so when 4318 is quiet the walk
+// builds and serves its own copy one port up and leaves 4318 alone
 let server = null;
-if (!(await alive())) {
-  console.log("starting the dev server");
-  server = spawn("npm", ["run", "dev", "--", "--port", String(PORT)], {
-    cwd: new URL("..", import.meta.url).pathname,
+let port = MAIN;
+if (!(await alive(MAIN))) {
+  port = MAIN + 1;
+  console.log(`nothing on ${MAIN}, serving the built site on ${port}`);
+  await new Promise((resolve, reject) => {
+    const build = spawn("npm", ["run", "build"], { cwd: ROOT, stdio: "ignore" });
+    build.on("exit", (code) => (code === 0 ? resolve() : reject(new Error("build failed"))));
+  });
+  server = spawn("npx", ["vite", "preview", "--port", String(port), "--strictPort"], {
+    cwd: ROOT,
     stdio: "ignore",
   });
-  for (let i = 0; i < 60 && !(await alive()); i++) await wait(500);
-  if (!(await alive())) {
-    console.log("FAIL  the dev server never came up");
+  for (let i = 0; i < 60 && !(await alive(port)); i++) await wait(500);
+  if (!(await alive(port))) {
+    console.log("FAIL  the preview server never came up");
     server.kill();
     process.exit(1);
   }
 }
+const BASE = `http://localhost:${port}`;
 
 let failures = 0;
 function check(name, ok, detail = "") {
@@ -59,16 +77,18 @@ page.on("pageerror", (e) => {
 page.on("console", (m) => {
   if (m.type() === "error") console.log("CONSOLE.ERR:", m.text());
 });
-// every walk starts with an empty scorecard, and the reload later in the walk
-// has to find the scorecard still there, so the wipe happens once per tab
+// every walk starts from the same place, and the reloads later in the walk have
+// to find that place still there, so the seeding happens once per tab
 await page.addInitScript(() => {
   try {
     if (sessionStorage.getItem("walk-began")) return;
     sessionStorage.setItem("walk-began", "1");
     localStorage.removeItem("guess-stats");
     localStorage.removeItem("guess-cursor");
-    localStorage.removeItem("guess-settings");
-    localStorage.removeItem("guess-shelf");
+    // the shapes the game used to write: a bare mark on the shelf, and an easy
+    // mode flag that was off by default
+    localStorage.setItem("guess-shelf", JSON.stringify({ "ko-1985": "solved", "wmt-1999": "revealed" }));
+    localStorage.setItem("guess-settings", JSON.stringify({ easy: true }));
   } catch (e) {}
 });
 
@@ -76,6 +96,13 @@ const shot = async (name) => {
   await page.screenshot({ path: OUT + name });
   console.log("      shot", name);
 };
+
+const optionNames = async () => (await page.getByTestId("option").allInnerTexts()).map((t) => t.trim());
+const optionState = async (ticker) =>
+  await page.locator(`[data-testid="option"][data-ticker="${ticker}"]`).getAttribute("data-state");
+const spentPips = async () => await page.locator('[data-testid="pips"] i[data-spent="yes"]').count();
+const hintLines = async () =>
+  (await page.getByTestId("revealed").locator("div").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
 
 // --------------------------------------------------------------- cold open
 
@@ -87,6 +114,8 @@ check("the pinned puzzle keeps its place in the stream",
   await page.getByTestId("puzzle-no").innerText());
 check("par reads 2", await page.getByText("par 2").isVisible());
 check("the chart drew a line", (await page.locator("svg path").count()) >= 2);
+check("no pip is spent yet", (await spentPips()) === 0);
+check("the ladder is four pips wide", (await page.getByTestId("pips").locator("i").count()) === 4);
 check("no hint is spent yet", (await page.getByTestId("revealed").count()) === 0);
 check("the scorecard opens empty", (await page.getByTestId("scorecard").innerText()).includes("no puzzles yet"));
 check("the axis is in percent", (await page.locator("svg text").allTextContents()).some((t) => t.includes("%")));
@@ -96,132 +125,92 @@ check("the year is free from the first second",
   (await page.locator("svg text").allTextContents()).join(" "));
 check("the axis names the months with it",
   (await page.locator("svg text").allTextContents()).some((t) => t.startsWith("jan 2007")));
-await shot("01-cold.png");
 
-// ------------------------------------------------------- the typeahead
+// the old settings shape is on the key, and nobody lands in hard mode over it
+check("the old stored setting reads as easy",
+  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "mode: easy",
+  await page.getByTestId("mode-toggle").innerText());
+check("easy opens with no box to type in", (await page.getByTestId("guess-input").count()) === 0);
 
-// one letter is enough to reach a household name through its alias
-await page.getByTestId("guess-input").fill("g");
-await wait(200);
-check("one letter opens the suggestions", (await page.getByTestId("suggestions").count()) === 1);
-const oneLetter = await page.getByTestId("suggestion").allInnerTexts();
-check("the rows carry a name and a ticker",
-  /[A-Za-z].*\b[A-Z]{1,5}\b/.test(oneLetter[0].replace(/\s+/g, " ")), oneLetter[0]);
-check("one letter reaches Alphabet", oneLetter.some((t) => t.includes("GOOGL")), oneLetter.join(" | "));
-await shot("02-typeahead.png");
+const opened = await optionNames();
+check("six names are offered", opened.length === 6, `${opened.length}`);
+check("the answer is among them", opened.includes("Apple"), opened.join(" | "));
+check("the buttons carry the name and nothing else",
+  opened.every((t) => /^[A-Za-z0-9.'&\- ]+$/.test(t)) && !opened.some((t) => /\bAAPL\b/.test(t)),
+  opened.join(" | "));
+check("they are real companies from that year",
+  ["Alphabet", "Microsoft", "Intel", "Amazon", "BlackBerry"].every((n) => opened.includes(n)),
+  opened.join(" | "));
+check("every name starts pickable",
+  (await page.locator('[data-testid="option"][data-state="open"]').count()) === 6);
+await shot("01-cold-easy.png");
 
-await page.getByTestId("guess-input").fill("goo");
-await wait(200);
-const rows = await page.getByTestId("suggestion").allInnerTexts();
-check("the top row is Alphabet", rows[0].includes("Alphabet"), rows[0]);
-check("the top row shows the ticker", rows[0].includes("GOOGL"), rows[0]);
-check("the top row shows the word typed", rows[0].includes("google"), rows[0]);
-check("the list is capped at six", rows.length <= 6, `${rows.length}`);
+// the six are shuffled by the puzzle, so the board is the same one every time
+await page.reload();
+await wait(700);
+check("the option order is the puzzle's own", (await optionNames()).join(",") === opened.join(","),
+  `${opened.join(",")} then ${(await optionNames()).join(",")}`);
 
-// garbage can be typed but never submitted
-await page.getByTestId("guess-input").fill("zzqqxx");
-await wait(200);
-check("garbage suggests nothing", (await page.getByTestId("suggestions").count()) === 0);
-await page.getByTestId("guess-input").press("Enter");
-await wait(200);
-check("garbage never becomes a guess", (await page.getByTestId("guessed").count()) === 0);
-check("garbage shakes the box",
-  (await page.getByTestId("guess-input").getAttribute("class")).includes("guess-shake"));
-check("garbage never ends the puzzle", (await page.getByTestId("reveal").count()) === 0);
-await shot("03-no-match.png");
+// ------------------------------------------------------------- a wrong pick
 
-// ------------------------------------------------------------ a wrong guess
-
-await page.getByTestId("guess-input").fill("goo");
-await wait(200);
-await page.getByTestId("guess-input").press("Enter");
-await wait(150);
-check("the box shakes", (await page.getByTestId("guess-input").getAttribute("class")).includes("guess-shake"));
-let guessed = (await page.getByTestId("guessed").innerText()).toLowerCase();
-check("the picked company joins the line", guessed.startsWith("guessed:") && guessed.includes("alphabet"), guessed);
-check("a wrong guess never ends the puzzle", (await page.getByTestId("reveal").count()) === 0);
-
-// arrow keys and enter pick a row further down
-await page.getByTestId("guess-input").fill("ford");
-await wait(200);
-await page.getByTestId("guess-input").press("ArrowDown");
-await wait(120);
-await page.getByTestId("guess-input").press("Enter");
-await wait(200);
-guessed = (await page.getByTestId("guessed").innerText()).toLowerCase();
-check("the arrow key pick joins the line", guessed.includes("ford"), guessed);
+await page.locator('[data-testid="option"][data-ticker="BB"]').click();
 await wait(300);
-await shot("04-wrong.png");
+check("the wrong name greys out", (await optionState("BB")) === "picked", await optionState("BB"));
+check("the wrong pick burns a pip", (await spentPips()) === 1, `${await spentPips()}`);
+check("a wrong pick never ends the puzzle", (await page.getByTestId("reveal").count()) === 0);
+check("the rest are still pickable",
+  (await page.locator('[data-testid="option"][data-state="open"]').count()) === 5);
+check("a spent name cannot be picked again",
+  await page.locator('[data-testid="option"][data-ticker="BB"]').isDisabled());
+await shot("02-wrong-pick.png");
 
-// ----------------------------------------------------------- easy mode
-
-check("easy mode starts off",
-  (await page.getByTestId("easy-toggle").innerText()).trim() === "easy mode: off",
-  await page.getByTestId("easy-toggle").innerText());
-check("no tags while it is off", (await page.getByTestId("sector-tag").count()) === 0);
-
-await page.getByTestId("easy-toggle").click();
-await wait(250);
-check("easy mode reads on",
-  (await page.getByTestId("easy-toggle").innerText()).trim() === "easy mode: on",
-  await page.getByTestId("easy-toggle").innerText());
-const tags = await page.getByTestId("sector-tag").allInnerTexts();
-check("every wrong guess carries a tag", tags.length === 2, tags.join(" | "));
-check("a technology guess on a technology year reads same", tags[0].includes("same sector"), tags[0]);
-check("a carmaker on a technology year reads different", tags[1].includes("different sector"), tags[1]);
-await shot("05-easy-mode.png");
-
-await page.getByTestId("easy-toggle").click();
-await wait(250);
-check("turning it off takes the tags away", (await page.getByTestId("sector-tag").count()) === 0);
-await page.getByTestId("easy-toggle").click();
-await wait(250);
-check("easy mode is back on for the reveal", (await page.getByTestId("sector-tag").count()) === 2);
-
-// ------------------------------------------------------------- two hints
+// ------------------------------------------------- two hints off the ladder
 
 await page.getByTestId("hint").click();
 await wait(250);
-const hintLines = async () =>
-  (await page.getByTestId("revealed").locator("div").allInnerTexts()).map((t) =>
-    t.replace(/\s+/g, " ").trim(),
-  );
 let lines = await hintLines();
 check("the first hint is widen", lines[0].startsWith("> widen"), lines.join(" | "));
 check("widening added days either side", (await page.locator("svg rect").count()) >= 1);
-await shot("06-hint-widen.png");
+check("the hint burns a pip too", (await spentPips()) === 2, `${await spentPips()}`);
 
 await page.getByTestId("hint").click();
 await wait(250);
 lines = await hintLines();
 check("the second hint is sector", lines[1].startsWith("> sector"), lines.join(" | "));
 check("the sector is technology", lines[1].includes("technology"), lines[1]);
-check("the ladder is four pips wide", (await page.getByTestId("pips").locator("i").count()) === 4);
-await shot("07-hint-sector.png");
+check("three pips are spent", (await spentPips()) === 3, `${await spentPips()}`);
+check("the sector hint rules the wrong trade out", (await optionState("AMZN")) === "sector",
+  await optionState("AMZN"));
+check("a ruled out name cannot be picked",
+  await page.locator('[data-testid="option"][data-ticker="AMZN"]').isDisabled());
+check("it never rules out the answer", (await optionState("AAPL")) === "open");
+check("the technology names are all still there",
+  (await page.locator('[data-testid="option"][data-state="open"]').count()) === 4,
+  `${await page.locator('[data-testid="option"][data-state="open"]').count()}`);
+await shot("03-hint-sector.png");
 
-// -------------------------------------------------------- solve on an alias
+// ------------------------------------------------------- picking the answer
 
-await page.getByTestId("guess-input").fill("apple computer");
-await wait(200);
-const solveRows = await page.getByTestId("suggestion").allInnerTexts();
-check("the alias finds Apple", solveRows[0].includes("Apple") && solveRows[0].includes("AAPL"), solveRows[0]);
-await page.getByTestId("guess-input").press("Enter");
+await page.locator('[data-testid="option"][data-ticker="AAPL"]').click();
 await wait(500);
 check("the reveal opened", (await page.getByTestId("reveal").count()) === 1);
 const reveal = await page.getByTestId("reveal").innerText();
 check("the reveal names the company", reveal.includes("Apple"), reveal.split("\n")[0]);
 check("the reveal gives the year", reveal.includes("2007"));
 check("the reveal tells the story", (await page.getByTestId("story").innerText()).includes("iPhone"));
-check("the result line counts the hints",
-  (await page.getByTestId("result").innerText()).trim() === "solved with 2 hints, at par",
+check("the result line counts every pip as a hint",
+  (await page.getByTestId("result").innerText()).trim() === "solved with 3 hints, one over par",
   await page.getByTestId("result").innerText());
+check("the reveal remembers the wrong pick",
+  (await page.getByTestId("picked").innerText()).includes("blackberry"),
+  await page.getByTestId("picked").innerText());
 const axis = await page.locator("svg text").allTextContents();
 check("the chart relabels to dollars", axis.some((t) => t.includes("$")), axis.join(" "));
 check("the chart relabels to the real year", axis.some((t) => t.includes("2007")), axis.join(" "));
 check("the scorecard counted the solve",
   (await page.getByTestId("scorecard").innerText()).includes("solved 1 of 1"),
   await page.getByTestId("scorecard").innerText());
-await shot("08-reveal.png");
+await shot("04-reveal-easy.png");
 
 // ------------------------------------------------------------- next puzzle
 
@@ -229,25 +218,100 @@ await page.getByTestId("next").click();
 await wait(600);
 check("next deals a different puzzle", (await page.getByTestId("puzzle-no").innerText()).trim() !== "no. 4",
   await page.getByTestId("puzzle-no").innerText());
-check("the new puzzle is unsolved", (await page.getByTestId("guess-input").count()) === 1);
+check("the new puzzle offers six fresh names",
+  (await page.locator('[data-testid="option"][data-state="open"]').count()) === 6);
+check("the new puzzle spent no pips", (await spentPips()) === 0);
 check("the new puzzle spent no hints", (await page.getByTestId("revealed").count()) === 0);
-check("the new puzzle has no guesses", (await page.getByTestId("guessed").count()) === 0);
 check("the new puzzle hides the price again",
   !(await page.locator("svg text").allTextContents()).some((t) => t.includes("$")));
 check("the new puzzle still gives its year away",
   (await page.locator("svg text").allTextContents()).some((t) => /\b(19|20)\d{2}\b/.test(t)));
-await shot("09-next.png");
+await shot("05-next.png");
 
-// --------------------------------------------------------------- giving up
+// -------------------------------------------------- spending the whole budget
 
-await page.getByTestId("give-up").click();
+await page.goto(`${BASE}/#/guess?p=gme-2021`);
+await wait(600);
+check("the squeeze puzzle offers its own six",
+  (await optionNames()).includes("GameStop") && (await optionNames()).includes("AMC Entertainment"),
+  (await optionNames()).join(" | "));
+for (const ticker of ["BBBY", "BB", "AMC", "NOK"]) {
+  await page.locator(`[data-testid="option"][data-ticker="${ticker}"]`).click();
+  await wait(200);
+}
+check("four wrong names fill the pips", (await spentPips()) === 4, `${await spentPips()}`);
+check("four wrong names never ended it", (await page.getByTestId("reveal").count()) === 0);
+check("there is nothing left to buy a hint with", await page.getByTestId("hint").isDisabled());
+check("one name besides the answer is still on the board",
+  (await page.locator('[data-testid="option"][data-state="open"]').count()) === 2);
+await shot("06-budget-spent.png");
+
+await page.locator('[data-testid="option"][data-ticker="KOSS"]').click();
 await wait(500);
-check("giving up reveals the answer", (await page.getByTestId("result").innerText()).trim() === "revealed",
+check("a wrong name with nothing left to spend ends the puzzle",
+  (await page.getByTestId("reveal").count()) === 1);
+check("it ends as revealed", (await page.getByTestId("result").innerText()).trim() === "revealed",
   await page.getByTestId("result").innerText());
-const after = await page.getByTestId("scorecard").innerText();
-check("the fail counted", after.includes("solved 1 of 2"), after);
-check("the fail broke the streak", after.includes("streak 0"), after);
-await shot("10-give-up.png");
+check("the reveal names the answer anyway",
+  (await page.getByTestId("reveal").innerText()).includes("GameStop"));
+const afterFail = await page.getByTestId("scorecard").innerText();
+check("the fail counted", afterFail.includes("solved 1 of 2"), afterFail);
+check("the fail broke the streak", afterFail.includes("streak 0"), afterFail);
+await shot("07-auto-reveal.png");
+
+// ------------------------------------------------------------- hard mode
+
+await page.getByTestId("mode-toggle").click();
+await wait(250);
+check("the toggle reads hard",
+  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "mode: hard",
+  await page.getByTestId("mode-toggle").innerText());
+
+await page.goto(`${BASE}/#/guess?p=c-2008`);
+await wait(600);
+check("hard mode takes the names away", (await page.getByTestId("option").count()) === 0);
+check("hard mode hands over the box", (await page.getByTestId("guess-input").count()) === 1);
+
+await page.getByTestId("guess-input").fill("goo");
+await wait(250);
+const rows = await page.getByTestId("suggestion").allInnerTexts();
+check("the top row is Alphabet", rows[0].includes("Alphabet"), rows[0]);
+check("the top row shows the ticker", rows[0].includes("GOOGL"), rows[0]);
+check("the top row shows the word typed", rows[0].includes("google"), rows[0]);
+check("the list is capped at six", rows.length <= 6, `${rows.length}`);
+await shot("08-hard-typeahead.png");
+
+await page.getByTestId("guess-input").press("Enter");
+await wait(300);
+check("the box shakes", (await page.getByTestId("guess-input").getAttribute("class")).includes("guess-shake"));
+let guessed = (await page.getByTestId("guessed").innerText()).toLowerCase();
+check("the picked company joins the line", guessed.startsWith("guessed:") && guessed.includes("alphabet"), guessed);
+check("a wrong guess never ends the puzzle", (await page.getByTestId("reveal").count()) === 0);
+check("a wrong guess costs no pip", (await spentPips()) === 0, `${await spentPips()}`);
+
+await page.getByTestId("guess-input").fill("jpmorgan");
+await wait(250);
+await page.getByTestId("guess-input").press("Enter");
+await wait(300);
+const tags = await page.getByTestId("sector-tag").allInnerTexts();
+check("hard mode tags every wrong guess with no setting to find", tags.length === 2, tags.join(" | "));
+check("a technology name on a bank year reads different", tags[0].includes("different sector"), tags[0]);
+check("another bank on a bank year reads same", tags[1].includes("same sector"), tags[1]);
+await shot("09-hard-tags.png");
+
+await page.getByTestId("guess-input").fill("citi");
+await wait(250);
+await page.getByTestId("guess-input").press("Enter");
+await wait(500);
+check("the alias solved it", (await page.getByTestId("reveal").count()) === 1);
+check("the result line reads clean",
+  (await page.getByTestId("result").innerText()).trim() === "solved with no hints, two under par",
+  await page.getByTestId("result").innerText());
+check("free guesses stayed free in the reveal",
+  (await page.getByTestId("guessed").innerText()).toLowerCase().includes("jpmorgan"));
+const afterHard = await page.getByTestId("scorecard").innerText();
+check("the scorecard counted the hard solve", afterHard.includes("solved 2 of 3"), afterHard);
+await shot("10-reveal-hard.png");
 
 // ---------------------------------------------------------- the collection
 
@@ -256,26 +320,39 @@ await wait(400);
 check("the collection opens", (await page.getByTestId("collection").count()) === 1);
 const cards = page.getByTestId("shelf-card");
 check("the shelf holds the whole pool", (await cards.count()) === 30, `${await cards.count()}`);
-check("the solved puzzle filled in",
-  (await page.locator('[data-testid="shelf-card"][data-mark="solved"]').count()) === 1);
-check("the revealed puzzle is marked as revealed",
-  (await page.locator('[data-testid="shelf-card"][data-mark="revealed"]').count()) === 1);
+check("the solved puzzles filled in",
+  (await page.locator('[data-testid="shelf-card"][data-mark="solved"]').count()) === 3,
+  `${await page.locator('[data-testid="shelf-card"][data-mark="solved"]').count()}`);
+check("the revealed puzzles are marked as revealed",
+  (await page.locator('[data-testid="shelf-card"][data-mark="revealed"]').count()) === 2,
+  `${await page.locator('[data-testid="shelf-card"][data-mark="revealed"]').count()}`);
 check("everything else is still a silhouette",
-  (await page.locator('[data-testid="shelf-card"][data-mark="locked"]').count()) === 28,
+  (await page.locator('[data-testid="shelf-card"][data-mark="locked"]').count()) === 25,
   `${await page.locator('[data-testid="shelf-card"][data-mark="locked"]').count()}`);
 
-const solvedCard = await page.locator('[data-testid="shelf-card"][data-mark="solved"]').innerText();
-check("the solved card names the company", solvedCard.includes("Apple") && solvedCard.includes("AAPL"),
-  solvedCard.replace(/\n/g, " "));
-check("the solved card carries the story", solvedCard.includes("iPhone"), solvedCard.replace(/\n/g, " "));
-const revealedCard = await page.locator('[data-testid="shelf-card"][data-mark="revealed"]').innerText();
-check("the revealed card says revealed", revealedCard.includes("revealed"), revealedCard.replace(/\n/g, " "));
+const cardText = async (n) => (await cards.nth(n).innerText()).replace(/\n/g, " ");
+const apple = await cardText(3);
+check("the solved card names the company", apple.includes("Apple") && apple.includes("AAPL"), apple);
+check("the solved card carries the story", apple.includes("iPhone"), apple);
+check("the solved card says how it went", apple.includes("solved in easy, 1 wrong pick, 2 hints"), apple);
+const gme = await cardText(0);
+check("the auto revealed card says how it went", gme.includes("revealed in easy, 5 wrong picks"), gme);
+const citi = await cardText(5);
+check("the hard card names its mode", citi.includes("solved in hard, 2 wrong guesses"), citi);
+const legacy = await cardText(29);
+check("a card shelved before any of this still reads",
+  legacy.includes("Coca-Cola") && legacy.includes("New Coke"), legacy);
+check("a legacy card invents no detail line", !/solved in|revealed in/.test(legacy), legacy);
+const legacyFail = await cardText(27);
+check("a legacy reveal still says so", legacyFail.includes("Walmart") && legacyFail.includes("revealed"),
+  legacyFail);
+check("and says it once", (legacyFail.match(/revealed/g) ?? []).length === 1, legacyFail);
 
 const locked = await page.locator('[data-testid="shelf-card"][data-mark="locked"]').first().innerText();
 check("a silhouette gives away nothing but its year", /^no\. \d+ (19|20)\d{2}$/.test(locked.replace(/\s+/g, " ").trim()),
   locked.replace(/\n/g, " "));
 check("the shelf line counts the pool",
-  (await page.getByTestId("shelf-line").innerText()).includes("1 solved . 1 revealed . 30 in the pool"),
+  (await page.getByTestId("shelf-line").innerText()).includes("3 solved . 2 revealed . 30 in the pool"),
   await page.getByTestId("shelf-line").innerText());
 await shot("11-collection.png");
 
@@ -289,19 +366,26 @@ check("the puzzle is where it was left", (await page.getByTestId("reveal").count
 await page.reload();
 await wait(700);
 const reloaded = await page.getByTestId("scorecard").innerText();
-check("the scorecard survived the reload", reloaded === after, `${after} then ${reloaded}`);
+check("the scorecard survived the reload", reloaded === afterHard, `${afterHard} then ${reloaded}`);
+check("the mode survived the reload",
+  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "mode: hard",
+  await page.getByTestId("mode-toggle").innerText());
 await page.getByTestId("collection-open").click();
 await wait(350);
 check("the shelf survived the reload",
-  (await page.getByTestId("shelf-line").innerText()).includes("1 solved . 1 revealed"),
+  (await page.getByTestId("shelf-line").innerText()).includes("3 solved . 2 revealed"),
   await page.getByTestId("shelf-line").innerText());
+check("the detail lines survived the reload",
+  (await cardText(3)).includes("solved in easy, 1 wrong pick, 2 hints"), await cardText(3));
 await page.getByTestId("collection-close").click();
 await wait(250);
 check("the back control closes the collection", (await page.getByTestId("collection").count()) === 0);
-check("easy mode survived the reload",
-  (await page.getByTestId("easy-toggle").innerText()).trim() === "easy mode: on",
-  await page.getByTestId("easy-toggle").innerText());
 await shot("12-reload.png");
+
+await page.getByTestId("mode-toggle").click();
+await wait(300);
+check("switching back brings the names out again", (await page.getByTestId("option").count()) === 6);
+check("and takes the box away", (await page.getByTestId("guess-input").count()) === 0);
 
 // ------------------------------------------------------------ the landing
 

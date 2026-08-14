@@ -1,9 +1,13 @@
 // Guess the Stock: one real company, one real year, drawn whole and unlabelled.
 //
-// The page is a terminal panel and nothing else: the chart, a line of pips for
-// the hints, a box to type into, one hint button, and the quiet line of wrong
-// guesses under it. Everything it knows how to decide comes from
+// The page is a terminal panel and nothing else: the chart, a line of pips, one
+// hint button, and either six names to choose between or an empty box and the
+// whole market. Everything it knows how to decide comes from
 // src/lib/guess/model.ts, so this file only draws and listens.
+//
+// Easy is the mode everybody starts in, because a player who cannot name a
+// single chart still gets to be right some of the time. Hard is the same game
+// with the names taken away.
 //
 // The skin is the terminal variant of public/sketches/marketguessr.html: page
 // and panel #0C0F14, chart well #090C10, gridlines #1B2330, axis text #5B6979,
@@ -13,13 +17,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import raw from "../data/guessPuzzles.json";
 import {
-  HINT_LADDER, Order, Puzzle, PuzzleState, Settings, Shelf, Stats, Suggestion,
+  OptionView, Order, PIP_BUDGET, Puzzle, PuzzleState, Settings, Shelf, Stats, Suggestion,
   advanceOrder, canDealHint, currentId, dealHint, dealtHints, dollarAt, dollarTicks,
   formatDollars, formatPercent, giveUp, hasHint, hintLine, initialOrder, loadOrder,
-  loadSettings, loadShelf, loadStats, markShelf, monthMarks, newPuzzle, normalizeGuess, percentAt,
-  percentTicks, recordFail, recordSolve, resultLine, saveOrder, saveSettings, saveShelf, saveStats,
-  scorecardLine, sectorVerdict, seriesRange, shelfLine, shelfMark, submitGuess, suggestCompanies,
-  verdictLabel, visibleWindow,
+  loadSettings, loadShelf, loadStats, markShelf, monthMarks, newPuzzle, normalizeGuess, optionViews,
+  percentAt, percentTicks, pipsSpent, recordFail, recordSolve, resultLine, saveOrder, saveSettings,
+  saveShelf, saveStats, scorecardLine, sectorVerdict, seriesRange, shelfDetail, shelfLine, shelfMark,
+  shelfEntry, submitGuess, submitPick, suggestCompanies, verdictLabel, visibleWindow,
 } from "../lib/guess/model";
 
 const PUZZLES = raw as Puzzle[];
@@ -180,16 +184,16 @@ const HINT_BTN: React.CSSProperties = {
   cursor: "pointer",
 };
 
-// The quiet line of wrong guesses. In easy mode each one carries whether that
-// company works in the same trade as the answer, which is the only help the
-// mode gives; the hint ladder is untouched by it.
-function GuessedLine({ guesses, puzzle, easy }: { guesses: string[]; puzzle: Puzzle; easy: boolean }) {
+// The quiet line of wrong guesses in hard mode. Each one carries whether that
+// company works in the same trade as the answer, which is the only thing hard
+// mode gives back for a miss; the hint ladder is untouched by it.
+function GuessedLine({ guesses, puzzle }: { guesses: string[]; puzzle: Puzzle }) {
   if (guesses.length === 0) return null;
   return (
     <div style={{ fontSize: 11, color: C.axis, lineHeight: 1.7 }} data-testid="guessed">
       guessed:{" "}
       {guesses.map((g, i) => {
-        const verdict = easy ? sectorVerdict(g, puzzle) : null;
+        const verdict = sectorVerdict(g, puzzle);
         return (
           <span key={g}>
             {i > 0 && " . "}
@@ -209,11 +213,63 @@ function GuessedLine({ guesses, puzzle, easy }: { guesses: string[]; puzzle: Puz
   );
 }
 
+// Easy mode's six names, the answer among five that could each have drawn
+// something like this. A name picked wrong stays on screen struck through, and
+// once the sector hint is paid for, every name in the wrong trade goes quiet
+// with it, so the hint does real work here rather than only naming a word.
+function Options({
+  views,
+  shake,
+  onPick,
+}: {
+  views: OptionView[];
+  shake: number;
+  onPick: (ticker: string) => void;
+}) {
+  return (
+    <div
+      key={shake}
+      className={shake ? "guess-shake" : ""}
+      data-testid="options"
+      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}
+    >
+      {views.map(({ company, out }) => (
+        <button
+          key={company.ticker}
+          type="button"
+          disabled={out !== null}
+          onClick={() => onPick(company.ticker)}
+          data-testid="option"
+          data-ticker={company.ticker}
+          data-state={out ?? "open"}
+          style={{
+            border: `1px solid ${out ? C.border : C.fieldEdge}`,
+            background: out ? "#0A0D12" : C.field,
+            color: out ? C.axis : C.bright,
+            opacity: out ? 0.5 : 1,
+            textDecoration: out === "picked" ? "line-through" : "none",
+            fontFamily: MONO,
+            fontSize: 12.5,
+            textAlign: "left",
+            padding: "10px 12px",
+            borderRadius: 4,
+            cursor: out ? "default" : "pointer",
+          }}
+        >
+          {company.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // The collection: the whole pool in stream order. A solved puzzle keeps its
-// name, its year and the line of history behind it; a revealed one is marked
-// as revealed rather than solved; an unplayed one is a dark card carrying its
-// year and nothing else, because the year is the only thing the game gives away
-// before you play it.
+// name, its year and the line of history behind it, with a green edge and a
+// quiet line saying how it went; a revealed one keeps everything but the green
+// edge; an unplayed one is a dark card carrying its year and nothing else,
+// because the year is the only thing the game gives away before you play it.
+// A card shelved before any of that was recorded says only revealed, which is
+// all it ever knew.
 function Collection({
   puzzles,
   shelf,
@@ -252,6 +308,8 @@ function Collection({
         {puzzles.map((p, i) => {
           const mark = shelfMark(shelf, p.id);
           const played = mark !== null;
+          // how it went, when the card is new enough to remember
+          const detail = shelfDetail(shelf[p.id] ?? null);
           return (
             <div
               key={p.id}
@@ -276,7 +334,7 @@ function Collection({
                     <span style={{ fontSize: 12.5, color: C.bright, fontWeight: 700 }}>{p.name}</span>
                     <span style={{ fontSize: 10.5, color: C.axis }}>{p.ticker}</span>
                     <span style={{ fontSize: 10.5, color: C.axis }}>{p.year}</span>
-                    {mark === "revealed" && (
+                    {mark === "revealed" && !detail && (
                       <span data-testid="revealed-tag" style={{ marginLeft: "auto", fontSize: 10, color: C.axis }}>
                         revealed
                       </span>
@@ -290,6 +348,11 @@ function Collection({
               </div>
               {played && (
                 <div style={{ fontSize: 10.5, lineHeight: 1.5, color: C.dim }}>{p.story}</div>
+              )}
+              {detail && (
+                <div data-testid="shelf-detail" style={{ fontSize: 10, color: C.axis }}>
+                  {detail}
+                </div>
               )}
             </div>
           );
@@ -347,15 +410,31 @@ export default function GuessTheStock() {
   const over = state.status !== "playing";
   const widened = hasHint(state, "widen") || over;
   const dollars = hasHint(state, "price") || over;
+  const easy = settings.mode === "easy";
+  const options = useMemo(() => optionViews(state, puzzle), [state, puzzle]);
 
   function finish(next: PuzzleState) {
     setState(next);
-    const s = next.status === "solved" ? recordSolve(stats, next.hints, puzzle.par) : recordFail(stats);
+    const s =
+      next.status === "solved" ? recordSolve(stats, pipsSpent(next), puzzle.par) : recordFail(stats);
     setStats(s);
     saveStats(s);
-    const shelved = markShelf(shelf, puzzle.id, next.status === "solved" ? "solved" : "revealed");
+    const shelved = markShelf(shelf, puzzle.id, shelfEntry(next, settings.mode));
     setShelf(shelved);
     saveShelf(shelved);
+  }
+
+  // Easy mode's whole move. A miss greys the name out and burns a pip, and a
+  // miss with nothing left to burn ends the puzzle, which the model decides.
+  function pick(ticker: string) {
+    const res = submitPick(state, puzzle, ticker);
+    if (res.ignored) return;
+    if (res.state.status === "playing") {
+      setState(res.state);
+      setShake((n) => n + 1);
+    } else {
+      finish(res.state);
+    }
   }
 
   // Free typing is fine, but a guess is only ever a real company off the
@@ -471,18 +550,22 @@ export default function GuessTheStock() {
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 11, color: C.axis }}>
             <span>hints</span>
             <span style={{ display: "flex", gap: 4 }} data-testid="pips">
-              {HINT_LADDER.map((key, i) => (
-                <i
-                  key={key}
-                  style={{
-                    width: 9,
-                    height: 9,
-                    display: "block",
-                    border: `1px solid ${i < state.hints ? C.amber : C.pipEdge}`,
-                    background: i < state.hints ? C.amber : "transparent",
-                  }}
-                />
-              ))}
+              {Array.from({ length: PIP_BUDGET }, (_, i) => {
+                const spent = i < pipsSpent(state);
+                return (
+                  <i
+                    key={i}
+                    data-spent={spent ? "yes" : "no"}
+                    style={{
+                      width: 9,
+                      height: 9,
+                      display: "block",
+                      border: `1px solid ${spent ? C.amber : C.pipEdge}`,
+                      background: spent ? C.amber : "transparent",
+                    }}
+                  />
+                );
+              })}
             </span>
             <span style={{ marginLeft: "auto", color: C.amber }}>par {puzzle.par}</span>
           </div>
@@ -508,6 +591,39 @@ export default function GuessTheStock() {
           )}
 
           {!over ? (
+            easy ? (
+            <>
+              <Options views={options} shake={shake} onPick={pick} />
+              <button
+                type="button"
+                onClick={() => setState(dealHint(state))}
+                disabled={!canDealHint(state)}
+                data-testid="hint"
+                style={{ ...HINT_BTN, alignSelf: "flex-start", opacity: canDealHint(state) ? 1 : 0.35 }}
+              >
+                hint
+              </button>
+              <button
+                type="button"
+                onClick={() => finish(giveUp(state))}
+                data-testid="give-up"
+                style={{
+                  alignSelf: "flex-start",
+                  background: "none",
+                  border: 0,
+                  padding: 0,
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  color: C.axis,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                }}
+              >
+                reveal answer
+              </button>
+            </>
+            ) : (
             <>
               <form onSubmit={onSubmit} style={{ display: "flex", gap: 9 }}>
                 <div style={{ flex: 1, position: "relative" }}>
@@ -604,7 +720,7 @@ export default function GuessTheStock() {
                 </div>
               )}
 
-              <GuessedLine guesses={state.guesses} puzzle={puzzle} easy={settings.easy} />
+              <GuessedLine guesses={state.guesses} puzzle={puzzle} />
 
               <button
                 type="button"
@@ -626,6 +742,7 @@ export default function GuessTheStock() {
                 reveal answer
               </button>
             </>
+            )
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }} data-testid="reveal">
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -640,7 +757,16 @@ export default function GuessTheStock() {
               <div style={{ fontSize: 11.5, color: C.amber }} data-testid="result">
                 {resultLine(state, puzzle)}
               </div>
-              <GuessedLine guesses={state.guesses} puzzle={puzzle} easy={settings.easy} />
+              <GuessedLine guesses={state.guesses} puzzle={puzzle} />
+              {state.picks.length > 0 && (
+                <div style={{ fontSize: 11, color: C.axis, lineHeight: 1.7 }} data-testid="picked">
+                  picked:{" "}
+                  {state.picks
+                    .map((t) => options.find((o) => o.company.ticker === t)?.company.name ?? t)
+                    .join(" . ")
+                    .toLowerCase()}
+                </div>
+              )}
               <button type="button" onClick={onNext} data-testid="next" style={{ ...HINT_BTN, alignSelf: "flex-start" }}>
                 next
               </button>
@@ -675,11 +801,11 @@ export default function GuessTheStock() {
           <button
             type="button"
             onClick={() => {
-              const next = { easy: !settings.easy };
+              const next: Settings = { mode: easy ? "hard" : "easy" };
               setSettings(next);
               saveSettings(next);
             }}
-            data-testid="easy-toggle"
+            data-testid="mode-toggle"
             style={{
               marginLeft: "auto",
               background: "none",
@@ -687,11 +813,13 @@ export default function GuessTheStock() {
               padding: 0,
               fontFamily: MONO,
               fontSize: 11,
-              color: settings.easy ? C.amber : C.axis,
+              color: C.axis,
               cursor: "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
             }}
           >
-            easy mode: {settings.easy ? "on" : "off"}
+            mode: <span style={{ color: easy ? C.dim : C.amber }}>{settings.mode}</span>
           </button>
         </div>
       </div>

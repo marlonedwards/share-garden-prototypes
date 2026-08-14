@@ -1,5 +1,5 @@
 // Re-apply the curated manifest to the already baked puzzles: stream order,
-// par, sector, market cap, story and aliases. Prices are never touched and
+// par, sector, market cap, story, aliases and decoys. Prices are never touched and
 // Yahoo is never asked, so changing how the pool is ordered or scored costs
 // nothing and cannot move a single close.
 //
@@ -30,6 +30,7 @@ for (const m of POOL) {
     marketCap: m.marketCap,
     story: m.story,
     par: m.par,
+    decoys: m.decoys,
   });
   console.log(`${String(out.length).padStart(2)} ${m.id.padEnd(11)} par ${m.par}${parChanged}`);
 }
