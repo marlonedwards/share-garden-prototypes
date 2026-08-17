@@ -103,13 +103,13 @@ export default function Landing() {
         </p>
 
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <Link to="/takeover" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+          <Link to="/takeover" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <TakeoverMotif />
             </div>
             <div className="text-[12px] font-semibold" style={{ color: "#2C8A55" }}>New game</div>
             <div className="text-[22px] font-semibold tracking-tight">Takeover</div>
-            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
               Start as a lemonade stand and eat every company smaller than you. Real names,
               real market values. Click to split and lunge, dodge anything bigger, and see
               how much of the market you can swallow in ninety seconds.
@@ -117,13 +117,13 @@ export default function Landing() {
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Takeover</div>
           </Link>
 
-          <Link to="/worth" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+          <Link to="/worth" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <WorthMotif />
             </div>
             <div className="text-[12px] font-semibold" style={{ color: "#7C3AED" }}>New game</div>
             <div className="text-[22px] font-semibold tracking-tight">Worth More</div>
-            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
               Two companies, one question: which is worth more? Every answer reveals the real
               numbers, the winner stays on as your next opponent, and one wrong tap ends
               the streak.
@@ -131,13 +131,13 @@ export default function Landing() {
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#7C3AED" }}>Play Worth More</div>
           </Link>
 
-          <Link to="/guess" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+          <Link to="/guess" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <GuessMotif />
             </div>
             <div className="text-[12px] font-semibold" style={{ color: "#2C8A55" }}>New game</div>
             <div className="text-[22px] font-semibold tracking-tight">Guess the Stock</div>
-            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
               Guess the company from one real year of its stock chart. Guesses are free, five
               hints wait behind one button, and every answer comes with the one line of history
               that made the year look like that.
@@ -145,13 +145,12 @@ export default function Landing() {
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Guess the Stock</div>
           </Link>
 
-          <Link to="/tally" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+          <Link to="/tally" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <TallyMotif />
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#B57A00" }}>Game one</div>
             <div className="text-[22px] font-semibold tracking-tight">The Tally</div>
-            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
               Cards are what you own, and blocks are what it is worth. A crash strips the wall
               down and leaves every card sitting on the table. Eight chapters carry you from a
               piggy bank to real market history.
@@ -159,7 +158,7 @@ export default function Landing() {
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Tally</div>
           </Link>
 
-          <Link to="/orb" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+          <Link to="/orb" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <div className="w-24 h-24 rounded-full relative"
                 style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(238,243,250,0.4) 55%, rgba(214,224,238,0.65))", boxShadow: "inset 0 0 0 1.5px rgba(30,45,80,0.12), 0 14px 28px -14px rgba(24,34,60,0.4)" }}>
@@ -169,9 +168,8 @@ export default function Landing() {
                 <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
               </div>
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>Game two</div>
             <div className="text-[22px] font-semibold tracking-tight">The Orb</div>
-            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
               Your portfolio is one glass marble. Companies are colors, the sealed rainbow orb is
               the index, and crashes deflate prices, never your shares. Five short Basics lessons,
               a guided tutorial, six eras of real market history, and a final planning lesson run
@@ -180,13 +178,12 @@ export default function Landing() {
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#0071e3" }}>Play the Orb</div>
           </Link>
 
-          <Link to="/garden" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+          <Link to="/garden" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <img src={S("pumpkin")} alt="" style={{ height: 104 }} />
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#3f6b3a" }}>Game three</div>
             <div className="text-[22px] font-semibold tracking-tight">Share Garden</div>
-            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
               Share Garden teaches the same first lesson in a garden. Plant size is the market price, selling is
               transplanting to another gardener, the co-op field is the index, and frost is the
               crash you tend through.
