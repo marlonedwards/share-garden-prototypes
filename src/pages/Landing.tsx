@@ -63,18 +63,74 @@ function GuessMotif() {
   );
 }
 
+// Takeover's motif: a big disc closing in on a small one, in the game's own
+// dark-arena language.
+function TakeoverMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <rect x="0" y="0" width="118" height="104" rx="14" fill="#0C0F14" />
+      <circle cx="44" cy="54" r="30" fill="#E2231A" />
+      <text x="44" y="58" textAnchor="middle" fontSize="11" fontWeight="700" fill="#F4F7FB" fontFamily="ui-monospace, Menlo, monospace">roblox</text>
+      <circle cx="92" cy="40" r="12" fill="#10141B" stroke="#E8EDF4" strokeWidth="2" />
+      <circle cx="20" cy="24" r="7" fill="#7ABA40" />
+      <circle cx="98" cy="82" r="9" fill="#00A4EF" />
+    </svg>
+  );
+}
+
+// Worth More's motif: two versus cards and the question mark of the hidden
+// value, in the game's own bright language.
+function WorthMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <rect x="4" y="14" width="50" height="76" rx="10" fill="#7C3AED" />
+      <circle cx="29" cy="42" r="13" fill="#ffffff" opacity="0.92" />
+      <rect x="17" y="64" width="24" height="7" rx="3.5" fill="#ffffff" opacity="0.85" />
+      <rect x="64" y="14" width="50" height="76" rx="10" fill="#F59E0B" />
+      <circle cx="89" cy="42" r="13" fill="#ffffff" opacity="0.92" />
+      <text x="89" y="76" textAnchor="middle" fontSize="22" fontWeight="800" fill="#ffffff">?</text>
+    </svg>
+  );
+}
+
 export default function Landing() {
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
       <main className="max-w-4xl mx-auto px-6 pt-16 pb-20">
-        <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Financial literacy games</h1>
+        <h1 className="text-[44px] leading-tight font-semibold tracking-tight">Games</h1>
         <p className="mt-3 text-[17px] max-w-2xl" style={{ color: "#6e6e73" }}>
-          Four visually beautiful games teach investing concepts and fundamentals. Each one
-          turns the market into something you can see and play with: shares, prices, crashes,
-          and what it takes to hold through them.
+          Money is a game and the ladder we climb
         </p>
 
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <Link to="/takeover" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <TakeoverMotif />
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: "#2C8A55" }}>New game</div>
+            <div className="text-[22px] font-semibold tracking-tight">Takeover</div>
+            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+              Start as a lemonade stand and eat every company smaller than you. Real names,
+              real market values. Click to split and lunge, dodge anything bigger, and see
+              how much of the market you can swallow in ninety seconds.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Takeover</div>
+          </Link>
+
+          <Link to="/worth" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <WorthMotif />
+            </div>
+            <div className="text-[12px] font-semibold" style={{ color: "#7C3AED" }}>New game</div>
+            <div className="text-[22px] font-semibold tracking-tight">Worth More</div>
+            <p className="text-[13.5px] mt-1.5" style={{ color: "#6e6e73" }}>
+              Two companies, one question: which is worth more? Every answer reveals the real
+              numbers, the winner stays on as your next opponent, and one wrong tap ends
+              the streak.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#7C3AED" }}>Play Worth More</div>
+          </Link>
+
           <Link to="/guess" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5">
             <div className="h-28 flex items-center justify-center mb-4">
               <GuessMotif />

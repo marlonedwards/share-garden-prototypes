@@ -20,6 +20,8 @@ import ReadyMode from "./pages/ReadyMode";
 import Archive from "./pages/Archive";
 import Tally from "./pages/Tally";
 import GuessTheStock from "./pages/GuessTheStock";
+import Takeover from "./pages/Takeover";
+import WorthMore from "./pages/WorthMore";
 
 // remount the scenario page whenever the scenario id changes, so the sim
 // engine never carries one era's state into another
@@ -49,6 +51,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<Landing />} />
         {/* Guess the Stock: one puzzle at a time, and ?p=<id> pins a specific one */}
         <Route path="/guess" element={<GuessTheStock />} />
+        <Route path="/takeover" element={<Takeover />} />
+        <Route path="/worth" element={<WorthMore />} />
         <Route path="/pulse" element={<Pulse />} />
         <Route path="/prism" element={<Prism />} />
         <Route path="/garden" element={<GardenGame />} />
