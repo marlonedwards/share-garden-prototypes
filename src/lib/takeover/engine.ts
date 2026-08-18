@@ -134,6 +134,20 @@ export const BURN_PER_SEC = 0.008;
 // A titan that wanders this far is recycled, so the giants stay in sight.
 const TITAN_LEASH = 1200;
 
+// Trouble is named for the size of what it is chasing. A corner shop gets a
+// small claim, a giant gets an antitrust suit, and the percentage says exactly
+// what it costs whoever it lands on.
+function hazardLabel(kind: HazardKind, amount: number, target: number): string {
+  const pct = Math.round(amount * 100);
+  if (kind === "debt") return "Debt collector";
+  if (kind === "audit") {
+    const name = target < 1e9 ? "Tax audit" : target < 1e11 ? "IRS audit" : "Federal probe";
+    return `${name} -${pct}%`;
+  }
+  const name = target < 1e9 ? "Small claims" : target < 1e11 ? "Class action" : "Antitrust suit";
+  return `${name} -${pct}%`;
+}
+
 // Size is a log scale, and it has to be: the board spans six orders of
 // magnitude, from a $2M lemonade stand to a $4T Apple. True area-proportional
 // scaling would make Apple a thousand times the player's radius, which is a
@@ -143,6 +157,17 @@ const TITAN_LEASH = 1200;
 // flashes and the end card carry the real numbers.
 export function radiusOf(value: number): number {
   return 26 + 25 * Math.log10(Math.max(value, 1e6) / 1e6);
+}
+
+// One second of play is one month of company life, so payroll can be quoted
+// the way a business quotes it and a run can be measured in years.
+export function monthsLabel(elapsedSeconds: number): string {
+  const months = Math.max(1, Math.round(elapsedSeconds));
+  if (months < 12) return `${months} ${months === 1 ? "month" : "months"}`;
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const y = `${years} ${years === 1 ? "year" : "years"}`;
+  return rest ? `${y} ${rest} ${rest === 1 ? "month" : "months"}` : y;
 }
 
 function speedOf(value: number): number {
@@ -305,29 +330,29 @@ export class TakeoverRun {
     });
   }
 
-  // Red trouble: audits, lawsuits, debt collectors. They chase when awake.
+  // Red trouble: audits, lawsuits, debt collectors. They chase the nearest
+  // company, and the player is just another company to them. Damage is a share
+  // of whatever they land on, so one hazard is a real threat at any size, and
+  // the name is tiered to the size of what it is currently chasing.
   private spawnHazard(everywhere = false) {
-    const w = this.worth;
     const kinds: HazardKind[] = ["audit", "audit", "lawsuit", "lawsuit", "debt", "debt"];
     const kind = kinds[Math.floor(this.rng() * kinds.length)];
     const p = this.centroid();
     const ang = this.rng() * Math.PI * 2;
     const dist = everywhere ? 650 + this.rng() * (VIEW - 650) : 700 + this.rng() * (VIEW - 700);
-    let label = "";
     let amount = 0;
     let speed = 0;
     if (kind === "audit") {
       amount = 0.14 + this.rng() * 0.16;
-      label = `IRS audit -${Math.round(amount * 100)}%`;
       speed = 55;
     } else if (kind === "lawsuit") {
-      amount = w * (0.15 + this.rng() * 0.2);
-      label = `Lawsuit -${fmtMoney(amount)}`;
+      amount = 0.15 + this.rng() * 0.2;
       speed = 85;
     } else {
-      label = "Debt collector";
+      amount = 0.12 + this.rng() * 0.1;
       speed = 115;
     }
+    const label = hazardLabel(kind, amount, START_VALUE);
     this.hazards.push({
       id: this.nextId++,
       kind,
@@ -610,23 +635,47 @@ export class TakeoverRun {
       }
     }
 
-    // Red trouble moves: awake hazards chase the nearest player cell, asleep
-    // ones drift. Consumed on touch, short immunity, bankruptcy below half
-    // the starting worth.
+    // Red trouble moves. A hazard chases the nearest company in range and the
+    // player is just another company to it, so the whole market is at risk and
+    // you can watch a class action take a bite out of Meta. Damage is a share
+    // of whatever it lands on, and the name is tiered to that target's size.
     for (const hz of [...this.hazards]) {
-      const target = this.cells.reduce(
-        (best, cell) => {
-          const d = Math.hypot(cell.x - hz.x, cell.y - hz.y);
-          return d < best.d ? { d, cell } : best;
-        },
-        { d: Infinity, cell: null as Cell | null },
-      );
+      let tx = 0;
+      let ty = 0;
+      let tDist = Infinity;
+      let tWorth = 0;
+      let tCompany: CompanyBlob | null = null;
+
+      for (const cell of this.cells) {
+        const d = Math.hypot(cell.x - hz.x, cell.y - hz.y);
+        if (d < tDist) {
+          tDist = d;
+          tx = cell.x;
+          ty = cell.y;
+          tWorth = w;
+          tCompany = null;
+        }
+      }
+      for (const b of this.companies) {
+        if (b.c.local) continue; // a lemonade stand is not worth suing
+        const d = Math.hypot(b.x - hz.x, b.y - hz.y);
+        if (d < tDist) {
+          tDist = d;
+          tx = b.x;
+          ty = b.y;
+          tWorth = b.cap;
+          tCompany = b;
+        }
+      }
+
+      hz.label = hazardLabel(hz.kind, hz.amount, tWorth || START_VALUE);
+
       // Three seconds of grace at round start: the red drifts but does not
       // hunt yet, so spawning is never a death sentence.
-      if (target.cell && target.d < HAZARD_WAKE && this.elapsed > 3) {
-        const dx = target.cell.x - hz.x;
-        const dy = target.cell.y - hz.y;
-        const d = target.d || 1;
+      if (tDist < HAZARD_WAKE && this.elapsed > 3) {
+        const dx = tx - hz.x;
+        const dy = ty - hz.y;
+        const d = tDist || 1;
         hz.x += (dx / d) * hz.speed * dt;
         hz.y += (dy / d) * hz.speed * dt;
       } else {
@@ -634,13 +683,21 @@ export class TakeoverRun {
         hz.y += Math.sin(hz.id) * 18 * dt;
       }
 
-      const stale =
-        Math.hypot(hz.x - p.x, hz.y - p.y) > VIEW * 1.6 ||
-        (hz.kind === "lawsuit" && hz.amount < w * 0.02);
-      if (stale) {
+      if (Math.hypot(hz.x - p.x, hz.y - p.y) > VIEW * 1.6) {
         this.hazards.splice(this.hazards.indexOf(hz), 1);
         continue;
       }
+
+      // A company caught by trouble simply shrinks, which can drop it below
+      // the player and turn a predator into lunch.
+      if (tCompany && tDist < radiusOf(tCompany.cap) + hz.r * 0.5) {
+        const bite = tCompany.cap * hz.amount;
+        tCompany.cap -= bite;
+        this.hazards.splice(this.hazards.indexOf(hz), 1);
+        this.flash(`${hz.label.split(" -")[0]} hit ${tCompany.c.name} for ${fmtMoney(bite)}`);
+        continue;
+      }
+
       if (this.elapsed < this.immuneUntil) continue;
       const hit = this.cells.some(
         (cell) => Math.hypot(cell.x - hz.x, cell.y - hz.y) < radiusOf(cell.value) + hz.r * 0.5,
@@ -649,25 +706,21 @@ export class TakeoverRun {
       this.hazards.splice(this.hazards.indexOf(hz), 1);
       this.immuneUntil = this.elapsed + 1.5;
       const beforeHit = this.worth;
-      if (hz.kind === "audit") {
+      const tier = hz.label.split(" -")[0];
+      if (hz.kind === "debt") {
+        this.debtUntil = this.elapsed + 6;
+        this.flash("Debt collector latched on");
+      } else {
         const k = 1 - hz.amount;
         for (const cell of this.cells) cell.value *= k;
         this.lostToCosts += beforeHit - this.worth;
-        this.flash(`IRS audit took ${fmtMoney(beforeHit - this.worth)}`);
-      } else if (hz.kind === "lawsuit") {
-        const share = Math.min(hz.amount, w) / this.cells.length;
-        for (const cell of this.cells) cell.value = Math.max(cell.value - share, 1e4);
-        this.lostToCosts += beforeHit - this.worth;
-        this.flash(`Lawsuit cost you ${fmtMoney(beforeHit - this.worth)}`);
-      } else {
-        this.debtUntil = this.elapsed + 6;
-        this.flash("Debt collector latched on");
+        this.flash(`${tier} took ${fmtMoney(beforeHit - this.worth)}`);
       }
       if (this.worth < START_VALUE * 0.25) {
         this.finalWorth = this.worth;
         this.over = {
           kind: "bankrupt",
-          by: hz.kind === "audit" ? "the IRS" : hz.kind === "lawsuit" ? "a lawsuit" : "debt",
+          by: hz.kind === "audit" ? "an audit" : hz.kind === "lawsuit" ? "a lawsuit" : "debt",
         };
         return;
       }

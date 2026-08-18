@@ -4,9 +4,48 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { BURN_PER_SEC, TakeoverRun, radiusOf, START_VALUE } from "../lib/takeover/engine";
+import { BURN_PER_SEC, TakeoverRun, monthsLabel, radiusOf, START_VALUE } from "../lib/takeover/engine";
 import { fmtMoney, rankBeaten, type TakeoverCompany } from "../data/takeoverCompanies";
 import { UI_FONT, uiFont } from "../lib/type";
+
+// The best run this browser has seen, so there is always a number to beat.
+interface BestRun {
+  worth: number;
+  meal: string;
+  mealValue: number;
+}
+
+const BEST_KEY = "takeover-best";
+
+function saveBest(run: TakeoverRun): BestRun | null {
+  const prev = readBest();
+  const biggest = run.eaten.length
+    ? run.eaten.reduce((a, b) => (a.value > b.value ? a : b))
+    : null;
+  if (prev && prev.worth >= run.finalWorth) return prev;
+  const next: BestRun = {
+    worth: run.finalWorth,
+    meal: biggest?.c.name ?? "",
+    mealValue: biggest?.value ?? 0,
+  };
+  try {
+    localStorage.setItem(BEST_KEY, JSON.stringify(next));
+  } catch {
+    // a browser with storage off still plays fine
+  }
+  return next;
+}
+
+function readBest(): BestRun | null {
+  try {
+    const raw = localStorage.getItem(BEST_KEY);
+    if (!raw) return null;
+    const b = JSON.parse(raw) as BestRun;
+    return typeof b?.worth === "number" ? b : null;
+  } catch {
+    return null;
+  }
+}
 
 // Baked logo cache: public/logos/<short>.png, one Image per company, misses
 // remembered so the brand-color disc renders without retrying every frame.
@@ -46,6 +85,8 @@ export default function Takeover() {
   const [over, setOver] = useState<TakeoverRun["over"]>(null);
   const [, setRound] = useState(0);
   const [started, setStarted] = useState(false);
+  const [best, setBest] = useState<BestRun | null>(() => readBest());
+  const beatenRef = useRef<BestRun | null>(null);
   const [companyName, setCompanyName] = useState(
     () => localStorage.getItem("takeover-name") ?? "",
   );
@@ -122,7 +163,11 @@ export default function Takeover() {
       if (!run.over) {
         const w = toWorld(cursorScreen.current.x, cursorScreen.current.y);
         run.step(dt, w.x, w.y);
-        if (run.over) setOver(run.over);
+        if (run.over) {
+          beatenRef.current = readBest();
+          setBest(saveBest(run));
+          setOver(run.over);
+        }
       }
 
       // Camera follows the player and eases its zoom to the player's size.
@@ -377,43 +422,47 @@ export default function Takeover() {
       {/* The timer lost its label, so the two numbers line up on their bottoms. */}
       <div className="absolute top-0 inset-x-0 flex items-end justify-between px-5 py-4 pointer-events-none">
         <div>
-          <div className="text-[15px]" style={{ color: "#5B6979" }}>
+          <div className="text-[13px] sm:text-[15px]" style={{ color: "#5B6979" }}>
             {run?.playerName ?? ""}
           </div>
           <div
             data-worth
-            className="text-[32px] font-semibold tabular-nums"
+            className="text-[24px] sm:text-[32px] font-semibold tabular-nums"
             style={{ color: "#4ADE80" }}
           >
             {fmtMoney(hud.worth)}
           </div>
-          <div className="text-[15px] tabular-nums" style={{ color: "#C4676B" }}>
-            Payroll {fmtMoney(hud.worth * BURN_PER_SEC)} a second
+          <div className="text-[13px] sm:text-[15px] tabular-nums" style={{ color: "#C4676B" }}>
+            Payroll {fmtMoney(hud.worth * BURN_PER_SEC)} a month
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[32px] font-semibold tabular-nums" style={{ color: "#E8EDF4" }}>
+          <div className="text-[24px] sm:text-[32px] font-semibold tabular-nums" style={{ color: "#E8EDF4" }}>
             {hud.meals}
           </div>
-          <div className="text-[15px]" style={{ color: "#5B6979" }}>
+          <div className="text-[13px] sm:text-[15px]" style={{ color: "#5B6979" }}>
             {hud.meals === 1 ? "company eaten" : "companies eaten"}
           </div>
         </div>
       </div>
 
-      {hud.flash && !over && (
-        <div className="absolute top-20 inset-x-0 text-center pointer-events-none">
+
+      {/* One slot at the bottom: the hint by default, the event when one fires,
+          so nothing ever floats over the HUD or a bubble. */}
+      <div className="absolute bottom-4 inset-x-0 flex justify-center px-16 pointer-events-none">
+        {hud.flash && !over ? (
           <span
-            className="inline-block px-5 py-2 rounded-full text-[18px]"
+            data-flash
+            className="rounded-full px-4 py-1.5 text-[14px] sm:text-[17px] text-center"
             style={{ background: "#1F2733", color: "#E8B84B" }}
           >
             {hud.flash}
           </span>
-        </div>
-      )}
-
-      <div className="absolute bottom-4 inset-x-0 text-center pointer-events-none text-[13px]" style={{ color: "#5B6979" }}>
-        Eat every company smaller than you.
+        ) : (
+          <span className="text-[12px] sm:text-[13px] text-center" style={{ color: "#5B6979" }}>
+            Eat every company smaller than you.
+          </span>
+        )}
       </div>
 
       <Link
@@ -475,7 +524,15 @@ export default function Takeover() {
       )}
 
       {over && run && (
-        <EndCard over={over} run={run} onRetry={newRun} />
+        <EndCard
+          over={over}
+          run={run}
+          best={best}
+          beatBest={
+            beatenRef.current && run.finalWorth > beatenRef.current.worth ? beatenRef.current : null
+          }
+          onRetry={newRun}
+        />
       )}
     </div>
   );
@@ -484,10 +541,14 @@ export default function Takeover() {
 function EndCard({
   over,
   run,
+  best,
+  beatBest,
   onRetry,
 }: {
   over: NonNullable<TakeoverRun["over"]>;
   run: TakeoverRun;
+  best: BestRun | null;
+  beatBest: BestRun | null;
   onRetry: () => void;
 }) {
   const worth = run.finalWorth;
@@ -529,7 +590,7 @@ function EndCard({
         </div>
         {over.kind !== "won" && (
           <div className="mt-1 text-[14px] tabular-nums" style={{ color: "#5B6979" }}>
-            Lasted {Math.round(run.elapsed)} seconds
+            Lasted {monthsLabel(run.elapsed)}
           </div>
         )}
         {beaten > 0 && (
@@ -579,7 +640,14 @@ function EndCard({
             </div>
           )}
         </div>
-        <div className="mt-5 text-[13px]" style={{ color: "#5B6979" }}>
+        {best && (
+          <div className="mt-4 text-[13px] tabular-nums" style={{ color: beatBest ? "#E8B84B" : "#5B6979" }}>
+            {beatBest
+              ? `A new best, past ${fmtMoney(beatBest.worth)}`
+              : `Best run ${fmtMoney(best.worth)}`}
+          </div>
+        )}
+        <div className="mt-4 text-[13px]" style={{ color: "#5B6979" }}>
           {shareLine}
         </div>
         <div className="mt-5 flex gap-3">

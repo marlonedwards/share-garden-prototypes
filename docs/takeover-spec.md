@@ -57,6 +57,25 @@ the family: passed 5 of 5 pitches; this is the champion, one build first.
    a quarter of the starting worth, 26 deals on the board, and while you are
    under a billion 70 percent of listed spawns are edible.
 
+### Second round, same day (Marlon's three calls)
+
+8. One second of play is one month of company life. Payroll is quoted the way
+   a business quotes it ("Payroll $44M a month") and a run is measured in
+   company time ("Lasted 3 years 2 months"). Nothing counts down.
+9. Trouble threatens the whole market, not just the player. A hazard chases
+   the nearest listed company and the player is simply another company to it,
+   damage is a share of whatever it lands on, and a company that gets hit
+   shrinks, which can drop a predator below you and turn it into lunch. Local
+   businesses are too small to sue. The names are tiered to the size of the
+   target: small claims, class action, antitrust suit, and tax audit, IRS
+   audit, federal probe.
+10. The best run is remembered in this browser (localStorage "takeover-best"):
+    final worth and biggest meal, shown on the start card as a number to beat
+    and on the end card as either the standing best or "A new best".
+11. Events moved out of the middle of the screen. One slot at the bottom holds
+    the hint by default and the event when one fires, so nothing ever floats
+    over the HUD or a bubble, and the HUD scales down on a phone.
+
 ## 1. The game in one paragraph
 
 Agar.io, but every circle is a real company. You start as a small business
