@@ -125,21 +125,20 @@ function fits(n: number): boolean {
   return n >= 2 && n <= 10000;
 }
 
-// one way to say "this many of those". buying counts down, because a company
-// that covers one and three quarters of another cannot buy two of them; being
-// worth about that many rounds, because about is allowed to round.
+// One way to say "this many of those", and only ever about worth.
+//
+// The line used to sometimes read "Apple could buy 333 GameStops", which is
+// false: a market value is what a company is worth, not cash it holds, and no
+// company can spend its own market cap. Every line here compares worth to
+// worth, which is the only claim the data supports.
 function howMany(big: Company, small: Company, rng: () => number): string | null {
-  const r = ratio(big, small);
-  const buy = Math.floor(r);
-  const about = Math.round(r);
-  const buyLine = `${big.name} could buy ${buy.toLocaleString()} ${plural(small.name)}`;
-  const aboutLine = `${big.name} is worth about ${about.toLocaleString()} ${plural(small.name)}`;
-  if (rng() < 0.5) {
-    if (fits(buy)) return buyLine;
-    return fits(about) ? aboutLine : null;
-  }
-  if (fits(about)) return aboutLine;
-  return fits(buy) ? buyLine : null;
+  const about = Math.round(ratio(big, small));
+  if (!fits(about)) return null;
+  const many = plural(small.name);
+  const n = about.toLocaleString();
+  return rng() < 0.5
+    ? `${big.name} is worth about ${n} ${many}`
+    : `It would take ${n} ${many} to match ${big.name}`;
 }
 
 // one line per reveal, always built from the caps in the data, and always

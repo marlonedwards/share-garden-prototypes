@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { TakeoverRun, radiusOf, START_VALUE } from "../lib/takeover/engine";
+import { BURN_PER_SEC, TakeoverRun, radiusOf, START_VALUE } from "../lib/takeover/engine";
 import { fmtMoney, rankBeaten, type TakeoverCompany } from "../data/takeoverCompanies";
 import { UI_FONT, uiFont } from "../lib/type";
 
@@ -42,7 +42,7 @@ export default function Takeover() {
   const retryRef = useRef(0);
   const cursorScreen = useRef({ x: innerWidth / 2, y: innerHeight / 2 - 120 });
   const camera = useRef({ x: 0, y: 0, zoom: 1 });
-  const [hud, setHud] = useState({ worth: START_VALUE, timeLeft: 90, flash: "" });
+  const [hud, setHud] = useState({ worth: START_VALUE, meals: 0, flash: "" });
   const [over, setOver] = useState<TakeoverRun["over"]>(null);
   const [, setRound] = useState(0);
   const [started, setStarted] = useState(false);
@@ -50,13 +50,11 @@ export default function Takeover() {
     () => localStorage.getItem("takeover-name") ?? "",
   );
 
-  const fast = typeof window !== "undefined" && window.location.hash.includes("fast=1");
-  const roundSeconds = fast ? 8 : 90;
 
   const newRun = () => {
     retryRef.current += 1;
     const name = (localStorage.getItem("takeover-name") ?? "").trim();
-    const run = new TakeoverRun(roundSeconds, daySeed() + retryRef.current * 7919, name);
+    const run = new TakeoverRun(daySeed() + retryRef.current * 7919, name);
     runRef.current = run;
     (window as unknown as { __takeover?: { run: TakeoverRun } }).__takeover = { run };
     setOver(null);
@@ -133,9 +131,10 @@ export default function Takeover() {
         const cx = cells.reduce((s, c) => s + c.x, 0) / cells.length;
         const cy = cells.reduce((s, c) => s + c.y, 0) / cells.length;
         const maxR = Math.max(...cells.map((c) => radiusOf(c.value)));
-        // The player should fill a real piece of the screen, agario style:
-        // about 60px of radius at spawn, growing past 100px by the giants.
-        const targetZoom = Math.max(0.45, Math.min(1.9, 140 / (maxR + 40)));
+        // Close enough that the player is a real presence, wide enough that
+        // the arena is populated and the giants are on screen rather than
+        // looming just past the edge of the world.
+        const targetZoom = Math.max(0.4, Math.min(1.25, 150 / (maxR + 40)));
         const cam = camera.current;
         cam.x += (cx - cam.x) * Math.min(1, dt * 5);
         cam.y += (cy - cam.y) * Math.min(1, dt * 5);
@@ -147,9 +146,9 @@ export default function Takeover() {
       const latestFlash = run.flashes.length ? run.flashes[run.flashes.length - 1] : null;
       const flashText = latestFlash && run.elapsed - latestFlash.at < 2.2 ? latestFlash.text : "";
       setHud((h) =>
-        h.worth === run.worth && h.timeLeft === Math.ceil(run.timeLeft) && h.flash === flashText
+        h.worth === run.worth && h.meals === run.eaten.length + run.ateLocals && h.flash === flashText
           ? h
-          : { worth: run.worth, timeLeft: Math.ceil(run.timeLeft), flash: flashText },
+          : { worth: run.worth, meals: run.eaten.length + run.ateLocals, flash: flashText },
       );
     };
 
@@ -245,6 +244,15 @@ export default function Takeover() {
           g.beginPath();
           g.arc(blob.x, blob.y, r, 0, Math.PI * 2);
           g.stroke();
+          if (blob.levered) {
+            g.strokeStyle = "#E5484D";
+            g.lineWidth = 3;
+            g.setLineDash([9, 7]);
+            g.beginPath();
+            g.arc(blob.x, blob.y, r + 6, 0, Math.PI * 2);
+            g.stroke();
+            g.setLineDash([]);
+          }
           // The caption is the company's real name. `short` is a logo file
           // key ("mcd", "bofa") and is never shown as a name.
           labels.push({
@@ -379,10 +387,16 @@ export default function Takeover() {
           >
             {fmtMoney(hud.worth)}
           </div>
+          <div className="text-[15px] tabular-nums" style={{ color: "#C4676B" }}>
+            Payroll {fmtMoney(hud.worth * BURN_PER_SEC)} a second
+          </div>
         </div>
         <div className="text-right">
           <div className="text-[32px] font-semibold tabular-nums" style={{ color: "#E8EDF4" }}>
-            {hud.timeLeft}
+            {hud.meals}
+          </div>
+          <div className="text-[15px]" style={{ color: "#5B6979" }}>
+            {hud.meals === 1 ? "company eaten" : "companies eaten"}
           </div>
         </div>
       </div>
@@ -477,10 +491,14 @@ function EndCard({
   onRetry: () => void;
 }) {
   const worth = run.finalWorth;
-  const biggest: TakeoverCompany | null = run.eaten.length
-    ? run.eaten.reduce((a, b) => (a.cap > b.cap ? a : b))
-    : null;
   const beaten = rankBeaten(worth);
+  // Where the money came from, biggest acquisition first, and what it cost to
+  // hold. Every figure is what the company was worth at the moment you took
+  // it, so the rows add up to the ledger the engine kept.
+  const bought = [...run.eaten].sort((a, b) => b.value - a.value);
+  const top = bought.slice(0, 5);
+  const rest = bought.slice(5).reduce((sum, e) => sum + e.value, 0);
+  const otherGains = run.gainedLocals + run.gainedDeals + rest;
   const meals = run.eaten.length
     ? `ate ${run.eaten.length} ${run.eaten.length === 1 ? "company" : "companies"}`
     : run.ateLocals
@@ -490,8 +508,8 @@ function EndCard({
     ? `Takeover ${fmtMoney(worth)}, ${meals}.`
     : `Takeover ${fmtMoney(worth)}.`;
   const headline =
-    over.kind === "ipo"
-      ? "You went public"
+    over.kind === "won"
+      ? "You own the market"
       : over.kind === "acquired"
         ? `Acquired by ${over.by.name}`
         : `Bankrupted by ${over.by}`;
@@ -509,7 +527,7 @@ function EndCard({
         <div className="mt-3 text-[16px] tabular-nums">
           Final worth <span style={{ color: "#4ADE80" }}>{fmtMoney(worth)}</span>
         </div>
-        {over.kind !== "ipo" && (
+        {over.kind !== "won" && (
           <div className="mt-1 text-[14px] tabular-nums" style={{ color: "#5B6979" }}>
             Lasted {Math.round(run.elapsed)} seconds
           </div>
@@ -519,24 +537,48 @@ function EndCard({
             Bigger than {beaten} of the S&amp;P 500
           </div>
         )}
-        {biggest && (
-          <div className="mt-1 text-[14px]" style={{ color: "#5B6979" }}>
-            Biggest meal was {biggest.name} at {fmtMoney(biggest.cap)}
-          </div>
-        )}
-        {run.eaten.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {run.eaten.slice(-12).map((c, i) => (
-              <span
-                key={`${c.name}-${i}`}
-                className="px-2.5 py-0.5 rounded-full text-[13px]"
-                style={{ background: "#1F2733", color: "#D7DEE8" }}
-              >
-                {c.name}
+        <div className="mt-5 text-[14px]" style={{ color: "#8794A6" }}>
+          What you bought
+        </div>
+        <div className="mt-1.5 text-[14px]">
+          {top.map((e, i) => (
+            <div key={`${e.c.name}-${i}`} className="flex items-baseline justify-between py-[3px]">
+              <span style={{ color: "#D7DEE8" }}>{e.c.name}</span>
+              <span className="tabular-nums" style={{ color: "#8794A6" }}>
+                {fmtMoney(e.value)}
+                <span style={{ color: "#5B6979" }}>
+                  {"  "}
+                  {Math.round((e.value / Math.max(worth, 1)) * 100)}%
+                </span>
               </span>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+          {otherGains > 0 && (
+            <div className="flex items-baseline justify-between py-[3px]">
+              <span style={{ color: "#8794A6" }}>
+                {bought.length > 5 ? `${bought.length - 5} smaller companies, deals and locals` : "Deals and local businesses"}
+              </span>
+              <span className="tabular-nums" style={{ color: "#8794A6" }}>
+                {fmtMoney(otherGains)}
+                <span style={{ color: "#5B6979" }}>
+                  {"  "}
+                  {Math.round((otherGains / Math.max(worth, 1)) * 100)}%
+                </span>
+              </span>
+            </div>
+          )}
+          {run.lostToCosts > 0 && (
+            <div
+              className="flex items-baseline justify-between py-[3px] mt-1 pt-2"
+              style={{ borderTop: "1px solid #1F2733" }}
+            >
+              <span style={{ color: "#C4676B" }}>Payroll, audits and lawsuits</span>
+              <span className="tabular-nums" style={{ color: "#C4676B" }}>
+                -{fmtMoney(run.lostToCosts)}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="mt-5 text-[13px]" style={{ color: "#5B6979" }}>
           {shareLine}
         </div>

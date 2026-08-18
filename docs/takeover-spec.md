@@ -26,6 +26,37 @@ the family: passed 5 of 5 pitches; this is the champion, one build first.
 4. Naming: a start card asks "name your company" (one input, remembered in
    localStorage "takeover-name"); the arena and HUD carry the typed name.
 
+## August 18 revision (Marlon's playtest, all shipped)
+
+1. No clock. The countdown is gone and with it the "you went public" ending.
+   A run now ends three ways: acquired by a bigger company, bankrupt, or you
+   outgrow the largest company on the board and own the market. The HUD's
+   right side counts companies eaten instead of seconds left.
+2. Payroll. Worth drains 0.8 percent a second, every second, after a three
+   second grace. Standing still is now fatal on its own (about 40 seconds),
+   which is where the pressure the clock used to supply comes from. The HUD
+   states it in dollars: "Payroll $17K a second".
+3. Leveraged acquisitions. A quarter of listed companies carry debt, drawn
+   with a dashed red ring. Eating one adds its full value and attaches its
+   debt, which drains 3 percent a second for five seconds. Big cheap meal,
+   painful morning after.
+4. The giants are always there. Four of the twelve largest companies are on
+   the board at all times, spawned 430 to 900 units out and kept on a 1200
+   unit leash so they cannot wander off and leave the market feeling small.
+   Apple at $4T looms over a $2M player from the first second.
+5. Nothing hunts what it would not notice. A company chases prey between 6
+   and 75 percent of its own size, so a titan ignores a two million dollar
+   player instead of beelining it. Being eaten by a giant is now a mistake
+   you make, not something that happens to you.
+6. Trouble no longer stacks. Hazards push each other apart every frame, and
+   companies too close in size to eat each other do the same. Before this,
+   every debt collector converged on the player and piled into one unreadable
+   heap of rings and doubled labels.
+7. Balance after all of the above: 8 hazards rather than 12, audits take 14
+   to 30 percent, lawsuits 15 to 35 percent of worth at spawn, bankruptcy at
+   a quarter of the starting worth, 26 deals on the board, and while you are
+   under a billion 70 percent of listed spawns are edible.
+
 ## 1. The game in one paragraph
 
 Agar.io, but every circle is a real company. You start as a small business

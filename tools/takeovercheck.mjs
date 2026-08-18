@@ -1,7 +1,8 @@
 // Takeover walk (spec section 7, Aug 17 revision): name gate, arena paints,
 // eating raises worth, red hazards cost money, both end cards reachable
-// (?fast=1 shortens the round; hash-only navigation does not remount, so
-// reload after goto). Dev server on 4318. Shots in tools/shots/takeover/.
+// There is no clock: a run ends by acquisition, bankruptcy, or by owning the
+// market. Hash-only navigation does not remount, so reload after goto.
+// Dev server on 4318. Shots in tools/shots/takeover/.
 import { chromium } from "playwright";
 import { mkdirSync } from "fs";
 
@@ -146,21 +147,62 @@ check(
   `hazard hit costs money (${Math.round(preHit)} -> ${Math.round(postHit.worth)}${postHit.over ? ", " + postHit.over.kind : ""})`,
 );
 
-// 4. IPO card via the fast round. The arena hunts back now, so dying before
-// the 8 second buzzer is possible; allow three attempts to survive one round.
-let ipoText = "";
-for (let attempt = 0; attempt < 3; attempt++) {
-  await openGame("http://localhost:4318/#/takeover?fast=1");
-  await chaseFood(Infinity, 60);
-  await wait(1500);
-  ipoText = (await page.locator("[data-endcard]").count())
-    ? await page.locator("[data-endcard]").innerText()
-    : "";
-  if (ipoText.includes("went public")) break;
-}
-check(ipoText.includes("went public"), "ipo card shows");
-await page.screenshot({ path: OUT + "ipo.png" });
-console.log("shot ipo");
+// 4. The giants are actually on the board, and the red never stacks.
+const titans = await page.evaluate(() => {
+  const run = window.__takeover.run;
+  const me = run.cells[0];
+  const big = run.companies.filter((b) => b.cap >= 5e11);
+  return {
+    count: big.length,
+    nearest: big.length
+      ? Math.round(Math.min(...big.map((b) => Math.hypot(b.x - me.x, b.y - me.y))))
+      : -1,
+    names: big.map((b) => b.c.name).slice(0, 4),
+  };
+});
+check(titans.count >= 3, `giants are on the board (${titans.count}: ${titans.names.join(", ")})`);
+check(
+  titans.nearest > 0 && titans.nearest < 1000,
+  `a giant is close enough to see (${titans.nearest} units away)`,
+);
+
+const stacked = await page.evaluate(() => {
+  const hs = window.__takeover.run.hazards;
+  let worst = null;
+  for (let i = 0; i < hs.length; i++) {
+    for (let j = i + 1; j < hs.length; j++) {
+      const d = Math.hypot(hs[i].x - hs[j].x, hs[i].y - hs[j].y);
+      const min = hs[i].r + hs[j].r;
+      if (d < min && (!worst || min - d > worst.overlap)) {
+        worst = { overlap: Math.round(min - d), a: hs[i].label, b: hs[j].label };
+      }
+    }
+  }
+  return worst;
+});
+check(!stacked, stacked ? `hazards stack: ${stacked.a} over ${stacked.b} by ${stacked.overlap}px` : "no two hazards overlap");
+
+// 5. There is no clock, so a run only ends by death or by owning the market.
+const ticked = await page.evaluate(async () => {
+  const run = window.__takeover.run;
+  const before = run.elapsed;
+  await new Promise((r) => setTimeout(r, 1200));
+  return { grew: run.elapsed > before, over: run.over, hasTimer: "timeLeft" in run };
+});
+check(!ticked.hasTimer, "the run carries no countdown");
+check(ticked.grew && !ticked.over, "time passing does not end the run");
+
+// 6. Outgrowing the largest company wins it.
+await page.evaluate(() => {
+  window.__takeover.run.cells[0].value = 6e12;
+});
+await wait(900);
+const winText = (await page.locator("[data-endcard]").count())
+  ? await page.locator("[data-endcard]").innerText()
+  : "";
+check(winText.includes("You own the market"), "outgrowing the market wins the run");
+await page.screenshot({ path: OUT + "won.png" });
+console.log("shot won");
 
 // 5. ACQUIRED card: fresh full round, grow until real predators exist, then
 // drive into the nearest one. Two attempts, because a dev-server hot reload
@@ -190,9 +232,9 @@ for (let attempt = 0; attempt < 2; attempt++) {
   endText = (await page.locator("[data-endcard]").count())
     ? await page.locator("[data-endcard]").innerText()
     : "";
-  if (/Acquired by|went public|Bankrupted by/.test(endText)) break;
+  if (/Acquired by|You own the market|Bankrupted by/.test(endText)) break;
 }
-check(/Acquired by|went public|Bankrupted by/.test(endText), "second round ends with a card");
+check(/Acquired by|You own the market|Bankrupted by/.test(endText), "second round ends with a card");
 if (endText.includes("Acquired by")) {
   await page.screenshot({ path: OUT + "acquired.png" });
   console.log("shot acquired");
