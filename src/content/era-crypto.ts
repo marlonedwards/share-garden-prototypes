@@ -21,10 +21,10 @@ import { ScenarioConfig, mom } from "./types";
 export const crypto: ScenarioConfig = {
   id: "crypto",
   lesson: "Lesson 5",
-  title: "Crypto Winters",
-  headerSub: "two crashes and two comebacks, 2018 to 2024",
-  cardLine: "Seven years of real coin prices hold two crashes of 75% and two recoveries. The one scam on the menu collapsed early, and its price series is reconstructed from the dated record.",
-  learn: "This era shows what volatility really feels like, and why bet size matters more than being right.",
+  title: "Crypto winters",
+  headerSub: "Two crashes and two comebacks, 2018 to 2024",
+  cardLine: "Seven years of real coin prices hold two crashes of 75 percent and two recoveries.",
+  learn: "Why bet size matters more than being right.",
   dots: ["#ff9f0a", "#bf5af2", "#ffd60a", "#64d2ff"],
   time: "about 6 minutes",
   dataset: eraCrypto as HistoryDataset,
@@ -170,7 +170,7 @@ export const crypto: ScenarioConfig = {
       title: "November 2021",
       question: "Coin Alpha just touched a record near $69,000, and your barber has a tip. Do you add more?",
       eyebrow: "A mania",
-      definition: "A mania is a bubble with a crowd: the price rises because it is rising, and everyone has a tip.",
+      definition: "A mania is a bubble with a crowd, and the price rises because it is rising.",
       context: [
         "Coin Alpha touched an all-time record near $69,000 in the second week of this month, and even after easing off that top it has multiplied about sixteen times over in the three years since the bottom of the first winter. Stadiums are being renamed after coin companies. People post screenshots of life-changing profits every day.",
         "You lived through the first winter at the start of this run, and it began from a party that felt exactly like this one. Nobody in that crowd knew the top had passed until months after it did.",
@@ -215,7 +215,7 @@ export const crypto: ScenarioConfig = {
   // documentary record, so its timeline honestly includes both winters.
   briefing: {
     title: "The world of January 2018",
-    deck: "This page holds two minutes of real history. Nothing here is required reading, and the dated timeline near the end tells you how the era turns out.",
+    deck: "This page holds two minutes of real history. The dated timeline near the end tells you how the era turns out.",
     readTime: "about 2 minutes",
     sections: [
       {
@@ -254,8 +254,8 @@ export const crypto: ScenarioConfig = {
         heading: "What you will live through",
         lead: "A fair replay of history includes the scam, not just the survivors.",
         body: [
-          "Five of the six coins on your menu carry real market prices, month by month from January 2018 to December 2024. The Promise Coin was real too, but it collapsed within weeks of this starting line, so its price series is reconstructed from the dated record of its rise and its fall. One honest note about the tape: every other series is marked at each month's closing price, while The Promise Coin enters at its early-January price, on the eve of its shutdown, so its very first step shows the full collapse.",
-          "You will live through two winters in which coins lose three quarters of their value, and two springs in which the survivors set new records. At five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way: it holds the real S&P 500, skips the coins entirely, and never trades once.",
+          "Five of the six coins on your menu carry real market prices, month by month from January 2018 to December 2024. The Promise Coin was real too, but it collapsed within weeks of this starting line, so its price series is reconstructed from the dated record of its rise and its fall. Every other series is marked at each month's closing price, while The Promise Coin enters at its early-January price, on the eve of its shutdown, so its very first step shows the full collapse.",
+          "You will live through two winters in which coins lose three quarters of their value, and two springs in which the survivors set new records. At five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way. It holds the real S&P 500, skips the coins entirely, and never trades once.",
         ],
       },
     ],

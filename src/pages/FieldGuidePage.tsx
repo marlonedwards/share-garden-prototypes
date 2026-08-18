@@ -52,9 +52,9 @@ export default function FieldGuidePage() {
 
   const stateLine = (st: MarbleState, unlocked: boolean) =>
     st === "cleared" ? "You proved this one."
-      : st === "cloudy" ? "Still setting. Get its quick-check question right to clear it."
-      : st === "claimed" ? "You said you know this one in the intro. Its first quick check makes it official."
-      : unlocked ? "Card open. Its marble clears when you answer its quick-check question right."
+      : st === "cloudy" ? "Get its quick-check question right to clear it."
+      : st === "claimed" ? "Its first quick check makes it official."
+      : unlocked ? "Its marble clears when you answer its quick-check question right."
       : "You have not met this one in play yet.";
 
   return (
@@ -62,7 +62,7 @@ export default function FieldGuidePage() {
       <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          scenarios
+          Scenarios
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <span className="text-lg font-semibold tracking-tight">Field guide</span>
@@ -72,7 +72,7 @@ export default function FieldGuidePage() {
       <main className="max-w-3xl mx-auto px-6 pt-8 pb-16">
         <p className="text-[14px] max-w-xl" style={{ color: SUB }}>
           Every idea you meet in play gets a card here. Its marble clears when you prove it on a
-          quick check, not when you finish a run. Nothing is ever taken back.
+          quick check.
         </p>
 
         {RAILS.map((rail) => (
@@ -83,7 +83,7 @@ export default function FieldGuidePage() {
                 <div key={e.id} className="flex flex-col items-center gap-1.5" style={{ width: 84 }}>
                   <Marble entry={e} state={marbleState(e.id, s)} active={openId === e.id}
                     onClick={() => setOpenId(openId === e.id ? null : e.id)} />
-                  <span className="text-[11px] text-center leading-tight" style={{ color: SUB }}>{e.title}</span>
+                  <span className="text-[12px] text-center leading-tight" style={{ color: SUB }}>{e.title}</span>
                 </div>
               ))}
             </div>
@@ -96,7 +96,7 @@ export default function FieldGuidePage() {
             <p className="text-[13.5px] mt-1.5" style={{ color: "#3a3a3c" }}>
               {s.unlocked.includes(open.id) || marbleState(open.id, s) !== "empty"
                 ? open.copy
-                : "Play until you meet this one. Its card opens on its own."}
+                : "Play until you meet this one."}
             </p>
             <div className="mt-2.5 flex items-baseline gap-3">
               <span className="text-[12px]" style={{ color: SUB }}>{stateLine(marbleState(open.id, s), s.unlocked.includes(open.id))}</span>

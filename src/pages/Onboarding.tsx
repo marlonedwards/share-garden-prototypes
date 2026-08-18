@@ -144,10 +144,10 @@ export default function Onboarding() {
 
   const doneLine =
     knows >= 2
-      ? "Money does not have to be hard. You know some of this already, so jump straight into the real history."
+      ? "You know some of this already, so jump straight into the real history."
       : knows === 1
-      ? "Money does not have to be hard. Start with the stocks lesson and learn the rest by playing."
-      : "Money does not have to be hard. Start with the two minute cash lesson and learn the rest by playing.";
+      ? "Start with the stocks lesson."
+      : "Start with the two minute cash lesson.";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "radial-gradient(circle at 50% 30%, #ffffff 0%, #f5f5f7 55%, #eceef2 100%)", color: INK, colorScheme: "light" }}>
@@ -188,13 +188,13 @@ export default function Onboarding() {
         {stage === "name" && (
           <div className="mt-7 pop-in">
             <p className="text-[21px] font-semibold tracking-tight">This is your orb.</p>
-            <p className="text-[15px] mt-1.5" style={{ color: SUB }}>First, what's your name?</p>
+            <p className="text-[15px] mt-1.5" style={{ color: SUB }}>What&apos;s your name?</p>
             <input
               autoFocus
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && playerName.trim()) claimName(); }}
-              placeholder="your name"
+              placeholder="Your name"
               maxLength={20}
               className="mt-4 text-center text-[19px] font-semibold tracking-tight bg-transparent outline-none border-b border-black/15 focus:border-black/35 transition pb-1"
               style={{ width: "min(280px, 80vw)" }}
@@ -224,7 +224,7 @@ export default function Onboarding() {
             </p>
             <p className="text-[15px] mt-1.5 max-w-sm mx-auto" style={{ color: SUB }}>
               {poured
-                ? "Money went in, and color filled the glass. Every investment you ever make works exactly like that."
+                ? "Money went in, and color filled the glass."
                 : "Tap a color. Each one is a company you could own a piece of."}
             </p>
             {!poured ? (
@@ -246,8 +246,8 @@ export default function Onboarding() {
 
         {stage === "ask" && (
           <div className="mt-7 pop-in w-full max-w-md" key={qi}>
-            <p className="text-[12px] font-semibold" style={{ color: SUB }}>
-              {orbName ? `${orbName} wants to know you` : "Your orb wants to know you"} · {qi + 1} of {QUESTIONS.length}
+            <p className="text-[12px] font-semibold tnum" style={{ color: SUB }}>
+              {qi + 1} of {QUESTIONS.length}
             </p>
             <p className="text-[17px] font-semibold tracking-tight mt-1.5">{question.prompt}</p>
             <div className="mt-3.5 flex flex-col gap-2">
@@ -258,8 +258,8 @@ export default function Onboarding() {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-[11.5px]" style={{ color: "#a1a1a6" }}>
-              There are no wrong answers here. Honest ones make the course fit you better.
+            <p className="mt-3 text-[12px]" style={{ color: "#a1a1a6" }}>
+              There are no wrong answers here.
             </p>
           </div>
         )}
@@ -272,7 +272,7 @@ export default function Onboarding() {
             <p className="text-[14px] mt-2" style={{ color: SUB }}>{doneLine}</p>
             <button onClick={finish}
               className="mt-5 text-[13.5px] font-medium px-6 py-2.5 rounded-full text-white" style={{ background: ACCENT }}>
-              I'm ready!
+              I&apos;m ready
             </button>
           </div>
         )}
@@ -280,7 +280,7 @@ export default function Onboarding() {
 
       <footer className="pb-5 text-center flex-shrink-0">
         <Link to="/" className="text-[12px] transition hover:opacity-80" style={{ color: "#a1a1a6" }}>
-          back to the gallery
+          Back to the gallery
         </Link>
       </footer>
     </div>

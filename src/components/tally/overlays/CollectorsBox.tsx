@@ -16,9 +16,8 @@ import {
   Suit, TallyAsset,
   BASKET_RING_GRADIENT, RING_COLOR, SUIT_DEFINITION, SUIT_LABEL,
 } from "../../../lib/tally/deck";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -89,7 +88,7 @@ export default function CollectorsBoxOverlay({ box, onClose }: CollectorsBoxOver
                   disabled={!owned}
                   onClick={() => setDetail(a.desc || SUIT_DEFINITION[a.suit])}
                   style={owned ? slot : lockedSlot}
-                  title={owned ? SUIT_LABEL[a.suit] : "not collected yet"}
+                  title={owned ? SUIT_LABEL[a.suit] : "Not collected yet"}
                 >
                   <Ring suit={a.suit} owned={owned} />
                   <span style={owned ? slotName : lockedName}>{owned ? a.name : "• • •"}</span>
@@ -109,7 +108,7 @@ export default function CollectorsBoxOverlay({ box, onClose }: CollectorsBoxOver
                   disabled={!earned}
                   onClick={() => setDetail(b.copy)}
                   style={earned ? slot : lockedSlot}
-                  title={earned ? b.name : "not earned yet"}
+                  title={earned ? b.name : "Not earned yet"}
                 >
                   <Star earned={earned} />
                   <span style={earned ? { ...slotName, color: GOLD } : lockedName}>
@@ -131,7 +130,7 @@ export default function CollectorsBoxOverlay({ box, onClose }: CollectorsBoxOver
                   setDetail(`Your best run in ${e.title} finished at ${money(e.best ?? 0)}.`)
                 }
                 style={e.best === null ? lockedSlot : slot}
-                title={e.best === null ? "not played yet" : e.title}
+                title={e.best === null ? "Not played yet" : e.title}
               >
                 <span style={{ ...figure, color: e.best === null ? LOCKED : INK }}>
                   {e.best === null ? "• • •" : money(e.best)}
@@ -237,13 +236,13 @@ const panel: React.CSSProperties = {
 
 const title: React.CSSProperties = {
   fontSize: 15,
-  fontWeight: 750,
+  fontWeight: 700,
   letterSpacing: "-0.02em",
 };
 
 const smallLabel: React.CSSProperties = {
   fontSize: 12,
-  fontWeight: 650,
+  fontWeight: 600,
   color: SUB,
   paddingBottom: 5,
   fontVariantNumeric: "tabular-nums",
@@ -291,8 +290,8 @@ const lockedSlot: React.CSSProperties = {
 };
 
 const slotName: React.CSSProperties = {
-  fontSize: 11.5,
-  fontWeight: 650,
+  fontSize: 12,
+  fontWeight: 600,
   letterSpacing: "-0.01em",
   color: INK,
   lineHeight: 1.2,
@@ -313,7 +312,7 @@ const lockedName: React.CSSProperties = {
 
 const figure: React.CSSProperties = {
   fontSize: 14,
-  fontWeight: 750,
+  fontWeight: 700,
   fontVariantNumeric: "tabular-nums",
   letterSpacing: "-0.02em",
   lineHeight: 1.1,

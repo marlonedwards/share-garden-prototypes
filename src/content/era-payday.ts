@@ -14,10 +14,10 @@ import { ScenarioConfig, mom } from "./types";
 export const payday: ScenarioConfig = {
   id: "payday",
   lesson: "Lesson 3",
-  title: "Pay Yourself First",
-  headerSub: "you invest a little every month, 2000 to 2007",
-  cardLine: "You earn $50 a month through the roughest era we have. Invest it as it comes.",
-  learn: "This era shows how steady monthly investing beats waiting for the perfect moment.",
+  title: "Pay yourself first",
+  headerSub: "You invest a little every month, 2000 to 2007",
+  cardLine: "You earn $50 a month through the roughest era we have.",
+  learn: "How steady monthly investing beats waiting for the perfect moment.",
   dots: ["#ff9f0a", "#0a84ff", "#64d2ff", "#ff453a", "#30d158", "#8e8e93"],
   time: "about 6 minutes",
   dataset: eraDotcom as HistoryDataset,
@@ -156,7 +156,7 @@ export const payday: ScenarioConfig = {
       definition: "Market timing is trying to choose the moments to be in or out of the market, and it fails because the turns arrive without warning.",
       context: [
         "Since its October 2002 low the monthly index chart you are watching has already climbed about a tenth, and most of that gain came before the news turned cheerful.",
-        "A friend who moved to cash during the crash is still waiting for prices to fall back before starting again. Waiting has a cost that never shows up on a statement: it is the shares the plan would have bought while the waiter watched.",
+        "A friend who moved to cash during the crash is still waiting for prices to fall back before starting again. Waiting has a cost that never shows up on a statement. It is the shares the plan would have bought while the waiter watched.",
       ],
       options: [
         { label: "The plan does not wait. Invest this month's $50", act: true, pay: "invest" },
@@ -189,7 +189,7 @@ export const payday: ScenarioConfig = {
   fractionalDefault: true,
   briefTitle: "It is January 2000, and you have $100 and a paycheck.",
   briefBody: [
-    "Every month, $50 arrives in your dish. The market is about to get ugly. That is the point.",
+    "Every month, $50 arrives in your dish. The market is about to get ugly.",
     "The rainbow orb invests its $50 into the index every month, automatically.",
   ],
   startLabel: "Start earning",
@@ -207,7 +207,7 @@ export const payday: ScenarioConfig = {
   // its dated timeline honestly includes the ending
   briefing: {
     title: "Eight years of paydays",
-    deck: "This page holds two minutes of real history behind the plan you are about to run. Nothing here is required reading, and the dated timeline near the end tells you how the era turns out.",
+    deck: "This page holds two minutes of real history behind the plan you are about to run. The dated timeline near the end tells you how the era turns out.",
     readTime: "about 2 minutes",
     sections: [
       {

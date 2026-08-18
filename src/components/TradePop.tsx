@@ -33,7 +33,7 @@ export default function TradePop({ a, m, act, onClose, accent = "#56c7ff" }: {
         <div className="grid grid-cols-2 gap-1.5">
           {[0.5, 1].map((f) => <button key={f} onClick={() => act((mk) => mk.sellFraction(a.id, f))} disabled={!held} className="py-2 rounded-lg text-xs font-semibold disabled:opacity-25" style={{ background: "#ff5d6c1c", color: "#ff8a94" }}>Sell {f === 1 ? "all" : "half"}</button>)}
         </div>
-        <div className="mt-3 text-[11px] text-white/40 tnum">cash {fmtMoney(m.cash)}</div>
+        <div className="mt-3 text-[12px] text-white/40 tnum">Cash {fmtMoney(m.cash)}</div>
       </div>
     </div>
   );

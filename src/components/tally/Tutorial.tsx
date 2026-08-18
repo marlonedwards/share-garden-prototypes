@@ -127,7 +127,7 @@ function week(id: string, say: string, fits: (w: TourWhere) => boolean): TourBea
 export const TOUR: TourBeat[] = [
   {
     id: "hello",
-    say: "I am your piggy bank, and this chapter is just you and me.",
+    say: "I am your piggy bank.",
     pose: "idle",
     place: "free",
     fits: (w) => w.phase === "chapter",
@@ -145,7 +145,7 @@ export const TOUR: TourBeat[] = [
   },
   {
     id: "counter",
-    say: "There is nothing to buy yet, because first money has to exist.",
+    say: "There is nothing to buy yet.",
     pose: "up",
     place: "under",
     anchor: '[data-counter-note="1"]',
@@ -153,7 +153,7 @@ export const TOUR: TourBeat[] = [
   },
   {
     id: "money",
-    say: "Every green block is five real dollars of yours.",
+    say: "Every green block is five real dollars.",
     pose: "down",
     place: "over",
     anchor: '[data-money-row="1"]',
@@ -161,7 +161,7 @@ export const TOUR: TourBeat[] = [
   },
   {
     id: "wall",
-    say: "The wall is the record of what your money is worth, one column for every week.",
+    say: "The wall is what your money is worth.",
     pose: "up",
     place: "under",
     anchor: '[data-wall="1"]',
@@ -169,7 +169,7 @@ export const TOUR: TourBeat[] = [
   },
   {
     id: "target",
-    say: "That gold line is the target, and finishing above it clears the chapter.",
+    say: "Finish above the gold line to clear the chapter.",
     pose: "up",
     place: "under",
     anchor: '[data-target-line="1"]',
@@ -182,7 +182,7 @@ export const TOUR: TourBeat[] = [
     // found. The sentence says what the key does and stops there; the pulse is
     // what does the inviting.
     id: "play",
-    say: "The Play key runs the next week, and the wall writes down what happened.",
+    say: "The Play key runs the next week.",
     pose: "down",
     place: "over",
     anchor: '[data-play="1"]',
@@ -192,7 +192,7 @@ export const TOUR: TourBeat[] = [
   },
   {
     id: "read",
-    say: "A pile that does nothing does not grow, and a week has just passed.",
+    say: "A pile that does nothing does not grow.",
     pose: "up",
     place: "under",
     anchor: '[data-read-line="1"]',
@@ -204,14 +204,14 @@ export const TOUR: TourBeat[] = [
   // says one thing and then goes quiet leaves the player wondering whether the
   // game is over. Each week is one true sentence about a chapter where nothing
   // can go wrong, and each one ends on the press that plays it.
-  week("week-two", "Payday comes again every week, so the only thing that changes here is what you were paid.", (w) => w.turn === 1),
-  week("week-three", "Nothing in this chapter can go wrong, and nothing in it grows on its own.", (w) => w.turn === 2),
+  week("week-two", "Payday comes again every week.", (w) => w.turn === 1),
+  week("week-three", "Nothing in this chapter grows on its own.", (w) => w.turn === 2),
   week("week-four", "Every week you play is one more column the wall keeps for good.", (w) => w.turn === 3),
-  week("week-five", "The gold line has not moved, because a target is a fact about the chapter and not about you.", (w) => w.turn === 4),
-  week("week-last", "This is the last week of the chapter, and then we count it up.", (w) => w.turn >= 5),
+  week("week-five", "The gold line never moves.", (w) => w.turn === 4),
+  week("week-last", "This is the last week of the chapter.", (w) => w.turn >= 5),
   {
     id: "cleared",
-    say: "You cleared it, and chapter 2 opens the bank.",
+    say: "You cleared it.",
     pose: "celebrate",
     place: "free",
     fits: (w) => w.phase === "summary",
@@ -427,7 +427,7 @@ export default function PiggyBubble(p: PiggyBubbleProps) {
               onClick={p.onSkip}
               style={{
                 marginTop: s(5),
-                fontSize: type(11.5),
+                fontSize: type(12),
                 padding: `${s(4)}px ${s(9)}px`,
                 borderRadius: R.chip,
                 color: SUB,

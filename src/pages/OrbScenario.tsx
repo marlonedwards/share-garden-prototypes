@@ -82,12 +82,12 @@ function runBullets(
   const deadOnMenu = cfg.assets.find((a) => m.prices[a.id] <= 0);
 
   if (!bought) {
-    out.push({ c: "#ff9f0a", text: `You never bought anything. The rainbow orb turned the same money into ${fmtMoney(bench)} while your cash sat still. Sitting out is a choice with a price too.` });
+    out.push({ c: "#ff9f0a", text: `You never bought anything. The rainbow orb turned the same money into ${fmtMoney(bench)}.` });
   } else if (net >= bench * 1.02 && topW > 0.5 && top) {
-    const corpse = deadOnMenu ? ` ${name(deadOnMenu)} sat on the same menu and went to zero. In ${start}, nobody could tell the winners from the corpses in advance.` : "";
-    out.push({ c: "#bf5af2", text: `Your big bet on ${name(top.ea)} won this run: you finished ${fmtMoney(net - bench)} ahead of the rainbow orb. That is luck wearing a genius costume.${corpse}` });
+    const corpse = deadOnMenu ? ` ${name(deadOnMenu)} sat on the same menu and went to zero.` : "";
+    out.push({ c: "#bf5af2", text: `Your big bet on ${name(top.ea)} finished ${fmtMoney(net - bench)} ahead of the rainbow orb. That was luck, not skill.${corpse}` });
   } else if (net <= bench * 0.98) {
-    out.push({ c: "#0a84ff", text: `The rainbow orb finished ${fmtMoney(bench - net)} ahead of you without making a single decision all era. Spreading out and staying put was the whole trick.` });
+    out.push({ c: "#0a84ff", text: `The rainbow orb finished ${fmtMoney(bench - net)} ahead of you without making a single decision all era.` });
   } else {
     out.push({ c: "#30d158", text: `You finished within ${fmtMoney(Math.abs(net - bench))} of the rainbow orb. Matching the index is a result most professionals never manage.` });
   }
@@ -103,11 +103,11 @@ function runBullets(
     }
   }
   if (panicSold > 1 && panicNow > panicSold * 1.05) {
-    out.push({ c: "#ff453a", text: `You sold ${fmtMoney(panicSold)} of shares while the market was deep underwater. Held to the end, those same shares would be worth ${fmtMoney(panicNow)}. That gap is what panic costs.` });
+    out.push({ c: "#ff453a", text: `You sold ${fmtMoney(panicSold)} of shares while the market was deep underwater. Held to the end, those same shares would be worth ${fmtMoney(panicNow)}.` });
   }
   if (deadLost > 1) {
     const names = cfg.assets.filter((a) => deadHeld.has(a.id)).map((a) => name(a)).join(" and ");
-    out.push({ c: "#5e5ce6", text: `${names} went to zero and took ${fmtMoney(deadLost)} of your money for good. Gone is different from down: down can come back.` });
+    out.push({ c: "#5e5ce6", text: `${names} went to zero and took ${fmtMoney(deadLost)} of your money for good. Gone is different from down, because down can come back.` });
   }
   return out;
 }
@@ -581,7 +581,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
       <header className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 sm:px-10 py-2 min-h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          scenarios
+          Scenarios
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <div className="flex items-baseline gap-3">
@@ -595,7 +595,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                 <button key={s} onClick={() => setStackStage(s)} aria-pressed={stackStage === s}
                   className="text-[12.5px] font-medium px-3 py-1.5 transition"
                   style={stackStage === s ? { background: "#0071e3", color: "#fff" } : { color: "#6e6e73" }}>
-                  {s}
+                  {s === "blocks" ? "Blocks" : "Cylinder"}
                 </button>
               ))}
             </div>
@@ -632,8 +632,8 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                   cash={dCash}
                   bands={stackBands}
                   indexValue={dBench}
-                  playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "your stack"}
-                  corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "goal band" } : undefined}
+                  playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "Your stack"}
+                  corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "Goal band" } : undefined}
                   maxDollars={stackMaxRef.current}
                   columns={tileCols}
                   totalSteps={lastStep + 1}
@@ -650,8 +650,8 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                   cash={dCash}
                   bands={stackBands}
                   indexValue={dBench}
-                  playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "your stack"}
-                  corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "goal band" } : undefined}
+                  playerLabel={orbName ? orbName.replace(/\borb\b/i, "stack") : "Your stack"}
+                  corridor={beat !== "brief" ? { lo: dBench * 0.88, hi: dBench * 1.12, label: "Goal band" } : undefined}
                   maxDollars={stackMaxRef.current}
                 />
               )
@@ -675,12 +675,12 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
               </>
             )}
             <button onClick={() => setFractional(!fractional)}
-              className="absolute right-4 top-14 text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
+              className="absolute right-4 top-14 text-[12px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
               style={{ color: "#6e6e73" }}>
               {fractional ? "Fractional shares: on" : "Whole shares"}
             </button>
             <button onClick={() => setRealNames(!realNames)}
-              className="absolute right-4 top-[5.9rem] text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
+              className="absolute right-4 top-[5.9rem] text-[12px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
               style={{ color: realNames ? "#0071e3" : "#6e6e73" }}>
               {realNames ? "Real names: on" : "Real names"}
             </button>
@@ -708,7 +708,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
             {variant === "orb" && crashSeen.current && peakInvested.current > invested * 1.08 && (
               <div className="absolute -translate-x-1/2 text-[12px] tnum"
                 style={{ left: `${LAYOUT.playerX * 100}%`, top: stageH * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) * radiusScale - 22, color: "#6e6e73" }}>
-                the high · {fmtMoney(peakInvested.current)}
+                The high · {fmtMoney(peakInvested.current)}
               </div>
             )}
             {variant === "orb" && (
@@ -765,7 +765,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                   A scouting report describes a {cfg.castNoun ?? "company"} as an investor could see it before putting any money in.
                 </p>
                 <p className="mt-1 text-[13.5px] leading-snug" style={{ color: "#3a3a3c" }}>
-                  Each card shows one {cfg.castNoun ?? "company"} on this menu as it stood in {m.monthLabel(0)}, with the case its believers and its doubters were really making at the time.
+                  Each card shows one {cfg.castNoun ?? "company"} on this menu as it stood in {m.monthLabel(0)}.
                 </p>
                 <ScoutingCards assets={cfg.assets} startPrices={startPrices} name={name}
                   foundedLabel={cfg.castFoundedLabel} listsAt={listsAt}
@@ -774,7 +774,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                     <>
                       {!scouted && (
                         <span className="text-[12.5px]" style={{ color: "#6e6e73" }}>
-                          Scouting is optional. Start whenever you are ready.
+                          Scouting is optional.
                         </span>
                       )}
                       <Btn onClick={() => { setBeat("run"); setSpeed(1); }}>{cfg.startLabel}</Btn>
@@ -786,10 +786,10 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                 stacks below it otherwise, so the caption names the panel
                 instead of a direction */}
             {beat === "run" && pausedForMove && speed === 0 && (
-              <Caption>The tape is paused for your move. Trade in the &ldquo;Inside your {variant === "stack" ? "stack" : "orb"}&rdquo; panel, then press Play when you are ready.</Caption>
+              <Caption>The tape is paused for your move. Trade in the &ldquo;Inside your {variant === "stack" ? "stack" : "orb"}&rdquo; panel.</Caption>
             )}
             {beat === "run" && speed > 0 && m.step < 4 && !cfg.income && (
-              <Caption>Pause anytime to trade. The tape runs to the end either way.</Caption>
+              <Caption>Pause anytime to trade.</Caption>
             )}
             {beat === "run" && speed > 0 && m.step < 4 && cfg.income && (
               <Caption>Buy your first colors, then your income can follow them every month.</Caption>
@@ -847,7 +847,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
             {beat === "payday" && (
               <Card title={`Your payday of ${fmtMoney(cfg.income ?? 0)} just arrived.`}>
                 {pendingPay.current > 0 && (
-                  <p>Another {fmtMoney(pendingPay.current)} of earlier paydays waited in cash while your orb was empty, and it follows this month&apos;s choice.</p>
+                  <p>Another {fmtMoney(pendingPay.current)} of earlier paydays waited in cash and follows this month&apos;s choice.</p>
                 )}
                 <p className={pendingPay.current > 0 ? "mt-2" : ""}>Invest it into your colors in their current mix, or keep it as cash.</p>
                 <Actions>
@@ -885,19 +885,19 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                       <StarRow ok={s.spread} name="Spread out"
                         detail={s.spread
                           ? "No single company carried your stack for long."
-                          : "One company carried most of your stack for over a year. That is a coin flip wearing your name."} />
+                          : "One company carried most of your stack for over a year."} />
                       <StarRow ok={s.stayed} name="Stayed in"
                         detail={s.stayed
-                          ? "Your money kept working, and no sell happened deep in the red."
+                          ? "Your money kept working."
                           : s.panicSells > 0
                           ? `Fear made ${s.panicSells === 1 ? "one sell" : `${s.panicSells} sells`} while your stack was far below its high.`
                           : "Too much of the era went by with your money sitting out of the market."} />
                       <StarRow ok={pathOk} name="On the goal"
                         detail={pathOk
                           ? above
-                            ? "You finished above the goal band. Enjoy it, and know the index would not repeat the favor."
-                            : "You finished inside the goal band around the index. That is the whole game."
-                          : "You fell out of the goal band. The index walked the same era and finished it without a single trade."} />
+                            ? "You finished above the goal band."
+                            : "You finished inside the goal band around the index."
+                          : "You fell out of the goal band."} />
                     </div>
                   );
                 })()}
@@ -923,15 +923,10 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                   const top = holdings.slice().sort((a, b) => b.value - a.value)[0];
                   const hh = m.holdings[top.ea.id];
                   const avg = hh && hh.shares > 0 ? (hh.cost > 0 ? hh.cost / hh.shares : 0) : 0;
-                  // the closing line about steady buying is earned, not
-                  // assumed: it only appears when the trade log shows buys of
-                  // this name spread across at least six different months
-                  const buyMonths = new Set(m.trades.filter((t) => t.side === "buy" && t.id === top.ea.id).map((t) => t.step)).size;
                   return avg > 0 ? (
                     <p className="mb-3 text-[13px]" style={{ color: "#6e6e73" }}>
-                      Your average cost for {name(top.ea)}: <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(avg)}</strong> a share.
+                      Your average cost for {name(top.ea)} was <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(avg)}</strong> a share.
                       It closes at <strong className="tnum" style={{ color: "#1d1d1f" }}>{fmtMoney(m.prices[top.ea.id])}</strong>.
-                      {buyMonths >= 6 && " Buying month after month, high and low, is what set that average."}
                     </p>
                   ) : null;
                 })()}
@@ -943,9 +938,8 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                     locked={lockedStep !== null && hoverStep === null}
                     tipFor={(s) => `${m.monthLabel(s)} · you ${fmtMoney(m.net[s] ?? 0)} · index ${fmtMoney(m.bench[s] ?? 0)}`} />
                 </div>
-                <p className="t-xs text-[11.5px]" style={{ color: "#6e6e73" }}>
-                  Drag to rewind the scene above. Click to pin a month. It only looks backward:
-                  knowing this chart never tells you the next one.
+                <p className="t-xs text-[12.5px]" style={{ color: "#6e6e73" }}>
+                  Drag to rewind the scene above. Click to pin a month.
                 </p>
                 <Actions>
                   <Btn onClick={() => { setHoverStep(null); setLockedStep(null); setEndPhase("lessons"); }}>Continue</Btn>
@@ -998,8 +992,8 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
             {holdings.length === 0 && (
               <div className="text-sm py-1" style={{ color: "#6e6e73" }}>
                 {variant === "stack" && stackStage === "blocks"
-                  ? "Nothing is here yet. The floor is empty."
-                  : "Nothing is here yet. The glass is clear."}
+                  ? "Nothing is here yet."
+                  : "Nothing is here yet."}
               </div>
             )}
             {holdings.map((h, hi) => {
@@ -1038,7 +1032,7 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
               );
             })}
             <div className="pt-2">
-              <div className="text-[11.5px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
+              <div className="text-[12px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
               {cfg.assets.filter((ea) => !holdings.some((h) => h.ea.id === ea.id)).map((ea) => {
                 const open = tradeRow === `add-${ea.id}`;
                 const dead = m.prices[ea.id] <= 0;
@@ -1055,10 +1049,10 @@ export default function OrbScenario({ variant = "orb" }: { variant?: "orb" | "st
                     </button>
                     {open && (
                       <div className="ml-5 mb-1.5 pop-in">
-                        <div className="text-[11.5px] mb-1" style={{ color: "#6e6e73" }}>{ea.desc}</div>
+                        <div className="text-[12.5px] mb-1" style={{ color: "#6e6e73" }}>{ea.desc}</div>
                         {unlisted ? (
-                          <div className="text-[11.5px] mb-1" style={{ color: "#6e6e73" }}>
-                            It is still a private company, so it has no shares on the market. Its shares list in {listMonth}, and nothing can be bought before then.
+                          <div className="text-[12.5px] mb-1" style={{ color: "#6e6e73" }}>
+                            It is still a private company, so it has no shares on the market. Its shares list in {listMonth}.
                           </div>
                         ) : (
                           <>

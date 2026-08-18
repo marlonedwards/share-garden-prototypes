@@ -171,7 +171,7 @@ const UNITS: Unit[] = [
     ),
     misconceptions: ["a famous hot company is a safe bet"],
     assessment:
-      "The run ends with concentrated versus index side by side. Two names on the 2000 menu go to zero mid-run, so survivorship bias is felt rather than just named, and the debrief prices the student's own choices against the index.",
+      "The run ends with concentrated versus index side by side. Two names on the 2000 menu go to zero mid-run, so survivorship bias is felt rather than just named. The debrief prices the student's own choices against the index.",
     cites: [
       { src: "CEE", code: "Investing 8-5b", gloss: "diversified fund versus individual stocks and bonds" },
       { src: "CEE", code: "Investing 8-6a", gloss: "compare rates of return, order investments by risk" },
@@ -308,7 +308,7 @@ const UNITS: Unit[] = [
       "more lines always means more spread",
     ],
     assessment:
-      "The mirror reads the plan the way the course read every era, by looking backward: concentration against the dot-com collapses, coin size against the crypto winters, and a 2008-sized fall priced in the plan's own dollars. The printed sheet ends with three discussion questions and signature lines for the student and an adult.",
+      "The mirror reads the plan by looking backward, the way the course read every era. It prices concentration against the dot-com collapses, coin size against the crypto winters, and a 2008-sized fall in the plan's own dollars. The printed sheet ends with three discussion questions and signature lines for the student and an adult.",
     cites: [
       { src: "CEE", code: "Investing 8-2b", gloss: "find the current prices of stocks and funds" },
       { src: "CEE", code: "Investing 8-5a", gloss: "diversification within and among asset classes" },
@@ -408,16 +408,16 @@ export default function OnePager() {
   return (
     <div className="sg-root min-h-screen" style={{ background: "#f5f5f7", color: INK, colorScheme: "light" }}>
       <style>{`
-        .sg-root { font-size: 13px; }
-        .t-lbl { font-size: 9.5px; line-height: 1.35; }
-        .t-xs  { font-size: 11px; line-height: 1.42; }
-        .t-sm  { font-size: 12.5px; line-height: 1.45; }
-        .t-md  { font-size: 14.5px; line-height: 1.35; }
+        .sg-root { font-size: 15px; }
+        .t-lbl { font-size: 12px; line-height: 1.35; }
+        .t-xs  { font-size: 13px; line-height: 1.5; }
+        .t-sm  { font-size: 14px; line-height: 1.5; }
+        .t-md  { font-size: 16px; line-height: 1.4; }
         .u-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
         .g4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .g3 { display: grid; grid-template-columns: 1fr; gap: 10px; }
         @media (min-width: 820px) {
-          .u-grid { grid-template-columns: 9.5rem 1fr 13.5rem; gap: 18px; }
+          .u-grid { grid-template-columns: 11rem 1fr 15rem; gap: 18px; }
           .g4 { grid-template-columns: repeat(4, 1fr); }
           .g3 { grid-template-columns: repeat(3, 1fr); }
         }
@@ -446,7 +446,7 @@ export default function OnePager() {
       <div className="sg-noprint sticky top-0 z-10 border-b border-black/8" style={{ background: "rgba(245,245,247,0.85)", backdropFilter: "blur(12px)" }}>
         <div className="max-w-5xl mx-auto px-6 h-12 flex items-center justify-between">
           <Link to="/" className="t-sm font-medium hover:underline" style={{ color: ACCENT }}>
-            gallery
+            Gallery
           </Link>
           <button
             onClick={() => window.print()}
@@ -463,7 +463,7 @@ export default function OnePager() {
 
           {/* Title */}
           <div className="sg-block">
-            <h1 className="sg-h1 font-display text-[30px] leading-[1.05] font-semibold tracking-tight">
+            <h1 className="sg-h1 text-[30px] leading-[1.05] font-bold tracking-tight">
               Share Garden · Learning objectives
             </h1>
             <p className="sg-thesis t-md mt-2 max-w-3xl" style={{ color: INK }}>
@@ -471,7 +471,7 @@ export default function OnePager() {
             </p>
             <p className="t-xs mt-1 max-w-3xl" style={{ color: SUB }}>
               The Orb&apos;s course runs in two ladders, listed below in play order. Five short
-              Basics lessons come first, and then seven numbered lessons follow: the seeded
+              Basics lessons come first, and then seven numbered lessons follow. The seeded
               tutorial is Lesson 1, six real eras are Lessons 2 through 7, and the finale ends
               the course.
             </p>
@@ -577,11 +577,11 @@ export default function OnePager() {
             <div className="sg-card bg-white rounded-2xl border border-black/8 p-4">
               <div className="t-sm font-semibold mb-1">How outcomes are measured</div>
               <div className="t-xs" style={{ color: SUB }}>
-                Each unit ends with a short quick check written from the CEE outcome verbs:
-                history questions plus items built from the student's own run, like pricing the
-                shares they sold in a panic. History gates pause the tape at real moments, record
-                the student's commitment and how long it took, and the debrief quotes it back.
-                The in-game fail state doubles as the formative assessment. Results stay on the
+                Each unit ends with a short quick check written from the CEE outcome verbs. The
+                items are history questions plus items built from the student's own run, like
+                pricing the shares they sold in a panic. History gates pause the tape at real
+                moments and record the student's commitment. The debrief quotes it back. The
+                in-game fail state doubles as the formative assessment. Results stay on the
                 device.
               </div>
             </div>

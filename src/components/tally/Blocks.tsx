@@ -16,6 +16,7 @@
 // a row is read along its length and a gap in it looks like a missing block.
 
 import { BLOCK_GROUP } from "../../lib/blocks";
+import { SANS } from "./ui";
 
 export const CASH_GREEN = "#3FAE6B";
 export const STONE_GREY = "#A9AFBA";
@@ -131,10 +132,10 @@ export function Block({ size, color, cash, stone }: BlockSpec & { size: number }
             display: "grid",
             placeItems: "center",
             fontSize: size * 0.67,
-            fontWeight: 800,
+            fontWeight: 700,
             color: "rgba(255,255,255,0.95)",
             lineHeight: 1,
-            fontFamily: '"Helvetica Neue", Inter, system-ui, sans-serif',
+            fontFamily: SANS,
           }}
         >
           $

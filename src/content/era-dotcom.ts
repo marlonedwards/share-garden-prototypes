@@ -13,10 +13,10 @@ import { ScenarioConfig, mom } from "./types";
 export const dotcom: ScenarioConfig = {
   id: "dotcom",
   lesson: "Lesson 2",
-  title: "The Dot-Com Era",
-  headerSub: "the bubble and its bill, 2000 to 2007",
-  cardLine: "Real market prices run from the top of the bubble in 2000 through 2007, and the two companies that die along the way are reconstructed from the dated record. The names are made up; the companies were not.",
-  learn: "This era shows why buying at the top hurts, and what patience pays anyway.",
+  title: "The dot-com era",
+  headerSub: "The bubble and its bill, 2000 to 2007",
+  cardLine: "Real market prices run from the top of the bubble in 2000 through 2007.",
+  learn: "Why buying at the top hurts.",
   dots: ["#ff9f0a", "#64d2ff", "#bf5af2", "#ffd60a", "#ff453a", "#30d158"],
   time: "about 7 minutes",
   dataset: eraDotcom as HistoryDataset,
@@ -209,7 +209,7 @@ export const dotcom: ScenarioConfig = {
   fractionalDefault: false,
   briefTitle: "January 2000. The internet party is as loud as it will ever get.",
   briefBody: [
-    "You have $1,000 and eight years. The names are made up; the companies were not, and not every name on this menu makes it to 2008.",
+    "You have $1,000 and eight years. The names are made up, and the companies were not. Not every name on this menu makes it to 2008.",
     "The rainbow orb puts the same $1,000 all-in on the real S&P 500. Eight of the ten series are the era's real quotes, and two are reconstructed from the dated record.",
   ],
   startLabel: "Start in 2000",
@@ -217,7 +217,7 @@ export const dotcom: ScenarioConfig = {
   bullets: [
     { c: "#bf5af2", text: "The hottest tech names of 2000 all lost money over these eight years. The boring ones quietly won." },
     { c: "#ff9f0a", text: "The Everything Store fell hard, then ended the era up. Impatience gets punished before good businesses do." },
-    { c: "#30d158", text: "Two names on this menu went to zero and stayed there. The real 2000 menu held thousands more like them. Charts of the past only show the survivors: that trick is called survivorship bias." },
+    { c: "#30d158", text: "Two names on this menu went to zero and stayed there. Charts of the past only show the survivors, and that trick is called survivorship bias." },
   ],
   cardSubline: "This run lived the dot-com era, 2000 to 2007, on real prices.",
   // CEE Investing 12-5b ladder (expectations are already in the price) and
@@ -225,7 +225,7 @@ export const dotcom: ScenarioConfig = {
   // documentary record, so its timeline honestly includes the ending
   briefing: {
     title: "The world of January 2000",
-    deck: "This page holds two minutes of real history. Nothing here is required reading, and the dated timeline near the end tells you how the era turns out.",
+    deck: "This page holds two minutes of real history. The dated timeline near the end tells you how the era turns out.",
     readTime: "about 2 minutes",
     sections: [
       {
@@ -257,7 +257,7 @@ export const dotcom: ScenarioConfig = {
         lead: "A fair replay of history includes the companies that died, not just the ones that survived.",
         body: [
           "Eight of the ten names on your menu carry real market prices, month by month from January 2000 to December 2007. The Phone Giant and The Online Toy Store were real companies too, but their shares stopped trading when they collapsed, so their price series are reconstructed from the dated record of their rise and their fall. Neither one survives to 2008.",
-          "The names are made up, and the companies behind them were not. You will live through a crash, a fraud, a long bear market, and a slow recovery, and at five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way: it holds the real S&P 500, an index that bundles five hundred large American companies into one purchase, and it never trades once.",
+          "The names are made up, and the companies behind them were not. You will live through a crash, a fraud, a long bear market, and a slow recovery, and at five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way. It holds the real S&P 500, an index that bundles five hundred large American companies into one purchase, and it never trades once.",
         ],
       },
     ],

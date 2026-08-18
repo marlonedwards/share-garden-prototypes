@@ -47,7 +47,7 @@ export function payMoney(n: number): string {
 // that rate belongs.
 export function priceLine(asset: TallyAsset, price: number, ratePerYear?: number | null): string {
   if (asset.id === SAVINGS_ID) {
-    return `pays ${((ratePerYear ?? 0) * 100).toFixed(0)}% a year`;
+    return `${((ratePerYear ?? 0) * 100).toFixed(0)}% a year`;
   }
   return money(price);
 }
@@ -56,8 +56,8 @@ export function priceLine(asset: TallyAsset, price: number, ratePerYear?: number
 export function holdingLine(asset: TallyAsset, shares: number, owned: boolean): string {
   if (asset.id === SAVINGS_ID) {
     return owned
-      ? "This card is money at the bank, and the bank pays interest on it every turn."
-      : "One block puts money at the bank, and the bank pays interest on it every turn.";
+      ? "This card is money at the bank that earns interest every turn."
+      : "One block puts money at the bank, where it earns interest every turn.";
   }
   const text = sharesText(shares);
   const unit = unitWord(asset, Number(text));
@@ -75,17 +75,17 @@ export function purchaseLine(asset: TallyAsset, card: Card, chapterId: number): 
     ? `turn ${card.turn + 1}`
     : `chapter ${card.chapter}, turn ${card.turn + 1}`;
   if (asset.id === SAVINGS_ID) {
-    return `You deposited ${money(card.buyDollars)} on ${when}, and a deposit is worth what was put in.`;
+    return `Deposited on ${when}, and worth the ${money(card.buyDollars)} that was put in.`;
   }
   const text = sharesText(card.shares);
   const unit = unitWord(asset, Number(text));
-  return `Bought on ${when} at ${money(card.buyPrice)}, and it holds ${text} ${unit}.`;
+  return `Bought on ${when} at ${money(card.buyPrice)} for ${text} ${unit}.`;
 }
 
 // The move since the last turn, as a sentence rather than as a badge, because
 // the back of a card is read and the front is glanced at.
 export function moveLine(move: number | null | undefined): string {
-  if (move === null || move === undefined) return "It has not moved yet, because you have only just met it.";
+  if (move === null || move === undefined) return "It has not moved yet.";
   const pct = Math.abs(move * 100);
   const size = pct < 0.05 ? "held its price" : move >= 0 ? `rose ${pct.toFixed(1)}%` : `fell ${pct.toFixed(1)}%`;
   return `It ${size} since your last turn.`;

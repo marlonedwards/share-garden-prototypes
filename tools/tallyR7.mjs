@@ -288,7 +288,7 @@ console.log("\n--------------------------------------------- the lit tour");
   b = await bubble(page);
   check(b?.id === "play", "the Play key is named before it is needed", b?.id ?? "none");
   check(b?.gate === "action", "and it is the one beat its own press finishes", b?.gate ?? "none");
-  check(b?.say === "The Play key runs the next week, and the wall writes down what happened.",
+  check(b?.say === "The Play key runs the next week.",
     "the sentence names the key rather than asking for it", b?.say ?? "");
   const r = await ring(page);
   check(!!r?.invited, "the key wears the invitation", JSON.stringify(r));

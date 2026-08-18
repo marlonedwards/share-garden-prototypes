@@ -307,21 +307,35 @@ export default function Wall(p: WallProps) {
     x: xOf(slot) + colW / 2,
     label: scheduleMark(p.marks[i] ?? "", p.yearsPerTurn),
   }));
+  // How wide a mark actually is, so the thinning is measured against the type
+  // rather than against a number somebody guessed once.
+  const markW = (label: string) => label.length * t(12) * 0.62;
   let step = 1;
   if (bounds.length > 1) {
     const gapPx = Math.abs(bounds[1].x - bounds[0].x);
-    step = Math.max(1, Math.ceil(46 / Math.max(1, gapPx)));
+    const widest = bounds.reduce((w, b) => Math.max(w, markW(b.label)), 0) + s(10);
+    step = Math.max(1, Math.ceil(widest / Math.max(1, gapPx)));
   }
-  const axis: { x: number; label: string }[] = [];
+  // A mark at either end sits inside the stage rather than half off it, because
+  // half a date is not a date, and a mark shoved inward never lands on top of
+  // the one before it: the far end wins, because that is where the record is
+  // growing to.
+  const axis: { label: string; left: number }[] = [];
   bounds.forEach((m, i) => {
     if (i % step !== 0 || !m.label) return;
-    if (m.x > fieldW - 4) return;
     if (axis.length && axis[axis.length - 1].label === m.label) return;
-    axis.push(m);
+    const w = markW(m.label);
+    const left = Math.max(0, Math.min(fieldW - w, m.x - w / 2));
+    const prev = axis[axis.length - 1];
+    if (prev && left < prev.left + markW(prev.label) + s(6)) {
+      if (m.x - w / 2 <= fieldW - w) return;
+      axis.pop();
+    }
+    axis.push({ label: m.label, left });
   });
 
   const dollars = p.countDollars === null
-    ? "counting"
+    ? "Counting"
     : `$${p.countDollars.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const stakes = stakesLine(
@@ -364,29 +378,34 @@ export default function Wall(p: WallProps) {
           width: railW,
           flex: "none",
           boxSizing: "border-box",
-          padding: `${s(11)}px ${s(11)}px ${s(11)}px ${s(11)}px`,
+          padding: `${s(10)}px ${s(11)}px ${s(9)}px`,
           background: RAIL_FILL,
           borderRight: `2px solid ${LINE_HARD}`,
           boxShadow: TOP_LIGHT,
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          gap: s(8),
+          gap: s(6),
           textAlign: "left",
           overflow: "hidden",
         }}
       >
         {/* the score, in its plaque, and it beats every time a chip lands its
             total in here */}
-        <div style={{ ...plaque(R.chip), padding: `${s(10)}px ${s(11)}px ${s(11)}px`, flex: "none" }}>
+        <div style={{ ...plaque(R.chip), padding: `${s(8)}px ${s(11)}px ${s(8)}px`, flex: "none" }}>
+          {/* the count and its unit are one phrase on one line, not a figure
+              with a caption stacked under it */}
           <div
             data-rail-count={p.countBlocks}
             key={p.countBlocks}
             className="tally-score"
             style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: s(5),
               fontSize: t(44),
-              fontWeight: 800,
-              letterSpacing: "-0.04em",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
               lineHeight: 1,
               color: INK,
               fontVariantNumeric: "tabular-nums",
@@ -395,18 +414,18 @@ export default function Wall(p: WallProps) {
             }}
           >
             {p.countBlocks}
-          </div>
-          <div style={{ fontSize: t(12), fontWeight: 700, color: SUB, marginTop: s(2) }}>
-            {p.countBlocks === 1 ? "block" : "blocks"}
+            <span style={{ fontSize: t(12), fontWeight: 600, letterSpacing: 0, color: SUB }}>
+              {p.countBlocks === 1 ? "block" : "blocks"}
+            </span>
           </div>
           <div
             aria-hidden
-            style={{ height: 1, background: LINE, margin: `${s(7)}px 0 ${s(6)}px` }}
+            style={{ height: 1, background: LINE, margin: `${s(4)}px 0 ${s(3)}px` }}
           />
           <div
             style={{
               fontSize: t(15),
-              fontWeight: 750,
+              fontWeight: 700,
               letterSpacing: "-0.02em",
               color: INK,
               fontVariantNumeric: "tabular-nums",
@@ -426,11 +445,11 @@ export default function Wall(p: WallProps) {
         <div
           style={{
             ...goldPanel(R.chip),
-            padding: `${s(9)}px ${s(10)}px`,
+            padding: `${s(8)}px ${s(10)}px`,
             flex: "none",
             fontSize: t(13),
-            fontWeight: 750,
-            lineHeight: 1.32,
+            fontWeight: 700,
+            lineHeight: 1.26,
             color: GOLD,
             fontVariantNumeric: "tabular-nums",
           }}
@@ -447,7 +466,7 @@ export default function Wall(p: WallProps) {
                 flex: "none",
               }}
             />
-            target ${p.target.dollars.toLocaleString("en-US")}
+            Target ${p.target.dollars.toLocaleString("en-US")}
           </div>
           <div style={{ whiteSpace: "nowrap" }}>{p.target.blocks} blocks</div>
         </div>
@@ -459,11 +478,11 @@ export default function Wall(p: WallProps) {
           data-stakes={stakes.text}
           style={{
             ...plaque(R.chip),
-            padding: `${s(9)}px ${s(10)}px`,
+            padding: `${s(8)}px ${s(10)}px`,
             flex: "none",
             fontSize: t(13),
             fontWeight: 700,
-            lineHeight: 1.32,
+            lineHeight: 1.26,
             color: stakes.past ? GOLD_CLEAR : GOLD,
             fontVariantNumeric: "tabular-nums",
           }}
@@ -482,25 +501,24 @@ export default function Wall(p: WallProps) {
         <div
           style={{
             ...plaque(R.chip),
-            padding: `${s(7)}px ${s(10)}px ${s(8)}px`,
+            padding: `${s(5)}px ${s(10)}px ${s(5)}px`,
             flex: "none",
             overflow: "hidden",
           }}
         >
-          <div style={{ fontSize: t(11.5), fontWeight: 650, color: SUB }}>now</div>
+          {/* the turn being played, with no caption over it */}
           <div
             style={{
               fontSize: t(14),
-              fontWeight: 750,
+              fontWeight: 700,
               color: INK,
-              marginTop: 1,
               fontVariantNumeric: "tabular-nums",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
             }}
           >
-            {p.nowLabel || "not started"}
+            {p.nowLabel || "Not started"}
           </div>
         </div>
       </div>
@@ -656,17 +674,14 @@ export default function Wall(p: WallProps) {
         <div aria-hidden style={{ height: 1.5, background: "rgba(46,38,24,0.28)", flex: "none" }} />
         <div style={{ position: "relative", height: axisH, flex: "none" }}>
           {axis.map((a, i) => {
-            // a mark at the left end sits inside the stage rather than half off it
-            const edge = a.x < 22;
             return (
               <span
                 key={i}
                 style={{
                   position: "absolute",
-                  left: edge ? 0 : a.x,
+                  left: a.left,
                   top: s(4),
-                  transform: edge ? undefined : "translateX(-50%)",
-                  fontSize: t(10.5),
+                  fontSize: t(12),
                   fontWeight: 600,
                   color: SUB,
                   whiteSpace: "nowrap",

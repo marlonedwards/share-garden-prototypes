@@ -27,7 +27,7 @@ export default function TimeControls({ speed, setSpeed, step, accent = "#56c7ff"
       <button aria-label="fastest" className={btn(speed === 4)} style={style(speed === 4)} onClick={() => setSpeed(4)}>
         <svg width="18" height="13" viewBox="0 0 20 12" fill="currentColor"><path d="M1 1.5 L6 6 L1 10.5 Z" /><path d="M7 1.5 L12 6 L7 10.5 Z" /><path d="M13 1.5 L18 6 L13 10.5 Z" /></svg>
       </button>
-      <div className="ml-2 text-xs text-white/45 tnum">day {step}</div>
+      <div className="ml-2 text-xs text-white/45 tnum">Day {step}</div>
     </div>
   );
 }

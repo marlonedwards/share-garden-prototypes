@@ -11,15 +11,15 @@ export function ClippingCard({ clip }: { clip: Clipping }) {
     <div className="absolute left-1/2 -translate-x-1/2 top-4 pop-in rounded-xl border border-black/10 shadow-lg overflow-hidden"
       style={{ background: "rgba(255,255,255,0.97)", width: 400, backdropFilter: "blur(10px)" }}>
       <div className="px-4 pt-2.5 pb-1 flex items-baseline justify-between border-b border-black/10">
-        <span className="text-[11px] font-semibold" style={{ letterSpacing: "0.02em" }}>{clip.source}</span>
-        <span className="text-[10.5px] tnum" style={{ color: "#6e6e73" }}>{clip.date}</span>
+        <span className="text-[12px] font-semibold">{clip.source}</span>
+        <span className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{clip.date}</span>
       </div>
       <div className="px-4 py-2.5">
         <div className="text-[16px] font-bold leading-snug" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
           {clip.headline}
         </div>
         {clip.sub && (
-          <div className="text-[11.5px] mt-1 leading-snug" style={{ color: "#3a3a3c", fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: "italic" }}>
+          <div className="text-[12px] mt-1 leading-snug" style={{ color: "#3a3a3c", fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: "italic" }}>
             {clip.sub}
           </div>
         )}
@@ -65,7 +65,7 @@ export function Ticker({ items }: { items: TickerItem[] }) {
       <style>{`
         @keyframes sg-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
       `}</style>
-      <div className="whitespace-nowrap text-[11px] leading-[26px]"
+      <div className="whitespace-nowrap text-[12px] leading-[26px]"
         style={{ display: "inline-block", animation: "sg-ticker 28s linear infinite" }}>
         {items.map(cell)}
         {items.map((it, i) => cell(it, i + items.length))}

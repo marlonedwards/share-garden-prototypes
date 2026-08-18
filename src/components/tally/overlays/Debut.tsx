@@ -13,9 +13,8 @@ import { Debut } from "../../../lib/tally/run";
 import { TallyAsset } from "../../../lib/tally/deck";
 import { displayName, priceLine } from "../../../lib/tally/text";
 import CardFace from "../Card";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -39,7 +38,7 @@ export default function DebutOverlay({
   return (
     <div style={shell} data-debut={debut.key}>
       <div style={panel}>
-        <div style={eyebrow}>{debut.title}</div>
+        <div style={title}>{debut.title}</div>
         <div style={{ display: "flex", justifyContent: "center", margin: "12px 0 14px" }}>
           <CardFace
             name={displayName(asset, realNames)}
@@ -47,7 +46,7 @@ export default function DebutOverlay({
             sector={asset.sector}
             worthBlocks={stone ? 0 : costBlocks}
             blockColor={asset.color}
-            priceLabel={stone ? "no price" : priceLine(asset, price, ratePerYear)}
+            priceLabel={stone ? "No price" : priceLine(asset, price, ratePerYear)}
             stone={stone}
             width={132}
             height={150}
@@ -88,11 +87,13 @@ const panel: React.CSSProperties = {
   textAlign: "center",
 };
 
-const eyebrow: React.CSSProperties = {
+// The panel's own heading, set as a heading rather than as a grey label above
+// the card.
+const title: React.CSSProperties = {
   fontSize: 13,
-  fontWeight: 750,
+  fontWeight: 700,
   letterSpacing: "-0.01em",
-  color: SUB,
+  color: INK,
 };
 
 const definition: React.CSSProperties = {
@@ -100,7 +101,7 @@ const definition: React.CSSProperties = {
   maxWidth: 270,
   fontSize: 14.5,
   lineHeight: 1.5,
-  fontWeight: 550,
+  fontWeight: 500,
 };
 
 const button: React.CSSProperties = {

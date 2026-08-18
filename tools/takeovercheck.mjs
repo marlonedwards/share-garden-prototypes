@@ -25,12 +25,16 @@ const cx = 720, cy = 475;
 async function openGame(url) {
   await page.goto(url);
   await page.reload();
-  await wait(900);
+  // Wait for the arena, not a fixed delay: after several rounds the reload can
+  // take longer than 900ms and the name gate would be missed.
+  await page.waitForSelector("canvas[data-takeover-arena]");
+  await wait(400);
   if (await page.locator("[data-startcard]").count()) {
     await page.locator("[data-name-input]").fill("walkbot inc");
     await page.locator("[data-start]").click();
-    await wait(600);
   }
+  await page.waitForFunction(() => !!window.__takeover?.run, null, { timeout: 8000 });
+  await wait(400);
 }
 
 // Steer like a survivor: flee predators and hazards first, otherwise chase
@@ -99,6 +103,11 @@ check(
   (await page.evaluate(() => window.__takeover.run.hazards.length)) >= 6,
   "hazards populate",
 );
+// Type contract (docs/clean-type.md): one system font, no monospace anywhere.
+const pageFont = await page.evaluate(() =>
+  getComputedStyle(document.querySelector("[data-takeover-arena]").parentElement).fontFamily,
+);
+check(!/mono|menlo|consolas|grotesk|pixelify|fraunces/i.test(pageFont), `page font is the system stack (${pageFont})`);
 await page.screenshot({ path: OUT + "arena.png" });
 console.log("shot arena");
 
@@ -154,32 +163,37 @@ await page.screenshot({ path: OUT + "ipo.png" });
 console.log("shot ipo");
 
 // 5. ACQUIRED card: fresh full round, grow until real predators exist, then
-// drive into the nearest one.
-await openGame("http://localhost:4318/#/takeover");
-await chaseFood(4e7, 420);
-for (let t = 0; t < 200; t++) {
-  const target = await page.evaluate(() => {
-    const run = window.__takeover.run;
-    if (run.over || !run.cells.length) return null;
-    const me = run.cells[0];
-    const big = run.companies.filter((b) => b.cap > run.worth && !b.c.local);
-    if (!big.length) return { dx: 1, dy: 0 };
-    big.sort(
-      (a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y),
-    );
-    return { dx: big[0].x - me.x, dy: big[0].y - me.y };
-  });
-  if (!target) break;
-  const d = Math.hypot(target.dx, target.dy) || 1;
-  await page.mouse.move(cx + (target.dx / d) * 430, cy + (target.dy / d) * 430);
-  await wait(120);
+// drive into the nearest one. Two attempts, because a dev-server hot reload
+// mid-round restarts the clock and leaves the walk with no card to read.
+let endText = "";
+for (let attempt = 0; attempt < 2; attempt++) {
+  await openGame("http://localhost:4318/#/takeover");
+  await chaseFood(4e7, 420);
+  for (let t = 0; t < 200; t++) {
+    const target = await page.evaluate(() => {
+      const run = window.__takeover?.run;
+      if (!run || run.over || !run.cells.length) return null;
+      const me = run.cells[0];
+      const big = run.companies.filter((b) => b.cap > run.worth && !b.c.local);
+      if (!big.length) return { dx: 1, dy: 0 };
+      big.sort(
+        (a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y),
+      );
+      return { dx: big[0].x - me.x, dy: big[0].y - me.y };
+    });
+    if (!target) break;
+    const d = Math.hypot(target.dx, target.dy) || 1;
+    await page.mouse.move(cx + (target.dx / d) * 430, cy + (target.dy / d) * 430);
+    await wait(120);
+  }
+  await wait(500);
+  endText = (await page.locator("[data-endcard]").count())
+    ? await page.locator("[data-endcard]").innerText()
+    : "";
+  if (/Acquired by|went public|Bankrupted by/.test(endText)) break;
 }
-await wait(500);
-const endText = (await page.locator("[data-endcard]").count())
-  ? await page.locator("[data-endcard]").innerText()
-  : "";
-check(/acquired by|went public|bankrupted by/.test(endText), "second round ends with a card");
-if (endText.includes("acquired by")) {
+check(/Acquired by|went public|Bankrupted by/.test(endText), "second round ends with a card");
+if (endText.includes("Acquired by")) {
   await page.screenshot({ path: OUT + "acquired.png" });
   console.log("shot acquired");
 }

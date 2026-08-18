@@ -99,11 +99,11 @@ function PriceStage({ onComplete }: StageProps) {
     <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 max-w-lg">
       <div className="grid grid-cols-2 gap-3 text-center">
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>The last trade</div>
+          <div className="text-[12px]" style={{ color: SUB }}>The last trade</div>
           <div className="text-[22px] font-semibold tnum">${price}</div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>Jordan's pieces</div>
+          <div className="text-[12px]" style={{ color: SUB }}>Jordan's pieces</div>
           <div className="text-[22px] font-semibold tnum" style={{ color: ACCENT }}>1 of 100</div>
         </div>
       </div>
@@ -185,7 +185,7 @@ function DividendStage({ onComplete }: StageProps) {
         </button>
       ) : (
         <div className="pop-in">
-          <div className="text-[11px]" style={{ color: SUB }}>Jordan's share of the profit</div>
+          <div className="text-[12px]" style={{ color: SUB }}>Jordan's share of the profit</div>
           <div className="text-[26px] font-semibold tnum">$2.00</div>
           <p className="text-[13px] mt-2" style={{ color: "#3a3a3c" }}>
             One hundredth of everything the stand earns belongs to Jordan, whether the share's
@@ -231,7 +231,7 @@ function OwnerStage({ onComplete }: StageProps) {
               cursor: flipped[i] ? "default" : "pointer",
             }}>
             <span>{c.text}</span>
-            <span className="text-[11px] font-semibold flex-shrink-0"
+            <span className="text-[12px] font-semibold flex-shrink-0"
               style={{ color: flipped[i] ? (c.can ? "#248a3d" : "#d70015") : "#a1a1a6" }}>
               {flipped[i] ? (c.can ? "An owner can" : "Not an owner's call") : "tap"}
             </span>

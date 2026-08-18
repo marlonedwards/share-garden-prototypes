@@ -81,8 +81,8 @@ function RevealBoardStage({ onComplete }: StageProps) {
                 background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${c.color}66 55%, ${c.color}cc)`,
                 boxShadow: first === i ? `0 0 0 3px ${ACCENT}` : "inset 0 0 0 1px rgba(30,45,80,0.12)",
               }} />
-            <span className="text-[10px] text-center leading-tight" style={{ color: SUB }}>{c.name}</span>
-            <span className="text-[11px] font-semibold tnum"
+            <span className="text-[12px] text-center leading-tight" style={{ color: SUB }}>{c.name}</span>
+            <span className="text-[12px] font-semibold tnum"
               style={{ color: FUND_RESULTS[i] >= 0 ? "#248a3d" : "#d70015", visibility: revealed ? "visible" : "hidden" }}>
               {FUND_RESULTS[i] > 0 ? "+" : ""}{FUND_RESULTS[i]}%
             </span>
@@ -93,11 +93,11 @@ function RevealBoardStage({ onComplete }: StageProps) {
         <div className="pop-in">
           <div className="mt-3 flex items-baseline gap-5">
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>{FUND_CAST[FUND_TRIPLER].name}</div>
+              <div className="text-[12px]" style={{ color: SUB }}>{FUND_CAST[FUND_TRIPLER].name}</div>
               <div className="text-[21px] font-semibold tnum" style={{ color: "#248a3d" }}>+{FUND_RESULTS[FUND_TRIPLER]}%</div>
             </div>
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>The other seven, averaged</div>
+              <div className="text-[12px]" style={{ color: SUB }}>The other seven, averaged</div>
               <div className="text-[21px] font-semibold tnum">+{OTHERS_AVG}%</div>
             </div>
           </div>
@@ -138,12 +138,12 @@ function ProScoreStage({ onComplete }: StageProps) {
                   background: !flipped ? "#e8e8ed" : ahead ? "rgba(52,199,89,0.14)" : "rgba(255,59,48,0.10)",
                   borderColor: !flipped ? "rgba(0,0,0,0.08)" : ahead ? "rgba(36,138,61,0.45)" : "rgba(215,0,21,0.30)",
                 }}>
-                <span className="text-[10.5px] font-semibold"
+                <span className="text-[12px] font-semibold"
                   style={{ color: !flipped ? "#a1a1a6" : ahead ? "#248a3d" : "#d70015" }}>
                   {flipped ? (ahead ? "Ahead" : "Behind") : "· · ·"}
                 </span>
               </div>
-              <span className="text-[9.5px]" style={{ color: SUB }}>Pro {i + 1}</span>
+              <span className="text-[12px]" style={{ color: SUB }}>Pro {i + 1}</span>
             </div>
           );
         })}
@@ -159,7 +159,7 @@ function ProScoreStage({ onComplete }: StageProps) {
         <div className="pop-in">
           <div className="mt-3">
             <div className="text-[21px] font-semibold tnum">9 of 10</div>
-            <div className="text-[11px]" style={{ color: SUB }}>teams finished behind the plain market average</div>
+            <div className="text-[12px]" style={{ color: SUB }}>teams finished behind the plain market average</div>
           </div>
           <p className="text-[12.5px] mt-2" style={{ color: "#3a3a3c" }}>
             The scorekeepers find close to that split every time they check, once the run gets
@@ -240,7 +240,7 @@ function FlopStage({ onComplete }: StageProps) {
                   boxShadow: miss === i ? "0 0 0 2px rgba(0,0,0,0.25)" : "inset 0 0 0 1px rgba(30,45,80,0.12)",
                   opacity: tapped && isFlop ? 0.35 : 1,
                 }} />
-              <span className="text-[10px] text-center leading-tight" style={{ color: SUB }}>{c.name}</span>
+              <span className="text-[12px] text-center leading-tight" style={{ color: SUB }}>{c.name}</span>
             </button>
           );
         })}
@@ -249,11 +249,11 @@ function FlopStage({ onComplete }: StageProps) {
         <div className="pop-in">
           <div className="mt-3 flex items-baseline gap-5">
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>Held on its own</div>
+              <div className="text-[12px]" style={{ color: SUB }}>Held on its own</div>
               <div className="text-[21px] font-semibold tnum" style={{ color: "#d70015" }}>-{FUND_FLOP_PCT}%</div>
             </div>
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>Cost to the fund's +{FUND_AVG}</div>
+              <div className="text-[12px]" style={{ color: SUB }}>Cost to the fund's +{FUND_AVG}</div>
               <div className="text-[21px] font-semibold tnum">-{FUND_FLOP_COST} points</div>
             </div>
           </div>
@@ -299,7 +299,7 @@ function MovingTriplerStage({ onComplete }: StageProps) {
                 background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${c.color}66 55%, ${c.color}cc)`,
                 boxShadow: pick === i ? `0 0 0 3px ${ACCENT}` : "inset 0 0 0 1px rgba(30,45,80,0.12)",
               }} />
-            <span className="text-[10px] text-center leading-tight" style={{ color: SUB }}>{FUND_SHORT[i]}</span>
+            <span className="text-[12px] text-center leading-tight" style={{ color: SUB }}>{FUND_SHORT[i]}</span>
           </button>
         ))}
       </div>
@@ -326,17 +326,17 @@ function MovingTriplerStage({ onComplete }: StageProps) {
           </div>
           <div className="mt-2.5 flex items-baseline gap-5">
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>$100 in {FUND_CAST[pick].name}</div>
+              <div className="text-[12px]" style={{ color: SUB }}>$100 in {FUND_CAST[pick].name}</div>
               <div className="text-[21px] font-semibold tnum">${growHundred(THREE_YEARS.map((y) => y.results[pick]))}</div>
             </div>
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>$100 in the fund</div>
+              <div className="text-[12px]" style={{ color: SUB }}>$100 in the fund</div>
               <div className="text-[21px] font-semibold tnum" style={{ color: ACCENT }}>${fundFinal}</div>
             </div>
           </div>
           <p className="text-[12.5px] mt-2" style={{ color: "#3a3a3c" }}>
             The tripler moved: {triplerNames[0]} first, then {triplerNames[1]}, then {triplerNames[2]}.
-            The fund held all three. Try every company: not one road finishes ahead of the marble.
+            The fund held all three. Try every company, and not one road finishes ahead of the marble.
           </p>
         </div>
       )}

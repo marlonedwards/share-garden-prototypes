@@ -108,13 +108,13 @@ export default function MainMenu(p: MainMenuProps) {
             explains itself. */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: s(14) }}>
           <Piggy pose="idle" size={s(72)} title="A pixel piggy bank" />
-          <div style={{ fontSize: type(56), fontWeight: 850, letterSpacing: "-0.035em", lineHeight: 1 }}>
+          <div style={{ fontSize: type(56), fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1 }}>
             The Tally
           </div>
           <Motif size={s(13)} />
         </div>
-        <div style={{ fontSize: type(14), color: SUB, marginTop: s(11), lineHeight: 1.45, fontWeight: 550 }}>
-          A run is eight chapters, and every chapter asks you to finish above a line.
+        <div style={{ fontSize: type(14), color: SUB, marginTop: s(11), lineHeight: 1.45, fontWeight: 500 }}>
+          Eight chapters, each finished above the line.
         </div>
       </div>
 
@@ -184,7 +184,7 @@ export default function MainMenu(p: MainMenuProps) {
           className={btn("ghost")}
           style={{ fontSize: type(12), padding: `${s(5)}px ${s(11)}px`, borderRadius: R.chip, textDecoration: "none" }}
         >
-          back
+          Back
         </Link>
       </div>
     </div>

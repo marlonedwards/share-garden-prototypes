@@ -201,17 +201,17 @@ export default function ReadyMode() {
       style={{ background: "rgba(245,245,247,0.94)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
       <PlanMarble slices={slices} total={total} size={104} ariaLabel="Your marble, drawn live from your lines" />
       <div className="min-w-0">
-        <div className="text-[11px] font-semibold" style={{ color: SUB }}>{orbHeading}</div>
+        <div className="text-[12px] font-semibold" style={{ color: SUB }}>{orbHeading}</div>
         {total > 0 ? (
           <>
             <div className="text-[24px] tnum font-semibold tracking-tight">{usd(total)}</div>
-            <div className="text-[11.5px]" style={{ color: SUB }}>
+            <div className="text-[12px]" style={{ color: SUB }}>
               {lines.length === 1 ? "It holds 1 line." : `It holds ${lines.length} lines.`}
             </div>
           </>
         ) : (
           <p className="text-[12px] leading-snug max-w-[230px]" style={{ color: SUB }}>
-            The marble is empty glass. It fills as your lines take dollars.
+            The marble is empty glass.
           </p>
         )}
       </div>
@@ -228,7 +228,7 @@ export default function ReadyMode() {
           </svg>
         </button>
         {screen !== "door" && <Dots step={STEP_INDEX[screen as Exclude<Screen, "door">]} />}
-        <span className="text-[12px] font-semibold tracking-wide" style={{ color: SUB }}>{eyebrow}</span>
+        <span className="text-[12px] font-semibold" style={{ color: SUB }}>{eyebrow}</span>
       </div>
       <p className="mt-3 text-[20px] font-semibold tracking-tight leading-snug">{definition}</p>
       <p className="mt-2 text-[13.5px] leading-relaxed" style={{ color: "#3a3a3c" }}>{story}</p>
@@ -265,11 +265,11 @@ export default function ReadyMode() {
             <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            scenarios
+            Scenarios
           </Link>
           <div className="h-5 w-px bg-black/10" />
           <span className="text-lg font-semibold tracking-tight">Ready to invest?</span>
-          <span className="ml-auto text-[11px] flex-shrink-0 hidden sm:inline" style={{ color: "#a1a1a6" }}>
+          <span className="ml-auto text-[12px] flex-shrink-0 hidden sm:inline" style={{ color: "#a1a1a6" }}>
             CEE Investing 8-2b · 8-5 · 8-6a · 12-2c
           </span>
         </header>
@@ -277,14 +277,13 @@ export default function ReadyMode() {
         {screen === "door" || path === null ? (
           /* ------------------------------ the door -------------------------- */
           <main className="max-w-2xl mx-auto px-6 pt-8 pb-16">
-            <div className="text-[12px] font-semibold tracking-wide" style={{ color: SUB }}>The last lesson · One door, two paths</div>
+            <div className="text-[12px] font-semibold" style={{ color: SUB }}>The last lesson</div>
             <p className="mt-1.5 text-[22px] font-semibold tracking-tight leading-snug">
               A plan is a set of choices you write down before any money moves.
             </p>
             <p className="mt-2 text-[14px] leading-relaxed max-w-xl" style={{ color: "#3a3a3c" }}>
-              You have carried a marble through booms, crashes, and slow recoveries. This page points
-              everything you practiced at your own money. It will not tell you what to buy. It will
-              show you the shape of what you are thinking, the way a mirror shows you a haircut.
+              This page points everything you practiced at your own money. It will not tell you
+              what to buy.
             </p>
 
             <div className="mt-6 rounded-3xl bg-white border border-black/8 shadow-sm p-2 grid sm:grid-cols-2">
@@ -293,8 +292,7 @@ export default function ReadyMode() {
                 <div className="text-[12px] font-semibold" style={{ color: ACCENT }}>Path one</div>
                 <div className="mt-1 text-[18px] font-semibold tracking-tight">I'm planning my first orb</div>
                 <p className="mt-2 text-[13px] leading-relaxed" style={{ color: SUB }}>
-                  You have not bought anything real yet. Build the orb you are thinking about, in real
-                  names and real dollars, and look at its shape before a single dollar moves.
+                  Build the orb you are thinking about, in real names and real dollars.
                 </p>
                 <div className="mt-4 text-[13px] font-medium" style={{ color: ACCENT }}>Open this door</div>
               </button>
@@ -303,8 +301,7 @@ export default function ReadyMode() {
                 <div className="text-[12px] font-semibold" style={{ color: ACCENT }}>Path two</div>
                 <div className="mt-1 text-[18px] font-semibold tracking-tight">I already own some</div>
                 <p className="mt-2 text-[13px] leading-relaxed" style={{ color: SUB }}>
-                  Maybe a relative gave you a stock, or you bought a coin with birthday money. Type in
-                  what you own and let the mirror show you what you are already carrying.
+                  Type in what you already own and look at its shape.
                 </p>
                 <div className="mt-4 text-[13px] font-medium" style={{ color: ACCENT }}>Open this door</div>
               </button>
@@ -319,8 +316,8 @@ export default function ReadyMode() {
               `Step 1 of 3 · ${pathEyebrow}`,
               "An asset is one thing you can own that has a price of its own.",
               path === "first"
-                ? `The shelf below holds twenty real assets with prices from ${READY_AS_OF}. Broad funds sit first because a wide basket is the plain move, not the fancy one. Tap each line you are thinking about, and type in anything the shelf does not carry.`
-                : `The shelf below holds twenty real assets with prices from ${READY_AS_OF}. Tap each thing you already hold, and type in anything the shelf does not carry.`
+                ? `The shelf below holds twenty real assets with prices from ${READY_AS_OF}. Tap each line you are thinking about.`
+                : `The shelf below holds twenty real assets with prices from ${READY_AS_OF}. Tap each thing you already hold.`
             )}
             {marbleStrip}
 
@@ -328,7 +325,7 @@ export default function ReadyMode() {
               <div className="flex items-baseline gap-2 flex-wrap">
                 <h2 className="text-[15px] font-semibold tracking-tight">The shelf</h2>
                 <span className="text-[12px]" style={{ color: SUB }}>
-                  Prices are rounded closing prices as of {READY_AS_OF}, and real prices have moved since then. The shelf scrolls.
+                  Prices are rounded closing prices as of {READY_AS_OF}, and real prices have moved since then.
                 </span>
               </div>
 
@@ -338,7 +335,7 @@ export default function ReadyMode() {
                 <div key={k.kind} className="mt-3">
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <div className="text-[12.5px] font-semibold">{k.label}</div>
-                    <div className="text-[11.5px]" style={{ color: SUB }}>{k.gloss}</div>
+                    <div className="text-[12px]" style={{ color: SUB }}>{k.gloss}</div>
                   </div>
                   <div className="mt-2 grid sm:grid-cols-2 gap-1.5">
                     {READY_ASSETS.filter((a) => a.kind === k.kind).map((a) => {
@@ -355,11 +352,11 @@ export default function ReadyMode() {
                           <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: a.color }} />
                           <span className="min-w-0 flex-1">
                             <span className="block text-[12.5px] font-medium truncate">{a.name}</span>
-                            <span className="block text-[10.5px]" style={{ color: SUB }}>{a.ticker}</span>
+                            <span className="block text-[12px]" style={{ color: SUB }}>{a.ticker}</span>
                           </span>
                           <span className="flex-shrink-0 text-right">
                             <span className="block text-[12px] tnum font-medium">{usd(a.price)}</span>
-                            <span className="block text-[10.5px] font-medium" style={{ color: isAdded ? ACCENT : "#a1a1a6" }}>
+                            <span className="block text-[12px] font-medium" style={{ color: isAdded ? ACCENT : "#a1a1a6" }}>
                               {isAdded ? "Added · tap to remove" : "Add"}
                             </span>
                           </span>
@@ -373,8 +370,8 @@ export default function ReadyMode() {
 
               <div className="mt-4 pt-4 border-t border-black/8">
                 <div className="text-[12.5px] font-medium">Type in something else</div>
-                <p className="text-[11.5px] mt-0.5" style={{ color: SUB }}>
-                  A typed line counts toward the marble's size and spread, and the mirror reads it like a single name.
+                <p className="text-[12px] mt-0.5" style={{ color: SUB }}>
+                  A typed line counts toward the marble&apos;s size and spread.
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <input value={customName} maxLength={28}
@@ -410,7 +407,7 @@ export default function ReadyMode() {
 
               {atCap && (
                 <p className="mt-3 text-[12px]" style={{ color: "#b25000" }}>
-                  The shelf closes at twelve lines. A plan that fits on one printed page is a plan you can actually read.
+                  The shelf closes at twelve lines.
                 </p>
               )}
             </section>
@@ -424,8 +421,8 @@ export default function ReadyMode() {
               `Step 2 of 3 · ${pathEyebrow}`,
               "Position size is the share of your money that rides on one line.",
               path === "first"
-                ? "Give each line a dollar amount and watch the marble above take shape. The dollars stay on paper, which is exactly why this is the safest place to practice."
-                : "Type about how many dollars each line is worth today. The marble above puts everything you hold into one glass, the same way every era in this course did."
+                ? "Give each line a dollar amount and watch the marble above take shape."
+                : "Type about how many dollars each line is worth today."
             )}
             {marbleStrip}
 
@@ -444,7 +441,7 @@ export default function ReadyMode() {
                       <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: l.color }} />
                       <div className="min-w-0 flex-1 leading-tight">
                         <span className="text-[13px] font-medium">{l.name}</span>
-                        <span className="ml-1.5 text-[11px] whitespace-nowrap" style={{ color: SUB }}>{l.sub}</span>
+                        <span className="ml-1.5 text-[12px] whitespace-nowrap" style={{ color: SUB }}>{l.sub}</span>
                       </div>
                       <button onClick={() => removeLine(l.key)} aria-label={`Remove ${l.name}`}
                         className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition hover:bg-black/5"
@@ -469,7 +466,7 @@ export default function ReadyMode() {
                         className="tnum w-28 text-[13.5px] font-medium text-right rounded-lg border border-black/10 bg-white px-2 py-1 outline-none focus:border-black/25 transition"
                         aria-label={`Dollars for ${l.name}`}
                       />
-                      <span className="text-[11px] tnum" style={{ color: "#a1a1a6" }}>
+                      <span className="text-[12px] tnum" style={{ color: "#a1a1a6" }}>
                         {fmtHoldings(l.dollars, l.price, l.kind)}
                       </span>
                     </div>
@@ -490,13 +487,13 @@ export default function ReadyMode() {
             {stepHeader(
               `Step 3 of 3 · ${pathEyebrow}`,
               "Concentration is the share of an orb that leans on one name.",
-              "The mirror below reads your plan the way this course read every era, by looking backward at crashes that already happened. When the shape looks like something you could hold through a bad year, print it and talk it over with a parent or a teacher."
+              "The mirror below reads your plan by looking backward at crashes that already happened."
             )}
 
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
               <PlanMarble slices={slices} total={total} size={190} ariaLabel="Your marble, drawn from your plan" />
               <div className="min-w-0 w-full sm:w-auto sm:flex-1">
-                <div className="text-[11px] font-semibold" style={{ color: SUB }}>{orbHeading}</div>
+                <div className="text-[12px] font-semibold" style={{ color: SUB }}>{orbHeading}</div>
                 <div className="text-[30px] tnum font-semibold tracking-tight">{usd(total)}</div>
                 <div className="mt-2 flex flex-col gap-1">
                   {funded.map((l, i) => (
@@ -513,7 +510,7 @@ export default function ReadyMode() {
             <section className="mt-5 rounded-3xl bg-white border border-black/8 shadow-sm p-5">
               <div className="flex items-baseline gap-2">
                 <h2 className="text-[15px] font-semibold tracking-tight">The mirror</h2>
-                <span className="text-[11.5px]" style={{ color: SUB }}>Every reading looks backward.</span>
+                <span className="text-[12px]" style={{ color: SUB }}>Every reading looks backward.</span>
               </div>
               <div className="mt-3 flex flex-col gap-2">
                 {mirror.map((m, i) => {
@@ -547,9 +544,8 @@ export default function ReadyMode() {
                 style={{ color: SUB }}>
                 Print this plan instead
               </button>
-              <p className="text-[11.5px] text-center" style={{ color: SUB }}>
-                The card is a picture of your marble and its lines. The printed page adds three
-                questions to ask a parent or a teacher together.
+              <p className="text-[12px] text-center" style={{ color: SUB }}>
+                The printed page adds three questions to ask a parent or a teacher.
               </p>
               {confirmClear ? (
                 <div className="flex items-center justify-center gap-3 text-[12px] flex-wrap">
@@ -564,7 +560,7 @@ export default function ReadyMode() {
               ) : (
                 <div className="flex items-center justify-center gap-4 text-[12px]">
                   <button onClick={() => setPath(otherPath)} className="font-medium transition hover:opacity-75" style={{ color: ACCENT }}>
-                    {otherPath === "own" ? "Switch to: I already own some" : "Switch to: I'm planning my first orb"}
+                    {otherPath === "own" ? "I already own some instead" : "I'm planning my first orb instead"}
                   </button>
                   <span style={{ color: "#d2d2d7" }}>·</span>
                   <button onClick={() => setConfirmClear(true)} className="font-medium transition hover:opacity-75" style={{ color: SUB }}>
@@ -583,7 +579,7 @@ export default function ReadyMode() {
         <h1 className="text-[26px] font-semibold tracking-tight leading-tight">
           {path === "own" ? "The orb I hold today" : "My first orb, on paper"}
         </h1>
-        <p className="text-[11px] mt-1" style={{ color: SUB }}>
+        <p className="text-[12px] mt-1" style={{ color: SUB }}>
           Built with Share Garden on {printDate}.{orbName ? ` The orb's name is ${orbName}.` : ""} Prices
           are rounded closing prices as of {READY_AS_OF}, and real prices have moved since then.
         </p>
@@ -591,17 +587,17 @@ export default function ReadyMode() {
         <div className="mt-2 flex items-center gap-6">
           <PlanMarble slices={slices} total={total} size={150} ariaLabel="Your marble, drawn from your plan" />
           <div>
-            <div className="text-[11px] font-semibold" style={{ color: SUB }}>
+            <div className="text-[12px] font-semibold" style={{ color: SUB }}>
               {path === "own" ? "What it is worth today" : "Planned size"}
             </div>
             <div className="text-[30px] tnum font-semibold tracking-tight">{usd(total)}</div>
-            <div className="text-[11px]" style={{ color: SUB }}>
+            <div className="text-[12px]" style={{ color: SUB }}>
               {funded.length} {funded.length === 1 ? "line" : "lines"}
             </div>
           </div>
         </div>
 
-        <table className="mt-2 w-full text-[11px]" style={{ borderCollapse: "collapse" }}>
+        <table className="mt-2 w-full text-[12px]" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr className="text-left" style={{ color: SUB }}>
               <th className="font-semibold py-1 pr-2">Name</th>
@@ -631,7 +627,7 @@ export default function ReadyMode() {
           <div className="text-[12px] font-semibold">What the mirror said</div>
           <div className="mt-1 flex flex-col gap-1">
             {mirror.map((m, i) => (
-              <p key={i} className="text-[10.5px] leading-snug flex gap-1.5">
+              <p key={i} className="text-[12px] leading-snug flex gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[4px]" style={{ background: TONE_STYLE[m.tone].dot }} />
                 <span>{m.text}</span>
               </p>
@@ -641,14 +637,14 @@ export default function ReadyMode() {
 
         <div className="mt-3">
           <div className="text-[12px] font-semibold">Talk it over with an adult</div>
-          <ol className="mt-1 flex flex-col gap-1 text-[10.5px] leading-snug list-decimal pl-4">
+          <ol className="mt-1 flex flex-col gap-1 text-[12px] leading-snug list-decimal pl-4">
             <li>Which slice would hurt the most if its price fell by half, and would we hold it or sell it?</li>
             <li>How long could this money stay put before we would need it back? Emergency money lives in savings, not in the market.</li>
             <li>What one change would make this orb harder to break?</li>
           </ol>
         </div>
 
-        <div className="mt-4 flex gap-8 text-[10px]" style={{ color: SUB }}>
+        <div className="mt-4 flex gap-8 text-[12px]" style={{ color: SUB }}>
           <div className="flex-1">
             <div style={{ borderBottom: "1px solid rgba(0,0,0,0.4)", height: 22 }} />
             <div className="mt-0.5">Student</div>
@@ -663,7 +659,7 @@ export default function ReadyMode() {
           </div>
         </div>
 
-        <p className="mt-3 text-[10px]" style={{ color: "#a1a1a6" }}>
+        <p className="mt-3 text-[12px]" style={{ color: "#a1a1a6" }}>
           {READY_MIRROR_LINE} Share Garden · The Orb.
         </p>
       </div>

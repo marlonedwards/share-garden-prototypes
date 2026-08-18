@@ -43,11 +43,11 @@ export const SUIT_LABEL: Record<Suit, string> = {
 // One sentence each, definition first, for the card back and the collector's
 // box. These are player facing, so they follow the course style contract.
 export const SUIT_DEFINITION: Record<Suit, string> = {
-  save: "A savings card is money you keep at a bank, and the bank pays you a little for keeping it there.",
+  save: "A savings card is money you keep at a bank that pays you to leave it there.",
   lend: "A lending card is money you lent to somebody who pays you back with interest.",
-  own: "An ownership card is a slice of one real company, and it rises and falls with that company.",
+  own: "An ownership card is a slice of one real company.",
   basket: "A basket card is one purchase that holds many companies at once.",
-  spec: "A speculation card is a price with no earnings behind it, so it is worth whatever the next buyer will pay.",
+  spec: "A speculation card is worth whatever the next buyer will pay.",
 };
 
 // ---------------------------------------------------------------- debuts
@@ -74,12 +74,12 @@ export const DEBUT_ORDER: DebutKey[] = ["save", "lend", "own", "basket", "spec",
 // sentences are written here, to the same rule: one complete sentence, the
 // definition first, nothing about what to do next.
 export const CARD_DEFINITION: Record<DebutKey, string> = {
-  save: "A savings account is money you keep at a bank, and the bank pays you a little for keeping it there.",
-  lend: "A bond is a loan you made to a government or a company, and it pays you back with interest.",
-  own: "A share is one small piece of a real company, and buying one makes that piece yours.",
+  save: "A savings account is money you keep at a bank that pays you to leave it there.",
+  lend: "A bond is a loan that pays you back with interest.",
+  own: "A share is one small piece of a real company.",
   basket: "An index fund is one purchase that buys a tiny piece of hundreds of companies at once.",
-  spec: "A speculation card is a price with no earnings behind it, so it is worth whatever the next buyer will pay.",
-  stone: "A stone is a card whose price reached zero, so it is worth nothing and it can never be sold.",
+  spec: "A speculation card is worth whatever the next buyer will pay.",
+  stone: "A stone is a card whose price reached zero.",
 };
 
 // The heading over a debut, which is the name of the type rather than the name
@@ -212,7 +212,7 @@ export const SAVINGS_PRICE = 10;
 export const SAVINGS: TallyAsset = {
   id: SAVINGS_ID,
   name: "Savings Account",
-  desc: "Money in a savings account keeps its value, and the bank pays interest on it.",
+  desc: "Money in a savings account keeps its value.",
   suit: "save", sector: "everything",
   color: "#2E9E63", glow: "#8FD9B2",
   carry: "flat", illustrative: true,
@@ -221,7 +221,7 @@ export const SAVINGS: TallyAsset = {
 export const BOND: TallyAsset = {
   id: BOND_ID,
   name: "Government Bond",
-  desc: "A bond is a loan you made to a government, and it pays you back with interest.",
+  desc: "A bond is a loan you made to a government that pays you back with interest.",
   suit: "lend", sector: "everything",
   color: "#2A72D6", glow: "#9CC0F0",
   carry: "rate", ratePerYear: BOND_RATE, illustrative: true,

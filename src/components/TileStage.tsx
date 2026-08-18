@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { StackBand, StackStageProps } from "./StackStage";
 import { BLOCK_GROUP, allocateBlocks, blockDenom, blocksOf } from "../lib/blocks";
+import { uiFont } from "../lib/type";
 
 // The Stack's other stage: the same run drawn as countable blocks.
 //
@@ -106,7 +107,7 @@ function geom(maxDollars: number, denom: number, plotH: number, plotW: number, s
 }
 
 function font(px: number, w = 500) {
-  return `${w} ${px}px "Helvetica Neue", Inter, -apple-system, system-ui, sans-serif`;
+  return uiFont(px, w);
 }
 
 function easeOut(t: number) { return 1 - Math.pow(1 - t, 3); }
@@ -192,7 +193,7 @@ export default function TileStage(p: TileStageProps) {
       // are the thing being taught; the blocks between them are countable, so
       // the label is a check, not the reading.
       const stepBlocks = G.maxBlocks > 24 ? 10 : G.maxBlocks > 12 ? 5 : 2;
-      g.font = font(10.5);
+      g.font = font(12);
       g.textAlign = "right";
       for (let b = stepBlocks; b <= G.maxBlocks; b += stepBlocks) {
         const y = baseY + G.bottom(b);
@@ -227,7 +228,7 @@ export default function TileStage(p: TileStageProps) {
         // go, so the goal is always readable whatever the stack is doing
         g.textAlign = "left";
         g.fillStyle = t.accent;
-        g.font = font(11, 650);
+        g.font = font(12, 600);
         const label = `${p.corridor.label} · ${blocksOf(p.corridor.lo, denom)} to ${blocksOf(p.corridor.hi, denom)} blocks`;
         const ly = Math.max(PAD_T + 10, yHi - 9);
         g.fillText(label, ly < chromeTop ? Math.max(PAD_L - 8, chromeLeft + 10) : PAD_L - 8, ly);
@@ -242,7 +243,7 @@ export default function TileStage(p: TileStageProps) {
         g.setLineDash([]);
         g.textAlign = "right";
         g.fillStyle = t.accent;
-        g.font = font(11, 650);
+        g.font = font(12, 600);
         g.fillText(p.goalLine.label, p.width - PAD_R + 6 - chromeRight, y - 10);
       }
 
@@ -253,7 +254,7 @@ export default function TileStage(p: TileStageProps) {
 
       // ---- year ticks, labelled in the middle of the year they open
       const marks = p.yearMarks ?? [];
-      g.font = font(10.5);
+      g.font = font(12);
       g.textAlign = "center";
       marks.forEach((mark, i) => {
         const x = PAD_L + toCol(mark.step) * colW;
@@ -356,7 +357,7 @@ export default function TileStage(p: TileStageProps) {
         g.fillStyle = t.chipBg;
         g.strokeStyle = t.accent;
         g.lineWidth = 1.4;
-        const msg = `every block is now $${denom.toLocaleString("en-US")}`;
+        const msg = `Every block is now $${denom.toLocaleString("en-US")}`;
         g.font = font(17, 700);
         const bw = g.measureText(msg).width + 44;
         g.beginPath(); g.roundRect(PAD_L + plotW / 2 - bw / 2, bannerY - 30, bw, 60, 12);
@@ -365,7 +366,7 @@ export default function TileStage(p: TileStageProps) {
         g.fillText(msg, PAD_L + plotW / 2, bannerY - 10);
         g.font = font(12.5, 500);
         g.fillStyle = t.muted;
-        g.fillText("four blocks just became one", PAD_L + plotW / 2, bannerY + 12);
+        g.fillText("Four blocks just became one", PAD_L + plotW / 2, bannerY + 12);
         g.globalAlpha = 1;
       }
 
@@ -397,7 +398,7 @@ export default function TileStage(p: TileStageProps) {
         g.beginPath(); g.roundRect(bx, y - 17, w, 34, 8); g.fill(); g.stroke();
         g.textAlign = "left";
         g.fillStyle = color;
-        g.font = font(10.5, 600);
+        g.font = font(12, 600);
         g.fillText(title, bx + 10, y - 7);
         g.fillStyle = t.ink;
         g.font = font(13, 700);
@@ -417,15 +418,15 @@ export default function TileStage(p: TileStageProps) {
         `$${Math.round(invested + p.cash).toLocaleString("en-US")}`, t.muted);
       const idxBlocks = blocksOf(p.indexValue, denom);
       chip(p.width - 8 - chromeRight, idxY,
-        `the index · ${idxBlocks} ${idxBlocks === 1 ? "block" : "blocks"}`,
+        `The index · ${idxBlocks} ${idxBlocks === 1 ? "block" : "blocks"}`,
         `$${Math.round(p.indexValue).toLocaleString("en-US")}`, t.index, "right");
 
       // ---- what a block is worth, always on screen
       g.textAlign = "left";
-      g.font = font(11.5, 650);
+      g.font = font(12, 600);
       g.fillStyle = t.muted;
-      let legend = `one block = $${denom.toLocaleString("en-US")}`;
-      if (p.cash > denom * 0.5) legend += `   ·   hollow blocks are cash, ${blocksOf(p.cash, denom)} of ${liveBlocks.length}`;
+      let legend = `One block = $${denom.toLocaleString("en-US")}`;
+      if (p.cash > denom * 0.5) legend += `   ·   Hollow blocks are cash, ${blocksOf(p.cash, denom)} of ${liveBlocks.length}`;
       g.fillText(legend, PAD_L - 12, baseY + 32);
 
       // ---- names that went to zero sink under the floor, so they leave a
@@ -434,9 +435,9 @@ export default function TileStage(p: TileStageProps) {
       if (gone.length > 0) {
         const s = 10;
         g.textAlign = "right";
-        g.font = font(10.5, 500);
+        g.font = font(12, 500);
         g.fillStyle = t.faint;
-        g.fillText("went to zero", p.width - PAD_R + 6 - chromeRight - gone.length * (s + 4) - 8, baseY + 26);
+        g.fillText("Went to zero", p.width - PAD_R + 6 - chromeRight - gone.length * (s + 4) - 8, baseY + 26);
         gone.forEach((b, i) => {
           const x = p.width - PAD_R + 6 - chromeRight - (gone.length - i) * (s + 4);
           const y = baseY + 20;

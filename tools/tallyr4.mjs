@@ -28,6 +28,9 @@ async function fresh(chapter) {
   }, chapter);
   await page.reload();
   await page.waitForTimeout(700);
+  // the game opens on its main menu, so a run starts from there
+  const newRun = page.locator('[data-menu="new"]');
+  if (await newRun.count()) { await newRun.first().click(); await page.waitForTimeout(400); }
   const start = page.locator(`[aria-label="Start at chapter ${chapter}"]`);
   if (chapter > 1 && await start.count()) {
     await start.first().click();
@@ -218,6 +221,9 @@ log(`  saved an old run: ${before.cards} cards, savings priced at ${before.price
 
 await page.reload();
 await page.waitForTimeout(900);
+// the reload lands on the main menu, and Continue is what opens the saved run
+const carryOn = page.locator('[data-menu="continue"]');
+if (await carryOn.count()) { await carryOn.first().click(); await page.waitForTimeout(500); }
 await dismissGates();
 const after = await page.evaluate(() => {
   const r = JSON.parse(localStorage.getItem("tally-run-v1"));

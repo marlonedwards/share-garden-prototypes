@@ -28,32 +28,32 @@ interface Crop {
 
 const CROPS: Crop[] = [
   { id: "nova", crop: "Tomato",  sprite: "plant-tomato",  produce: "produce-tomatoes", color: "#ff453a",
-    isLike: "Tomatoes are like fast-growing tech stocks: big jumps, big drops, no baskets.",
-    goal: "Plant these if you want fast growth and can handle scary drops.",
-    world: "In the real world: companies inventing new things, like apps and robots." },
+    isLike: "Tomatoes are like fast-growing tech stocks.",
+    goal: "Plant these for the fastest growth.",
+    world: "In the real world they are companies inventing new things." },
   { id: "iron", crop: "Pumpkin", sprite: "plant-pumpkin", produce: "produce-pumpkin", color: "#ff9f0a",
-    isLike: "Pumpkins are like steady factory stocks: slow, sturdy, and they drop harvest baskets.",
-    goal: "Plant these if you want calm growers and baskets while you wait.",
-    world: "In the real world: companies that build things, like trains and tools." },
+    isLike: "Pumpkins are like steady factory stocks.",
+    goal: "Plant these for slow, sturdy growth.",
+    world: "In the real world they are companies that build things." },
   { id: "volt", crop: "Corn",    sprite: "plant-corn",    produce: "produce-corn", color: "#ffd60a",
-    isLike: "Corn is like an energy stock: medium swings, and baskets all season long.",
-    goal: "Plant these if you want some growth plus baskets along the way.",
-    world: "In the real world: companies that make power, like fuel and electricity." },
+    isLike: "Corn is like an energy stock.",
+    goal: "Plant these for baskets all season long.",
+    world: "In the real world they are companies that make power." },
   { id: "cane", crop: "Berry",   sprite: "plant-berry",   produce: "produce-berries", color: "#0a84ff",
-    isLike: "Berries are like everyday grocery stocks: gentle movers that still drop harvest baskets.",
-    goal: "Plant these if you want few surprises and dependable harvest baskets.",
-    world: "In the real world: companies selling things everyone buys, like snacks and soap." },
+    isLike: "Berries are like everyday grocery stocks.",
+    goal: "Plant these for the fewest surprises.",
+    world: "In the real world they are companies selling things everyone buys." },
 ];
 
 const cropById = (id: string) => CROPS.find((c) => c.id === id)!;
 
 const GARDEN_EVENTS: MarketEvent[] = [
-  { atStep: 26, days: 5,  drift: 0.012,  vol: 0.010, scope: "tech",     label: "Tomato craze",  blurb: "Everyone in town wants tomato plants. Prices are running hot." },
+  { atStep: 26, days: 5,  drift: 0.012,  vol: 0.010, scope: "tech",     label: "Tomato craze",  blurb: "Everyone in town wants tomato plants." },
   { atStep: 48, days: 7,  drift: -0.055, vol: 0.038, scope: "market",   label: "A hard frost",  blurb: "A deep frost settles over every garden at once." },
-  { atStep: 74, days: 6,  drift: -0.028, vol: 0.018, scope: "consumer", label: "Berry glut",    blurb: "Too many berries this season. Prices sag." },
-  { atStep: 84, days: 6,  drift: -0.030, vol: 0.015, scope: "industry", label: "Pumpkin rot",   blurb: "A wet month. Pumpkins are struggling everywhere." },
+  { atStep: 74, days: 6,  drift: -0.028, vol: 0.018, scope: "consumer", label: "Berry glut",    blurb: "There are too many berries this season." },
+  { atStep: 84, days: 6,  drift: -0.030, vol: 0.015, scope: "industry", label: "Pumpkin rot",   blurb: "Pumpkins are struggling everywhere." },
   { atStep: 96, days: 6,  drift: -0.045, vol: 0.020, scope: "tech",     label: "Tomato blight", blurb: "A blight is spreading through the tomato rows." },
-  { atStep: 116, days: 16, drift: 0.022, vol: 0.010, scope: "market",   label: "Warm spell",    blurb: "Warm weeks. Every garden is filling back in." },
+  { atStep: 116, days: 16, drift: 0.022, vol: 0.010, scope: "market",   label: "Warm spell",    blurb: "Every garden is filling back in." },
 ];
 
 const SP = (name: string) => `${import.meta.env.BASE_URL}sprites/gpt/plants/t/${name}.png`;
@@ -69,7 +69,7 @@ const cardStyle = { background: PARCH, border: `2px solid ${WOOD}`, boxShadow: "
 function GCard({ title, children, wide }: { title: string; children: ReactNode; wide?: boolean }) {
   return (
     <div className={`pop-in rounded-xl p-5 ${wide ? "w-full" : ""}`} style={cardStyle}>
-      <div className="font-game text-[18px] font-bold mb-1.5" style={{ color: INK }}>{title}</div>
+      <div className="text-[18px] font-bold mb-1.5" style={{ color: INK }}>{title}</div>
       <div className="text-sm leading-relaxed" style={{ color: "#5a4a35" }}>{children}</div>
     </div>
   );
@@ -110,11 +110,11 @@ function GrowthStrip({ history, sprite }: { history: number[]; sprite: string })
     pts.push(history[idx]);
   }
   return (
-    <div className="flex items-end gap-3 mt-2" style={{ height: 52 }}>
+    <div className="flex items-end gap-3 mt-2" style={{ height: 68 }}>
       {pts.map((p, i) => (
         <div key={i} className="flex flex-col items-center gap-0.5">
           <img src={sprite} alt="" style={{ height: Math.max(10, Math.min(46, 8 + p * 0.22)), opacity: 0.45 + i * 0.14 }} />
-          <span className="text-[9px]" style={{ color: "#8a7355" }}>{i === 4 ? "today" : `${4 - i}w ago`}</span>
+          <span className="text-[12px] tnum" style={{ color: "#8a7355" }}>{i === 4 ? "today" : `${4 - i}w ago`}</span>
         </div>
       ))}
     </div>
@@ -311,18 +311,17 @@ export default function GardenGame() {
 
   return (
     <div className="min-h-full" style={{ background: "#f3ead6", color: INK, colorScheme: "light" }}>
-      <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
-        <Link to="/" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: INK }}>
+      <header className="flex items-center gap-3 sm:gap-4 px-4 sm:px-10 h-16">
+        <Link to="/" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2 whitespace-nowrap" style={{ color: INK }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          gallery
+          Gallery
         </Link>
         <div className="h-5 w-px" style={{ background: "rgba(107,84,60,0.3)" }} />
         <div className="flex items-baseline gap-3">
-          <span className="font-game text-xl font-bold" style={{ color: GREEN }}>Share Garden</span>
-          <span className="text-[13px] hidden sm:inline" style={{ color: SUB }}>your money, growing in the ground</span>
+          <span className="text-[17px] sm:text-xl font-bold whitespace-nowrap" style={{ color: GREEN }}>Share Garden</span>
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-[13px] tnum font-semibold" style={{ color: SUB }}>Week {Math.min(20, Math.floor(m.step / WEEK) + 1)} · Day {m.step}</span>
+          <span className="text-[13px] tnum font-semibold whitespace-nowrap" style={{ color: SUB }}>Week {Math.min(20, Math.floor(m.step / WEEK) + 1)} · Day {m.step}</span>
           {phase === "running" && (
             <div className="flex items-center rounded-lg overflow-hidden" style={{ background: PARCH, border: `2px solid ${WOOD}` }}>
               {[1, 2].map((s) => (
@@ -348,11 +347,10 @@ export default function GardenGame() {
                 : "linear-gradient(180deg, #f4eeda 0%, #e3e8c3 45%, #cfdda6 100%)",
             }}>
             <div className="absolute left-6 top-5 z-20">
-              <div className="text-[12px] font-semibold" style={{ color: SUB }}>Cash</div>
               <div className="flex flex-col items-start gap-1">
-                <span className="font-game text-[32px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(m.cash)}</span>
+                <span className="text-[34px] leading-tight font-bold tnum" style={{ color: INK }}>{fmtMoney(m.cash)}</span>
                 {phase === "end"
-                  ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= m.benchmark ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= m.benchmark ? "+$" : "-$") + Math.round(Math.abs(net - m.benchmark)).toLocaleString("en-US")} vs the co-op field</span>
+                  ? <span className="text-[12px] font-bold tnum px-2 py-0.5 rounded-md" style={net >= m.benchmark ? { background: "#e4f0d8", color: GREEN, border: "1.5px solid #7ba36f" } : { background: "#fbe4de", color: "#a13a2a", border: "1.5px solid #c96a56" }}>{(net >= m.benchmark ? "+$" : "-$") + Math.round(Math.abs(net - m.benchmark)).toLocaleString("en-US")} against the co-op field</span>
                   : null}
               </div>
             </div>
@@ -367,10 +365,9 @@ export default function GardenGame() {
             {receipt && (
               <div key={receipt.key} className="absolute left-1/2 -translate-x-1/2 top-5 px-4 py-2 rounded-lg text-[13px] pop-in z-30"
                 style={{ background: PARCH, border: `2px solid ${WOOD}`, color: INK }}>
-                <span className="font-bold">{receipt.crop} sold to another gardener.</span>{" "}
-                <span className="tnum" style={{ color: SUB }}>Paid {fmtMoney(receipt.paid)}, sold for {fmtMoney(receipt.sold)}.</span>{" "}
+                <span className="font-bold tnum">{receipt.crop} sold to another gardener for {fmtMoney(receipt.sold)}.</span>{" "}
                 <span className="tnum font-bold" style={{ color: receipt.sold >= receipt.paid ? GREEN : "#a13a2a" }}>
-                  {receipt.sold >= receipt.paid ? "+" : "-"}{fmtMoney(Math.abs(receipt.sold - receipt.paid))} on this plant
+                  {receipt.sold >= receipt.paid ? "+" : "-"}{fmtMoney(Math.abs(receipt.sold - receipt.paid))} on this plant.
                 </span>
               </div>
             )}
@@ -426,7 +423,7 @@ export default function GardenGame() {
                   const { x, y, z } = isoPos(b.plot, 5, 4);
                   return (
                     <button key={b.key} className="absolute pop-in" onClick={() => setBaskets((bs) => bs.filter((x2) => x2.key !== b.key))}
-                      title={`Harvest basket · +${fmtMoney(b.amount)} already in your cash`}
+                      title={`A harvest basket worth ${fmtMoney(b.amount)}, already in your cash.`}
                       style={{ left: x + 8, top: y - 34, zIndex: z + 30 }}>
                       <img src={SPR("basket-full")} alt="harvest basket" style={{ height: 42 }} />
                     </button>
@@ -434,30 +431,30 @@ export default function GardenGame() {
                 })}
               </div>
             </div>
-            <FieldTag x="38%" title="Your garden" sub={lots.length > 0 ? `${lots.length} ${lots.length === 1 ? "plant" : "plants"} growing` : "empty and ready"} />
+            <FieldTag x="38%" title="Your garden" sub={lots.length > 0 ? `${lots.length} ${lots.length === 1 ? "plant" : "plants"} growing` : "Empty and ready"} />
 
             {/* plot popover */}
             {selPlot !== null && canAct && (
               <div className="absolute z-30 rounded-xl p-3 pop-in" style={{ ...cardStyle, left: "42%", bottom: 180, width: 260 }}>
                 {selLot ? (
                   <>
-                    <div className="font-game text-[14px] font-bold">{cropById(selLot.crop).crop}</div>
+                    <div className="text-[15px] font-bold">{cropById(selLot.crop).crop}</div>
                     <div className="text-[12px] tnum mb-1" style={{ color: SUB }}>
-                      planted week {selLot.week} · you paid {fmtMoney(selLot.paid)}
+                      Planted in week {selLot.week} for {fmtMoney(selLot.paid)}.
                     </div>
                     <div className="text-[12px] tnum mb-2">
-                      worth {fmtMoney(m.prices[selLot.crop])} today{" "}
+                      Worth {fmtMoney(m.prices[selLot.crop])} today{" "}
                       <span style={{ color: m.prices[selLot.crop] >= selLot.paid ? GREEN : "#a13a2a" }}>
                         ({m.prices[selLot.crop] >= selLot.paid ? "+" : "-"}{fmtMoney(Math.abs(m.prices[selLot.crop] - selLot.paid))})
                       </span>
                     </div>
                     {m.dead.has(selLot.crop)
-                      ? <div className="text-[12px]" style={{ color: "#a13a2a" }}>The blight took this cultivar. No one will buy it.</div>
-                      : <GChip onClick={() => transplantPlot(selPlot)}>Sell this plant to another gardener · {fmtMoney(m.prices[selLot.crop])}</GChip>}
+                      ? <div className="text-[12px]" style={{ color: "#a13a2a" }}>The blight took this cultivar.</div>
+                      : <GChip onClick={() => transplantPlot(selPlot)}>Sell to another gardener · {fmtMoney(m.prices[selLot.crop])}</GChip>}
                   </>
                 ) : (
                   <>
-                    <div className="font-game text-[14px] font-bold">Empty plot</div>
+                    <div className="text-[15px] font-bold">Empty plot</div>
                     <div className="text-[12px] mb-2" style={{ color: SUB }}>Pick a plant at the market and it will grow here.</div>
                     <GChip onClick={() => setStallOpen(true)}>Open the market</GChip>
                   </>
@@ -491,7 +488,7 @@ export default function GardenGame() {
                   </div>
                 </div>
                 <FieldTag x="79%" title="The co-op field"
-                  sub={coopStrips > 0 ? `you own ${coopStrips} ${coopStrips === 1 ? "strip" : "strips"} · ${fmtMoney(coopValue)}` : `${fmtMoney(m.benchmark)} · every crop, tended together`} />
+                  sub={coopStrips > 0 ? `${coopStrips} ${coopStrips === 1 ? "strip" : "strips"} worth ${fmtMoney(coopValue)}` : `${fmtMoney(m.benchmark)}`} />
               </>
             )}
 
@@ -522,21 +519,23 @@ export default function GardenGame() {
             )}
             {phase === "sizePrice" && (
               <GCard title="A plant's size is its price.">
-                <p>When the town pays more, every plant of that crop grows. When the town pays less, they all shrink.</p>
+                <p>When the town pays more, every plant of that crop grows.</p>
+                <p className="mt-1">When the town pays less, they all shrink.</p>
                 <div className="flex gap-2.5 mt-3"><GBtn onClick={() => setPhase("coins")}>Next</GBtn></div>
               </GCard>
             )}
             {phase === "coins" && (
               <GCard title="And this is your money.">
-                <p>You have $1,000 in cash. Cash sitting still never grows. Plants can.</p>
+                <p>You have $1,000 in cash.</p>
+                <p className="mt-1">Cash sitting still never grows.</p>
                 <div className="flex gap-2.5 mt-3"><GBtn onClick={() => { setPhase("firstBuy"); setStallOpen(true); }}>Visit the market</GBtn></div>
               </GCard>
             )}
             {phase === "firstBuy" && !stallOpen && (
               <GCard title={lots.length === 0 ? "The market is open." : "Good planting."}>
                 {lots.length === 0
-                  ? <p>Pick your first plant. It comes from another gardener, and your money goes to them.</p>
-                  : <p>Your plant is in the ground. You can buy more, or move on.</p>}
+                  ? <p>Pick your first plant. Your money goes to the gardener who sells it.</p>
+                  : <p>Your plant is in the ground.</p>}
                 <div className="flex gap-2.5 mt-3">
                   <GBtn onClick={() => setStallOpen(true)}>Open the market</GBtn>
                   {lots.length > 0 && <GGhost onClick={() => setPhase("meetCoop")}>Meet the co-op field</GGhost>}
@@ -545,29 +544,30 @@ export default function GardenGame() {
             )}
             {phase === "meetCoop" && (
               <GCard title="Meet the co-op field.">
-                <p>It grows every crop at once, so one bad crop cannot ruin the whole harvest. You can buy a strip of it, and a strip is a slice of everything.</p>
+                <p>It grows every crop at once, so one bad crop cannot ruin the harvest.</p>
+                <p className="mt-1">A strip of it is a slice of everything.</p>
                 <div className="flex gap-2.5 mt-3">
                   <GBtn onClick={buyStrip} disabled={m.cash < m.prices["coop"]}>Buy one strip · {fmtMoney(m.prices["coop"])}</GBtn>
                   <GGhost onClick={() => setPhase("idle")}>{coopStrips > 0 ? "Done" : "Not yet"}</GGhost>
                 </div>
-                {coopStrips > 0 && <p className="mt-2 text-[12.5px]" style={{ color: SUB }}>You own {coopStrips} {coopStrips === 1 ? "strip" : "strips"}. It pays harvest baskets too.</p>}
+                {coopStrips > 0 && <p className="mt-2 text-[13px] tnum" style={{ color: SUB }}>You own {coopStrips} {coopStrips === 1 ? "strip" : "strips"}.</p>}
               </GCard>
             )}
             {phase === "idle" && (
               <GCard title={week === 0 ? "Ready for week 1." : `Week ${week} is done.`}>
                 <p>
                   {week === 0
-                    ? "Each week you choose, then the market answers. Nothing moves until you say so."
-                    : "Check your plots, visit the market, collect any baskets. Start the next week when you're ready."}
+                    ? "Each week you choose, then the market answers."
+                    : "Start the next week when you are ready."}
                 </p>
                 {week > 0 && (
-                  <div className="mt-2 flex flex-col gap-0.5 text-[12.5px] tnum" style={{ color: SUB }}>
-                    <span>Cash on hand: <strong style={{ color: INK }}>{fmtMoney(m.cash)}</strong></span>
+                  <div className="mt-2 flex flex-col gap-0.5 text-[13px] tnum" style={{ color: SUB }}>
+                    <span>You have <strong style={{ color: INK }}>{fmtMoney(m.cash)}</strong> in cash.</span>
                     {m.dividendsCollected - weekDivStart.current > 0.5 && (
-                      <span>Harvest baskets this week paid you <strong style={{ color: GREEN }}>+{fmtMoney(m.dividendsCollected - weekDivStart.current)}</strong>. Click the baskets on your plots.</span>
+                      <span>Harvest baskets paid you <strong style={{ color: GREEN }}>+{fmtMoney(m.dividendsCollected - weekDivStart.current)}</strong> this week.</span>
                     )}
-                    {lots.length + coopStrips > 0 && <span>If you sold everything today, it would sell for <strong style={{ color: INK }}>{fmtMoney(invested)}</strong>. You will not know for sure until you sell.</span>}
-                    <span>The co-op field, left alone: {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong></span>
+                    {lots.length + coopStrips > 0 && <span>Sold today, your plants would fetch <strong style={{ color: INK }}>{fmtMoney(invested)}</strong>.</span>}
+                    <span>The co-op field went from {fmtMoney(weekStart.current.bench)} to <strong style={{ color: m.benchmark >= weekStart.current.bench ? GREEN : "#a13a2a" }}>{fmtMoney(m.benchmark)}</strong>.</span>
                   </div>
                 )}
                 <div className="flex gap-2.5 mt-3">
@@ -584,12 +584,13 @@ export default function GardenGame() {
             )}
             {phase === "fork" && (
               <GCard title="The frost is here.">
-                <p>
-                  Every plant in town got smaller at once. Sold today, your garden would sell for about{" "}
+                <p>Every plant in town got smaller at once.</p>
+                <p className="mt-1">
+                  Sold today, your garden would fetch about{" "}
                   <strong className="tnum">{Math.abs(drawdown * 100).toFixed(0)}%</strong> less than at the top.
-                  But count your plots: you still own every plant, and your cash never moved.
                 </p>
-                <p className="mt-2 font-semibold">The cold hasn't broken. What do you do?</p>
+                <p className="mt-1">You still own every plant.</p>
+                <p className="mt-2 font-semibold">What do you do?</p>
                 <div className="flex gap-2.5 mt-3">
                   <GGhost onClick={keepTending}>Keep tending</GGhost>
                   <GGhost onClick={transplantAll}>Sell everything to other gardeners</GGhost>
@@ -598,37 +599,36 @@ export default function GardenGame() {
             )}
             {phase === "extinct" && (
               <GCard title="The tomato blight won.">
-                <p>The tomato cultivar is gone for good. Tomato plants everywhere, in any garden, are worth nothing now.</p>
-                <p className="mt-2">The co-op field lost its tomato row and barely felt it. The other crops carry it. This is why gardens spread out.</p>
+                <p>The tomato cultivar is gone for good, and tomato plants are worth nothing now.</p>
+                <p className="mt-2">The co-op field lost its tomato row and barely felt it.</p>
+                <p className="mt-1">This is why gardens spread out.</p>
                 <div className="flex gap-2.5 mt-3"><GBtn onClick={() => setPhase("idle")}>Okay</GBtn></div>
               </GCard>
             )}
             {phase === "end" && (
-              <GCard title={choice === "sold" ? "Season's end, and your beds were empty." : "Season's end."} wide>
+              <GCard title={choice === "sold" ? "Your beds were empty at season's end." : "Season's end."} wide>
                 <div className="flex gap-3 my-3">
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: net >= m.benchmark ? "#e9f2dc" : "#fffdf4", border: `2px solid ${net >= m.benchmark ? "#7ba36f" : WOOD}` }}>
-                    <div className="text-[12px] font-semibold" style={{ color: SUB }}>Your cash, plus plants at closing prices</div>
-                    <div className="font-game text-[24px] font-bold tnum">{fmtMoney(net)}</div>
+                    <div className="text-[15px] tnum" style={{ color: INK }}>Your garden finished at <strong className="text-[22px] font-bold">{fmtMoney(net)}</strong></div>
                   </div>
                   <div className="flex-1 rounded-lg px-4 py-3" style={{ background: m.benchmark > net ? "#e9f2dc" : "#fffdf4", border: `2px solid ${m.benchmark > net ? "#7ba36f" : WOOD}` }}>
-                    <div className="text-[12px] font-semibold" style={{ color: SUB }}>The co-op field, left alone</div>
-                    <div className="font-game text-[24px] font-bold tnum">{fmtMoney(m.benchmark)}</div>
+                    <div className="text-[15px] tnum" style={{ color: INK }}>The co-op field finished at <strong className="text-[22px] font-bold">{fmtMoney(m.benchmark)}</strong></div>
                   </div>
                 </div>
                 <div className="mb-3"><GrowthChart net={m.net.filter((_, i) => i % 7 === 0 || i === m.net.length - 1)} bench={m.bench.filter((_, i) => i % 7 === 0 || i === m.bench.length - 1)} width={990} height={130} benchLabel="the co-op field" benchStroke={GREEN} xLabels={["Week 1", "Week 8", "Week 14", "Week 20"]} /></div>
-                <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#5a4a35" }}>
-                  <li className="flex gap-2"><Bullet c="#ff453a" /><span>The tomato cultivar died and never came back. One crop is never a plan. The co-op field shrugged it off.</span></li>
+                <ul className="flex flex-col gap-2 text-[14px]" style={{ color: "#5a4a35" }}>
+                  <li className="flex gap-2"><Bullet c="#ff453a" /><span>The tomato cultivar died and never came back. One crop is never a plan.</span></li>
                   {choice === "sold" ? (
-                    <li className="flex gap-2"><Bullet c="#ff9f0a" /><span>You sold in the frost. Your plants grew back for their new owners, not for you.</span></li>
+                    <li className="flex gap-2"><Bullet c="#ff9f0a" /><span>You sold in the frost. Your plants grew back for their new owners.</span></li>
                   ) : (
-                    <li className="flex gap-2"><Bullet c={GREEN} /><span>The frost shrank every plant, then the warm spell grew them back. Your plant count never changed. Only prices did.</span></li>
+                    <li className="flex gap-2"><Bullet c={GREEN} /><span>The frost shrank every plant, then the warm spell grew them back. Your plant count never changed.</span></li>
                   )}
-                  <li className="flex gap-2"><Bullet c={WOOD} /><span>Every dollar you spent or received moved gardener to gardener. The farms never saw it.</span></li>
+                  <li className="flex gap-2"><Bullet c={WOOD} /><span>Every dollar moved gardener to gardener. The farms never saw it.</span></li>
                 </ul>
                 <div className="flex gap-2.5 mt-3 items-center">
                   <GBtn onClick={restart}>Play again</GBtn>
-                  <span className="text-[12.5px]" style={{ color: SUB }}>
-                    {choice === "sold" ? "Try tending through the frost this time." : "Try the other choice and see what it costs."}
+                  <span className="text-[13px]" style={{ color: SUB }}>
+                    {choice === "sold" ? "Try tending through the frost this time." : "Try the other choice next time."}
                   </span>
                 </div>
               </GCard>
@@ -639,7 +639,7 @@ export default function GardenGame() {
         {/* right rail: read-only summary */}
         <div className="w-full max-w-xs flex flex-col gap-4">
           <div className="rounded-xl p-5" style={cardStyle}>
-            <div className="font-game text-[15px] font-bold mb-3" style={{ color: INK }}>In your garden</div>
+            <div className="text-[15px] font-bold mb-3" style={{ color: INK }}>In your garden</div>
             {holdings.length === 0 && coopStrips === 0 && (
               <div className="text-sm py-1" style={{ color: SUB }}>Nothing planted yet.</div>
             )}
@@ -648,7 +648,7 @@ export default function GardenGame() {
                 <img src={m.dead.has(h.crop.id) ? SPR("plant-dead") : SP(h.crop.sprite)} alt="" style={{ height: 28 }} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold truncate">{h.crop.crop}{m.dead.has(h.crop.id) && <span style={{ color: "#a13a2a" }}> · extinct</span>}</div>
-                  <div className="text-[12px] tnum" style={{ color: SUB }}>{h.lots.length} {h.lots.length === 1 ? "plant" : "plants"} · avg paid {fmtMoney(h.lots.reduce((s, l) => s + l.paid, 0) / h.lots.length)}</div>
+                  <div className="text-[12px] tnum" style={{ color: SUB }}>{h.lots.length} {h.lots.length === 1 ? "plant" : "plants"} at {fmtMoney(h.lots.reduce((s, l) => s + l.paid, 0) / h.lots.length)} each</div>
                 </div>
                 <div className="text-sm font-bold tnum">{fmtMoney(h.value)}</div>
               </div>
@@ -658,7 +658,7 @@ export default function GardenGame() {
                 <img src={SG("coop-field")} alt="" style={{ height: 26 }} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold">Co-op strips</div>
-                  <div className="text-[12px] tnum" style={{ color: SUB }}>{coopStrips} {coopStrips === 1 ? "strip" : "strips"} · avg paid {fmtMoney(coopPaid / coopStrips)}</div>
+                  <div className="text-[12px] tnum" style={{ color: SUB }}>{coopStrips} {coopStrips === 1 ? "strip" : "strips"} at {fmtMoney(coopPaid / coopStrips)} each</div>
                 </div>
                 <div className="text-sm font-bold tnum">{fmtMoney(coopValue)}</div>
               </div>
@@ -679,7 +679,7 @@ export default function GardenGame() {
                 <img src={SG("coop-field")} alt="" style={{ height: 34 }} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold">The co-op field</div>
-                  <div className="text-[12px]" style={{ color: SUB }}>every crop in town, tended together</div>
+                  <div className="text-[12px]" style={{ color: SUB }}>Every crop in town, tended together.</div>
                 </div>
                 <div className="text-sm font-bold tnum">{fmtMoney(m.benchmark)}</div>
               </div>
@@ -693,15 +693,14 @@ export default function GardenGame() {
       {stallOpen && (
         <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto py-10 px-4" style={{ background: "rgba(61,47,31,0.45)" }} onClick={() => setStallOpen(false)}>
           <div className="rounded-2xl p-6 w-[min(880px,95vw)]" style={{ ...cardStyle, boxShadow: "8px 8px 0 rgba(44,33,20,0.35)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-4 mb-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-1">
               <img src={SG("market-stall")} alt="" style={{ height: 56 }} />
-              <div className="flex-1">
-                <div className="font-game text-[22px] font-bold" style={{ color: INK }}>The market</div>
-                <div className="text-[13px]" style={{ color: SUB }}>Different goals, different crops: fast growth, steady baskets, or a calm garden.</div>
+              <div className="flex-1 basis-[220px] min-w-0">
+                <div className="text-[22px] font-bold" style={{ color: INK }}>The market</div>
+                <div className="text-[13px]" style={{ color: SUB }}>Different goals grow different crops.</div>
               </div>
-              <div className="text-right">
-                <div className="text-[12px] font-semibold" style={{ color: SUB }}>Your cash</div>
-                <div className="font-game text-[18px] font-bold tnum">{fmtMoney(m.cash)}</div>
+              <div className="text-[13px] tnum whitespace-nowrap" style={{ color: SUB }}>
+                You have <strong className="text-[18px] font-bold" style={{ color: INK }}>{fmtMoney(m.cash)}</strong>
               </div>
               <GGhost onClick={() => setStallOpen(false)}>Close</GGhost>
             </div>
@@ -717,22 +716,22 @@ export default function GardenGame() {
                     <div className="flex items-center gap-3">
                       <img src={dead ? SPR("plant-dead") : SP(c.sprite)} alt="" style={{ height: 46 }} />
                       <div className="min-w-0 flex-1">
-                        <div className="font-game text-[16px] font-bold">{c.crop}</div>
-                        <div className="text-[13px] tnum font-semibold" style={{ color: dead ? "#a13a2a" : INK }}>{dead ? "extinct" : `${fmtMoney(price)} per plant`}</div>
+                        <div className="text-[16px] font-bold">{c.crop}</div>
+                        <div className="text-[13px] tnum font-semibold" style={{ color: dead ? "#a13a2a" : INK }}>{dead ? "Extinct" : `${fmtMoney(price)} per plant`}</div>
                       </div>
-                      {owned > 0 && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>you own {owned}</span>}
+                      {owned > 0 && <span className="text-[12px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>You own {owned}</span>}
                     </div>
-                    <p className="text-[12.5px] mt-2" style={{ color: "#5a4a35" }}>{c.isLike}</p>
-                    <p className="text-[12px] mt-0.5" style={{ color: SUB }}>{c.world}</p>
-                    <p className="text-[12px] mt-0.5" style={{ color: SUB }}>{c.goal}</p>
+                    <p className="text-[13px] mt-2" style={{ color: "#5a4a35" }}>{c.isLike}</p>
+                    <p className="text-[13px] mt-0.5" style={{ color: SUB }}>{c.world}</p>
+                    <p className="text-[13px] mt-0.5" style={{ color: SUB }}>{c.goal}</p>
                     <GrowthStrip history={m.history[c.id]} sprite={dead ? SPR("plant-dead") : SP(c.sprite)} />
                     {!dead && (
                       <div className="flex items-center gap-2 mt-2">
                         <GChip disabled={affordable < 1 || free === null} onClick={() => plantAt(c.id, selPlot !== null && !selLot ? selPlot : (nextFreePlot() ?? 0))}>
                           Plant one · {fmtMoney(price)}
                         </GChip>
-                        <span className="text-[11.5px] tnum" style={{ color: SUB }}>
-                          {affordable >= 1 ? `your cash buys ${affordable}` : "not enough cash"}
+                        <span className="text-[12px] tnum" style={{ color: SUB }}>
+                          {affordable >= 1 ? `Your cash buys ${affordable}.` : "Not enough cash."}
                         </span>
                       </div>
                     )}
@@ -743,13 +742,14 @@ export default function GardenGame() {
                 <div className="flex items-center gap-3">
                   <img src={SG("coop-field")} alt="" style={{ height: 46 }} />
                   <div className="min-w-0 flex-1">
-                    <div className="font-game text-[16px] font-bold">A strip of the co-op field</div>
+                    <div className="text-[16px] font-bold">A strip of the co-op field</div>
                     <div className="text-[13px] tnum font-semibold">{fmtMoney(m.prices["coop"])} per strip</div>
                   </div>
-                  {coopStrips > 0 && <span className="text-[11px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>you own {coopStrips}</span>}
+                  {coopStrips > 0 && <span className="text-[12px] font-bold px-2 py-0.5 rounded-md tnum" style={{ background: PARCH, border: `1.5px solid ${WOOD}`, color: SUB }}>You own {coopStrips}</span>}
                 </div>
-                <p className="text-[12.5px] mt-2" style={{ color: "#5a4a35" }}>A strip is like an index fund: one slice of every crop in town, in one buy.</p>
-                <p className="text-[12px] mt-0.5" style={{ color: SUB }}>One bad crop cannot ruin the whole harvest, and it pays harvest baskets too. You cannot pull a single crop out.</p>
+                <p className="text-[13px] mt-2" style={{ color: "#5a4a35" }}>A strip is like an index fund, one slice of every crop in town.</p>
+                <p className="text-[13px] mt-0.5" style={{ color: SUB }}>One bad crop cannot ruin the harvest.</p>
+                <p className="text-[13px] mt-0.5" style={{ color: SUB }}>You cannot pull a single crop out.</p>
                 <div className="flex items-center gap-2 mt-2">
                   <GChip disabled={m.cash < m.prices["coop"]} onClick={buyStrip}>Buy a strip · {fmtMoney(m.prices["coop"])}</GChip>
                   {coopStrips > 0 && <GChip onClick={sellStrip}>Sell a strip · {fmtMoney(m.prices["coop"])}</GChip>}
@@ -770,8 +770,8 @@ function Bullet({ c }: { c: string }) {
 function FieldTag({ x, title, sub }: { x: string; title: string; sub: string }) {
   return (
     <div className="absolute text-center -translate-x-1/2 z-20" style={{ left: x, bottom: 12 }}>
-      <div className="font-game text-[14px] font-bold">{title}</div>
-      <div className="text-[12px] tnum" style={{ color: "#6b5a44" }}>{sub}</div>
+      <div className="text-[15px] font-bold">{title}</div>
+      <div className="text-[13px] tnum" style={{ color: "#6b5a44" }}>{sub}</div>
     </div>
   );
 }

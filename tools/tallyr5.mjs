@@ -309,6 +309,10 @@ const clipped = () => page.evaluate(() => {
   for (const el of document.querySelectorAll("[data-board] *")) {
     const s = getComputedStyle(el);
     if (s.overflowX !== "hidden" && s.overflow !== "hidden") continue;
+    // A name clamped to two lines is clipped on purpose: the card reserves two
+    // lines for every name and a third would push the price off the face. That
+    // is the design, so it is not a finding.
+    if (s.webkitLineClamp && s.webkitLineClamp !== "none") continue;
     // a shut shop is parked below the board on a transform, which counts as
     // overflow and is not one
     if (el.matches('[data-shop="closed"]') || el.querySelector('[data-shop="closed"]')) continue;

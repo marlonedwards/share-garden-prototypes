@@ -49,11 +49,11 @@ export default function QuickCheck({ scenario, items, gateMs, onFocus, onAnswere
     <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
       <div className="flex items-baseline gap-2">
         <span className="text-[13.5px] font-semibold">Quick check</span>
-        <span className="text-[11px] font-medium px-1.5 py-[1px] rounded-full" style={{ background: "#f0f0f2", color: SUB }}>beta</span>
+        <span className="text-[12px] font-medium px-1.5 py-[1px] rounded-full" style={{ background: "#f0f0f2", color: SUB }}>Beta</span>
         {!done && <span className="ml-auto text-[12px] tnum" style={{ color: SUB }}>{idx + 1} of {items.length}</span>}
       </div>
       <p className="text-[12px] mt-0.5" style={{ color: SUB }}>
-        This tests the game, not you. Your answers stay on this computer.
+        This tests the game, not you.
       </p>
 
       {!done && (
@@ -112,7 +112,7 @@ export default function QuickCheck({ scenario, items, gateMs, onFocus, onAnswere
             </div>
           )}
           <div className="mt-2 text-[12px]" style={{ color: SUB }}>
-            Beta testers: screenshot this panel for us.
+            Screenshot this panel for us.
           </div>
         </div>
       )}

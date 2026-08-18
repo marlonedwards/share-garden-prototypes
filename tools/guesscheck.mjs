@@ -108,27 +108,31 @@ const hintLines = async () =>
 
 await page.goto(`${BASE}/#/guess?p=aapl-2007`);
 await wait(700);
-check("the panel is there", await page.getByText("guess the stock").isVisible());
+check("the panel is there", await page.getByText("Guess the Stock").isVisible());
 check("the pinned puzzle keeps its place in the stream",
-  (await page.getByTestId("puzzle-no").innerText()).trim() === "no. 4",
+  (await page.getByTestId("puzzle-no").innerText()).trim() === "Puzzle 4",
   await page.getByTestId("puzzle-no").innerText());
-check("par reads 2", await page.getByText("par 2").isVisible());
+check("par reads 2", (await page.getByTestId("ladder").innerText()).includes("par 2"),
+  await page.getByTestId("ladder").innerText());
+check("the pip row says how many hints are spent, in words",
+  (await page.getByTestId("ladder").innerText()).replace(/\s+/g, " ").trim() === "No hints used, par 2",
+  await page.getByTestId("ladder").innerText());
 check("the chart drew a line", (await page.locator("svg path").count()) >= 2);
 check("no pip is spent yet", (await spentPips()) === 0);
 check("the ladder is four pips wide", (await page.getByTestId("pips").locator("i").count()) === 4);
 check("no hint is spent yet", (await page.getByTestId("revealed").count()) === 0);
-check("the scorecard opens empty", (await page.getByTestId("scorecard").innerText()).includes("no puzzles yet"));
+check("the scorecard opens empty", (await page.getByTestId("scorecard").innerText()).includes("No puzzles yet"));
 check("the axis is in percent", (await page.locator("svg text").allTextContents()).some((t) => t.includes("%")));
 check("no dollars before the hint", !(await page.locator("svg text").allTextContents()).some((t) => t.includes("$")));
 check("the year is free from the first second",
   (await page.locator("svg text").allTextContents()).filter((t) => t.includes("2007")).length >= 4,
   (await page.locator("svg text").allTextContents()).join(" "));
 check("the axis names the months with it",
-  (await page.locator("svg text").allTextContents()).some((t) => t.startsWith("jan 2007")));
+  (await page.locator("svg text").allTextContents()).some((t) => t.startsWith("Jan 2007")));
 
 // the old settings shape is on the key, and nobody lands in hard mode over it
 check("the old stored setting reads as easy",
-  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "mode: easy",
+  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "Easy mode",
   await page.getByTestId("mode-toggle").innerText());
 check("easy opens with no box to type in", (await page.getByTestId("guess-input").count()) === 0);
 
@@ -169,14 +173,14 @@ await shot("02-wrong-pick.png");
 await page.getByTestId("hint").click();
 await wait(250);
 let lines = await hintLines();
-check("the first hint is widen", lines[0].startsWith("> widen"), lines.join(" | "));
+check("the first hint is widen", lines[0].includes("year either side"), lines.join(" | "));
 check("widening added days either side", (await page.locator("svg rect").count()) >= 1);
 check("the hint burns a pip too", (await spentPips()) === 2, `${await spentPips()}`);
 
 await page.getByTestId("hint").click();
 await wait(250);
 lines = await hintLines();
-check("the second hint is sector", lines[1].startsWith("> sector"), lines.join(" | "));
+check("the second hint is sector", lines[1].startsWith("This company is in"), lines.join(" | "));
 check("the sector is technology", lines[1].includes("technology"), lines[1]);
 check("three pips are spent", (await spentPips()) === 3, `${await spentPips()}`);
 check("the sector hint rules the wrong trade out", (await optionState("AMZN")) === "sector",
@@ -199,16 +203,16 @@ check("the reveal names the company", reveal.includes("Apple"), reveal.split("\n
 check("the reveal gives the year", reveal.includes("2007"));
 check("the reveal tells the story", (await page.getByTestId("story").innerText()).includes("iPhone"));
 check("the result line counts every pip as a hint",
-  (await page.getByTestId("result").innerText()).trim() === "solved with 3 hints, one over par",
+  (await page.getByTestId("result").innerText()).trim() === "Solved with 3 hints, one over par",
   await page.getByTestId("result").innerText());
 check("the reveal remembers the wrong pick",
-  (await page.getByTestId("picked").innerText()).includes("blackberry"),
+  (await page.getByTestId("picked").innerText()) === "You picked BlackBerry",
   await page.getByTestId("picked").innerText());
 const axis = await page.locator("svg text").allTextContents();
 check("the chart relabels to dollars", axis.some((t) => t.includes("$")), axis.join(" "));
 check("the chart relabels to the real year", axis.some((t) => t.includes("2007")), axis.join(" "));
 check("the scorecard counted the solve",
-  (await page.getByTestId("scorecard").innerText()).includes("solved 1 of 1"),
+  (await page.getByTestId("scorecard").innerText()).includes("Solved 1 of 1"),
   await page.getByTestId("scorecard").innerText());
 await shot("04-reveal-easy.png");
 
@@ -216,7 +220,7 @@ await shot("04-reveal-easy.png");
 
 await page.getByTestId("next").click();
 await wait(600);
-check("next deals a different puzzle", (await page.getByTestId("puzzle-no").innerText()).trim() !== "no. 4",
+check("next deals a different puzzle", (await page.getByTestId("puzzle-no").innerText()).trim() !== "Puzzle 4",
   await page.getByTestId("puzzle-no").innerText());
 check("the new puzzle offers six fresh names",
   (await page.locator('[data-testid="option"][data-state="open"]').count()) === 6);
@@ -250,12 +254,12 @@ await page.locator('[data-testid="option"][data-ticker="KOSS"]').click();
 await wait(500);
 check("a wrong name with nothing left to spend ends the puzzle",
   (await page.getByTestId("reveal").count()) === 1);
-check("it ends as revealed", (await page.getByTestId("result").innerText()).trim() === "revealed",
+check("it ends as revealed", (await page.getByTestId("result").innerText()).trim() === "Revealed",
   await page.getByTestId("result").innerText());
 check("the reveal names the answer anyway",
   (await page.getByTestId("reveal").innerText()).includes("GameStop"));
 const afterFail = await page.getByTestId("scorecard").innerText();
-check("the fail counted", afterFail.includes("solved 1 of 2"), afterFail);
+check("the fail counted", afterFail.includes("Solved 1 of 2"), afterFail);
 check("the fail broke the streak", afterFail.includes("streak 0"), afterFail);
 await shot("07-auto-reveal.png");
 
@@ -264,7 +268,7 @@ await shot("07-auto-reveal.png");
 await page.getByTestId("mode-toggle").click();
 await wait(250);
 check("the toggle reads hard",
-  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "mode: hard",
+  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "Hard mode",
   await page.getByTestId("mode-toggle").innerText());
 
 await page.goto(`${BASE}/#/guess?p=c-2008`);
@@ -284,8 +288,8 @@ await shot("08-hard-typeahead.png");
 await page.getByTestId("guess-input").press("Enter");
 await wait(300);
 check("the box shakes", (await page.getByTestId("guess-input").getAttribute("class")).includes("guess-shake"));
-let guessed = (await page.getByTestId("guessed").innerText()).toLowerCase();
-check("the picked company joins the line", guessed.startsWith("guessed:") && guessed.includes("alphabet"), guessed);
+let guessed = (await page.getByTestId("guessed").innerText()).replace(/\s+/g, " ").trim();
+check("the picked company joins the line", guessed === "Alphabet, different sector", guessed);
 check("a wrong guess never ends the puzzle", (await page.getByTestId("reveal").count()) === 0);
 check("a wrong guess costs no pip", (await spentPips()) === 0, `${await spentPips()}`);
 
@@ -305,12 +309,12 @@ await page.getByTestId("guess-input").press("Enter");
 await wait(500);
 check("the alias solved it", (await page.getByTestId("reveal").count()) === 1);
 check("the result line reads clean",
-  (await page.getByTestId("result").innerText()).trim() === "solved with no hints, two under par",
+  (await page.getByTestId("result").innerText()).trim() === "Solved with no hints, two under par",
   await page.getByTestId("result").innerText());
 check("free guesses stayed free in the reveal",
   (await page.getByTestId("guessed").innerText()).toLowerCase().includes("jpmorgan"));
 const afterHard = await page.getByTestId("scorecard").innerText();
-check("the scorecard counted the hard solve", afterHard.includes("solved 2 of 3"), afterHard);
+check("the scorecard counted the hard solve", afterHard.includes("Solved 2 of 3"), afterHard);
 await shot("10-reveal-hard.png");
 
 // ---------------------------------------------------------- the collection
@@ -334,25 +338,25 @@ const cardText = async (n) => (await cards.nth(n).innerText()).replace(/\n/g, " 
 const apple = await cardText(3);
 check("the solved card names the company", apple.includes("Apple") && apple.includes("AAPL"), apple);
 check("the solved card carries the story", apple.includes("iPhone"), apple);
-check("the solved card says how it went", apple.includes("solved in easy, 1 wrong pick, 2 hints"), apple);
+check("the solved card says how it went", apple.includes("Solved in easy, 1 wrong pick, 2 hints"), apple);
 const gme = await cardText(0);
-check("the auto revealed card says how it went", gme.includes("revealed in easy, 5 wrong picks"), gme);
+check("the auto revealed card says how it went", gme.includes("Revealed in easy, 5 wrong picks"), gme);
 const citi = await cardText(5);
-check("the hard card names its mode", citi.includes("solved in hard, 2 wrong guesses"), citi);
+check("the hard card names its mode", citi.includes("Solved in hard, 2 wrong guesses"), citi);
 const legacy = await cardText(29);
 check("a card shelved before any of this still reads",
   legacy.includes("Coca-Cola") && legacy.includes("New Coke"), legacy);
-check("a legacy card invents no detail line", !/solved in|revealed in/.test(legacy), legacy);
+check("a legacy card invents no detail line", !/solved in|revealed in/i.test(legacy), legacy);
 const legacyFail = await cardText(27);
-check("a legacy reveal still says so", legacyFail.includes("Walmart") && legacyFail.includes("revealed"),
+check("a legacy reveal still says so", legacyFail.includes("Walmart") && legacyFail.includes("Revealed"),
   legacyFail);
-check("and says it once", (legacyFail.match(/revealed/g) ?? []).length === 1, legacyFail);
+check("and says it once", (legacyFail.match(/revealed/gi) ?? []).length === 1, legacyFail);
 
 const locked = await page.locator('[data-testid="shelf-card"][data-mark="locked"]').first().innerText();
-check("a silhouette gives away nothing but its year", /^no\. \d+ (19|20)\d{2}$/.test(locked.replace(/\s+/g, " ").trim()),
+check("a silhouette gives away nothing but its year", /^(19|20)\d{2}$/.test(locked.replace(/\s+/g, " ").trim()),
   locked.replace(/\n/g, " "));
 check("the shelf line counts the pool",
-  (await page.getByTestId("shelf-line").innerText()).includes("3 solved . 2 revealed . 30 in the pool"),
+  (await page.getByTestId("shelf-line").innerText()).includes("3 solved · 2 revealed · 30 in the pool"),
   await page.getByTestId("shelf-line").innerText());
 await shot("11-collection.png");
 
@@ -368,15 +372,15 @@ await wait(700);
 const reloaded = await page.getByTestId("scorecard").innerText();
 check("the scorecard survived the reload", reloaded === afterHard, `${afterHard} then ${reloaded}`);
 check("the mode survived the reload",
-  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "mode: hard",
+  (await page.getByTestId("mode-toggle").innerText()).replace(/\s+/g, " ").trim() === "Hard mode",
   await page.getByTestId("mode-toggle").innerText());
 await page.getByTestId("collection-open").click();
 await wait(350);
 check("the shelf survived the reload",
-  (await page.getByTestId("shelf-line").innerText()).includes("3 solved . 2 revealed"),
+  (await page.getByTestId("shelf-line").innerText()).includes("3 solved · 2 revealed"),
   await page.getByTestId("shelf-line").innerText());
 check("the detail lines survived the reload",
-  (await cardText(3)).includes("solved in easy, 1 wrong pick, 2 hints"), await cardText(3));
+  (await cardText(3)).includes("Solved in easy, 1 wrong pick, 2 hints"), await cardText(3));
 await page.getByTestId("collection-close").click();
 await wait(250);
 check("the back control closes the collection", (await page.getByTestId("collection").count()) === 0);

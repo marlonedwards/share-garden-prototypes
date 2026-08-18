@@ -16,8 +16,11 @@
 // pressed. Every button in the game wears one of five faces and nothing else.
 
 import type { CSSProperties } from "react";
+import { UI_FONT } from "../../lib/type";
 
-export const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
+// One typeface on the site, and this is the game's name for it.
+// Contract: docs/clean-type.md.
+export const SANS = UI_FONT;
 
 export const INK = "#1D1D1F";
 export const SUB = "#6E6E73";

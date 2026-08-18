@@ -162,13 +162,13 @@ const states = new Set();
   await buySpread(6);
   for (let t = 0; t < 7; t++) {
     const s = await stakes();
-    if (s) states.add(s.includes("past") ? "past the target" : s.startsWith("last turn") ? "last turn" : "turns left");
+    if (s) states.add(/past the target/i.test(s) ? "past the target" : /^last turn/i.test(s) ? "last turn" : "turns left");
     if (!(await play())) break;
     await finishResolve();
     await dismissGates();
     await closeShop();
     const s2 = await stakes();
-    if (s2) { states.add(s2.includes("past") ? "past the target" : s2.startsWith("last turn") ? "last turn" : "turns left"); log(`  "${s2}"`); }
+    if (s2) { states.add(/past the target/i.test(s2) ? "past the target" : /^last turn/i.test(s2) ? "last turn" : "turns left"); log(`  "${s2}"`); }
     if (!(await page.locator('[data-play="1"]').count())) break;
   }
   await page.screenshot({ path: SHOTS + "tally-r3-rail.png" });
@@ -220,7 +220,7 @@ await fresh(3);
 for (let t = 0; t < 8; t++) {
   const s = await stakes();
   if (s) log(`  "${s}"`);
-  if (s && s.startsWith("last turn")) {
+  if (s && /^last turn/i.test(s)) {
     states.add("last turn");
     await page.screenshot({ path: SHOTS + "tally-r3-rail.png" });
     break;

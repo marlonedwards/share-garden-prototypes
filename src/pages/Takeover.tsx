@@ -6,8 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { TakeoverRun, radiusOf, START_VALUE } from "../lib/takeover/engine";
 import { fmtMoney, rankBeaten, type TakeoverCompany } from "../data/takeoverCompanies";
-
-const MONO = '"SF Mono", ui-monospace, Menlo, Consolas, monospace';
+import { UI_FONT, uiFont } from "../lib/type";
 
 // Baked logo cache: public/logos/<short>.png, one Image per company, misses
 // remembered so the brand-color disc renders without retrying every frame.
@@ -246,14 +245,17 @@ export default function Takeover() {
           g.beginPath();
           g.arc(blob.x, blob.y, r, 0, Math.PI * 2);
           g.stroke();
+          // The caption is the company's real name. `short` is a logo file
+          // key ("mcd", "bofa") and is never shown as a name.
           labels.push({
             wx: blob.x,
             wy: blob.y,
             dy: r * cam.zoom + 14,
-            text: `${blob.c.short} ${fmtMoney(blob.cap)}`,
+            text: `${blob.c.name} ${fmtMoney(blob.cap)}`,
             size: 14,
             color: "#D7DEE8",
             weight: 600,
+            maxW: Math.max(r * 3 * cam.zoom, 130),
           });
         } else {
           const fs = clampFs(r * 0.42, 12, 34);
@@ -261,7 +263,10 @@ export default function Takeover() {
             wx: blob.x,
             wy: blob.y,
             dy: -fs * 0.2,
-            text: blob.c.short,
+            // No logo, so the words sit inside the disc. A local's `short` is
+            // its own label standing alone ("Food truck"); a listed company
+            // without art still shows its real name.
+            text: blob.c.local ? blob.c.short : blob.c.name,
             size: fs,
             color: labelColor(blob.c.color),
             weight: 600,
@@ -272,7 +277,7 @@ export default function Takeover() {
             wy: blob.y,
             dy: fs * 0.75,
             text: fmtMoney(blob.cap),
-            size: Math.max(11, Math.round(fs * 0.55)),
+            size: Math.max(12, Math.round(fs * 0.55)),
             color: labelColor(blob.c.color),
             alpha: 0.8,
             maxW: r * 1.7 * cam.zoom,
@@ -333,7 +338,7 @@ export default function Takeover() {
       for (const l of labels) {
         const sx = Math.round((l.wx - cam.x) * cam.zoom + innerWidth / 2);
         const sy = Math.round((l.wy - cam.y) * cam.zoom + innerHeight / 2 + l.dy);
-        g.font = `${l.weight ?? 400} ${Math.round(l.size)}px ${MONO}`;
+        g.font = uiFont(Math.round(l.size), l.weight ?? 400);
         g.fillStyle = l.color;
         g.globalAlpha = l.alpha ?? 1;
         g.textBaseline = l.baseline ?? "middle";
@@ -358,10 +363,11 @@ export default function Takeover() {
   const run = runRef.current;
 
   return (
-    <div className="fixed inset-0 select-none" style={{ background: "#0C0F14", fontFamily: MONO }}>
+    <div className="fixed inset-0 select-none" style={{ background: "#0C0F14", fontFamily: UI_FONT }}>
       <canvas ref={canvasRef} data-takeover-arena className="absolute inset-0" />
 
-      <div className="absolute top-0 inset-x-0 flex items-start justify-between px-5 py-4 pointer-events-none">
+      {/* The timer lost its label, so the two numbers line up on their bottoms. */}
+      <div className="absolute top-0 inset-x-0 flex items-end justify-between px-5 py-4 pointer-events-none">
         <div>
           <div className="text-[15px]" style={{ color: "#5B6979" }}>
             {run?.playerName ?? ""}
@@ -375,9 +381,6 @@ export default function Takeover() {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[15px]" style={{ color: "#5B6979" }}>
-            takeover
-          </div>
           <div className="text-[32px] font-semibold tabular-nums" style={{ color: "#E8EDF4" }}>
             {hud.timeLeft}
           </div>
@@ -395,8 +398,8 @@ export default function Takeover() {
         </div>
       )}
 
-      <div className="absolute bottom-4 inset-x-0 text-center pointer-events-none text-[13px]" style={{ color: "#3A4656" }}>
-        steer with the mouse. eat smaller, dodge bigger, stay off the red.
+      <div className="absolute bottom-4 inset-x-0 text-center pointer-events-none text-[13px]" style={{ color: "#5B6979" }}>
+        Eat every company smaller than you.
       </div>
 
       <Link
@@ -404,7 +407,7 @@ export default function Takeover() {
         className="absolute bottom-4 left-5 text-[13px] hover:underline"
         style={{ color: "#5B6979" }}
       >
-        back
+        Back
       </Link>
 
       {!started && (
@@ -421,28 +424,28 @@ export default function Takeover() {
             className="w-[420px] max-w-[92vw] rounded-2xl p-7"
             style={{ background: "#0C0F14", border: "1px solid #1F2733", color: "#D7DEE8" }}
           >
-            <div className="text-[15px]" style={{ color: "#5B6979" }}>
-              takeover
+            <div className="text-[26px] font-semibold" style={{ color: "#E8EDF4" }}>
+              Takeover
             </div>
-            <div className="text-[26px] font-semibold mt-1" style={{ color: "#E8EDF4" }}>
-              name your company
+            <div className="mt-1 text-[15px]" style={{ color: "#8A97A8" }}>
+              Name your company.
             </div>
             <input
               data-name-input
               autoFocus
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value.slice(0, 24))}
-              placeholder="crumb cakes llc"
+              placeholder="Crumb Cakes"
               className="mt-4 w-full rounded-lg px-4 py-3 text-[16px] outline-none"
               style={{
                 background: "#090C10",
                 border: "1px solid #1F2733",
                 color: "#E8EDF4",
-                fontFamily: MONO,
+                fontFamily: UI_FONT,
               }}
             />
-            <div className="mt-2 text-[12px]" style={{ color: "#3A4656" }}>
-              you start worth $2M. eat everything smaller. the red costs money.
+            <div className="mt-2 text-[13px]" style={{ color: "#5B6979" }}>
+              You steer with the mouse.
             </div>
             <button
               data-start
@@ -451,7 +454,7 @@ export default function Takeover() {
               className="mt-5 px-5 py-2 rounded-lg text-[14px] font-semibold disabled:opacity-40"
               style={{ background: "#4ADE80", color: "#0C0F14" }}
             >
-              open for business
+              Open for business
             </button>
           </form>
         </div>
@@ -480,21 +483,18 @@ function EndCard({
   const beaten = rankBeaten(worth);
   const meals = run.eaten.length
     ? `ate ${run.eaten.length} ${run.eaten.length === 1 ? "company" : "companies"}`
-    : `ate ${run.ateLocals} local ${run.ateLocals === 1 ? "business" : "businesses"}`;
-  const shareLine =
-    over.kind === "ipo"
-      ? `takeover: went public at ${fmtMoney(worth)}. ${meals}.`
-      : over.kind === "acquired"
-        ? `takeover: ${fmtMoney(worth)} in ${Math.round(run.elapsed)}s. ${meals}. died under ${over.by.name}.`
-        : `takeover: ${fmtMoney(worth)} in ${Math.round(run.elapsed)}s. ${meals}. bankrupted by ${over.by}.`;
-  const kicker =
-    over.kind === "ipo" ? "the buzzer" : over.kind === "acquired" ? "hostile takeover" : "out of money";
+    : run.ateLocals
+      ? `ate ${run.ateLocals} local ${run.ateLocals === 1 ? "business" : "businesses"}`
+      : "";
+  const shareLine = meals
+    ? `Takeover ${fmtMoney(worth)}, ${meals}.`
+    : `Takeover ${fmtMoney(worth)}.`;
   const headline =
     over.kind === "ipo"
-      ? "you went public"
+      ? "You went public"
       : over.kind === "acquired"
-        ? `acquired by ${over.by.name}`
-        : `bankrupted by ${over.by}`;
+        ? `Acquired by ${over.by.name}`
+        : `Bankrupted by ${over.by}`;
 
   return (
     <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(9,12,16,0.82)" }}>
@@ -503,42 +503,41 @@ function EndCard({
         className="w-[440px] max-w-[92vw] rounded-2xl p-7"
         style={{ background: "#0C0F14", border: "1px solid #1F2733", color: "#D7DEE8" }}
       >
-        <div className="text-[15px]" style={{ color: "#5B6979" }}>
-          {kicker}
-        </div>
-        <div className="text-[28px] font-semibold mt-1" style={{ color: "#E8EDF4" }}>
+        <div className="text-[28px] font-semibold" style={{ color: "#E8EDF4" }}>
           {headline}
         </div>
         <div className="mt-3 text-[16px] tabular-nums">
-          final worth <span style={{ color: "#4ADE80" }}>{fmtMoney(worth)}</span>
-          {over.kind !== "ipo" && (
-            <span style={{ color: "#5B6979" }}> after {Math.round(run.elapsed)} seconds</span>
-          )}
+          Final worth <span style={{ color: "#4ADE80" }}>{fmtMoney(worth)}</span>
         </div>
+        {over.kind !== "ipo" && (
+          <div className="mt-1 text-[14px] tabular-nums" style={{ color: "#5B6979" }}>
+            Lasted {Math.round(run.elapsed)} seconds
+          </div>
+        )}
         {beaten > 0 && (
-          <div className="mt-1 text-[14px]" style={{ color: "#E8B84B" }}>
-            bigger than {beaten} of the S&amp;P 500
+          <div className="mt-1 text-[14px] tabular-nums" style={{ color: "#E8B84B" }}>
+            Bigger than {beaten} of the S&amp;P 500
           </div>
         )}
         {biggest && (
           <div className="mt-1 text-[14px]" style={{ color: "#5B6979" }}>
-            biggest meal: {biggest.name} at {fmtMoney(biggest.cap)}
+            Biggest meal was {biggest.name} at {fmtMoney(biggest.cap)}
           </div>
         )}
         {run.eaten.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {run.eaten.slice(-18).map((c, i) => (
+            {run.eaten.slice(-12).map((c, i) => (
               <span
                 key={`${c.name}-${i}`}
-                className="px-2 py-0.5 rounded-full text-[11px]"
+                className="px-2.5 py-0.5 rounded-full text-[13px]"
                 style={{ background: "#1F2733", color: "#D7DEE8" }}
               >
-                {c.short}
+                {c.name}
               </span>
             ))}
           </div>
         )}
-        <div className="mt-5 text-[12px] leading-relaxed" style={{ color: "#3A4656" }}>
+        <div className="mt-5 text-[13px]" style={{ color: "#5B6979" }}>
           {shareLine}
         </div>
         <div className="mt-5 flex gap-3">
@@ -548,14 +547,14 @@ function EndCard({
             className="px-5 py-2 rounded-lg text-[14px] font-semibold"
             style={{ background: "#4ADE80", color: "#0C0F14" }}
           >
-            run it back
+            Play again
           </button>
           <Link
             to="/"
             className="px-5 py-2 rounded-lg text-[14px]"
             style={{ border: "1px solid #1F2733", color: "#5B6979" }}
           >
-            back
+            Back
           </Link>
         </div>
       </div>

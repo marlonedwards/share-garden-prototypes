@@ -8,9 +8,8 @@
 // is the panel that sits in the middle of region B.
 
 import { ChapterCard } from "../../../lib/tally/chapters";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -46,28 +45,30 @@ export default function ChapterCardOverlay({ card, onBegin, starts, onStart }: C
   // there the rest of the card gives back the room the offer takes. The offer
   // is one line: a label and a chapter number for each start point.
   const dense = offers.length > 0;
-  const rows: [string, string][] = [
-    ["target", money(card.target)],
-    ["turns", `${card.turns}, and one turn is ${card.turnUnit}`],
-    ["one block", money(card.denom)],
-    ["you start", startLine(card.startBlocks, card.carriedCards)],
+  // Every fact the chapter states, each one a phrase rather than a caption
+  // stacked beside a figure.
+  const facts: React.ReactNode[] = [
+    <>The target is <b style={strong}>{money(card.target)}</b>.</>,
+    <><b style={strong}>{card.turns}</b> turns.</>,
+    <>One turn is {card.turnUnit}.</>,
+    <>One block is <b style={strong}>{money(card.denom)}</b>.</>,
+    <>You start {startLine(card.startBlocks, card.carriedCards)}.</>,
   ];
 
   return (
     <div style={shell}>
       <div style={dense ? { ...panel, padding: "12px 20px 10px" } : panel}>
-        <div style={eyebrow}>
-          Chapter {card.id} &middot; {card.name}
+        <div style={title}>
+          Chapter {card.id}, {card.name}
         </div>
         {/* an era chapter names the years it covers; an authored one says
             nothing, because the disclosure lives on the cards */}
         {card.subtitle && <div style={subtitle}>{card.subtitle}</div>}
 
         <div style={dense ? { ...table, margin: "7px auto 0" } : table}>
-          {rows.map(([label, value]) => (
-            <div key={label} style={dense ? { ...row, padding: "2px 0" } : row}>
-              <span style={key}>{label}</span>
-              <span style={val}>{value}</span>
+          {facts.map((fact, i) => (
+            <div key={i} style={dense ? { ...row, padding: "1px 0" } : row}>
+              {fact}
             </div>
           ))}
         </div>
@@ -124,11 +125,12 @@ const panel: React.CSSProperties = {
   textAlign: "center",
 };
 
-const eyebrow: React.CSSProperties = {
-  fontSize: 12,
+// The panel's heading, and the panel has only one.
+const title: React.CSSProperties = {
+  fontSize: 14,
   fontWeight: 700,
   letterSpacing: "-0.01em",
-  color: SUB,
+  color: INK,
 };
 
 const subtitle: React.CSSProperties = {
@@ -147,24 +149,15 @@ const table: React.CSSProperties = {
 };
 
 const row: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "76px 1fr",
-  gap: 10,
-  alignItems: "baseline",
-  padding: "4px 0",
-  borderBottom: "1px solid rgba(0,0,0,0.06)",
-};
-
-const key: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 650,
-  color: SUB,
-};
-
-const val: React.CSSProperties = {
+  padding: "2px 0",
   fontSize: 15,
-  fontWeight: 700,
+  lineHeight: 1.4,
   letterSpacing: "-0.01em",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const strong: React.CSSProperties = {
+  fontWeight: 700,
   fontVariantNumeric: "tabular-nums",
 };
 

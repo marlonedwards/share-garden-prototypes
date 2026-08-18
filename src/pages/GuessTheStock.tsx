@@ -1,25 +1,29 @@
 // Guess the Stock: one real company, one real year, drawn whole and unlabelled.
 //
-// The page is a terminal panel and nothing else: the chart, a line of pips, one
-// hint button, and either six names to choose between or an empty box and the
-// whole market. Everything it knows how to decide comes from
-// src/lib/guess/model.ts, so this file only draws and listens.
+// The page is one quiet panel: the chart, a line of pips, one hint button, and
+// either six names to choose between or an empty box and the whole market.
+// Everything it knows how to decide comes from src/lib/guess/model.ts, so this
+// file only draws and listens.
 //
 // Easy is the mode everybody starts in, because a player who cannot name a
 // single chart still gets to be right some of the time. Hard is the same game
 // with the names taken away.
 //
-// The skin is the terminal variant of public/sketches/marketguessr.html: page
-// and panel #0C0F14, chart well #090C10, gridlines #1B2330, axis text #5B6979,
-// one green line at #4ADE80 over a soft fill, amber #E8B84B for the pips and
-// par. No volume bars, no ticker, no dollars until a hint pays for them.
+// The skin is the dark variant of public/sketches/marketguessr.html: page and
+// panel #0C0F14, chart well #090C10, gridlines #1B2330, axis text #5B6979, one
+// green line at #4ADE80 over a soft fill, amber #E8B84B for par. No volume
+// bars, no ticker, no dollars until a hint pays for them.
+//
+// Type and words follow docs/clean-type.md: one typeface, sentence case, no
+// labels stacked over values, nothing under 12px.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import raw from "../data/guessPuzzles.json";
+import { UI_FONT } from "../lib/type";
 import {
-  OptionView, Order, PIP_BUDGET, Puzzle, PuzzleState, Settings, Shelf, Stats, Suggestion,
-  advanceOrder, canDealHint, currentId, dealHint, dealtHints, dollarAt, dollarTicks,
-  formatDollars, formatPercent, giveUp, hasHint, hintLine, initialOrder, loadOrder,
+  HintKey, OptionView, Order, PIP_BUDGET, Puzzle, PuzzleState, Settings, Shelf, Stats, Suggestion,
+  advanceOrder, canDealHint, currentId, dealHint, dealtHints, dollarAt, dollarTicks, findCompany,
+  formatDollars, formatPercent, giveUp, hasHint, initialOrder, loadOrder,
   loadSettings, loadShelf, loadStats, markShelf, monthMarks, newPuzzle, normalizeGuess, optionViews,
   percentAt, percentTicks, pipsSpent, recordFail, recordSolve, resultLine, saveOrder, saveSettings,
   saveShelf, saveStats, scorecardLine, sectorVerdict, seriesRange, shelfDetail, shelfLine, shelfMark,
@@ -29,7 +33,6 @@ import {
 const PUZZLES = raw as Puzzle[];
 const IDS = PUZZLES.map((p) => p.id);
 
-const MONO = '"SF Mono", ui-monospace, Menlo, Consolas, monospace';
 const C = {
   page: "#0C0F14",
   panel: "#0C0F14",
@@ -48,23 +51,57 @@ const C = {
   pipEdge: "#3A4656",
 };
 
+// The model writes its lines in one quiet lower case so the simulator can pin
+// them. The page is the only place they are read, so the page gives them their
+// capital and reads the model's separator as a dot.
+function sentence(text: string): string {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+function dotted(text: string): string {
+  return text.replace(/ \. /g, " · ");
+}
+
+// A hint says what it bought, in a phrase, rather than a word with a value
+// hung off a colon.
+function hintSentence(puzzle: Puzzle, key: HintKey): string {
+  switch (key) {
+    case "widen":
+      return "A year either side is on the chart";
+    case "sector":
+      return `This company is in ${puzzle.sector}`;
+    case "price":
+      return "The axis shows real dollars";
+    case "size":
+      return `Worth ${puzzle.marketCap} at the end of the year`;
+  }
+}
+
+// The company as the market writes it, from whatever the player typed.
+function properName(guess: string): string {
+  return findCompany(guess)?.name ?? sentence(guess);
+}
+
 // ------------------------------------------------------------- the chart
 
 interface ChartProps {
   puzzle: Puzzle;
   widened: boolean;
   dollars: boolean;
+  /** the well's own width in real pixels, so axis type is the size it says */
+  width: number;
 }
 
-const W = 532;
-const H = 268;
-const PAD_L = 46;
+const H = 272;
+const PAD_L = 52;
 const PAD_R = 10;
 const PAD_T = 12;
-const CHART_B = H - 22;
+const CHART_B = H - 24;
 const AX_Y = H - 6;
+const AXIS_TYPE = 12;
 
-function Chart({ puzzle, widened, dollars }: ChartProps) {
+function Chart({ puzzle, widened, dollars, width }: ChartProps) {
+  const W = Math.max(260, Math.round(width));
   const win = visibleWindow(puzzle, widened);
   const span = Math.max(1, win.end - win.start);
   const x = (i: number) => PAD_L + ((i - win.start) / span) * (W - PAD_L - PAD_R);
@@ -82,20 +119,22 @@ function Chart({ puzzle, widened, dollars }: ChartProps) {
   const ticks = dollars ? dollarTicks(min, max) : percentTicks(min, max);
   const marks = monthMarks(puzzle, win, true);
 
-  // thin the month labels down to what fits without touching
+  // the sketch closes the axis with December on the right edge. Widened, the
+  // window ends in a different year, so the quarter labels carry it instead.
+  const tail = widened ? "" : "Dec";
+  // thin the month labels down to what fits without touching. A label is about
+  // 56px wide at this size, so that is the room each one needs and the room the
+  // December label keeps for itself at the right edge.
   const labelled: { at: number; text: string }[] = [];
   let lastX = -Infinity;
   for (const m of marks) {
     if (!m.label) continue;
     const px = x(m.index);
-    const need = 56;
-    if (px - lastX < need || px > W - PAD_R - need * 0.6) continue;
+    const need = 66;
+    if (px - lastX < need || px > W - PAD_R - (tail ? 128 : 40)) continue;
     lastX = px;
-    labelled.push({ at: px, text: m.label });
+    labelled.push({ at: px, text: sentence(m.label) });
   }
-  // the sketch closes the axis with december on the right edge. Widened, the
-  // window ends in a different year, so the quarter labels carry it instead.
-  const tail = widened ? "" : "dec";
   // three years of month lines is a hatch rather than a grid, so a long window
   // keeps the quarters and drops the rest
   const dense = marks.length <= 15;
@@ -107,7 +146,7 @@ function Chart({ puzzle, widened, dollars }: ChartProps) {
   const area = `${path}L${x(win.end).toFixed(1)},${CHART_B}L${x(win.start).toFixed(1)},${CHART_B}Z`;
 
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }} aria-hidden>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }} aria-hidden>
       {widened && (
         <g>
           <rect
@@ -126,15 +165,23 @@ function Chart({ puzzle, widened, dollars }: ChartProps) {
       {ticks.map((t) => (
         <g key={t}>
           <line x1={PAD_L} y1={y(t)} x2={W - PAD_R} y2={y(t)} stroke={C.grid} strokeWidth={1} />
-          <text x={PAD_L - 6} y={y(t) + 3.5} fill={C.axis} fontSize={9} fontFamily={MONO} textAnchor="end">
+          <text
+            x={PAD_L - 8}
+            y={y(t) + 4}
+            fill={C.axis}
+            fontSize={AXIS_TYPE}
+            fontFamily={UI_FONT}
+            textAnchor="end"
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
             {dollars ? formatDollars(t) : formatPercent(t)}
           </text>
         </g>
       ))}
 
       {dollars && puzzle.splitAdjusted && (
-        <text x={W - PAD_R - 2} y={PAD_T + 9} fill={C.axis} fontSize={8.5} fontFamily={MONO} textAnchor="end">
-          split adjusted
+        <text x={W - PAD_R - 2} y={PAD_T + 10} fill={C.axis} fontSize={AXIS_TYPE} fontFamily={UI_FONT} textAnchor="end">
+          Split adjusted
         </text>
       )}
 
@@ -157,12 +204,28 @@ function Chart({ puzzle, widened, dollars }: ChartProps) {
       <circle cx={x(win.end)} cy={y(values[values.length - 1])} r={2.6} fill={C.line} />
 
       {labelled.map((l) => (
-        <text key={l.at} x={l.at + 3} y={AX_Y} fill={C.axis} fontSize={9} fontFamily={MONO}>
+        <text
+          key={l.at}
+          x={l.at + 4}
+          y={AX_Y}
+          fill={C.axis}
+          fontSize={AXIS_TYPE}
+          fontFamily={UI_FONT}
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
           {l.text}
         </text>
       ))}
       {tail && (
-        <text x={W - PAD_R} y={AX_Y} fill={C.axis} fontSize={9} fontFamily={MONO} textAnchor="end">
+        <text
+          x={W - PAD_R}
+          y={AX_Y}
+          fill={C.axis}
+          fontSize={AXIS_TYPE}
+          fontFamily={UI_FONT}
+          textAnchor="end"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
           {`${tail} ${puzzle.year}`}
         </text>
       )}
@@ -176,37 +239,53 @@ const HINT_BTN: React.CSSProperties = {
   border: `1px solid ${C.line}`,
   background: "rgba(74,222,128,0.1)",
   color: C.line,
-  fontFamily: MONO,
-  fontSize: 12,
-  fontWeight: 700,
-  padding: "10px 16px",
-  borderRadius: 4,
+  fontFamily: UI_FONT,
+  fontSize: 14,
+  fontWeight: 600,
+  padding: "10px 18px",
+  borderRadius: 6,
   cursor: "pointer",
 };
 
-// The quiet line of wrong guesses in hard mode. Each one carries whether that
+const QUIET_BTN: React.CSSProperties = {
+  background: "none",
+  border: 0,
+  padding: 0,
+  fontFamily: UI_FONT,
+  fontSize: 13,
+  color: C.axis,
+  cursor: "pointer",
+  textDecoration: "underline",
+  textUnderlineOffset: 3,
+};
+
+// The quiet list of wrong guesses in hard mode. Each one carries whether that
 // company works in the same trade as the answer, which is the only thing hard
 // mode gives back for a miss; the hint ladder is untouched by it.
 function GuessedLine({ guesses, puzzle }: { guesses: string[]; puzzle: Puzzle }) {
   if (guesses.length === 0) return null;
   return (
-    <div style={{ fontSize: 11, color: C.axis, lineHeight: 1.7 }} data-testid="guessed">
-      guessed:{" "}
-      {guesses.map((g, i) => {
+    <div
+      style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, display: "flex", flexDirection: "column", gap: 2 }}
+      data-testid="guessed"
+    >
+      {guesses.map((g) => {
         const verdict = sectorVerdict(g, puzzle);
         return (
-          <span key={g}>
-            {i > 0 && " . "}
-            <b style={{ color: C.dim, fontWeight: 400 }}>{g}</b>
+          <div key={g}>
+            {properName(g)}
             {verdict && (
-              <span
-                data-testid="sector-tag"
-                style={{ marginLeft: 5, fontSize: 10, color: verdict === "same" ? C.amber : C.axis }}
-              >
-                ({verdictLabel(verdict)})
-              </span>
+              <>
+                {", "}
+                <span
+                  data-testid="sector-tag"
+                  style={{ color: verdict === "same" ? C.amber : C.axis }}
+                >
+                  {verdictLabel(verdict)}
+                </span>
+              </>
             )}
-          </span>
+          </div>
         );
       })}
     </div>
@@ -231,7 +310,7 @@ function Options({
       key={shake}
       className={shake ? "guess-shake" : ""}
       data-testid="options"
-      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}
+      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
     >
       {views.map(({ company, out }) => (
         <button
@@ -248,11 +327,11 @@ function Options({
             color: out ? C.axis : C.bright,
             opacity: out ? 0.5 : 1,
             textDecoration: out === "picked" ? "line-through" : "none",
-            fontFamily: MONO,
-            fontSize: 12.5,
+            fontFamily: UI_FONT,
+            fontSize: 14,
             textAlign: "left",
-            padding: "10px 12px",
-            borderRadius: 4,
+            padding: "11px 13px",
+            borderRadius: 6,
             cursor: out ? "default" : "pointer",
           }}
         >
@@ -268,7 +347,7 @@ function Options({
 // quiet line saying how it went; a revealed one keeps everything but the green
 // edge; an unplayed one is a dark card carrying its year and nothing else,
 // because the year is the only thing the game gives away before you play it.
-// A card shelved before any of that was recorded says only revealed, which is
+// A card shelved before any of that was recorded says only Revealed, which is
 // all it ever knew.
 function Collection({
   puzzles,
@@ -281,31 +360,31 @@ function Collection({
 }) {
   return (
     <div data-testid="collection" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", alignItems: "baseline" }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: C.bright }}>collection</span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+        <span style={{ fontSize: 18, fontWeight: 700, color: C.bright, letterSpacing: "-0.01em" }}>
+          Collection
+        </span>
         <button
           type="button"
           onClick={onClose}
           data-testid="collection-close"
-          style={{
-            marginLeft: "auto",
-            background: "none",
-            border: 0,
-            padding: 0,
-            fontFamily: MONO,
-            fontSize: 11,
-            color: C.axis,
-            cursor: "pointer",
-          }}
+          style={{ ...QUIET_BTN, marginLeft: "auto" }}
         >
-          back to the puzzle
+          Back to the puzzle
         </button>
       </div>
-      <div style={{ fontSize: 11, color: C.axis }} data-testid="shelf-line">
-        {shelfLine(shelf, puzzles.map((p) => p.id))}
+      <div style={{ fontSize: 13, color: C.axis }} className="tnum" data-testid="shelf-line">
+        {dotted(shelfLine(shelf, puzzles.map((p) => p.id)))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {puzzles.map((p, i) => {
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          alignItems: "start",
+          gap: 10,
+        }}
+      >
+        {puzzles.map((p) => {
           const mark = shelfMark(shelf, p.id);
           const played = mark !== null;
           // how it went, when the card is new enough to remember
@@ -318,40 +397,40 @@ function Collection({
               style={{
                 border: `1px solid ${mark === "solved" ? "rgba(74,222,128,0.35)" : C.border}`,
                 background: played ? C.field : "#080A0E",
-                borderRadius: 4,
-                padding: "9px 10px",
-                minHeight: 44,
+                borderRadius: 6,
+                padding: "11px 12px",
+                minHeight: 52,
                 display: "flex",
                 flexDirection: "column",
-                gap: 4,
+                gap: 5,
                 opacity: played ? 1 : 0.55,
               }}
             >
-              <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-                <span style={{ fontSize: 10, color: C.axis }}>no. {i + 1}</span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
                 {played ? (
                   <>
-                    <span style={{ fontSize: 12.5, color: C.bright, fontWeight: 700 }}>{p.name}</span>
-                    <span style={{ fontSize: 10.5, color: C.axis }}>{p.ticker}</span>
-                    <span style={{ fontSize: 10.5, color: C.axis }}>{p.year}</span>
+                    <span style={{ fontSize: 14, color: C.bright, fontWeight: 600 }}>{p.name}</span>
+                    <span style={{ fontSize: 12.5, color: C.axis }} className="tnum">
+                      {p.ticker} · {p.year}
+                    </span>
                     {mark === "revealed" && !detail && (
-                      <span data-testid="revealed-tag" style={{ marginLeft: "auto", fontSize: 10, color: C.axis }}>
-                        revealed
+                      <span data-testid="revealed-tag" style={{ marginLeft: "auto", fontSize: 12.5, color: C.axis }}>
+                        Revealed
                       </span>
                     )}
                   </>
                 ) : (
-                  <span data-testid="locked-year" style={{ fontSize: 12.5, color: C.dim }}>
+                  <span data-testid="locked-year" className="tnum" style={{ fontSize: 14, color: C.dim }}>
                     {p.year}
                   </span>
                 )}
               </div>
               {played && (
-                <div style={{ fontSize: 10.5, lineHeight: 1.5, color: C.dim }}>{p.story}</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.55, color: C.dim }}>{p.story}</div>
               )}
               {detail && (
-                <div data-testid="shelf-detail" style={{ fontSize: 10, color: C.axis }}>
-                  {detail}
+                <div data-testid="shelf-detail" className="tnum" style={{ fontSize: 12.5, color: C.axis }}>
+                  {sentence(detail)}
                 </div>
               )}
             </div>
@@ -383,6 +462,10 @@ export default function GuessTheStock() {
   const [shelf, setShelf] = useState<Shelf>(() => loadShelf(IDS));
   const [showCollection, setShowCollection] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // the chart is drawn at the width it is given, so a phone shrinks the window
+  // rather than the type on it
+  const wellRef = useRef<HTMLDivElement>(null);
+  const [wellWidth, setWellWidth] = useState(512);
 
   // the rows under the box: only these can ever be submitted
   const suggestions: Suggestion[] = useMemo(() => suggestCompanies(typed), [typed]);
@@ -395,6 +478,18 @@ export default function GuessTheStock() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [showCollection]);
+
+  // the well only changes width when the window does, or when the collection
+  // hands the panel back
+  useEffect(() => {
+    const el = wellRef.current;
+    if (!el) return;
+    const measure = () => setWellWidth(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [showCollection]);
 
   // one puzzle per id: changing the deal or the ?p= entry starts a clean one
@@ -500,9 +595,13 @@ export default function GuessTheStock() {
 
   const number = PUZZLES.findIndex((p) => p.id === puzzle.id) + 1;
   const revealedHints = dealtHints(state);
+  const spent = pipsSpent(state);
+  // the pips say how much is left; the line beside them says the same thing in
+  // words, so no number on the page is standing on its own
+  const spentPhrase = spent === 0 ? "No hints used" : spent === 1 ? "1 hint used" : `${spent} hints used`;
 
   return (
-    <div style={{ minHeight: "100%", background: C.page, color: C.body, colorScheme: "dark", fontFamily: MONO }}>
+    <div style={{ minHeight: "100%", background: C.page, color: C.body, colorScheme: "dark", fontFamily: UI_FONT }}>
       <style>{`
         @keyframes guessShake {
           0%, 100% { transform: translateX(0); }
@@ -518,75 +617,90 @@ export default function GuessTheStock() {
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "28px 20px 64px" }}>
         <Link
           to="/"
-          style={{ fontSize: 11, color: C.axis, textDecoration: "none", display: "inline-block", marginBottom: 16 }}
+          style={{ fontSize: 13, color: C.axis, textDecoration: "none", display: "inline-block", marginBottom: 16 }}
         >
-          back
+          Back
         </Link>
 
         <div
           style={{
             background: C.panel,
             border: `1px solid ${C.border}`,
-            borderRadius: 8,
-            padding: "18px 16px 16px",
+            borderRadius: 10,
+            padding: "20px 18px 18px",
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 14,
           }}
         >
           {showCollection ? (
             <Collection puzzles={PUZZLES} shelf={shelf} onClose={() => setShowCollection(false)} />
           ) : (
           <>
-          <div style={{ display: "flex", alignItems: "baseline" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.bright, letterSpacing: "0.01em" }}>
-              guess the stock
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: C.bright, letterSpacing: "-0.01em" }}>
+              Guess the Stock
             </span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: C.axis }} data-testid="puzzle-no">
-              no. {number}
+            <span
+              style={{ marginLeft: "auto", fontSize: 13, color: C.axis }}
+              className="tnum"
+              data-testid="puzzle-no"
+            >
+              Puzzle {number}
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 11, color: C.axis }}>
-            <span>hints</span>
-            <span style={{ display: "flex", gap: 4 }} data-testid="pips">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ display: "flex", gap: 5 }} data-testid="pips">
               {Array.from({ length: PIP_BUDGET }, (_, i) => {
-                const spent = i < pipsSpent(state);
+                const used = i < spent;
                 return (
                   <i
                     key={i}
-                    data-spent={spent ? "yes" : "no"}
+                    data-spent={used ? "yes" : "no"}
                     style={{
                       width: 9,
                       height: 9,
                       display: "block",
-                      border: `1px solid ${spent ? C.amber : C.pipEdge}`,
-                      background: spent ? C.amber : "transparent",
+                      border: `1px solid ${used ? C.amber : C.pipEdge}`,
+                      background: used ? C.amber : "transparent",
                     }}
                   />
                 );
               })}
             </span>
-            <span style={{ marginLeft: "auto", color: C.amber }}>par {puzzle.par}</span>
+            <span
+              style={{ marginLeft: "auto", fontSize: 13, color: C.dim }}
+              className="tnum"
+              data-testid="ladder"
+            >
+              {spentPhrase}, par <span style={{ color: C.amber }}>{puzzle.par}</span>
+            </span>
           </div>
 
-          <div style={{ border: `1px solid ${C.border}`, background: C.well, borderRadius: 4, padding: "8px 6px 2px" }}>
-            <Chart puzzle={puzzle} widened={widened} dollars={dollars} />
+          <div
+            ref={wellRef}
+            style={{ border: `1px solid ${C.border}`, background: C.well, borderRadius: 6, padding: "8px 6px 2px" }}
+          >
+            <Chart puzzle={puzzle} widened={widened} dollars={dollars} width={wellWidth - 12} />
           </div>
 
           {revealedHints.length > 0 && !over && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }} data-testid="revealed">
-              {revealedHints.map((key) => {
-                const line = hintLine(puzzle, key);
-                return (
-                  <div key={key} style={{ fontSize: 11.5, color: C.dim, display: "flex", gap: 7 }}>
-                    <span style={{ color: C.line }}>&gt;</span>
-                    <span>
-                      {line.label}: <b style={{ color: C.bright, fontWeight: 700 }}>{line.value}</b>
-                    </span>
-                  </div>
-                );
-              })}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 5,
+                borderLeft: `2px solid rgba(74,222,128,0.45)`,
+                paddingLeft: 11,
+              }}
+              data-testid="revealed"
+            >
+              {revealedHints.map((key) => (
+                <div key={key} style={{ fontSize: 13, color: C.dim }}>
+                  {hintSentence(puzzle, key)}
+                </div>
+              ))}
             </div>
           )}
 
@@ -601,26 +715,15 @@ export default function GuessTheStock() {
                 data-testid="hint"
                 style={{ ...HINT_BTN, alignSelf: "flex-start", opacity: canDealHint(state) ? 1 : 0.35 }}
               >
-                hint
+                Hint
               </button>
               <button
                 type="button"
                 onClick={() => finish(giveUp(state))}
                 data-testid="give-up"
-                style={{
-                  alignSelf: "flex-start",
-                  background: "none",
-                  border: 0,
-                  padding: 0,
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  color: C.axis,
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  textUnderlineOffset: 3,
-                }}
+                style={{ ...QUIET_BTN, alignSelf: "flex-start" }}
               >
-                reveal answer
+                Reveal answer
               </button>
             </>
             ) : (
@@ -640,7 +743,7 @@ export default function GuessTheStock() {
                     onKeyDown={onKeyDown}
                     onFocus={() => setOpen(true)}
                     onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-                    placeholder="company or ticker"
+                    placeholder="Company or ticker"
                     autoFocus
                     autoComplete="off"
                     spellCheck={false}
@@ -652,10 +755,10 @@ export default function GuessTheStock() {
                       width: "100%",
                       border: `1px solid ${C.fieldEdge}`,
                       background: C.field,
-                      borderRadius: 4,
-                      padding: "10px 12px",
-                      fontFamily: MONO,
-                      fontSize: 13,
+                      borderRadius: 6,
+                      padding: "11px 13px",
+                      fontFamily: UI_FONT,
+                      fontSize: 15,
                       color: C.bright,
                       caretColor: C.line,
                     }}
@@ -668,7 +771,7 @@ export default function GuessTheStock() {
                   data-testid="hint"
                   style={{ ...HINT_BTN, opacity: canDealHint(state) ? 1 : 0.35 }}
                 >
-                  hint
+                  Hint
                 </button>
               </form>
 
@@ -676,10 +779,10 @@ export default function GuessTheStock() {
                 <div
                   data-testid="suggestions"
                   style={{
-                    marginTop: -4,
+                    marginTop: -6,
                     background: C.field,
                     border: `1px solid ${C.fieldEdge}`,
-                    borderRadius: 4,
+                    borderRadius: 6,
                     overflow: "hidden",
                   }}
                 >
@@ -705,15 +808,15 @@ export default function GuessTheStock() {
                           display: "flex",
                           alignItems: "baseline",
                           gap: 8,
-                          padding: "6px 12px",
+                          padding: "8px 13px",
                           cursor: "pointer",
                           background: i === active ? "rgba(74,222,128,0.08)" : "transparent",
                           borderLeft: `2px solid ${i === active ? C.line : "transparent"}`,
                         }}
                       >
-                        <span style={{ fontSize: 12.5, color: C.bright }}>{s.company.name}</span>
-                        <span style={{ fontSize: 11, color: C.axis }}>{s.company.ticker}</span>
-                        {alias && <span style={{ fontSize: 10.5, color: C.axis }}>. {alias}</span>}
+                        <span style={{ fontSize: 14, color: C.bright }}>{s.company.name}</span>
+                        <span style={{ fontSize: 13, color: C.axis }}>{s.company.ticker}</span>
+                        {alias && <span style={{ fontSize: 13, color: C.axis }}>· {alias}</span>}
                       </div>
                     );
                   })}
@@ -726,49 +829,39 @@ export default function GuessTheStock() {
                 type="button"
                 onClick={() => finish(giveUp(state))}
                 data-testid="give-up"
-                style={{
-                  alignSelf: "flex-start",
-                  background: "none",
-                  border: 0,
-                  padding: 0,
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  color: C.axis,
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  textUnderlineOffset: 3,
-                }}
+                style={{ ...QUIET_BTN, alignSelf: "flex-start" }}
               >
-                reveal answer
+                Reveal answer
               </button>
             </>
             )
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }} data-testid="reveal">
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: C.bright }}>{puzzle.name}</span>
-                <span style={{ fontSize: 12, color: C.axis }}>
-                  {puzzle.ticker} . {puzzle.year}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid="reveal">
+              <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 20, fontWeight: 700, color: C.bright, letterSpacing: "-0.01em" }}>
+                  {puzzle.name}
+                </span>
+                <span style={{ fontSize: 13, color: C.axis }} className="tnum">
+                  {puzzle.ticker} · {puzzle.year}
                 </span>
               </div>
-              <div style={{ fontSize: 12, lineHeight: 1.55, color: C.dim }} data-testid="story">
+              <div style={{ fontSize: 14, lineHeight: 1.6, color: C.dim }} data-testid="story">
                 {puzzle.story}
               </div>
-              <div style={{ fontSize: 11.5, color: C.amber }} data-testid="result">
-                {resultLine(state, puzzle)}
+              <div style={{ fontSize: 13, color: C.amber }} className="tnum" data-testid="result">
+                {sentence(resultLine(state, puzzle))}
               </div>
               <GuessedLine guesses={state.guesses} puzzle={puzzle} />
               {state.picks.length > 0 && (
-                <div style={{ fontSize: 11, color: C.axis, lineHeight: 1.7 }} data-testid="picked">
-                  picked:{" "}
+                <div style={{ fontSize: 13, color: C.axis, lineHeight: 1.6 }} data-testid="picked">
+                  You picked{" "}
                   {state.picks
                     .map((t) => options.find((o) => o.company.ticker === t)?.company.name ?? t)
-                    .join(" . ")
-                    .toLowerCase()}
+                    .join(", ")}
                 </div>
               )}
               <button type="button" onClick={onNext} data-testid="next" style={{ ...HINT_BTN, alignSelf: "flex-start" }}>
-                next
+                Next
               </button>
             </div>
           )}
@@ -776,27 +869,17 @@ export default function GuessTheStock() {
           )}
         </div>
 
-        <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 12 }}>
-          <div style={{ fontSize: 11, color: C.axis }} data-testid="scorecard">
-            {scorecardLine(stats)}
+        <div style={{ marginTop: 14, display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 13, color: C.axis }} className="tnum" data-testid="scorecard">
+            {sentence(dotted(scorecardLine(stats)))}
           </div>
           <button
             type="button"
             onClick={() => setShowCollection((v) => !v)}
             data-testid="collection-open"
-            style={{
-              background: "none",
-              border: 0,
-              padding: 0,
-              fontFamily: MONO,
-              fontSize: 11,
-              color: showCollection ? C.line : C.axis,
-              cursor: "pointer",
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-            }}
+            style={{ ...QUIET_BTN, color: showCollection ? C.line : C.axis }}
           >
-            collection
+            Collection
           </button>
           <button
             type="button"
@@ -806,20 +889,9 @@ export default function GuessTheStock() {
               saveSettings(next);
             }}
             data-testid="mode-toggle"
-            style={{
-              marginLeft: "auto",
-              background: "none",
-              border: 0,
-              padding: 0,
-              fontFamily: MONO,
-              fontSize: 11,
-              color: C.axis,
-              cursor: "pointer",
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-            }}
+            style={{ ...QUIET_BTN, marginLeft: "auto", color: easy ? C.axis : C.amber }}
           >
-            mode: <span style={{ color: easy ? C.dim : C.amber }}>{settings.mode}</span>
+            {easy ? "Easy mode" : "Hard mode"}
           </button>
         </div>
       </div>

@@ -1,11 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
+/* One typeface, the system stack, no webfonts. Contract: docs/clean-type.md */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
-  --font-grotesk: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-game: "Pixelify Sans", "Trebuchet MS", ui-sans-serif, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Garden palette */
   --color-cream: #f4efe1;
@@ -85,9 +82,6 @@ body {
 
 /* garden sprites have a flat pale tile baked in; multiply melts it into light backgrounds */
 .sprite-blend { mix-blend-mode: multiply; }
-
-/* Pixelify Sans sets tight; a little tracking keeps C-a-s-h legible */
-.font-game { letter-spacing: 0.055em; }
 
 /* The Tally's scroll strips (the till, the shop grid, the stack row) scroll
    without showing a scrollbar: on macOS with visible scrollbars the default

@@ -14,9 +14,8 @@
 
 import { useState } from "react";
 import { FrontPage, monthLabel } from "../../../lib/tally/chapters";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -87,7 +86,7 @@ export default function FrontPageOverlay({ page, onContinue }: FrontPageOverlayP
                     </div>
                   </>
                 ) : (
-                  <span style={more}>tap for more</span>
+                  <span style={more}>Tap for more</span>
                 )}
               </div>
             );
@@ -145,7 +144,7 @@ const more: React.CSSProperties = {
   display: "inline-block",
   marginTop: 3,
   fontSize: 12,
-  fontWeight: 650,
+  fontWeight: 600,
   color: ACCENT,
 };
 
@@ -158,8 +157,8 @@ const behind: React.CSSProperties = {
 
 const credit: React.CSSProperties = {
   marginTop: 4,
-  fontSize: 11.5,
-  fontWeight: 650,
+  fontSize: 12,
+  fontWeight: 600,
   color: SUB,
 };
 

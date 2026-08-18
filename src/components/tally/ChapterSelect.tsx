@@ -80,7 +80,7 @@ export default function ChapterSelect(p: ChapterSelectProps) {
           padding: `${s(8)}px ${s(10)}px`,
         }}
       >
-        <div style={{ fontSize: type(21), fontWeight: 820, letterSpacing: "-0.025em" }}>Chapters</div>
+        <div style={{ fontSize: type(21), fontWeight: 700, letterSpacing: "-0.02em" }}>Chapters</div>
         <div style={{ fontSize: type(13), color: SUB, fontWeight: 600 }}>
           A chapter opens when you clear the one before it.
         </div>
@@ -117,7 +117,7 @@ export default function ChapterSelect(p: ChapterSelectProps) {
           const cleared = p.box.clearedChapters.includes(ch.id);
           const best = ch.source.kind === "era" ? p.box.eraBest[ch.source.eraId] ?? null : null;
           const asking = confirm === ch.id;
-          const state = best !== null ? `best ${money(best)}` : cleared ? "cleared" : "open";
+          const state = best !== null ? `Best ${money(best)}` : cleared ? "Cleared" : "Open";
           return (
             <div
               key={ch.id}
@@ -143,8 +143,8 @@ export default function ChapterSelect(p: ChapterSelectProps) {
                   style={{
                     ...plaque(6),
                     padding: `${s(2)}px ${s(7)}px`,
-                    fontSize: type(11.5),
-                    fontWeight: 750,
+                    fontSize: type(12),
+                    fontWeight: 700,
                     color: unlocked ? SUB : LOCKED,
                     fontVariantNumeric: "tabular-nums",
                     whiteSpace: "nowrap",
@@ -160,8 +160,8 @@ export default function ChapterSelect(p: ChapterSelectProps) {
                       borderRadius: 6,
                       border: `1.5px solid ${best !== null || cleared ? "rgba(181,122,0,0.42)" : LINE}`,
                       background: best !== null || cleared ? "rgba(181,122,0,0.09)" : "transparent",
-                      fontSize: type(11.5),
-                      fontWeight: 750,
+                      fontSize: type(12),
+                      fontWeight: 700,
                       color: best !== null ? INK : cleared ? GOLD : SUB,
                       fontVariantNumeric: "tabular-nums",
                       whiteSpace: "nowrap",
@@ -175,7 +175,7 @@ export default function ChapterSelect(p: ChapterSelectProps) {
               <div
                 style={{
                   fontSize: type(16),
-                  fontWeight: 800,
+                  fontWeight: 700,
                   letterSpacing: "-0.02em",
                   color: unlocked ? INK : LOCKED,
                 }}
@@ -226,7 +226,7 @@ export default function ChapterSelect(p: ChapterSelectProps) {
                       card that prints it and not on the chapter that holds it */}
                   {(!unlocked || chapterSubtitle(ch)) && (
                     <div style={{ fontSize: type(12.5), color: unlocked ? SUB : LOCKED, lineHeight: 1.35 }}>
-                      {unlocked ? chapterSubtitle(ch) : "locked"}
+                      {unlocked ? chapterSubtitle(ch) : "Locked"}
                     </div>
                   )}
                   <div style={{ marginTop: "auto", display: "flex", alignItems: "center", paddingTop: s(6) }}>

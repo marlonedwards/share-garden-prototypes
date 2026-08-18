@@ -21,12 +21,12 @@ export default function EraBriefing() {
       <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          scenarios
+          Scenarios
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <div className="flex items-baseline gap-3">
           <span className="text-lg font-semibold tracking-tight">{cfg.title}</span>
-          <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>era briefing</span>
+          <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>Era briefing</span>
         </div>
         <Link to={`/orb/s/${cfg.id}`} className="ml-auto text-[13px] font-medium px-4 py-1.5 rounded-full text-white transition hover:brightness-110"
           style={{ background: "#0071e3" }}>
@@ -90,7 +90,7 @@ export default function EraBriefing() {
             {cfg.startLabel}
           </Link>
           <span className="text-[12.5px]" style={{ color: "#6e6e73" }}>
-            You can play without reading any of this. The page is here whenever you want the history behind the tape.
+            You can play without reading any of this.
           </span>
         </div>
       </main>

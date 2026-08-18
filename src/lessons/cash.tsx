@@ -42,8 +42,8 @@ function TradeGlyph({ kind, lit }: { kind: (typeof TRADE_TILES)[number]["key"]; 
       {kind === "dollar" && (
         <>
           <rect x="6" y="13" width="32" height="18" rx="3" fill={fill} stroke={stroke} strokeWidth="1.6" />
-          <circle cx="22" cy="22" r="5.5" fill="none" stroke={stroke} strokeWidth="1.4" />
-          <text x="22" y="25.5" textAnchor="middle" fontSize="9" fontWeight="700" fill={stroke}>$</text>
+          <circle cx="22" cy="22" r="7" fill="none" stroke={stroke} strokeWidth="1.4" />
+          <text x="22" y="26.4" textAnchor="middle" fontSize="12" fontWeight="700" fill={stroke}>$</text>
         </>
       )}
       {kind === "bread" && (
@@ -79,7 +79,7 @@ function TradeStage({ onComplete }: StageProps) {
             )}
             <div className="flex flex-col items-center gap-1">
               <TradeGlyph kind={t.key} lit={stepIdx >= i} />
-              <span className="text-[11px]" style={{ color: stepIdx >= i ? INK : "#c7c7cc" }}>{t.label}</span>
+              <span className="text-[12px]" style={{ color: stepIdx >= i ? INK : "#c7c7cc" }}>{t.label}</span>
             </div>
           </div>
         ))}
@@ -212,15 +212,15 @@ function LeakStage({ onComplete }: StageProps) {
       </div>
       <div className="mt-3 grid grid-cols-3 gap-3 text-center">
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>The jar says</div>
+          <div className="text-[12px]" style={{ color: SUB }}>The jar says</div>
           <div className="text-[20px] font-semibold tnum">$100</div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>Sneakers, per pair</div>
+          <div className="text-[12px]" style={{ color: SUB }}>Sneakers, per pair</div>
           <div className="text-[20px] font-semibold tnum">{fmtWhole(price)}</div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>Pairs it buys</div>
+          <div className="text-[12px]" style={{ color: SUB }}>Pairs it buys</div>
           <div className="flex items-center justify-center gap-1 h-[30px]">
             <span className="text-[20px] font-semibold tnum">{pairs}</span>
             <SneakerGlyph faded={false} />
@@ -270,7 +270,7 @@ function TwoRisksStage({ onComplete }: StageProps) {
         {shown ? (
           <p key={shown} className="text-[13px] pop-in" style={{ color: "#3a3a3c" }}>{RISKS[shown]}</p>
         ) : (
-          <p className="text-[13px]" style={{ color: SUB }}>Tap a risk to meet it. Meet both to move on.</p>
+          <p className="text-[13px]" style={{ color: SUB }}>Tap both risks to meet them.</p>
         )}
       </div>
     </div>

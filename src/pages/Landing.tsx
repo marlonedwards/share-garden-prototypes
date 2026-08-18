@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { UI_FONT } from "../lib/type";
 
 // The demo's front door: four games, one curriculum, one honest engine.
 
@@ -70,7 +71,7 @@ function TakeoverMotif() {
     <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
       <rect x="0" y="0" width="118" height="104" rx="14" fill="#0C0F14" />
       <circle cx="44" cy="54" r="30" fill="#E2231A" />
-      <text x="44" y="58" textAnchor="middle" fontSize="11" fontWeight="700" fill="#F4F7FB" fontFamily="ui-monospace, Menlo, monospace">roblox</text>
+      <text x="44" y="58" textAnchor="middle" fontSize="12" fontWeight="600" fill="#F4F7FB" fontFamily={UI_FONT}>Roblox</text>
       <circle cx="92" cy="40" r="12" fill="#10141B" stroke="#E8EDF4" strokeWidth="2" />
       <circle cx="20" cy="24" r="7" fill="#7ABA40" />
       <circle cx="98" cy="82" r="9" fill="#00A4EF" />
@@ -107,12 +108,9 @@ export default function Landing() {
             <div className="h-28 flex items-center justify-center mb-4">
               <TakeoverMotif />
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#2C8A55" }}>New game</div>
             <div className="text-[22px] font-semibold tracking-tight">Takeover</div>
             <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Start as a lemonade stand and eat every company smaller than you. Real names,
-              real market values. Click to split and lunge, dodge anything bigger, and see
-              how much of the market you can swallow in ninety seconds.
+              Eat every company smaller than you.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Takeover</div>
           </Link>
@@ -121,12 +119,9 @@ export default function Landing() {
             <div className="h-28 flex items-center justify-center mb-4">
               <WorthMotif />
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#7C3AED" }}>New game</div>
             <div className="text-[22px] font-semibold tracking-tight">Worth More</div>
             <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Two companies, one question: which is worth more? Every answer reveals the real
-              numbers, the winner stays on as your next opponent, and one wrong tap ends
-              the streak.
+              Pick the company worth more.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#7C3AED" }}>Play Worth More</div>
           </Link>
@@ -135,12 +130,9 @@ export default function Landing() {
             <div className="h-28 flex items-center justify-center mb-4">
               <GuessMotif />
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "#2C8A55" }}>New game</div>
             <div className="text-[22px] font-semibold tracking-tight">Guess the Stock</div>
             <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Guess the company from one real year of its stock chart. Guesses are free, five
-              hints wait behind one button, and every answer comes with the one line of history
-              that made the year look like that.
+              Name the company from its stock chart.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Guess the Stock</div>
           </Link>
@@ -151,9 +143,7 @@ export default function Landing() {
             </div>
             <div className="text-[22px] font-semibold tracking-tight">The Tally</div>
             <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Cards are what you own, and blocks are what it is worth. A crash strips the wall
-              down and leaves every card sitting on the table. Eight chapters carry you from a
-              piggy bank to real market history.
+              Build a wall out of what you own.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Tally</div>
           </Link>
@@ -170,10 +160,7 @@ export default function Landing() {
             </div>
             <div className="text-[22px] font-semibold tracking-tight">The Orb</div>
             <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Your portfolio is one glass marble. Companies are colors, the sealed rainbow orb is
-              the index, and crashes deflate prices, never your shares. Five short Basics lessons,
-              a guided tutorial, six eras of real market history, and a final planning lesson run
-              in order as one course, and an open sandbox waits beside them.
+              Hold one glass marble through real market history.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#0071e3" }}>Play the Orb</div>
           </Link>
@@ -184,9 +171,7 @@ export default function Landing() {
             </div>
             <div className="text-[22px] font-semibold tracking-tight">Share Garden</div>
             <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Share Garden teaches the same first lesson in a garden. Plant size is the market price, selling is
-              transplanting to another gardener, the co-op field is the index, and frost is the
-              crash you tend through.
+              Grow a garden that moves with the market.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#3f6b3a" }}>Play Share Garden</div>
           </Link>
@@ -196,28 +181,25 @@ export default function Landing() {
           <Link to="/objectives" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
             <div className="text-[15px] font-semibold tracking-tight">Learning objectives</div>
             <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
-              Every unit is mapped to CEE and Jump$tart standards, with the misconception it busts
-              and its assessment hook. The whole page prints on one sheet.
+              Every unit mapped to the standards it covers.
             </p>
           </Link>
           <Link to="/archive" className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 transition hover:shadow-md">
             <div className="text-[15px] font-semibold tracking-tight">Experiments</div>
             <p className="text-[13px] mt-1" style={{ color: "#6e6e73" }}>
-              Design sketches made before a build, and the first-week prototypes kept for reference.
+              Sketches and prototypes kept for reference.
             </p>
           </Link>
         </div>
 
         <div className="mt-4 text-center">
           <Link to="/orb/intro" className="text-[12.5px] font-medium transition hover:opacity-75" style={{ color: "#0071e3" }}>
-            New here, or showing a friend? Play the Orb's intro.
+            Start with the Orb's intro.
           </Link>
         </div>
 
         <p className="mt-10 text-[12.5px]" style={{ color: "#a1a1a6" }}>
-          Everything here is free and open source, with no accounts and no logins, and it runs
-          in a browser on a Chromebook. A deterministic simulation engine replays real historical
-          market data, and every number is inspectable.
+          Free and open source, built on real market data.
         </p>
       </main>
     </div>

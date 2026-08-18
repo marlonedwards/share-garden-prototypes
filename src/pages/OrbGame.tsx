@@ -198,12 +198,12 @@ export default function OrbGame() {
       <header className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 sm:px-10 py-2 min-h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          scenarios
+          Scenarios
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <div className="flex items-baseline gap-3">
           <span className="text-lg font-semibold tracking-tight">The Orb</span>
-          <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>your portfolio, in one picture</span>
+          <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>Your portfolio, in one picture</span>
         </div>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[13px] tnum" style={{ color: "#6e6e73" }}>Day {m.step}</span>
@@ -260,7 +260,7 @@ export default function OrbGame() {
             {fired.current.crash && peakInvested.current > invested * 1.08 && (
               <div className="absolute -translate-x-1/2 text-[12px] tnum"
                 style={{ left: `${LAYOUT.playerX * 100}%`, top: STAGE_H * LAYOUT.groundY - 2 * valueToRadius(peakInvested.current) - 22, color: "#6e6e73" }}>
-                before the crash · {fmtMoney(peakInvested.current)}
+                Before the crash · {fmtMoney(peakInvested.current)}
               </div>
             )}
             {/* labels pinned to scene anchors */}
@@ -284,20 +284,20 @@ export default function OrbGame() {
           <div ref={endCardRef} className={`z-20 ${beat === "end" ? "w-[min(1080px,96vw)]" : "w-[min(600px,92vw)]"}`}>
             {beat === "intro" && (
               <Card title="This is your portfolio.">
-                <p>Everything you own in the market lives in this one glass orb. Right now it holds nothing.</p>
+                <p>Everything you own in the market lives in this one glass orb.</p>
                 <Actions><Btn onClick={() => setBeat("reservoir")}>Next</Btn></Actions>
               </Card>
             )}
             {beat === "reservoir" && (
               <Card title="And this is your cash.">
-                <p>You have $1,000 of money-green liquid in the dish. Cash isn't in the market. It just sits there, and it slowly fades.</p>
+                <p>You have $1,000 of money-green liquid in the dish. Cash is not in the market.</p>
                 <Actions><Btn onClick={() => setBeat("shop")}>Next</Btn></Actions>
               </Card>
             )}
             {beat === "shop" && (
               <Card title={holdings.length === 0 ? "Turn money into ownership." : "Add another color, or let the market run."}>
                 {holdings.length === 0 && (
-                  <p className="mb-1">When you buy a piece of a company, or a crypto coin, your money becomes that color inside your orb. Pick one.</p>
+                  <p className="mb-1">When you buy a piece of a company, or a crypto coin, your money becomes that color inside your orb.</p>
                 )}
                 <div className="flex flex-col gap-1.5 my-2">
                   {ORB_ASSETS.map((oa) => {
@@ -309,7 +309,7 @@ export default function OrbGame() {
                         style={{ borderColor: sel ? oa.color : "rgba(0,0,0,0.08)", background: sel ? `${oa.color}14` : "#fff" }}>
                         <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: oa.color }} />
                         <span className="text-sm font-medium flex-1">{asset.name}</span>
-                        <span className="text-[12px]" style={{ color: "#6e6e73" }}>{asset.sector === "crypto" ? "crypto" : asset.sector}</span>
+                        <span className="text-[12px]" style={{ color: "#6e6e73" }}>{(asset.sector === "crypto" ? "crypto" : asset.sector).replace(/^./, (c) => c.toUpperCase())}</span>
                         <span className="text-sm tnum" style={{ color: "#6e6e73" }}>{fmtMoney(m.prices[oa.id])}/share</span>
                       </button>
                     );
@@ -339,26 +339,26 @@ export default function OrbGame() {
             {beat === "meetIndex" && (
           <Card title="Meet the rainbow orb.">
             <p>It holds a tiny piece of every company in the market, sealed together. It starts with the same $1,000 as you.</p>
-            <p className="mt-2">Time is about to speed up. You can pause or trade whenever you like.</p>
+            <p className="mt-2">You can pause or trade whenever you like.</p>
             <Actions><Btn onClick={beginTime}>Start time</Btn></Actions>
           </Card>
         )}
         {beat === "warn" && (
           <Card title="Prices are slipping.">
-            <p>Something is wrong. Every color is starting to fall. Watch your orb.</p>
+            <p>Every color is starting to fall.</p>
             <Actions><Btn onClick={() => { setBeat("run1"); setSpeed(1); }}>Okay</Btn></Actions>
           </Card>
         )}
         {beat === "run1" && speed > 0 && (
               <Caption>
-                Prices change every day, and your orb changes with them. The rainbow orb next to yours holds a small piece of everything in the market. Its colors are sealed together.
+                Prices change every day, and your orb changes with them.
               </Caption>
             )}
             {beat === "crash" && (
               <Card title="The market is crashing.">
                 <p>
-                  You're down <strong className="tnum">{Math.abs(drawdown * 100).toFixed(0)}%</strong> from the top.
-              But every color is still in your orb. You own what you owned yesterday. Only the price changed.
+                  You&apos;re down <strong className="tnum">{Math.abs(drawdown * 100).toFixed(0)}%</strong> from the top.
+              You own what you owned yesterday, and only the price changed.
                 </p>
                 <p className="mt-2 font-medium">Prices are still falling. What do you do?</p>
                 <Actions>
@@ -374,10 +374,10 @@ export default function OrbGame() {
               </Card>
             )}
             {beat === "run2" && choice === "sold" && speed > 0 && (
-              <Caption>You sold everything at crash prices. Your money is back in the dish, sitting still.</Caption>
+              <Caption>You sold everything at crash prices.</Caption>
             )}
             {beat === "run2" && choice === "hold" && speed > 0 && (
-              <Caption>You're holding on. Time keeps moving.</Caption>
+              <Caption>You&apos;re holding on.</Caption>
             )}
             {beat === "end" && (
               <Card title={choice === "sold" ? "The recovery happened without you." : "The market recovered."} wide>
@@ -403,9 +403,9 @@ export default function OrbGame() {
                 </div>
                 <div className="mb-3"><GrowthChart net={m.net} bench={m.bench} width={990} height={130} xLabels={["Day 0", "Day 48", "Day 96", "Day 144"]} /></div>
             <ul className="flex flex-col gap-2 text-[13.5px]" style={{ color: "#3a3a3c" }}>
-                  <li className="flex gap-2"><Dot c="#0a84ff" /><span>Where did the money go in the crash? <strong>Nowhere.</strong> A price is what a buyer would pay today, not money stored in a box.</span></li>
-                  <li className="flex gap-2"><Dot c="#bf5af2" /><span>One color falls hard when its industry stumbles. The rainbow orb barely flinches. That's why it's so hard to beat.</span></li>
-              <li className="flex gap-2"><Dot c="#30d158" /><span>And the money you spent on shares went to the investors who sold them to you. The companies got nothing. Prices are trades between people.</span></li>
+                  <li className="flex gap-2"><Dot c="#0a84ff" /><span>Where did the money go in the crash? <strong>Nowhere.</strong> A price is what a buyer would pay today.</span></li>
+                  <li className="flex gap-2"><Dot c="#bf5af2" /><span>One color falls hard when its industry stumbles, and the rainbow orb barely flinches.</span></li>
+              <li className="flex gap-2"><Dot c="#30d158" /><span>The money you spent on shares went to the investors who sold them to you. The companies got nothing.</span></li>
                 </ul>
                 <Actions>
                   <Btn onClick={() => { void shareOrbCard(tutorialCardOpts(), "my-orb.png", orbName || "My orb"); }}>Share your orb</Btn>
@@ -426,7 +426,7 @@ export default function OrbGame() {
             <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>Inside your orb</div>
             {holdings.length === 0 && (
               <div className="text-sm py-1" style={{ color: "#6e6e73" }}>
-                {beat === "end" ? "Empty. You sold everything." : "Nothing here yet. Clear glass."}
+                {beat === "end" ? "Empty. You sold everything." : "Nothing here yet."}
               </div>
             )}
             {holdings.map((h, hi) => {
@@ -466,7 +466,7 @@ export default function OrbGame() {
             })}
             {canTrade && (
               <div className="pt-2">
-                <div className="text-[11.5px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
+                <div className="text-[12px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
                 {ORB_ASSETS.filter((oa) => !holdings.some((h) => h.oa.id === oa.id)).map((oa) => {
                   const asset = ASSETS.find((a) => a.id === oa.id)!;
                   const open = tradeRow === `add-${oa.id}`;
@@ -506,7 +506,7 @@ export default function OrbGame() {
                 <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: RAINBOW_DOT }} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">The rainbow orb</div>
-                  <div className="text-[12px]" style={{ color: "#6e6e73" }}>a slice of everything, sealed</div>
+                  <div className="text-[12px]" style={{ color: "#6e6e73" }}>A slice of everything, sealed</div>
                 </div>
                 <div className="text-sm font-semibold tnum">{fmtMoney(m.benchmark)}</div>
               </div>

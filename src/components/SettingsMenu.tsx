@@ -49,7 +49,7 @@ export default function SettingsMenu({ settings, update }: {
             onToggle={() => update({ clippings: !settings.clippings })} />
           <ToggleRow label="Live ticker" on={settings.ticker}
             onToggle={() => update({ ticker: !settings.ticker })} />
-          <div className="mt-2 pt-2 text-[11px] border-t border-black/8" style={{ color: "#a1a1a6" }}>
+          <div className="mt-2 pt-2 text-[12px] border-t border-black/8" style={{ color: "#a1a1a6" }}>
             Saved on this computer, for every game.
           </div>
         </div>

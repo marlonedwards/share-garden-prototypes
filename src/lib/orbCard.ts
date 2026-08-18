@@ -1,6 +1,7 @@
 // Renders "This is your orb" as a downloadable 1080x1350 image.
 // Static re-render of the glass marble, no animation state needed.
 import { CompSlice, hexToRgba, mixHex } from "./orbModel";
+import { uiFont } from "./type";
 
 export interface OrbCardOpts {
   comp: CompSlice[];
@@ -27,7 +28,7 @@ export function renderOrbCard(canvas: HTMLCanvasElement, o: OrbCardOpts): void {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  const font = (px: number, weight = 600) => `${weight} ${px}px Inter, -apple-system, system-ui, sans-serif`;
+  const font = (px: number, weight = 600) => uiFont(px, weight);
 
   // headline
   ctx.fillStyle = "#1d1d1f";

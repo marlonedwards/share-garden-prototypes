@@ -132,7 +132,7 @@ type Screen = "menu" | "chapters" | "game";
 // why the card face no longer flashes a percentage of its own.
 function chipOf(blocks: number, count: number, move: number | null): StackChip {
   const note = move === null ? null : movePct(move);
-  if (blocks === 0) return { label: "held", note, tone: "flat" };
+  if (blocks === 0) return { label: "Held", note, tone: "flat" };
   if (blocks > 0) return { label: `+${count} ${blockWord(count)}`, note, tone: "gain" };
   return { label: `−${count} ${blockWord(count)}`, note, tone: "loss" };
 }
@@ -867,11 +867,11 @@ export default function Tally() {
       // different figures with no price having moved.
       const lines = [
         ...(st.stone
-          ? ["This card is worth nothing and it cannot be sold."]
+          ? ["This card is worth nothing."]
           : st.asset.id === SAVINGS_ID
             ? [holdingLine(st.asset, entry.card.shares, true), purchaseLine(st.asset, entry.card, ch.id)]
             : [purchaseLine(st.asset, entry.card, ch.id)]),
-        st.stone ? "Its price reached zero, and it stays on your table for the rest of the run." : moveLine(moves[st.asset.id] ?? null),
+        st.stone ? "Its price reached zero." : moveLine(moves[st.asset.id] ?? null),
         CARD_DEFINITION[st.stone ? "stone" : st.asset.suit],
       ];
       if (st.asset.reconstructed) lines.push("This price series is reconstructed from the dated record.");
@@ -883,7 +883,7 @@ export default function Tally() {
           sector: st.asset.sector,
           worthBlocks: entry.blocks,
           blockColor: st.asset.color,
-          priceLabel: st.stone ? "no price" : priceLine(st.asset, st.price, st.ratePerYear),
+          priceLabel: st.stone ? "No price" : priceLine(st.asset, st.price, st.ratePerYear),
           stone: st.stone,
           dotted: st.asset.reconstructed || st.illustrative,
         },
@@ -961,11 +961,11 @@ export default function Tally() {
         flex: "none",
       }}
     >
-      <span style={{ fontSize: fz(11.5), fontWeight: 650, color: SUB }}>{label}</span>
+      <span style={{ fontSize: fz(12), fontWeight: 600, color: SUB }}>{label}</span>
       <span
         style={{
           fontSize: fz(13.5),
-          fontWeight: 780,
+          fontWeight: 700,
           color: gold ? GOLD : INK,
           fontVariantNumeric: "tabular-nums",
           letterSpacing: "-0.01em",
@@ -1067,7 +1067,7 @@ export default function Tally() {
                 data-strip-menu="1"
                 className={btn("ghost")}
                 onClick={() => { setBoxOpen(false); setScreen("menu"); }}
-                style={{ ...stripButton, fontWeight: 750 }}
+                style={{ ...stripButton, fontWeight: 700 }}
               >
                 Menu
               </button>
@@ -1163,7 +1163,7 @@ export default function Tally() {
                     <b
                       style={{
                         color: INK,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         fontSize: fz(14),
                         letterSpacing: "-0.015em",
                         whiteSpace: "nowrap",
@@ -1172,11 +1172,13 @@ export default function Tally() {
                         paddingRight: px(3),
                       }}
                     >
-                      Chapter {rail.chapterId} &middot; {rail.chapterName}
+                      Chapter {rail.chapterId}, {rail.chapterName}
                     </b>
-                    <StatChip label="turn" value={`${rail.turn} of ${rail.turns}`} />
-                    <StatChip label="target" value={`$${rail.target.toLocaleString("en-US")}`} gold />
-                    <StatChip label="block" value={`$${rail.denom.toLocaleString("en-US")}`} />
+                    {/* The target is not here. The wall's own gold panel a few
+                        pixels below states it in full, and the same figure
+                        twice on one screen is one figure too many. */}
+                    <StatChip label="Turn" value={`${rail.turn} of ${rail.turns}`} />
+                    <StatChip label="One block" value={`$${rail.denom.toLocaleString("en-US")}`} />
                   </div>
                   {/* the read line owns its whole row; a line the player has to
                       finish through an ellipsis is a line that was never read */}
@@ -1184,7 +1186,7 @@ export default function Tally() {
                     data-read-line="1"
                     style={{
                       fontSize: fz(15),
-                      fontWeight: 650,
+                      fontWeight: 600,
                       color: INK,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
@@ -1192,7 +1194,7 @@ export default function Tally() {
                     }}
                     title={readLine}
                   >
-                    {readLine || "The wall is the record of what your money is worth."}
+                    {readLine || "The wall is what your money is worth."}
                   </div>
                 </header>
 
@@ -1258,7 +1260,7 @@ export default function Tally() {
                         textAlign: "center",
                       }}
                     >
-                      You own no cards yet, and every block you have is still your own money.
+                      You own no cards yet.
                     </span>
                   )}
                   {stacks.map((st) => {
@@ -1275,7 +1277,7 @@ export default function Tally() {
                         sector={st.asset.sector}
                         worthBlocks={front.blocks}
                         blockColor={st.asset.color}
-                        priceLabel={st.stone ? "no price" : priceLine(st.asset, st.price, st.ratePerYear)}
+                        priceLabel={st.stone ? "No price" : priceLine(st.asset, st.price, st.ratePerYear)}
                         stone={st.stone}
                         dotted={st.asset.reconstructed || st.illustrative}
                         width={stackW}
@@ -1322,11 +1324,15 @@ export default function Tally() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    <span style={{ fontSize: fz(11.5), fontWeight: 650, color: SUB, flex: "none" }}>Your money</span>
+                    {/* the natural board has no room for the label and the
+                        figure both, and the figure is the fact */}
+                    {!tiny && (
+                      <span style={{ fontSize: fz(12), fontWeight: 600, color: SUB, flex: "none" }}>Your money</span>
+                    )}
                     <span
                       style={{
                         fontSize: fz(16),
-                        fontWeight: 800,
+                        fontWeight: 700,
                         letterSpacing: "-0.02em",
                         fontVariantNumeric: "tabular-nums",
                         flex: "none",
@@ -1366,7 +1372,7 @@ export default function Tally() {
                           animation: reduced ? undefined : "tally-payday-in 320ms cubic-bezier(.2,.8,.3,1) both",
                         }}
                       >
-                        Savings paid {payMoney(run.interest)}.
+                        {tiny ? `+${payMoney(run.interest)}` : `Savings paid ${payMoney(run.interest)}.`}
                       </span>
                     )}
                   </div>
@@ -1382,7 +1388,7 @@ export default function Tally() {
                     onClick={() => openShop(run, true)}
                     style={{ ...btnSize(ui, "md"), ...footKey }}
                   >
-                    Shop &middot; {rows.length} {rows.length === 1 ? "card" : "cards"}
+                    {tiny ? "Shop" : `Shop \u00b7 ${rows.length} ${rows.length === 1 ? "card" : "cards"}`}
                   </button>
                   <button
                     type="button"

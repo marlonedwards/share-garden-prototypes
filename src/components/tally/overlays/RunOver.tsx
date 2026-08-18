@@ -16,9 +16,8 @@
 import { Forensics } from "../../../lib/tally/run";
 import { assetOf } from "../../../lib/tally/chapters";
 import { BlockRow } from "../Blocks";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -58,16 +57,12 @@ export default function RunOverOverlay({ report, won, onNewRun }: RunOverOverlay
   return (
     <div style={shell}>
       <div style={panel}>
-        <div style={eyebrow}>
-          Chapter {report.chapterId} &middot; target {money(report.target)}
-        </div>
-
         {won ? (
           <>
             <div style={heading}>{report.chapterName} is cleared.</div>
             <div style={scoreLine}>
-              You reached the end of the ladder, and you finished at{" "}
-              <b style={num}>{money(report.finishedAt)}</b>.
+              You finished chapter {report.chapterId} at <b style={num}>{money(report.finishedAt)}</b> against a
+              target of <b style={{ ...num, color: GOLD }}>{money(report.target)}</b>.
             </div>
           </>
         ) : (
@@ -75,7 +70,10 @@ export default function RunOverOverlay({ report, won, onNewRun }: RunOverOverlay
             <div style={heading}>
               You finished at <span style={num}>{money(report.finishedAt)}</span>.
             </div>
-            <div style={scoreLine}>The run ends here, and here is what the wall says happened.</div>
+            <div style={scoreLine}>
+              Chapter {report.chapterId} asked for <b style={{ ...num, color: GOLD }}>{money(report.target)}</b>.
+            </div>
+            <div style={scoreLine}>The run ends here.</div>
           </>
         )}
 
@@ -134,19 +132,18 @@ export default function RunOverOverlay({ report, won, onNewRun }: RunOverOverlay
         <div style={rule} />
 
         <div style={keptRow}>
-          <span style={keptLabel}>Kept</span>
           <span style={keptText}>
             {report.keptInstruments.length > 0
-              ? listNames(report.keptInstruments.map((k) => k.name))
-              : "no cards this time"}
+              ? `You kept ${listNames(report.keptInstruments.map((k) => k.name))}.`
+              : "You kept no cards this time."}
           </span>
-          <span style={keptText}>{plural(report.badges.length, "badge", "badges")}</span>
+          <span style={keptText}>{plural(report.badges.length, "badge", "badges")}.</span>
           <span style={keptText}>{unlockedLine}</span>
         </div>
 
         <div style={buttonRow}>
           <button type="button" className={btn("primary")} onClick={() => onNewRun(deepest)} style={primary}>
-            New run &middot; start at chapter {deepest}
+            Start a new run at chapter {deepest}
           </button>
         </div>
 
@@ -188,16 +185,9 @@ const panel: React.CSSProperties = {
   textAlign: "left",
 };
 
-const eyebrow: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 700,
-  color: GOLD,
-  fontVariantNumeric: "tabular-nums",
-};
-
 const heading: React.CSSProperties = {
   fontSize: 18,
-  fontWeight: 750,
+  fontWeight: 700,
   letterSpacing: "-0.02em",
   marginTop: 2,
 };
@@ -211,7 +201,7 @@ const scoreLine: React.CSSProperties = {
 const num: React.CSSProperties = {
   fontVariantNumeric: "tabular-nums",
   color: INK,
-  fontWeight: 750,
+  fontWeight: 700,
 };
 
 const rule: React.CSSProperties = {
@@ -230,7 +220,7 @@ const grid: React.CSSProperties = {
 
 const mark: React.CSSProperties = {
   color: SUB,
-  fontWeight: 650,
+  fontWeight: 600,
   fontSize: 13,
   fontVariantNumeric: "tabular-nums",
   whiteSpace: "nowrap",
@@ -292,7 +282,7 @@ const secondaryRow: React.CSSProperties = {
 };
 
 const secondary: React.CSSProperties = {
-  fontSize: 11.5,
+  fontSize: 12,
   fontVariantNumeric: "tabular-nums",
   padding: "5px 10px",
   borderRadius: 9,

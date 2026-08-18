@@ -19,10 +19,10 @@ import { ScenarioConfig, mom } from "./types";
 export const gfc: ScenarioConfig = {
   id: "gfc",
   lesson: "Lesson 4",
-  title: "The 2008 Crash",
-  headerSub: "the crash and the recovery, 2007 to 2015",
-  cardLine: "Real market prices run from the 2007 top through the crash and the recovery to 2015, and the one bank that dies along the way is reconstructed from the dated record. The names are made up; the companies were not.",
-  learn: "This era shows what a real panic feels like, and who the recovery belongs to.",
+  title: "The 2008 crash",
+  headerSub: "The crash and the recovery, 2007 to 2015",
+  cardLine: "Real market prices run from the 2007 top through the crash and the recovery to 2015.",
+  learn: "What a real panic feels like.",
   dots: ["#30d158", "#bf5af2", "#a2845e", "#ffd60a", "#0a84ff", "#ff9f0a"],
   time: "about 7 minutes",
   dataset: eraGfc as HistoryDataset,
@@ -215,7 +215,7 @@ export const gfc: ScenarioConfig = {
   bullets: [
     { c: "#bf5af2", text: "The Insurance Giant and Mega Bank lost about nine dollars of every ten and never came back. Even giants can be fragile." },
     { c: "#30d158", text: "The rainbow orb took the exact same crash, then made new highs. Spreading out is what saved it." },
-    { c: "#ff9f0a", text: "Panic prices turned out to be the deals of the decade. Nobody rang a bell. The rainbow orb caught them automatically." },
+    { c: "#ff9f0a", text: "Panic prices turned out to be the deals of the decade. The rainbow orb caught them automatically." },
   ],
   cardSubline: "This run lived the 2008 crash, 2007 to 2015, on real prices.",
   // CEE Investing 8-4 (risks of owning single stocks), 8-5a (diversification
@@ -224,7 +224,7 @@ export const gfc: ScenarioConfig = {
   // timeline honestly includes the ending
   briefing: {
     title: "The world of January 2007",
-    deck: "This page holds two minutes of real history. Nothing here is required reading, and the dated timeline near the end tells you how the era turns out.",
+    deck: "This page holds two minutes of real history. The dated timeline near the end tells you how the era turns out.",
     readTime: "about 2 minutes",
     sections: [
       {
@@ -256,7 +256,7 @@ export const gfc: ScenarioConfig = {
         lead: "A fair replay of history includes the companies that died, not just the ones that survived.",
         body: [
           "Eight of the nine names on your menu carry real market prices, month by month from January 2007 to December 2015. The Old Bank was a real company too, but its shares stopped trading when it collapsed in September 2008, so its series is reconstructed from the dated record of its fall. It does not survive this era.",
-          "You will live through a panic that cut the market by more than half, a bottom that felt like the end of the world, and a recovery that quietly repaid everyone who stayed. At five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way: it holds the real S&P 500, an index that bundles five hundred large American companies into one purchase, and it never trades once.",
+          "You will live through a panic that cut the market by more than half, a bottom that felt like the end of the world, and a recovery that quietly repaid everyone who stayed. At five crossroads the tape will pause and ask what you would have done. The rainbow orb rides beside you the whole way. It holds the real S&P 500, an index that bundles five hundred large American companies into one purchase, and it never trades once.",
         ],
       },
     ],

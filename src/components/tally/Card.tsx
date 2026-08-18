@@ -26,8 +26,8 @@ import {
   Suit, Sector, RING_COLOR, BASKET_RING_GRADIENT, SECTOR_COLOR, SECTOR_LABEL,
 } from "../../lib/tally/deck";
 import { Block, STONE_GREY } from "./Blocks";
+import { SANS } from "./ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 
@@ -136,6 +136,10 @@ export default function CardFace(p: CardFaceProps) {
   const h = p.height ?? CARD_H;
   const basket = p.suit === "basket" && !p.stone;
   const blockSize = w >= 84 ? 10 : 8.5;
+  // A card drawn short holds the same four things, so it holds them tighter
+  // rather than dropping one off its bottom edge. Nothing shrinks below the
+  // twelve pixel floor; the padding and the gaps give the room instead.
+  const short = h < 84;
   ensureCardAnims();
 
   const ring: React.CSSProperties = basket
@@ -152,8 +156,8 @@ export default function CardFace(p: CardFaceProps) {
   // set at the largest size that fits the card it is on, so "pays 12% a year"
   // and "$113.66" both sit inside the same padding.
   const priceSize = Math.max(
-    9.5,
-    Math.min(13.5, (w - 16) / Math.max(1, p.priceLabel.length * 0.54)),
+    12,
+    Math.min(short ? 12.5 : 13.5, (w - 16) / Math.max(1, p.priceLabel.length * 0.54)),
   );
 
   const blocks: JSX.Element[] = [];
@@ -178,7 +182,7 @@ export default function CardFace(p: CardFaceProps) {
         border: "1px solid rgba(0,0,0,0.10)",
         boxShadow: "0 1px 2px rgba(20,25,40,0.06)",
         position: "relative",
-        padding: "7px 8px",
+        padding: short ? "4px 8px" : "7px 8px",
         display: "flex",
         flexDirection: "column",
         flex: "none",
@@ -225,8 +229,8 @@ export default function CardFace(p: CardFaceProps) {
             top: -6,
             right: 6,
             zIndex: 4,
-            fontSize: 10,
-            fontWeight: 750,
+            fontSize: 12,
+            fontWeight: 700,
             color: "#fff",
             background: "#0071E3",
             borderRadius: 5,
@@ -252,11 +256,11 @@ export default function CardFace(p: CardFaceProps) {
         <span
           data-card-name="1"
           style={{
-            fontSize: w >= 88 ? 12 : 10.5,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: "-0.01em",
             lineHeight: 1.16,
-            minHeight: w >= 88 ? 28 : 25,
+            minHeight: short ? 14 : 28,
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -277,7 +281,7 @@ export default function CardFace(p: CardFaceProps) {
           display: "flex",
           gap: 2,
           flexWrap: "wrap",
-          margin: "3px 0 auto",
+          margin: short ? "2px 0 auto" : "3px 0 auto",
           maxWidth: w - 20,
         }}
       >
@@ -289,7 +293,8 @@ export default function CardFace(p: CardFaceProps) {
           position: "relative",
           zIndex: 2,
           fontSize: priceSize,
-          fontWeight: 750,
+          fontWeight: 700,
+          lineHeight: 1.15,
           fontVariantNumeric: "tabular-nums",
           letterSpacing: "-0.02em",
           whiteSpace: "nowrap",
@@ -488,7 +493,7 @@ export function CardStack(p: StackProps) {
             <span
               style={{
                 fontSize: 16,
-                fontWeight: 800,
+                fontWeight: 700,
                 letterSpacing: "-0.02em",
                 lineHeight: p.chip.note ? "17px" : `${CHIP_H - 4}px`,
               }}
@@ -496,7 +501,7 @@ export function CardStack(p: StackProps) {
               {p.chip.label}
             </span>
             {p.chip.note && (
-              <span style={{ fontSize: 10.5, fontWeight: 700, lineHeight: "11px", opacity: 0.82 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, lineHeight: "13px", opacity: 0.82 }}>
                 {p.chip.note}
               </span>
             )}
@@ -587,7 +592,7 @@ export function CardStack(p: StackProps) {
           bottom: 0,
           width: w + 16,
           textAlign: "center",
-          fontSize: 11.5,
+          fontSize: 12,
           fontWeight: 700,
           letterSpacing: "-0.01em",
           color: SUB,
@@ -731,7 +736,7 @@ export function CardFlip({ face, lines, maxW, maxH, onClose }: CardBackProps) {
               overflow: "hidden",
             }}
           >
-            <div style={{ fontSize: 17 * type, fontWeight: 750, letterSpacing: "-0.015em", color: INK }}>{face.name}</div>
+            <div style={{ fontSize: 17 * type, fontWeight: 700, letterSpacing: "-0.015em", color: INK }}>{face.name}</div>
             {lines.map((line, i) => (
               <p
                 key={i}
@@ -746,7 +751,7 @@ export function CardFlip({ face, lines, maxW, maxH, onClose }: CardBackProps) {
                 {line}
               </p>
             ))}
-            <div style={{ marginTop: "auto", fontSize: 13 * type, fontWeight: 650, color: SUB }}>Tap to turn it back.</div>
+            <div style={{ marginTop: "auto", fontSize: 13 * type, fontWeight: 600, color: SUB }}>Tap to turn it back.</div>
           </div>
         </div>
       </div>

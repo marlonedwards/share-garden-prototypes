@@ -29,11 +29,11 @@ function InterestStage({ onComplete }: StageProps) {
     <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5 max-w-lg">
       <div className="grid grid-cols-2 gap-3 text-center">
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>The savings account</div>
+          <div className="text-[12px]" style={{ color: SUB }}>The savings account</div>
           <div className="text-[22px] font-semibold tnum">{collected ? "$104.00" : "$100.00"}</div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>The jar next door</div>
+          <div className="text-[12px]" style={{ color: SUB }}>The jar next door</div>
           <div className="text-[22px] font-semibold tnum" style={{ color: SUB }}>$100.00</div>
         </div>
       </div>
@@ -101,13 +101,13 @@ function CurveStage({ onComplete }: StageProps) {
       </svg>
       <div className="mt-1 grid grid-cols-2 gap-3 text-center">
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>Straight line: simple interest</div>
+          <div className="text-[12px]" style={{ color: SUB }}>Straight line: simple interest</div>
           <div className="text-[20px] font-semibold tnum" style={{ color: SUB }}>
             ${simpleAt(year).toFixed(0)}
           </div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>Bending curve: compound interest</div>
+          <div className="text-[12px]" style={{ color: SUB }}>Bending curve: compound interest</div>
           <div className="text-[20px] font-semibold tnum" style={{ color: ACCENT }}>
             ${compoundAt(year).toFixed(0)}
           </div>
@@ -146,7 +146,7 @@ function StretchStage({ onComplete }: StageProps) {
               borderColor: revealed[i] ? "rgba(0,113,227,0.35)" : "rgba(0,0,0,0.1)",
               cursor: revealed[i] ? "default" : "pointer",
             }}>
-            <div className="text-[11px] tnum" style={{ color: SUB }}>{s.label}</div>
+            <div className="text-[12px] tnum" style={{ color: SUB }}>{s.label}</div>
             {revealed[i] ? (
               <div className="text-[20px] font-semibold tnum pop-in" style={{ color: ACCENT }}>
                 +${s.earned}
@@ -160,7 +160,7 @@ function StretchStage({ onComplete }: StageProps) {
       <p className="text-[12.5px] mt-3" style={{ color: SUB }}>
         {revealed.every(Boolean)
           ? "The account, its 4% rate, and Maya's deposit never changed, yet each stretch out-earned the one before it."
-          : "Tap each stretch to see what it earned. Reveal all three to move on."}
+          : "Reveal all three stretches to see what each one earned."}
       </p>
     </div>
   );
@@ -197,13 +197,13 @@ function KeepUpStage({ onComplete }: StageProps) {
         className="w-full mt-2" aria-label="Years of rising prices" />
       <div className="mt-3 grid grid-cols-2 gap-3 text-center">
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>What the jar still buys</div>
+          <div className="text-[12px]" style={{ color: SUB }}>What the jar still buys</div>
           <div className="text-[20px] font-semibold tnum" style={{ color: year > 0 ? "#d70015" : undefined }}>
             ${jarPowerAt(year).toFixed(0)}
           </div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>What the account still buys</div>
+          <div className="text-[12px]" style={{ color: SUB }}>What the account still buys</div>
           <div className="text-[20px] font-semibold tnum" style={{ color: ACCENT }}>
             ${acctPowerAt(year).toFixed(0)}
           </div>
@@ -252,7 +252,7 @@ function EmergencyStage({ onComplete }: StageProps) {
         {shown ? (
           <p key={shown} className="text-[13px] pop-in" style={{ color: "#3a3a3c" }}>{HOMES[shown][1]}</p>
         ) : (
-          <p className="text-[13px]" style={{ color: SUB }}>Tap a home to try it. Try all three to move on.</p>
+          <p className="text-[13px]" style={{ color: SUB }}>Try all three homes.</p>
         )}
       </div>
     </div>
@@ -270,7 +270,7 @@ const savings: LessonConfig = {
       eyebrow: "Basics 2 · Savings",
       definition: "Interest is money the bank pays you for letting it hold your cash.",
       story:
-        "Maya moves her jar money into a savings account that pays 4% a year. The bank is not being generous: it lends her money out and hands her a slice of what the lending earns. Collect her first year of interest below.",
+        "Maya moves her jar money into a savings account that pays 4% a year. The bank is not being generous. It lends her money out and hands her a slice of what the lending earns. Collect her first year of interest below.",
       stage: InterestStage,
       gated: true,
     },
@@ -286,7 +286,7 @@ const savings: LessonConfig = {
       eyebrow: "Basics 2 · Savings",
       definition: "Compound growth speeds up over time, so the last years of waiting pay the most.",
       story:
-        "Jordan expects each stretch of waiting to pay the same. Maya opens the books: the untouched account earned more in every stretch than the one before. Reveal what each ten years of waiting paid her.",
+        "Jordan expects each stretch of waiting to pay the same. Maya opens the books, and the untouched account earned more in every stretch than the one before. Reveal what each ten years of waiting paid her.",
       stage: StretchStage,
       gated: true,
     },
@@ -294,7 +294,7 @@ const savings: LessonConfig = {
       eyebrow: "Basics 2 · Savings",
       definition: "Interest gives saved money a way to keep up when prices rise.",
       story:
-        "Remember the jar: its number never moved while sneaker prices crept up. Maya's account earns while prices climb, so its buying power can hold its ground here. In some years banks pay less than prices rise, and then even saved money buys a little less. Drag the years and compare what each hundred still buys.",
+        "Remember the jar, whose number never moved while sneaker prices crept up. Maya's account earns while prices climb, so its buying power can hold its ground here. In some years banks pay less than prices rise, and then even saved money buys a little less. Drag the years and compare what each hundred still buys.",
       stage: KeepUpStage,
       gated: true,
     },

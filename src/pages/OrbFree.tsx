@@ -140,13 +140,13 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
       <header className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 sm:px-10 py-2 min-h-16">
         <Link to="/orb" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          scenarios
+          Scenarios
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <div className="flex items-baseline gap-3">
           <span className="text-lg font-semibold tracking-tight">Freeplay</span>
           <span className="text-[13px] hidden sm:inline" style={{ color: "#6e6e73" }}>
-            {era ? `${era.headerSub}, with no script` : "this is a toy market, with no script"}
+            {era ? `${era.headerSub}, with no script` : "A toy market, with no script"}
           </span>
         </div>
         <div className="flex items-center rounded-full bg-white border border-black/10 overflow-hidden shadow-sm">
@@ -192,7 +192,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
             <FluidCycler fluid={fluid} setFluid={setFluid} />
             {era && (
               <button onClick={() => setRealNames(!realNames)}
-                className="absolute right-4 top-14 text-[11.5px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
+                className="absolute right-4 top-14 text-[12px] font-medium px-3 py-1 rounded-full bg-white border border-black/10 shadow-sm hover:bg-black/5 transition"
                 style={{ color: realNames ? "#0071e3" : "#6e6e73" }}>
                 {realNames ? "Real names: on" : "Real names"}
               </button>
@@ -254,7 +254,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
           <div className="rounded-2xl bg-white border border-black/8 shadow-sm p-5">
             <div className="text-[13px] font-semibold mb-3" style={{ color: "#6e6e73" }}>Inside your orb</div>
             {holdings.length === 0 && (
-              <div className="text-sm py-1" style={{ color: "#6e6e73" }}>Nothing here yet. Clear glass.</div>
+              <div className="text-sm py-1" style={{ color: "#6e6e73" }}>Nothing here yet.</div>
             )}
             {holdings.map((h, hi) => {
               const pct = pcts[hi] ?? 0;
@@ -291,7 +291,7 @@ function FreeSim({ mode, setMode }: { mode: FreeMode; setMode: (m: FreeMode) => 
               );
             })}
             <div className="pt-2">
-              <div className="text-[11.5px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
+              <div className="text-[12px] font-medium mb-1" style={{ color: "#6e6e73" }}>Add a color</div>
               {cast.filter((c) => !holdings.some((h) => h.c.id === c.id)).map((c) => {
                 const open = tradeRow === `add-${c.id}`;
                 const dead = m.prices[c.id] <= 0;

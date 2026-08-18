@@ -51,7 +51,7 @@ function FlipStage({ onComplete }: StageProps) {
         {shown ? (
           <p key={shown} className="text-[13px] pop-in" style={{ color: "#3a3a3c" }}>{UNDERNEATH[shown]}</p>
         ) : (
-          <p className="text-[13px]" style={{ color: SUB }}>Tap one to see what sits underneath it. Open both to move on.</p>
+          <p className="text-[13px]" style={{ color: SUB }}>Open both cards to see what sits underneath.</p>
         )}
       </div>
     </div>
@@ -105,13 +105,13 @@ function SwingStage({ onComplete }: StageProps) {
       </svg>
       <div className="mt-1 grid grid-cols-2 gap-3 text-center">
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>The coin's move this month</div>
+          <div className="text-[12px]" style={{ color: SUB }}>The coin's move this month</div>
           <div className="text-[20px] font-semibold tnum" style={{ color: ACCENT }}>
             {fmtMove(moveAt(COIN_PATH, month))}
           </div>
         </div>
         <div>
-          <div className="text-[11px]" style={{ color: SUB }}>The fund's move this month</div>
+          <div className="text-[12px]" style={{ color: SUB }}>The fund's move this month</div>
           <div className="text-[20px] font-semibold tnum" style={{ color: SUB }}>
             {fmtMove(moveAt(FUND_PATH, month))}
           </div>
@@ -217,14 +217,14 @@ function PonziStage({ onComplete }: StageProps) {
         <div key={month} className="pop-in">
           <div className="mt-2.5 grid grid-cols-2 gap-3 text-center">
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>New money in</div>
+              <div className="text-[12px]" style={{ color: SUB }}>New money in</div>
               <div className="text-[20px] font-semibold tnum"
                 style={{ color: row.inflow === 0 ? "#d70015" : "#1d1d1f" }}>
                 {fmtWhole(row.inflow)}
               </div>
             </div>
             <div>
-              <div className="text-[11px]" style={{ color: SUB }}>Payouts owed</div>
+              <div className="text-[12px]" style={{ color: SUB }}>Payouts owed</div>
               <div className="text-[20px] font-semibold tnum">{fmtWhole(row.owed)}</div>
             </div>
           </div>
@@ -295,7 +295,7 @@ function FlagStage({ onComplete }: StageProps) {
         {shown ? (
           <p key={shown} className="text-[13px] pop-in" style={{ color: "#3a3a3c" }}>{PITCHES[shown][1]}</p>
         ) : (
-          <p className="text-[13px]" style={{ color: SUB }}>Tap a pitch to hold it against the flag. Check all three to move on.</p>
+          <p className="text-[13px]" style={{ color: SUB }}>Hold all three pitches against the flag.</p>
         )}
       </div>
     </div>

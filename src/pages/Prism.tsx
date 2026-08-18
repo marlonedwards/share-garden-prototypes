@@ -127,55 +127,51 @@ export default function Prism() {
   }, []);
 
   return (
-    <Shell title="Prism" tag="the market as geometry" accent="#9b8cff"
+    <Shell title="Prism" accent="#9b8cff"
       blurb="The same market, built from pure shapes."
       aside={
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-          <div className="text-[11px] tracking-[0.03em] font-medium text-white/40 mb-3">What it is</div>
-          <p className="text-sm text-white/65 leading-relaxed mb-4">The whole market rebuilt as a field of geometric towers. Each hexagon is a company, its height is its market cap, its glow is its performance. Sectors cluster into neighborhoods, so a shock lights up a whole district.</p>
+          <p className="text-sm text-white/65 leading-relaxed mb-4">Every hexagon is a company, and sectors cluster into neighborhoods.</p>
           <MapRow left="Tower height" right="market cap" color="#9b8cff" />
           <MapRow left="Glow color" right="performance" color="#5fe39a" />
           <MapRow left="A district reddens" right="a sector shock" color="#ff8a94" />
           <MapRow left="A tower lifts" right="you own it" color="#ffffff" />
-          <p className="mt-4 text-xs text-white/40 leading-relaxed">Tap a tower to buy or sell. Same engine as the map, a different way to feel size and momentum.</p>
+          <p className="mt-4 text-[13px] text-white/45 leading-relaxed">Tap a tower to buy or sell.</p>
         </div>
       }>
       <div className="device device-landscape flex flex-col" style={{ background: "radial-gradient(120% 90% at 50% 20%, #131a2e, #05070d 80%)" }}>
         <div className="h-11 flex items-center gap-3 px-4 flex-shrink-0 border-b border-white/6">
-          <div>
-            <div className="text-[10px] text-white/40 leading-none">Portfolio</div>
-            <div className="text-[16px] font-semibold text-white tnum leading-tight">{fmtMoney(nw)}</div>
-          </div>
-          <span className="px-1.5 py-0.5 rounded text-[11px] font-medium tnum" style={{ background: pnl >= 0 ? "#9b8cff22" : "#ff5d6c22", color: pnl >= 0 ? "#b9aeff" : "#ff8a94" }}>{fmtPct(pnl)}</span>
-          <span className="text-[11px] text-white/40 tnum">vs index {fmtPct(pnl - benchPnl)}</span>
+          <div className="text-[16px] font-bold text-white tnum leading-tight">{fmtMoney(nw)}</div>
+          <span className="px-1.5 py-0.5 rounded text-[12px] font-medium tnum" style={{ background: pnl >= 0 ? "#9b8cff22" : "#ff5d6c22", color: pnl >= 0 ? "#b9aeff" : "#ff8a94" }}>{fmtPct(pnl)}</span>
+          <span className="text-[12px] text-white/45 tnum">{fmtPct(pnl - benchPnl)} against the index</span>
           <div className="ml-auto"><TimeControls speed={speed} setSpeed={setSpeed} step={m.step} accent="#9b8cff" compact /></div>
         </div>
 
         <div ref={mountRef} className="relative flex-1 min-h-0">
           {ev && (
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] pop-in shadow-lg" style={{ background: "rgba(8,10,18,0.9)", border: "1px solid #ff5d6c44" }}>
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] pop-in shadow-lg" style={{ background: "rgba(8,10,18,0.9)", border: "1px solid #ff5d6c44" }}>
               <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: "#ff5d6c" }} />
               <span className="font-semibold text-white/90">{ev.label}</span>
               <span className="text-white/55 truncate max-w-[380px]">{ev.blurb}</span>
             </div>
           )}
-          <div className="absolute bottom-1.5 left-0 right-0 text-center text-[10px] text-white/30">tap a tower to trade</div>
+          <div className="absolute bottom-1.5 left-0 right-0 text-center text-[12px] text-white/40">Tap a tower to trade.</div>
         </div>
 
-        <div className="h-8 flex items-center gap-3 px-4 flex-shrink-0 border-t border-white/6 text-[10px] text-white/40">
-          <span>taller = bigger company</span>
-          <span className="text-[#8be0a8]">bright = winning</span>
-          <span className="text-[#ff8a94]">red = falling</span>
-          <span className="ml-auto tnum">cash {fmtMoney(m.cash)}</span>
+        <div className="h-9 flex items-center gap-4 px-4 flex-shrink-0 border-t border-white/6 text-[12px] text-white/45">
+          <span>A taller tower is a bigger company.</span>
+          <span className="text-[#8be0a8]">Bright is winning.</span>
+          <span className="text-[#ff8a94]">Red is falling.</span>
+          <span className="ml-auto tnum">{fmtMoney(m.cash)} in cash</span>
         </div>
 
         {sel && <TradePop a={sel} m={m} act={act} onClose={() => setSel(null)} accent="#9b8cff" />}
         {done && (
           <div className="absolute inset-0 z-40 bg-black/70 backdrop-blur-sm grid place-items-center p-6" onClick={reset}>
             <div className="text-center pop-in">
-              <div className="text-white/50 text-sm">Season complete</div>
-              <div className="text-4xl font-semibold text-white tnum my-2">{fmtMoney(nw)}</div>
-              <div className="tnum mb-1" style={{ color: pnl >= benchPnl ? "#b9aeff" : "#ff8a94" }}>you {fmtPct(pnl)} / index {fmtPct(benchPnl)}</div>
+              <div className="text-white/55 text-sm">The season is over.</div>
+              <div className="text-4xl font-bold text-white tnum my-2">{fmtMoney(nw)}</div>
+              <div className="tnum mb-1 text-[13px]" style={{ color: pnl >= benchPnl ? "#b9aeff" : "#ff8a94" }}>You {fmtPct(pnl)}, the index {fmtPct(benchPnl)}</div>
               <button className="mt-5 px-5 py-2 rounded-full text-sm font-semibold text-black" style={{ background: "#9b8cff" }}>Run again</button>
             </div>
           </div>

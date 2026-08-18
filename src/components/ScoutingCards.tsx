@@ -110,23 +110,23 @@ export default function ScoutingCards({ assets, startPrices, name, onAllFlipped,
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 flex-shrink-0">
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 self-center" style={{ background: a.color }} />
         <span className="text-[14px] font-semibold tracking-tight">{name(a)}</span>
-        <span className="ml-auto text-[11.5px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · {listsAt[a.id] ? `still private · lists ${listsAt[a.id]}` : `starts at ${fmtMoney(startPrices[a.id] ?? 0)}`}</span>
+        <span className="ml-auto text-[12px] tnum" style={{ color: "#6e6e73" }}>{foundedLabel} {a.founded} · {listsAt[a.id] ? `still private · lists ${listsAt[a.id]}` : `starts at ${fmtMoney(startPrices[a.id] ?? 0)}`}</span>
       </div>
       <div className="flex-1 min-h-0 flex flex-col gap-1.5 pr-1">
         <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.history}</p>
         <div>
-          <div className="text-[11px] font-semibold" style={{ color: "#248a3d" }}>Believers say</div>
+          <div className="text-[12px] font-semibold" style={{ color: "#248a3d" }}>Believers say</div>
           <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.believers}</p>
         </div>
         <div>
-          <div className="text-[11px] font-semibold" style={{ color: "#d70015" }}>Doubters say</div>
+          <div className="text-[12px] font-semibold" style={{ color: "#d70015" }}>Doubters say</div>
           <p className="text-[12.5px] leading-snug" style={{ color: "#3a3a3c" }}>{a.doubters}</p>
         </div>
         {a.reconstructedNote && (
-          <p className="text-[11px] leading-snug" style={{ color: "#6e6e73" }}>{a.reconstructedNote}</p>
+          <p className="text-[12px] leading-snug" style={{ color: "#6e6e73" }}>{a.reconstructedNote}</p>
         )}
       </div>
-      <div className="flex-shrink-0 text-[11.5px] font-medium" style={{ color: "#0071e3" }}>
+      <div className="flex-shrink-0 text-[12px] font-medium" style={{ color: "#0071e3" }}>
         {allFlipped ? "The deck is done." : "Tap for the next card"}
       </div>
     </>

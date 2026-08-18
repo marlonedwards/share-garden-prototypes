@@ -33,10 +33,10 @@ import type { Clipping } from "../lib/headlines";
 export const inflation: ScenarioConfig = {
   id: "inflation",
   lesson: "Lesson 7",
-  title: "The Inflation Years",
-  headerSub: "the inflation years, 2021 to 2024",
-  cardLine: "Real market prices run from January 2021 through the sharpest inflation in forty years, the year stocks and bonds fell together, and the recovery after it. The names are made up; the companies and the fund were not.",
-  learn: "This era shows what rising prices do to cash, and why even the safest lending has a price that can fall.",
+  title: "The inflation years",
+  headerSub: "The sharpest inflation in forty years, 2021 to 2024",
+  cardLine: "Real market prices run from January 2021 through the sharpest inflation in forty years.",
+  learn: "What rising prices do to cash.",
   dots: ["#0a84ff", "#64d2ff", "#8e8e93", "#30d158", "#5e5ce6"],
   time: "about 5 minutes",
   dataset: eraInflation as HistoryDataset,
@@ -189,7 +189,7 @@ export const inflation: ScenarioConfig = {
       eyebrow: "Recoveries",
       definition: "A new record high is a normal event in a long-lived market, not a ceiling.",
       context: [
-        "This month the index finally closed above the record it set in January 2022. Inflation has cooled to about 3 percent, but cooling means prices rise more slowly, not that they fall: the grocery bill that jumped in 2022 is still high, and it is staying there.",
+        "This month the index finally closed above the record it set in January 2022. Inflation has cooled to about 3 percent, but cooling means prices rise more slowly, not that they fall. The grocery bill that jumped in 2022 is still high, and it is staying there.",
         "The recovery arrived while plenty of money was still hiding. Savers who fled to cash in 2022 dodged part of the fall, then watched the climb happen without them while their cash quietly gave up about a tenth of its buying power. Looking back at this era, there was never a month when getting back in felt comfortable.",
       ],
       options: [{ label: "Sell and lock in the recovery", act: true }, { label: "Stay with the plan" }, { label: "Put spare cash in", act: true }],
@@ -200,15 +200,15 @@ export const inflation: ScenarioConfig = {
   fractionalDefault: false,
   briefTitle: "January 2021. Money is nearly free, and prices have been quiet for years.",
   briefBody: [
-    "You have $1,000 and four years. The villain of this era is not a crash: it is the quiet leak from the cash lesson, about to run faster than it has in forty years. Every series on the menu is real, month by month, including the bond fund that is supposed to be the safe one.",
+    "You have $1,000 and four years. The villain of this era is not a crash. It is the quiet leak from the cash lesson, about to run faster than it has in forty years. Every series on the menu is real, month by month.",
     "The rainbow orb puts the same $1,000 all-in on the real S&P 500.",
   ],
   startLabel: "Start in 2021",
   endTitle: "December 2024. Prices never fell back, and the market recovered anyway.",
   bullets: [
     { c: "#5e5ce6", text: "The Steady Lender lent to the safest borrower on earth and still lost about a third of its value when rates jumped. Even lending has a price, and prices move." },
-    { c: "#8e8e93", text: "A $100 bill kept in a drawer still said $100 in 2024, but it bought about what $83 bought in 2021. That is the cash lesson's quiet leak at full speed, and the interest from the savings lesson is the everyday defense against it." },
-    { c: "#30d158", text: "Giant Oil, the most doubted name of 2020, was the best performer of 2022. The rainbow orb owned it the whole time without guessing. Winners rotate; owning everything catches them." },
+    { c: "#8e8e93", text: "A $100 bill kept in a drawer still said $100 in 2024, but it bought about what $83 bought in 2021. That is the cash lesson's quiet leak at full speed." },
+    { c: "#30d158", text: "Giant Oil, the most doubted name of 2020, was the best performer of 2022. The rainbow orb owned it the whole time without guessing." },
   ],
   cardSubline: "This run lived the inflation years, 2021 to 2024, on real prices.",
   // CEE Investing 12-4 ladder (real versus nominal, taught as buying power),
@@ -218,7 +218,7 @@ export const inflation: ScenarioConfig = {
   // dated timeline honestly includes the ending
   briefing: {
     title: "The world of January 2021",
-    deck: "This page holds two minutes of real history. Nothing here is required reading, and the dated timeline near the end tells you how the era turns out.",
+    deck: "This page holds two minutes of real history. The dated timeline near the end tells you how the era turns out.",
     readTime: "about 2 minutes",
     sections: [
       {
@@ -250,7 +250,7 @@ export const inflation: ScenarioConfig = {
         lead: "A fair replay of history includes the years when nothing seems to work.",
         body: [
           "All six series on the tape are real, month by month from January 2021 to December 2024, with dividends and interest reinvested and no reconstructions. You will live through the fastest price rises since 1981, gasoline over five dollars a gallon, and a year in which stocks and bonds fell together while cash quietly leaked buying power.",
-          "You will also live through the other side: a bottom that arrived while the headlines were still frightening, and a market that returned to records while inflation cooled but store prices stayed high. At five crossroads the tape pauses and asks what you would have done. The rainbow orb rides beside you the whole way, holding the real S&P 500, and it never trades once.",
+          "You will also live through the other side. A bottom arrived while the headlines were still frightening, and the market returned to records while inflation cooled and store prices stayed high. At five crossroads the tape pauses and asks what you would have done. The rainbow orb rides beside you the whole way, holding the real S&P 500, and it never trades once.",
         ],
       },
     ],

@@ -236,24 +236,21 @@ function Half({ c, seat, phase, stacked, style, anchorName, count, onPick }: Hal
         {asking ? (
           <>
             <div style={{ fontSize: stacked ? 14 : 16, color: "rgba(255,255,255,0.88)" }}>
-              than {anchorName}
+              Compared with {anchorName}
             </div>
             <div style={{ marginTop: stacked ? 12 : 16, display: "grid", gap: stacked ? 10 : 12 }}>
               <button data-worth="more" onClick={() => onPick("more")} style={pill(stacked)}>
                 <Arrow up />
-                worth more
+                Worth more
               </button>
               <button data-worth="less" onClick={() => onPick("less")} style={pill(stacked)}>
                 <Arrow />
-                worth less
+                Worth less
               </button>
             </div>
           </>
         ) : (
           <>
-            <div style={{ fontSize: stacked ? 14 : 16, color: "rgba(255,255,255,0.88)" }}>
-              is worth
-            </div>
             <div
               style={{
                 marginTop: stacked ? 4 : 8,
@@ -517,7 +514,7 @@ export default function WorthMore() {
     return () => window.removeEventListener("keydown", onKey);
   }, [run.phase, answer, again]);
 
-  const share = `worth more: streak ${run.streak}. died on ${anchor.name} vs ${challenger.name}.`;
+  const share = `Worth More streak ${run.streak}. Ended on ${anchor.name} vs ${challenger.name}.`;
 
   const copy = () => {
     const nav = window.navigator;
@@ -539,7 +536,7 @@ export default function WorthMore() {
 
   return (
     <main
-      className="fixed inset-0 overflow-hidden font-grotesk select-none"
+      className="fixed inset-0 overflow-hidden select-none"
       style={{ background: panelFlat(anchor.color), color: "#FFFFFF" }}
     >
       <style>{`
@@ -611,20 +608,20 @@ export default function WorthMore() {
       >
         <div>
           <div style={{ fontSize: stacked ? 18 : 22, fontWeight: 700, letterSpacing: "-0.02em" }}>
-            worth more
+            Worth More
           </div>
           {!stacked && (
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.76)", marginTop: 1 }}>
-              pick the bigger company
+              Pick the company worth more.
             </div>
           )}
         </div>
         <div className="flex items-center" style={{ gap: stacked ? 6 : 10 }}>
-          <Tag stacked={stacked}>streak {run.streak}</Tag>
-          <Tag stacked={stacked}>best {best}</Tag>
+          <Tag stacked={stacked}>Streak {run.streak}</Tag>
+          <Tag stacked={stacked}>Best {best}</Tag>
           <Link to="/" style={{ textDecoration: "none" }}>
             <Tag stacked={stacked} quiet>
-              back
+              Back
             </Tag>
           </Link>
         </div>
@@ -647,16 +644,14 @@ export default function WorthMore() {
               animation: "wmIn 300ms cubic-bezier(.2,1.1,.3,1)",
             }}
           >
-            <div style={{ fontSize: 14, color: "#6E6690" }}>run over</div>
             <div
               style={{
                 fontSize: stacked ? 24 : 30,
                 fontWeight: 700,
                 letterSpacing: "-0.02em",
-                marginTop: 2,
               }}
             >
-              you said {run.picked === "more" ? "worth more" : "worth less"}
+              You said {run.picked === "more" ? "worth more" : "worth less"}
             </div>
 
             <div style={{ marginTop: 16, display: "grid", gap: 8 }}>
@@ -669,8 +664,8 @@ export default function WorthMore() {
             </div>
 
             <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-              <Score label="streak" value={run.streak} />
-              <Score label="best" value={best} />
+              <Score label="Streak" value={run.streak} />
+              <Score label="Best" value={best} />
             </div>
 
             <div
@@ -704,7 +699,7 @@ export default function WorthMore() {
                   fontWeight: 700,
                 }}
               >
-                play again
+                Play again
               </button>
               <button
                 onClick={copy}
@@ -720,7 +715,7 @@ export default function WorthMore() {
                   border: "2px solid rgba(20,17,38,0.14)",
                 }}
               >
-                {copied ? "copied" : "copy"}
+                {copied ? "Copied" : "Copy"}
               </button>
             </div>
           </div>
@@ -790,13 +785,35 @@ function DeathRow({ c, hot, stacked }: { c: Company; hot?: boolean; stacked: boo
   );
 }
 
+// the fact reads as one phrase, "Streak 5", never a caption stacked on a number
 function Score({ label, value }: { label: string; value: number }) {
   return (
-    <div style={{ flex: 1, borderRadius: 16, background: "#F5F3FB", padding: "10px 14px" }}>
-      <div style={{ fontSize: 12, color: "#6E6690", letterSpacing: "0.06em" }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+    <div
+      style={{
+        flex: 1,
+        borderRadius: 16,
+        background: "#F5F3FB",
+        padding: "10px 14px",
+        display: "flex",
+        alignItems: "baseline",
+        gap: 8,
+        fontSize: 15,
+        color: "#6E6690",
+      }}
+    >
+      {label}
+      <span
+        style={{
+          fontSize: 28,
+          fontWeight: 700,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.15,
+          color: INK,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
         {value}
-      </div>
+      </span>
     </div>
   );
 }

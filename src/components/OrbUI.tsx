@@ -146,7 +146,7 @@ const MARKER_STYLE: Record<ChartMarker["kind"], { fill: string; shape: "up" | "d
   event: { fill: "#a1a1a6", shape: "dot" },
 };
 
-export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "the rainbow orb", xLabels, benchStroke = "url(#rb)", markers, cursorStep, onScrub, onLock, locked, tipFor }:
+export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel = "The rainbow orb", xLabels, benchStroke = "url(#rb)", markers, cursorStep, onScrub, onLock, locked, tipFor }:
   { net: number[]; bench: number[]; width?: number; height?: number; benchLabel?: string; xLabels?: string[]; benchStroke?: string;
     markers?: ChartMarker[]; cursorStep?: number | null; onScrub?: (step: number | null) => void;
     onLock?: (step: number) => void; locked?: boolean; tipFor?: (step: number) => string }) {
@@ -225,7 +225,7 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
           borderRadius: 10,
           boxShadow: "0 8px 20px -10px rgba(24,34,60,0.35)",
           padding: "6px 10px",
-          fontSize: 11.5,
+          fontSize: 12,
           lineHeight: 1.4,
           color: "#1d1d1f",
           pointerEvents: "none",
@@ -237,7 +237,7 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
             <div key={l} style={{ color: "#6e6e73" }}>{l}</div>
           ))}
           {!locked && onLock && cursorLabels.length === 0 && (
-            <div style={{ color: "#a1a1a6" }}>click to pin</div>
+            <div style={{ color: "#a1a1a6" }}>Click to pin</div>
           )}
         </div>
       )}
@@ -264,12 +264,12 @@ export function GrowthChart({ net, bench, width = 320, height = 96, benchLabel =
         </defs>
       </svg>
       {xLabels && xLabels.length > 1 && (
-        <div className="flex justify-between mt-0.5 text-[10.5px] tnum" style={{ color: "#a1a1a6", width }}>
+        <div className="flex justify-between mt-0.5 text-[12px] tnum" style={{ color: "#a1a1a6", width }}>
           {xLabels.map((l, i) => <span key={i}>{l}</span>)}
         </div>
       )}
-      <div className="flex gap-4 mt-1 text-[11.5px]" style={{ color: "#6e6e73" }}>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: "#1d1d1f" }} />you</span>
+      <div className="flex gap-4 mt-1 text-[12px]" style={{ color: "#6e6e73" }}>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: "#1d1d1f" }} />You</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full inline-block" style={{ background: benchStroke === "url(#rb)" ? "linear-gradient(90deg,#ff9f0a,#bf5af2,#0a84ff)" : benchStroke }} />{benchLabel}</span>
       </div>
     </div>
@@ -290,7 +290,7 @@ export function FluidSettings({ fluid, setFluid }: { fluid: FluidStyle; setFluid
       {open && (
         <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-black/8 shadow-xl p-3 pop-in z-30">
           <div className="text-[12px] font-semibold mb-2" style={{ color: "#6e6e73" }}>Orb liquid</div>
-          {([["waves", "Flowing waves", "colors keep their true share"], ["blobs", "Floating blobs", "free lava lamp, panel has the numbers"]] as const).map(([key, label, sub]) => (
+          {([["waves", "Flowing waves", "Colors keep their true share"], ["blobs", "Floating blobs", "A free lava lamp"]] as const).map(([key, label, sub]) => (
             <button key={key} onClick={() => { setFluid(key); setOpen(false); }}
               className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition hover:bg-black/5">
               <span className="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0"
@@ -299,7 +299,7 @@ export function FluidSettings({ fluid, setFluid }: { fluid: FluidStyle; setFluid
               </span>
               <span className="min-w-0">
                 <span className="block text-[13px] font-medium">{label}</span>
-                <span className="block text-[11.5px]" style={{ color: "#6e6e73" }}>{sub}</span>
+                <span className="block text-[12px]" style={{ color: "#6e6e73" }}>{sub}</span>
               </span>
             </button>
           ))}

@@ -175,14 +175,14 @@ export default function LessonShell({ lesson }: { lesson: LessonConfig }) {
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6">
             <path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          {step > 0 ? "back" : "scenarios"}
+          {step > 0 ? "Back" : "Scenarios"}
         </button>
         <div className="h-5 w-px bg-black/10" />
         <div className="flex items-baseline gap-3 min-w-0">
           <span className="text-lg font-semibold tracking-tight truncate">{lesson.title}</span>
           <span className="text-[13px] hidden md:inline truncate" style={{ color: SUB }}>{lesson.sub}</span>
         </div>
-        <span className="ml-auto text-[11px] flex-shrink-0 hidden sm:inline" style={{ color: "#a1a1a6" }}>{lesson.standard}</span>
+        <span className="ml-auto text-[12px] flex-shrink-0 hidden sm:inline" style={{ color: "#a1a1a6" }}>{lesson.standard}</span>
       </header>
 
       <main className="max-w-2xl mx-auto px-6 pt-4 pb-8">
@@ -210,10 +210,7 @@ export default function LessonShell({ lesson }: { lesson: LessonConfig }) {
           // animation each time a screen returns to view.
           return (
             <div key={i} className={current ? "pop-in" : "hidden"} aria-hidden={!current}>
-              <div className="mt-4 text-[12px] font-semibold tracking-wide" style={{ color: SUB }}>
-                {s.eyebrow}
-              </div>
-              <p className="mt-1.5 text-[19px] font-semibold tracking-tight leading-snug">
+              <p className="mt-5 text-[19px] font-semibold tracking-tight leading-snug">
                 {s.definition}
               </p>
               <p className="mt-2 text-[14px] leading-relaxed max-w-xl" style={{ color: "#3a3a3c" }}>

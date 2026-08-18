@@ -10,9 +10,8 @@
 import { useEffect, useState } from "react";
 import { Ceremony } from "../../../lib/tally/run";
 import { Block, BlockColumn } from "../Blocks";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -79,9 +78,12 @@ export default function UnitUpgradeOverlay({ ceremony, onContinue }: UnitUpgrade
   const oldCount = ratio * newCount;
   const size = oldCount > 10 ? 8 : 10;
 
-  const sentence = ceremony.steps > 1
-    ? `Your money grew enough for ${word(ceremony.steps)} steps at once, so from now on one block is ${money(ceremony.to)}, and one card is ${word(ratio)} of your old ones.`
-    : `From now on, one block is ${money(ceremony.to)}, and one card is ${word(ratio)} of your old ones.`;
+  // One phrase to a line, and every rule kept.
+  const lines = [
+    ...(ceremony.steps > 1 ? [`Your money grew ${word(ceremony.steps)} steps at once.`] : []),
+    `One block is now ${money(ceremony.to)}.`,
+    `One card is ${word(ratio)} of your old ones.`,
+  ];
 
   // fusedNames arrives as display names, one entry per group of four that
   // fused, so the same name can appear more than once.
@@ -144,7 +146,9 @@ export default function UnitUpgradeOverlay({ ceremony, onContinue }: UnitUpgrade
           </div>
         </div>
 
-        <p style={line}>{sentence}</p>
+        {lines.map((l) => (
+          <p key={l} style={line}>{l}</p>
+        ))}
 
         {fusedRows.length > 0 && (
           <div style={{ marginTop: 10 }}>
@@ -195,7 +199,7 @@ const panel: React.CSSProperties = {
 
 const heading: React.CSSProperties = {
   fontSize: 16,
-  fontWeight: 750,
+  fontWeight: 700,
   letterSpacing: "-0.02em",
 };
 
@@ -223,7 +227,7 @@ const side: React.CSSProperties = {
 
 const caption: React.CSSProperties = {
   fontSize: 12.5,
-  fontWeight: 650,
+  fontWeight: 600,
   color: SUB,
   fontVariantNumeric: "tabular-nums",
 };
@@ -235,7 +239,7 @@ const arrow: React.CSSProperties = {
 };
 
 const line: React.CSSProperties = {
-  margin: "10px auto 0",
+  margin: "6px auto 0",
   maxWidth: 400,
   fontSize: 14,
   lineHeight: 1.5,
@@ -244,7 +248,7 @@ const line: React.CSSProperties = {
 
 const fusedLabel: React.CSSProperties = {
   fontSize: 12,
-  fontWeight: 650,
+  fontWeight: 600,
   color: SUB,
 };
 

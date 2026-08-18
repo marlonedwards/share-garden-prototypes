@@ -76,6 +76,8 @@ export const SPLIT_ENABLED = false;
 // relative to the player, so the road from a lemonade stand to the first real
 // logo is walkable inside one round. Generic categories only, never fake
 // company names (spec law 4).
+// The name reads inside a sentence ("Ate a food truck for $1.4M"); the disc
+// label is the same words standing alone, so it gets a capital.
 const LOCAL_LABELS = [
   "a lemonade stand",
   "a food truck",
@@ -95,13 +97,13 @@ const LOCAL_LABELS = [
 ];
 
 const PLAYER_NAMES = [
-  "your lemonade co",
-  "your dog walkers",
-  "your car wash",
-  "your pizza cart",
-  "your sticker shop",
-  "your mow crew",
-  "your bake stand",
+  "Your lemonade stand",
+  "Your dog walkers",
+  "Your car wash",
+  "Your pizza cart",
+  "Your sticker shop",
+  "Your mow crew",
+  "Your bake stand",
 ];
 
 export const START_VALUE = 2e6;
@@ -204,9 +206,10 @@ export class TakeoverRun {
       // player's worth so the only thing that can ever acquire you is real.
       const value = Math.max(1e5, Math.min(5e8, w * (0.18 + this.rng() * 0.72)));
       const tones = ["#2B3648", "#33404F", "#3A3347", "#2C4038", "#403A2E", "#31414E"];
+      const bare = label.replace(/^an? /, "");
       pick = {
         name: label,
-        short: label.replace(/^an? /, ""),
+        short: bare[0].toUpperCase() + bare.slice(1),
         color: tones[Math.floor(this.rng() * tones.length)],
         cap: value,
         local: true,
@@ -260,14 +263,14 @@ export class TakeoverRun {
     let speed = 0;
     if (kind === "audit") {
       amount = 0.25 + this.rng() * 0.2;
-      label = `irs audit -${Math.round(amount * 100)}%`;
+      label = `IRS audit -${Math.round(amount * 100)}%`;
       speed = 55;
     } else if (kind === "lawsuit") {
       amount = w * (0.4 + this.rng() * 0.5);
-      label = `lawsuit -${fmtMoney(amount)}`;
+      label = `Lawsuit -${fmtMoney(amount)}`;
       speed = 85;
     } else {
-      label = "debt collector";
+      label = "Debt collector";
       speed = 115;
     }
     this.hazards.push({
@@ -292,13 +295,13 @@ export class TakeoverRun {
   private checkMilestones() {
     const w = this.worth;
     while (this.milestoneIdx < MILESTONES.length && w > MILESTONES[this.milestoneIdx].cap) {
-      this.flash(`bigger than ${MILESTONES[this.milestoneIdx].name}`);
+      this.flash(`Bigger than ${MILESTONES[this.milestoneIdx].name}`);
       this.milestoneIdx++;
     }
     const robloxAt = [1, 3, 10];
     if (this.robloxStep < robloxAt.length && w >= ROBLOX_CAP * robloxAt[this.robloxStep]) {
       const n = robloxAt[this.robloxStep];
-      this.flash(n === 1 ? "you are one whole roblox" : `that is ${n} robloxes`);
+      this.flash(n === 1 ? "As big as Roblox" : `${n} times the size of Roblox`);
       this.robloxStep++;
     }
   }
@@ -466,7 +469,7 @@ export class TakeoverRun {
           eater.cap += meal.cap;
           this.companies.splice(this.companies.indexOf(meal), 1);
           if (!eater.c.local && !meal.c.local) {
-            this.flash(`${eater.c.short} acquired ${meal.c.short}`);
+            this.flash(`${eater.c.name} acquired ${meal.c.name}`);
           }
         }
       }
@@ -483,7 +486,7 @@ export class TakeoverRun {
           if (blob.c.local) this.ateLocals++;
           else this.eaten.push(blob.c);
           this.companies.splice(this.companies.indexOf(blob), 1);
-          this.flash(`ate ${blob.c.name} for ${fmtMoney(blob.cap)}`);
+          this.flash(`Ate ${blob.c.name} for ${fmtMoney(blob.cap)}`);
           break;
         }
         if (blob.cap > cell.value && !blob.c.local && d < blobR - cellR * 0.35) {
@@ -562,20 +565,20 @@ export class TakeoverRun {
       if (hz.kind === "audit") {
         const k = 1 - hz.amount;
         for (const cell of this.cells) cell.value *= k;
-        this.flash(`irs audit took ${fmtMoney(w * hz.amount)}`);
+        this.flash(`IRS audit took ${fmtMoney(w * hz.amount)}`);
       } else if (hz.kind === "lawsuit") {
         const share = Math.min(hz.amount, w) / this.cells.length;
         for (const cell of this.cells) cell.value = Math.max(cell.value - share, 1e4);
-        this.flash(`lawsuit cost you ${fmtMoney(hz.amount)}`);
+        this.flash(`Lawsuit cost you ${fmtMoney(hz.amount)}`);
       } else {
         this.debtUntil = this.elapsed + 6;
-        this.flash("debt collector latched on");
+        this.flash("Debt collector latched on");
       }
       if (this.worth < START_VALUE * 0.5) {
         this.finalWorth = this.worth;
         this.over = {
           kind: "bankrupt",
-          by: hz.kind === "audit" ? "the irs" : hz.kind === "lawsuit" ? "a lawsuit" : "debt",
+          by: hz.kind === "audit" ? "the IRS" : hz.kind === "lawsuit" ? "a lawsuit" : "debt",
         };
         return;
       }

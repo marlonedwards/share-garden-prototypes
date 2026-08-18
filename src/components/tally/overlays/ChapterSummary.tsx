@@ -23,9 +23,8 @@
 import { useEffect, useState } from "react";
 import { ChapterSummary } from "../../../lib/tally/run";
 import { FrontPage } from "../../../lib/tally/chapters";
-import { LINE_HARD, R, btn } from "../ui";
+import { LINE_HARD, R, SANS, btn } from "../ui";
 
-const SANS = '"Helvetica Neue", Inter, -apple-system, system-ui, sans-serif';
 const INK = "#1D1D1F";
 const SUB = "#6E6E73";
 const ACCENT = "#0071E3";
@@ -72,18 +71,17 @@ export default function ChapterSummaryOverlay({ summary, onContinue }: ChapterSu
   return (
     <div style={shell}>
       <div style={panel}>
-        <div style={eyebrow}>{summary.chapterName}</div>
         <div style={heading}>
           Chapter {summary.chapterId} {summary.cleared ? "cleared" : "finished"}
         </div>
+        <div style={subName}>{summary.chapterName}</div>
         <div style={scoreLine}>
-          You finished at <b style={num}>{money(summary.finishedAt)}</b>. The target was{" "}
+          You finished at <b style={num}>{money(summary.finishedAt)}</b> against a target of{" "}
           <b style={{ ...num, color: GOLD }}>{money(summary.target)}</b>.
         </div>
 
         {/* the one sentence the chapter was built to teach */}
         <div style={lessonBox}>
-          <div style={lessonLabel}>the lesson</div>
           <div style={lessonLine}>{summary.teaches}</div>
         </div>
 
@@ -129,8 +127,7 @@ export default function ChapterSummaryOverlay({ summary, onContinue }: ChapterSu
         </div>
         {summary.nextChapterName && summary.nextChapterTurns !== null && (
           <div style={ladder}>
-            Next: chapter {summary.nextChapter}, {summary.nextChapterName} &middot;{" "}
-            {summary.nextChapterTurns} turns.
+            Next is chapter {summary.nextChapter}, {summary.nextChapterName}, {summary.nextChapterTurns} turns.
           </div>
         )}
 
@@ -157,7 +154,7 @@ function PageRow({ page, open, onToggle }: { page: FrontPage; open: boolean; onT
             <div key={`${h.source}-${h.date}-${i}`} style={{ marginTop: 6 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.3 }}>{h.face}</div>
               {h.behind && <p style={{ margin: "3px 0 0", fontSize: 13, lineHeight: 1.45, color: SUB }}>{h.behind}</p>}
-              <div style={{ fontSize: 12, fontWeight: 650, color: SUB, marginTop: 3 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: SUB, marginTop: 3 }}>
                 {h.source}, {h.date}
               </div>
             </div>
@@ -193,16 +190,18 @@ const panel: React.CSSProperties = {
   textAlign: "center",
 };
 
-const eyebrow: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: SUB,
-};
-
 const heading: React.CSSProperties = {
   fontSize: 24,
-  fontWeight: 800,
-  letterSpacing: "-0.025em",
+  fontWeight: 700,
+  letterSpacing: "-0.02em",
+  marginTop: 2,
+};
+
+// The chapter's own name, under the heading rather than stacked above it.
+const subName: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: SUB,
   marginTop: 2,
 };
 
@@ -223,15 +222,7 @@ const lessonBox: React.CSSProperties = {
   textAlign: "left",
 };
 
-const lessonLabel: React.CSSProperties = {
-  fontSize: 12.5,
-  fontWeight: 700,
-  color: GOLD,
-  letterSpacing: "0.01em",
-};
-
 const lessonLine: React.CSSProperties = {
-  marginTop: 3,
   fontSize: 19,
   fontWeight: 700,
   lineHeight: 1.36,
@@ -242,7 +233,7 @@ const lessonLine: React.CSSProperties = {
 const num: React.CSSProperties = {
   color: INK,
   fontVariantNumeric: "tabular-nums",
-  fontWeight: 750,
+  fontWeight: 700,
 };
 
 const badgeRow: React.CSSProperties = {
@@ -264,7 +255,7 @@ const badgeTile: React.CSSProperties = {
 
 const badgeName: React.CSSProperties = {
   fontSize: 14,
-  fontWeight: 750,
+  fontWeight: 700,
   letterSpacing: "-0.01em",
   color: GOLD,
 };
@@ -293,7 +284,7 @@ const pagesBox: React.CSSProperties = {
 
 const smallLabel: React.CSSProperties = {
   fontSize: 12,
-  fontWeight: 650,
+  fontWeight: 600,
   color: SUB,
   paddingBottom: 4,
 };
@@ -325,7 +316,7 @@ const button: React.CSSProperties = {
 const ladder: React.CSSProperties = {
   marginTop: 6,
   fontSize: 14,
-  fontWeight: 650,
+  fontWeight: 600,
   color: SUB,
   fontVariantNumeric: "tabular-nums",
 };

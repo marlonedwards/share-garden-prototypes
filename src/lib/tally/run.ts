@@ -698,13 +698,13 @@ function readLine(delta: number, stoned: string[], owning: boolean, variation?: 
   }
   if (variation) return variation;
   if (!owning) {
-    return "Time passed, and the pile did not grow on its own.";
+    return "The pile did not grow on its own.";
   }
   const n = Math.abs(delta);
   const blocks = `${count(n).toLowerCase()} ${n === 1 ? "block" : "blocks"}`;
-  if (delta > 0) return `Prices rose, and the wall gained ${blocks}.`;
-  if (delta < 0) return `The wall lost ${blocks}, and every card is still here.`;
-  return "Prices held, and the wall stands where it stood.";
+  if (delta > 0) return `The wall gained ${blocks}.`;
+  if (delta < 0) return `The wall lost ${blocks}.`;
+  return "The wall stands where it stood.";
 }
 
 // Two other things a turn can be worth saying out loud. Both are read off the
@@ -1040,11 +1040,11 @@ export function turnTally(run: RunState): TurnTally {
 export function stakesLine(
   turn: number, turns: number, blocks: number, targetBlocks: number,
 ): { text: string; past: boolean } {
-  if (blocks >= targetBlocks) return { text: "past the target", past: true };
+  if (blocks >= targetBlocks) return { text: "Past the target", past: true };
   const left = Math.max(0, targetBlocks - blocks);
   const gap = `${left} ${left === 1 ? "block" : "blocks"} to go`;
   const turnsLeft = Math.max(1, turns - turn + 1);
-  if (turnsLeft <= 1) return { text: `last turn · ${gap}`, past: false };
+  if (turnsLeft <= 1) return { text: `Last turn · ${gap}`, past: false };
   return { text: `${turnsLeft} turns left · ${gap}`, past: false };
 }
 
@@ -1462,13 +1462,13 @@ export const BADGES: BadgeDef[] = [
   // CEE Investing 12-5c ladder (downturns and investor mood); concept:
   // panic-selling
   { id: "still-standing", scope: "chapter", name: "Still standing",
-    copy: "You held a card through a fall of more than half and finished the chapter still holding it." },
+    copy: "You held a card through a fall of more than half." },
   // CEE Investing 8-7c (future value of a regular series); concept: dca
   { id: "never-idle", scope: "chapter", name: "Never idle",
     copy: "You put blocks to work on every turn of a chapter." },
   // CEE Investing 8-4 (risks of owning single stocks); concept: survivorship
   { id: "stone-carrier", scope: "run", name: "Stone carrier",
-    copy: "You finished a run holding a card that went bankrupt. There is no way to get rid of it, and that is the point." },
+    copy: "You finished a run holding a card that went bankrupt." },
   // CEE Personal Finance 8-3 (compounding over long horizons) with CEE
   // Investing 8-5b (time in the market); concept: compounding
   { id: "long-hold", scope: "run", name: "Long hold",
@@ -1583,7 +1583,7 @@ export function chapterSummary(run: RunState): ChapterSummary {
     const closing = run.cards.filter((c) => !c.stone && !nextCh.market.includes(c.assetId));
     if (closing.length > 0) {
       const names = [...new Set(closing.map((c) => assetOf(c.assetId).name))];
-      notice = `The market for ${listNames(names)} closes when this chapter ends, so those cards are sold at their last price and the money comes back to you.`;
+      notice = `The market for ${listNames(names)} closes when this chapter ends, so those cards are sold at their last price.`;
     }
   }
 

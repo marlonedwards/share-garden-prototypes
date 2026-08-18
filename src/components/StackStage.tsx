@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { uiFont } from "../lib/type";
 
 // The Stack's stage: three glass cylinders on a shared dollar ruler.
 // Cash on the left, the player's banded stack in the middle, the micro-band
@@ -214,7 +215,7 @@ export default function StackStage(p: StackStageProps) {
 
     const baseY = p.height - 44;
     const scale = (p.height - 96) / Math.max(1, p.maxDollars);
-    const font = (px: number, w = 500) => `${w} ${px}px Inter, -apple-system, system-ui, sans-serif`;
+    const font = (px: number, w = 500) => uiFont(px, w);
 
     // wall ruler
     const step = p.maxDollars > 3000 ? 1000 : p.maxDollars > 1500 ? 500 : 250;
@@ -228,7 +229,7 @@ export default function StackStage(p: StackStageProps) {
       g.lineTo(p.width - 16, y);
       g.stroke();
       g.fillStyle = "#a1a1a6";
-      g.font = font(11);
+      g.font = font(12);
       g.textAlign = "right";
       g.fillText(`$${v.toLocaleString("en-US")}`, 52, y);
     }
@@ -246,7 +247,7 @@ export default function StackStage(p: StackStageProps) {
       g.beginPath(); g.moveTo(58, yLo); g.lineTo(p.width - 16, yLo); g.stroke();
       g.setLineDash([]);
       g.fillStyle = "#0057b8";
-      g.font = font(11.5, 600);
+      g.font = font(12, 600);
       g.textAlign = "left";
       g.fillText(p.corridor.label, 64, yHi - 9);
     }
@@ -263,7 +264,7 @@ export default function StackStage(p: StackStageProps) {
       g.stroke();
       g.setLineDash([]);
       g.fillStyle = "#0071e3";
-      g.font = font(11.5, 600);
+      g.font = font(12, 600);
       g.textAlign = "right";
       g.fillText(p.goalLine.label, p.width - 20, y - 9);
     }
@@ -302,12 +303,12 @@ export default function StackStage(p: StackStageProps) {
       g.fillStyle = "#1d1d1f";
       g.fillText(txt, x, y);
       g.fillStyle = "#6e6e73";
-      g.font = font(11.5);
+      g.font = font(12);
       g.fillText(title, x, baseY + 20);
     };
-    label(cxCash, cashTop, "cash", p.cash);
+    label(cxCash, cashTop, "Cash", p.cash);
     label(cxYou, youTop, p.playerLabel, p.bands.reduce((s, b) => s + (b.dead ? 0 : b.value), 0));
-    label(cxIdx, idxTop, "the index", p.indexValue);
+    label(cxIdx, idxTop, "The index", p.indexValue);
   });
 
   return <canvas ref={ref} style={{ width: p.width, height: p.height, display: "block" }} />;

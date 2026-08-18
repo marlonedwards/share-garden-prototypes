@@ -111,6 +111,15 @@ async function play({ label, width, height, wantStacked }) {
   check((await page.innerText(p("anchor"))).includes(fmtMoney(s0.anchor.cap)), `anchor shows its real worth (${fmtMoney(s0.anchor.cap)})`);
   check(await page.isVisible('[data-worth="more"]'), "worth more button is there");
   check(await page.isVisible('[data-worth="less"]'), "worth less button is there");
+  check(
+    (await page.innerText('[data-worth="more"]')).trim() === "Worth more" &&
+      (await page.innerText('[data-worth="less"]')).trim() === "Worth less",
+    "the two buttons read in sentence case",
+  );
+  check(
+    chalText.includes(`Compared with ${anchorName}`),
+    `the ask names what you are comparing against (${anchorName})`,
+  );
   check(s0.badge === "vs", "the seam badge reads vs while you decide");
 
   await page.screenshot({ path: `${OUT}${label}-ask.png` });
@@ -170,11 +179,13 @@ async function play({ label, width, height, wantStacked }) {
   check(death.includes(sd.challenger.name), `death card names the challenger (${sd.challenger.name})`);
   check(death.includes(fmtMoney(sd.anchor.cap)), `death card shows ${fmtMoney(sd.anchor.cap)}`);
   check(death.includes(fmtMoney(sd.challenger.cap)), `death card shows ${fmtMoney(sd.challenger.cap)}`);
-  check(death.includes("best"), "death card shows the best streak");
+  check(/Streak\s+5/.test(death), "death card shows the run's streak");
+  check(/Best\s+\d+/.test(death), "death card shows the best streak");
+  check(/You said worth (more|less)/.test(death), "death card says what you picked");
 
   const share = await page.innerText("[data-worth-share]");
   check(
-    /^worth more: streak \d+\. died on .+ vs .+\.$/.test(share.trim()),
+    /^Worth More streak \d+\. Ended on .+ vs .+\.$/.test(share.trim()),
     `share line reads plain (${share.trim()})`,
   );
   check(share.includes("streak 5"), "share line carries the streak");

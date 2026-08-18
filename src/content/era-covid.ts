@@ -36,9 +36,9 @@ export const covid: ScenarioConfig = {
   id: "covid",
   lesson: "Lesson 6",
   title: "The covid years",
-  headerSub: "the fastest crash and the strangest boom, 2019 to 2024",
-  cardLine: "Six years of real prices hold the fastest crash in market history, a meme-stock mania, and the long giveback that punished the pandemic's darlings.",
-  learn: "This era shows why crashes cannot be timed, and what happens to a price that assumes the party is permanent.",
+  headerSub: "The fastest crash and the strangest boom, 2019 to 2024",
+  cardLine: "Six years of real prices hold the fastest crash in market history.",
+  learn: "Why crashes cannot be timed.",
   dots: ["#0a84ff", "#ff9f0a", "#30d158", "#ff453a"],
   time: "about 5 minutes",
   dataset: eraCovid as HistoryDataset,
@@ -70,7 +70,7 @@ export const covid: ScenarioConfig = {
       founded: 1993,
       history: "Its chips draw the explosions and dragons in video games, and researchers recently found the same chips are the best tool yet for teaching machines. Its price just fell by half in three months after a coin-mining fad ended and left it holding unsold chips.",
       believers: "The chips that draw dragons turn out to be the engine of artificial intelligence, and that second story is only beginning.",
-      doubters: "It is a boom-and-bust chip company that just proved the point: one fad ended, and half its value vanished in a season.",
+      doubters: "It is a boom-and-bust chip company that just proved the point, because one fad ended and half its value vanished in a season.",
     },
     {
       id: "TSLA", real: "Tesla", name: "The Electric Carmaker",
@@ -226,14 +226,14 @@ export const covid: ScenarioConfig = {
   lastStep: 71,
   briefTitle: "January 2019. The bull market is ten years old, and everyone says it is due to die.",
   briefBody: [
-    "You have $1,000 and six wild years: the fastest crash in market history, the strangest boom, and the long giveback that followed. Every price on the tape is real, month by month.",
+    "You have $1,000 and six wild years. Every price on the tape is real, month by month.",
     "The rainbow orb holds the whole boring market beside you and never trades once.",
   ],
   startLabel: "Start in 2019",
   endTitle: "December 2024. The fastest crash ended in records nobody predicted.",
   bullets: [
     { c: "#0a84ff", text: "The market fell by a third in 33 days, then closed at a record less than five months after the bottom. A seller in March missed the whole ride home." },
-    { c: "#ff6482", text: "The meme stock and the stay-at-home darlings told one story: a crowd can multiply a price long before the business earns it, and the price gives it back." },
+    { c: "#ff6482", text: "A crowd can multiply a price long before the business earns it, and the price gives it back." },
     { c: "#30d158", text: "The boring index rode every storm without a single trade and ended these six years up about 140 percent." },
   ],
   cardSubline: "This run lived the covid years, 2019 to 2024, on real prices.",
@@ -243,7 +243,7 @@ export const covid: ScenarioConfig = {
   // honestly includes the crash, the mania, and the giveback.
   briefing: {
     title: "The world of January 2019",
-    deck: "This page holds two minutes of real history. Nothing here is required reading, and the dated timeline near the end tells you how the era turns out.",
+    deck: "This page holds two minutes of real history. The dated timeline near the end tells you how the era turns out.",
     readTime: "about 2 minutes",
     sections: [
       {
@@ -259,7 +259,7 @@ export const covid: ScenarioConfig = {
         lead: "A share is one small piece of a real company, so every price on this tape is a live opinion about a real business.",
         body: [
           "Your menu holds the phone maker that just issued its first warning in more than fifteen years, the everything store that briefly became the most valuable company on Earth this month, the graphics chip designer that just lost half its value when a coin-mining fad ended, and the electric carmaker that more investors bet against than any other American stock.",
-          "Two more join the tape mid-story, because they are still private in January: a video call company arrives on the market in April, and a $2,000 exercise bike company arrives in September. Until each one lists, it cannot be bought at any price, because a private company has no shares on the market. And one dying mall video game store rounds out the menu, priced like the ending everyone expects.",
+          "Two more join the tape mid-story, because they are still private in January. A video call company arrives on the market in April, and a $2,000 exercise bike company arrives in September. Until each one lists, it cannot be bought at any price, because a private company has no shares on the market. And one dying mall video game store rounds out the menu, priced like the ending everyone expects.",
         ],
       },
       {
@@ -282,7 +282,7 @@ export const covid: ScenarioConfig = {
         heading: "What you will live through",
         lead: "A fair replay of history includes the crash and the giveback, not just the boom.",
         body: [
-          "Every series on this tape is real market data, month by month through December 2024, with splits and dividends folded in: most from January 2019, and the two newcomers from their first month on the market. Nothing is reconstructed and nothing is invented; the headlines that appear along the way ran verbatim in the named publications on the named dates.",
+          "Every series on this tape is real market data, month by month through December 2024, with splits and dividends folded in. Most start in January 2019, and the two newcomers start from their first month on the market. Nothing is reconstructed and nothing is invented. The headlines that appear along the way ran verbatim in the named publications on the named dates.",
           "Five times the tape will pause at a real crossroads and ask what you would have done, knowing only what people knew that month. The rainbow orb rides beside you the whole way, and the debrief at the end reads your own choices back to you.",
         ],
       },

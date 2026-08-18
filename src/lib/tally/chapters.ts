@@ -299,8 +299,8 @@ for (let s = 0; s <= 60; s += 3) CRYPTO_STEPS.push(s);
 const CH1: ChapterDef = {
   id: 1,
   name: "The piggy bank",
-  tagline: "Money you keep is a countable pile. Nothing here can go wrong, and nothing here grows on its own.",
-  teaches: "A pile of money is a countable number of blocks, and a pile that does nothing stays the same size.",
+  tagline: "Money you keep is a countable pile.",
+  teaches: "A pile that does nothing stays the same size.",
   unlockLabel: "the wall",
   turnUnit: "a week", turns: 6, yearsPerTurn: 1 / 52,
   denom: 5, stakeBlocks: 8, incomeBlocks: 2,
@@ -323,8 +323,8 @@ const CH1: ChapterDef = {
 const CH2: ChapterDef = {
   id: 2,
   name: "Savings",
-  tagline: "A savings account pays you a little every month for leaving your money alone. The card itself never moves, up or down, and what it pays arrives as money.",
-  teaches: "A savings card never moves, and the bank pays interest on every one you are holding.",
+  tagline: "A savings account pays you a little every month for leaving your money alone.",
+  teaches: "The bank pays interest on every savings card you are holding.",
   unlockLabel: "the green ring",
   turnUnit: "a month", turns: 10, yearsPerTurn: 1 / 12,
   denom: 5, stakeBlocks: 4, incomeBlocks: 1,
@@ -343,8 +343,8 @@ const CH2: ChapterDef = {
 const CH3: ChapterDef = {
   id: 3,
   name: "Prices",
-  tagline: "A share is one small piece of a real company, and its price changes every month. Your card count never changes with it.",
-  teaches: "A price moves, and the number of cards you own does not move with it.",
+  tagline: "A share is one small piece of a real company, and its price changes every month.",
+  teaches: "A price moves, and the number of cards you own does not.",
   unlockLabel: "the amber ring",
   turnUnit: "a month", turns: 6, yearsPerTurn: 1 / 12,
   denom: 20, stakeBlocks: 3, incomeBlocks: 1,
@@ -363,8 +363,8 @@ const CH3: ChapterDef = {
 const CH4: ChapterDef = {
   id: 4,
   name: "Two names",
-  tagline: "Position size is how much of your money you put on one company, and with two companies on the table, this is where you choose it.",
-  teaches: "The first real choice, and one of the two names falls to nothing.",
+  tagline: "Position size is how much of your money you put on one company.",
+  teaches: "One of the two names falls to nothing.",
   unlockLabel: "the discard pile and the stone",
   turnUnit: "a month", turns: 6, yearsPerTurn: 1 / 12,
   denom: 20, stakeBlocks: 3, incomeBlocks: 1,
@@ -383,8 +383,8 @@ const CH4: ChapterDef = {
 const CH5: ChapterDef = {
   id: 5,
   name: "The fund",
-  tagline: "An index fund is one purchase that holds every company on this table at once. It is never the fastest card here, and it is never the one that dies.",
-  teaches: "One card holds all of them, and it is not the fastest one.",
+  tagline: "An index fund is one purchase that holds every company on this table at once.",
+  teaches: "One card holds all of them.",
   unlockLabel: "the rainbow ring",
   turnUnit: "a quarter", turns: 4, yearsPerTurn: 0.25,
   denom: 80, stakeBlocks: 3, incomeBlocks: 1,
@@ -409,8 +409,8 @@ const CH5: ChapterDef = {
 const CH6: ChapterDef = {
   id: 6,
   name: "The panic",
-  tagline: "These are the real prices from January 2007 to December 2015, and one of these banks does not come back. A whole industry falls in the same year.",
-  teaches: "A real panic, on real prices, where every card with the same pip falls together.",
+  tagline: "These are the real prices from January 2007 to December 2015, and one of these banks does not come back.",
+  teaches: "Every card with the same pip falls together.",
   unlockLabel: "the sector pips and the bond",
   turnUnit: "a year", turns: 9, yearsPerTurn: 1,
   denom: 80, stakeBlocks: 1, incomeBlocks: 1,
@@ -427,8 +427,8 @@ const CH6: ChapterDef = {
 const CH7: ChapterDef = {
   id: 7,
   name: "The mania",
-  tagline: "These are the real coin prices from January 2018 to January 2023. A coin is not a company, so it earns nothing, and its price is whatever the next buyer will pay.",
-  teaches: "What a price with nothing behind it eventually does, twice, on real prices.",
+  tagline: "These are the real coin prices from January 2018 to January 2023.",
+  teaches: "A price with nothing behind it can fall the whole way.",
   unlockLabel: "the red ring",
   turnUnit: "a quarter", turns: CRYPTO_STEPS.length - 1, yearsPerTurn: 0.25,
   denom: 320, stakeBlocks: 1, incomeBlocks: 1,
@@ -445,8 +445,8 @@ const CH7: ChapterDef = {
 const CH8: ChapterDef = {
   id: 8,
   name: "The long run",
-  tagline: "Compounding is growth that goes on to grow by itself, so watch how many blocks each of these four ten year turns adds.",
-  teaches: "What compounding actually looks like when nobody touches it.",
+  tagline: "Compounding is growth that goes on to grow by itself.",
+  teaches: "Compounding grows fastest when nobody touches it.",
   unlockLabel: "the finale",
   turnUnit: "ten years", turns: 4, yearsPerTurn: 10,
   denom: 1280, stakeBlocks: 1, incomeBlocks: 1,
@@ -689,16 +689,16 @@ const BEHIND: Record<string, Record<number, string>> = {
 // do, because the decision lives in the shop where the money is.
 const MOOD: Record<string, Record<number, string>> = {
   gfc: {
-    9: "American house prices have nearly doubled since 2000, more families miss a payment every month, and the officials in charge keep saying the trouble is contained.",
-    14: "Two of the oldest names on Wall Street ran out of lenders inside six months, and nobody standing in this month knows which giant goes next.",
-    20: "The Old Bank survived the Civil War and the Great Depression and could not survive this weekend, and the government is lending $85 billion to keep the world's biggest insurer breathing.",
-    26: "The index has fallen by more than half from its record, and every dollar spent this month buys twice the index it bought in October 2007.",
+    9: "American house prices have nearly doubled since 2000.",
+    14: "Two of the oldest names on Wall Street ran out of lenders inside six months.",
+    20: "The Old Bank survived the Civil War and the Great Depression and could not survive this weekend.",
+    26: "The index has fallen by more than half from its record.",
     74: "The index closed above its October 2007 record this month, five and a half years after the fall began.",
   },
   crypto: {
-    1: "The platform that guaranteed about one percent interest every single day shut down this month, weeks after two states ordered it to stop.",
-    26: "The coin that people called digital gold fell by nearly half in two days, in the same week the stock market had its worst rout since 1987.",
-    46: "The first coin touched a record near $69,000 this month, and stadiums are being renamed after coin companies.",
+    1: "The platform that guaranteed about one percent interest every single day shut down this month.",
+    26: "The coin that people called digital gold fell by nearly half in two days.",
+    46: "The first coin touched a record near $69,000 this month.",
     58: "One of the biggest coin exchanges in the world filed for bankruptcy this month with billions of dollars of its customers' money missing.",
   },
   // The dotcom era is chapter 7's documented alternative rather than the cast
@@ -706,11 +706,11 @@ const MOOD: Record<string, Record<number, string>> = {
   // headlines and its behind-the-page copy do: the swap stays one line.
   dotcom: {
     2: "A financial weekly spent this month counting how many months of cash each internet company had left.",
-    3: "The exchange where most technology stocks trade fell 25 percent in five days, and every dip for five straight years had been a buying chance until this one.",
+    3: "The exchange where most technology stocks trade fell 25 percent in five days.",
     14: "The most hyped online toy store of the boom ran out of money after one bad Christmas and could not find a buyer.",
     20: "The market stayed shut for four trading days after the attacks of September 11, its longest pause since 1933.",
-    29: "The Phone Giant admitted hiding $3.8 billion of costs, so the smooth profits its doubters could never explain were fiction.",
-    33: "The index is about 40 percent below its 2000 high, and people who bragged about stocks two years ago now call the market a casino.",
+    29: "The Phone Giant admitted hiding $3.8 billion of costs.",
+    33: "The index is about 40 percent below its 2000 high.",
     90: "The Dow closed above 14,000 for the first time, seven and a half years after the bubble burst.",
   },
 };

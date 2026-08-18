@@ -47,7 +47,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, MarketRow, SAVINGS_ID } from "../../lib/tally/deck";
 import { TableauStack } from "../../lib/tally/run";
-import { displayName, money, priceLine, wholeMoney, blockWord } from "../../lib/tally/text";
+import { displayName, money, payMoney, priceLine, wholeMoney, blockWord } from "../../lib/tally/text";
 import { blockThud, blockTick } from "../../lib/tally/sound";
 import CardFace, { CardStack, ensureCardAnims, stackBoxHeight } from "./Card";
 import { Block } from "./Blocks";
@@ -159,7 +159,7 @@ function lotWhen(card: Card, chapterId: number): string {
 // What a lot paid, per card. A deposit is money put in rather than a price paid,
 // so it says so.
 function lotPaid(assetId: string, card: Card): string {
-  return assetId === SAVINGS_ID ? `put in ${money(card.buyDollars)}` : `at ${money(card.buyPrice)}`;
+  return assetId === SAVINGS_ID ? `put in ${payMoney(card.buyDollars)}` : `at ${money(card.buyPrice)}`;
 }
 
 // The one tab under a card, drawn once so the buy tab and the sell tab cannot
@@ -194,7 +194,7 @@ function Tab({
         width: "100%",
         marginTop: small ? 4 : 6,
         padding: `${Math.round((small ? 4.5 : 6) * ui)}px 4px`,
-        fontSize: (small ? 11 : 12.5) * ui,
+        fontSize: (small ? TAB_SMALL_PX : TAB_PX) * ui,
         borderRadius: R.chip,
         ...(tone === "off" ? { color: "#8A909C" } : null),
       }}
@@ -208,6 +208,12 @@ function Tab({
 // rather than bigger cards. Eighty seven pixels is the width that holds two
 // readable lines of a name, and a name cut in half is a card that has stopped
 // saying what it is.
+// The type on a tab, in one place, so the tab that is drawn and the tab the
+// till reserves room for are always the same tab. Nothing a player reads is
+// set below twelve pixels.
+const TAB_PX = 12.5;
+const TAB_SMALL_PX = 12;
+
 const CARD_W = 118;
 const CARD_H = 126;
 const MIN_GAP = 8;
@@ -220,7 +226,7 @@ const MAX_GAP = 14;
 // sized once from the most any stack in it offers.
 function tabHeight(ui: number, small: boolean): number {
   const pad = Math.round((small ? 4.5 : 6) * ui);
-  const line = Math.round((small ? 11 : 12.5) * ui * 1.25);
+  const line = Math.round((small ? TAB_SMALL_PX : TAB_PX) * ui * 1.25);
   return (small ? 4 : 6) + pad * 2 + line + 3;
 }
 
@@ -380,7 +386,7 @@ export default function Shop(p: ShopProps) {
   // fits the row it already had, with its two caption lines under it
   const fanHeadH = Math.round(22 * ui);
   const fanTabH = Math.round(26 * ui);
-  const fanCapH = Math.round(25 * ui);
+  const fanCapH = Math.round(32 * ui);
   const fanAllH = Math.round(34 * ui);
   const fanLift = 8;
   const miniH = Math.max(
@@ -450,11 +456,11 @@ export default function Shop(p: ShopProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: type(15), fontWeight: 800, letterSpacing: "-0.015em", color: INK }}>The shop</span>
+          <span style={{ fontSize: type(15), fontWeight: 700, letterSpacing: "-0.015em", color: INK }}>The shop</span>
           <span style={{ fontSize: type(12), fontWeight: 600, color: SUB }}>
             {p.rows.length === 0
               ? "Nothing is for sale in this chapter."
-              : `${p.rows.length} ${p.rows.length === 1 ? "card" : "cards"}, every one at today's price.`}
+              : `${p.rows.length} ${p.rows.length === 1 ? "card" : "cards"} at today's price.`}
           </span>
         </div>
         <div
@@ -468,13 +474,13 @@ export default function Shop(p: ShopProps) {
             padding: `${Math.round(4 * ui)}px ${Math.round(9 * ui)}px`,
           }}
         >
-          <span style={{ fontSize: type(11.5), fontWeight: 650, color: SUB }}>
+          <span style={{ fontSize: type(12), fontWeight: 600, color: SUB }}>
             {p.paying ? "Payday" : "Your money"}
           </span>
           <span
             style={{
               fontSize: type(16),
-              fontWeight: 800,
+              fontWeight: 700,
               letterSpacing: "-0.02em",
               fontVariantNumeric: "tabular-nums",
               color: INK,
@@ -497,13 +503,13 @@ export default function Shop(p: ShopProps) {
               </span>
             ))}
             {p.cashBlocks > drawnCash && (
-              <span style={{ fontSize: type(11), fontWeight: 650, color: SUB, marginLeft: 4, fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: type(12), fontWeight: 600, color: SUB, marginLeft: 4, fontVariantNumeric: "tabular-nums" }}>
                 and {p.cashBlocks - drawnCash} more
               </span>
             )}
           </span>
           {p.paying && p.incomeBlocks > 0 && (
-            <span style={{ fontSize: type(11.5), fontWeight: 650, color: ACCENT, marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontSize: type(12), fontWeight: 600, color: ACCENT, marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}>
               {p.incomeBlocks} {blockWord(p.incomeBlocks)} arrived
             </span>
           )}
@@ -526,7 +532,7 @@ export default function Shop(p: ShopProps) {
       >
         {p.rows.length === 0 ? (
           <p data-counter-note="1" style={{ margin: "8px 2px", fontSize: type(13.5), lineHeight: 1.5, color: SUB }}>
-            There is nothing to buy in this chapter, and your money is safe where it is.
+            There is nothing to buy in this chapter.
           </p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${cardW}px)`, gap, alignItems: "start" }}>
@@ -608,13 +614,13 @@ export default function Shop(p: ShopProps) {
         <div
           style={{
             fontSize: type(12),
-            fontWeight: 650,
+            fontWeight: 600,
             color: SUB,
             marginBottom: 5,
             minHeight: Math.round(type(12) * 1.35),
           }}
         >
-          {p.stacks.length === 0 ? "" : "Your cards. Sell any of them back at today's price."}
+          {p.stacks.length === 0 ? "" : "Sell your cards back at today's price."}
         </div>
         <div
           className="tally-scroll"
@@ -647,7 +653,7 @@ export default function Shop(p: ShopProps) {
                 textAlign: "center",
               }}
             >
-              Your cards will show here, and you can sell any of them back at today&rsquo;s price.
+              Your cards will show here.
             </span>
           )}
           {p.stacks.map((st) => {
@@ -699,7 +705,7 @@ export default function Shop(p: ShopProps) {
                             sector={st.asset.sector}
                             worthBlocks={c.blocks}
                             blockColor={st.asset.color}
-                            priceLabel={st.stone ? "no price" : wholeMoney(c.worth)}
+                            priceLabel={st.stone ? "No price" : wholeMoney(c.worth)}
                             stone={st.stone}
                             dotted={st.asset.reconstructed || st.illustrative}
                             width={miniW}
@@ -712,8 +718,8 @@ export default function Shop(p: ShopProps) {
                             style={{
                               height: fanCapH,
                               marginTop: 3,
-                              fontSize: type(9.5),
-                              fontWeight: 700,
+                              fontSize: type(12),
+                              fontWeight: 600,
                               lineHeight: 1.25,
                               color: SUB,
                               fontVariantNumeric: "tabular-nums",
@@ -727,7 +733,7 @@ export default function Shop(p: ShopProps) {
                             ui={ui}
                             small
                             mark={{ "data-fan-sell": String(uid) }}
-                            label={st.stone ? "cannot sell" : `Sell 1 · ${wholeMoney(c.worth)}`}
+                            label={st.stone ? "Cannot sell" : `Sell 1 · ${wholeMoney(c.worth)}`}
                             tone={st.stone ? "off" : "live"}
                             down={sold === uid}
                             title={
@@ -744,7 +750,7 @@ export default function Shop(p: ShopProps) {
                   <Tab
                     ui={ui}
                     mark={{ "data-fan-all": st.asset.id }}
-                    label={st.stone ? "cannot sell" : `Sell all · ${wholeMoney(st.totalWorth)}`}
+                    label={st.stone ? "Cannot sell" : `Sell all · ${wholeMoney(st.totalWorth)}`}
                     tone={st.stone ? "off" : "live"}
                     down={false}
                     title={
@@ -813,7 +819,7 @@ export default function Shop(p: ShopProps) {
                     sector={st.asset.sector}
                     worthBlocks={front.blocks}
                     blockColor={st.asset.color}
-                    priceLabel={st.stone ? "no price" : priceLine(st.asset, st.price, st.ratePerYear)}
+                    priceLabel={st.stone ? "No price" : priceLine(st.asset, st.price, st.ratePerYear)}
                     stone={st.stone}
                     dotted={st.asset.reconstructed || st.illustrative}
                     width={cardW}
@@ -826,7 +832,7 @@ export default function Shop(p: ShopProps) {
                 <Tab
                   ui={ui}
                   mark={{ "data-till": String(uid) }}
-                  label={st.stone ? "cannot sell" : `Sell 1 · ${wholeMoney(front.worth)}`}
+                  label={st.stone ? "Cannot sell" : `Sell 1 · ${wholeMoney(front.worth)}`}
                   tone={st.stone ? "off" : "live"}
                   down={down}
                   title={

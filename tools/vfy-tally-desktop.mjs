@@ -250,7 +250,7 @@ for (const ch of [4, 6]) {
   );
   const marks = await page.evaluate(() => {
     const t = document.querySelector('[data-wall-geom]').textContent;
-    return { target: /target \$/.test(t), readout: /blocks?\b/.test(t) };
+    return { target: /target \$/i.test(t), readout: /blocks?\b/i.test(t) };
   });
   check(marks.target && marks.readout, `chapter ${ch} wall keeps its target line and readout`, JSON.stringify(marks));
 }

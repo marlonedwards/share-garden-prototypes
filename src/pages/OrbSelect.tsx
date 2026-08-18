@@ -26,15 +26,15 @@ const SCENARIOS: {
     to: "/orb/tutorial",
     lesson: "Lesson 1",
     title: "What a portfolio is",
-    line: "Pour $1,000 into colors, meet the rainbow orb, ride out a crash.",
-    learn: "What your money becomes when you buy a share, and why a crash doesn't take it away.",
+    line: "Pour $1,000 into colors and ride out a crash.",
+    learn: "What your money becomes when you buy a share.",
     dots: ["#0a84ff", "#bf5af2", "#ff9f0a", "#30d158"],
     time: "about 5 minutes",
   },
   ...ERAS.map((e) => ({
     to: `/orb/s/${e.id}`,
     lesson: e.lesson,
-    title: e.title.toLowerCase() === e.title ? e.title : e.title.charAt(0) + e.title.slice(1).toLowerCase(),
+    title: e.title,
     line: e.cardLine,
     learn: e.learn,
     dots: e.dots,
@@ -45,8 +45,8 @@ const SCENARIOS: {
     to: "/orb/ready",
     lesson: "The last lesson",
     title: "Ready to invest?",
-    line: "One door opens on two paths. Build a plan in real names and real dollars, and let the mirror read it.",
-    learn: "This lesson shows how to put a first orb on paper, read its shape honestly, and talk it over with an adult.",
+    line: "Build a first plan in real names and real dollars.",
+    learn: "How to put a first orb on paper and read its shape honestly.",
     dots: ["#0057b8", "#30d158", "#f7931a", "#64748b"],
     time: "about 10 minutes",
   },
@@ -54,8 +54,8 @@ const SCENARIOS: {
     to: "/orb/free",
     lesson: "Freeplay",
     title: "The sandbox",
-    line: "You can run a toy market or a real era here, and no script tells you what to do. Finish whenever you like.",
-    learn: "The sandbox teaches whatever you decide to try, and the rainbow orb runs beside you the whole time.",
+    line: "Run a toy market or a real era with no script.",
+    learn: "Whatever you decide to try.",
     dots: ["#0a84ff", "#bf5af2", "#ff9f0a", "#30d158", "#64d2ff", "#ffd60a", "#ff453a", "#a2845e"],
     time: "open ended",
   },
@@ -116,7 +116,7 @@ export default function OrbSelect() {
       <header className="flex items-center gap-4 px-6 sm:px-10 h-16">
         <Link to="/" className="text-sm hover:opacity-100 opacity-60 transition flex items-center gap-2" style={{ color: "#1d1d1f" }}>
           <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M7.5 2 L3.5 6 L7.5 10" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          gallery
+          Gallery
         </Link>
         <div className="h-5 w-px bg-black/10" />
         <span className="text-lg font-semibold tracking-tight">The Orb</span>
@@ -130,18 +130,17 @@ export default function OrbSelect() {
             id="orb-name"
             value={orbName}
             onChange={(e) => setOrbName(e.target.value)}
-            placeholder="give it a name"
+            placeholder="Give it a name"
             maxLength={24}
             className="text-[15px] font-semibold tracking-tight bg-transparent outline-none border-b border-black/10 focus:border-black/30 transition"
             style={{ width: `${Math.max(11, orbName.length + 2)}ch` }}
           />
         </div>
         <p className="mt-2 text-[15px] max-w-xl" style={{ color: "#6e6e73" }}>
-          Everything you own lives in one glass orb. Each company is a color. The orb's size is what
-          it's all worth right now. Pick a scenario.
+          Everything you own lives in one glass orb, and each company is a color.
         </p>
 
-        <div className="mt-6 rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex items-center gap-6">
+        <div className="mt-6 rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex flex-wrap items-center gap-x-6 gap-y-3">
           {plan && planUsd > 0 ? (
             <Link to="/orb/ready" className="flex-shrink-0 transition hover:opacity-85"
               title="Your orb, drawn from the plan you saved in Ready to invest?">
@@ -157,24 +156,24 @@ export default function OrbSelect() {
               <div className="absolute rounded-full" style={{ left: "24%", top: "14%", width: "20%", height: "11%", background: "rgba(255,255,255,0.95)", transform: "rotate(-25deg)" }} />
             </div>
           )}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[180px] flex-1">
             <div className="text-[17px] font-semibold tracking-tight">{orbName || "Your orb"}</div>
             <p className="text-[12.5px] mt-0.5" style={{ color: "#6e6e73" }}>
               {plan && planUsd > 0
-                ? `${plan.path === "own" ? "Holding" : "Planning"} $${Math.round(planUsd).toLocaleString("en-US")} across ${plan.lines.length} ${plan.lines.length === 1 ? "line" : "lines"}. It grows with every lesson you play.`
-                : "It holds every investment you make, in every lesson, and everything about it stays on this computer."}
+                ? `${plan.path === "own" ? "Holding" : "Planning"} $${Math.round(planUsd).toLocaleString("en-US")} across ${plan.lines.length} ${plan.lines.length === 1 ? "line" : "lines"}.`
+                : "It holds every investment you make, in every lesson."}
             </p>
           </div>
-          <Link to="/orb/guide" className="flex-shrink-0 text-right group">
+          <Link to="/orb/guide" className="w-full sm:w-auto flex-shrink-0 text-left sm:text-right group">
             <div className="text-[13px] font-medium" style={{ color: "#0071e3" }}>Field guide</div>
             <div className="text-[12px] tnum" style={{ color: "#6e6e73" }}>{proved} of {FIELD_ENTRIES.length} marbles</div>
           </Link>
         </div>
 
         <div className="mt-6 rounded-2xl bg-white border border-black/8 shadow-sm p-5">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <div className="text-[15px] font-semibold tracking-tight">Start here: the basics</div>
-            <div className="text-[12px]" style={{ color: "#6e6e73" }}>Five short lessons run in order, and together they clear nine marbles.</div>
+            <div className="text-[12px]" style={{ color: "#6e6e73" }}>Five short lessons, played in order.</div>
             <Link to="/orb/intro" className="ml-auto text-[12px] font-medium transition hover:opacity-75" style={{ color: "#0071e3" }}>
               Replay the intro
             </Link>
@@ -189,14 +188,14 @@ export default function OrbSelect() {
                   title={st === "cleared" ? "This marble is cleared." : st === "cloudy" ? "This marble is still setting." : "This marble is not earned yet."}>
                   <div className="flex items-center gap-2 w-full">
                     <LessonMarble state={st} color={l.marble.color} />
-                    <span className="ml-auto text-[11px] tnum whitespace-nowrap" style={{ color: "#a1a1a6" }}>Basics {i + 1} of {LESSON_LADDER.length}</span>
+                    <span className="ml-auto text-[12px] tnum whitespace-nowrap" style={{ color: "#a1a1a6" }}>{i + 1} of {LESSON_LADDER.length}</span>
                   </div>
-                  <span className="text-[12.5px] font-medium leading-tight">{l.title}</span>
-                  <span className="text-[11px] leading-tight" style={{ color: "#6e6e73" }}>
-                    {st === "cleared" ? "The marble is cleared." : st === "cloudy" ? "The marble is still setting." : st === "claimed" ? "You said you know this. Prove it here." : "The marble is waiting."}
+                  <span className="text-[13px] font-medium leading-tight">{l.title}</span>
+                  <span className="text-[12px] leading-tight" style={{ color: "#6e6e73" }}>
+                    {st === "cleared" ? "The marble is cleared." : st === "cloudy" ? "The marble is still setting." : st === "claimed" ? "Prove it here." : "The marble is waiting."}
                   </span>
                   {startHere === `/orb/learn/${l.id}` && (
-                    <span className="text-[10.5px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
+                    <span className="text-[12px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
                       Start here
                     </span>
                   )}
@@ -206,17 +205,17 @@ export default function OrbSelect() {
           </div>
         </div>
 
-        <div className="mt-8 flex items-baseline gap-2">
+        <div className="mt-8 flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <div className="text-[15px] font-semibold tracking-tight">Then play the lessons</div>
           <div className="text-[12px]" style={{ color: "#6e6e73" }}>
-            The tutorial and six real eras run in order as Lessons 1 to 7, and the last lesson ends the course.
+            The tutorial and six real eras, played in order.
           </div>
         </div>
         <div className="mt-3 flex flex-col gap-4">
           {SCENARIOS.map((s) => (
             <div key={s.to}>
             <Link to={s.to}
-              className="group rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex items-center gap-6 transition hover:shadow-md hover:-translate-y-0.5">
+              className="group rounded-3xl bg-white border border-black/8 shadow-sm p-6 flex flex-wrap items-center gap-x-6 gap-y-3 transition hover:shadow-md hover:-translate-y-0.5">
               <div className="w-20 h-20 rounded-full flex-shrink-0 relative"
                 style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(238,243,250,0.4) 60%, rgba(214,224,238,0.6))", boxShadow: "inset 0 0 0 1px rgba(30,45,80,0.1), 0 6px 16px -8px rgba(24,34,60,0.35)" }}>
                 <div className="absolute inset-3 rounded-full overflow-hidden flex flex-wrap items-center justify-center gap-0.5 p-1.5" style={{ filter: "blur(3px)", opacity: 0.9 }}>
@@ -226,22 +225,20 @@ export default function OrbSelect() {
                 </div>
                 <div className="absolute rounded-full" style={{ left: "22%", top: "16%", width: "18%", height: "10%", background: "rgba(255,255,255,0.9)", transform: "rotate(-25deg)" }} />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[180px] flex-1">
                 <div className="text-[12px] font-semibold" style={{ color: "#0071e3" }}>
                   {s.lesson}
                   {startHere === s.to && (
-                    <span className="ml-2 text-[10.5px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
+                    <span className="ml-2 text-[12px] font-semibold px-2 py-[2px] rounded-full" style={{ background: "#e8f3ff", color: "#0057b8" }}>
                       Start here
                     </span>
                   )}
                 </div>
                 <div className="text-[19px] font-semibold tracking-tight">{s.title}</div>
                 <div className="text-[13.5px] mt-0.5" style={{ color: "#6e6e73" }}>{s.line}</div>
-                <div className="text-[12.5px] mt-1.5" style={{ color: "#3a3a3c" }} title={s.learn}>
-                  <span className="font-medium">You'll learn:</span> {s.learn}
-                </div>
+                <div className="text-[13px] mt-1.5" style={{ color: "#3a3a3c" }}>{s.learn}</div>
               </div>
-              <div className="text-right flex-shrink-0">
+              <div className="w-full sm:w-auto flex-shrink-0 flex sm:block items-center gap-3 text-left sm:text-right">
                 <div className="text-[12px]" style={{ color: "#6e6e73" }}>{s.time}</div>
                 <div className="mt-2 text-[13px] font-medium px-3.5 py-1.5 rounded-full text-white transition group-hover:brightness-110 flex items-center justify-center leading-none" style={{ background: "#0071e3" }}>Play</div>
               </div>
@@ -254,7 +251,7 @@ export default function OrbSelect() {
                     <path d="M2 2.5 h7 a2 2 0 0 1 2 2 V 11.5 a1.6 1.6 0 0 0 -1.6 -1.6 H2 Z" />
                     <path d="M4.3 5 h4.4 M4.3 7.2 h4.4" />
                   </svg>
-                  The era briefing is an optional 2 minute read, and it tells the whole story, ending included.
+                  The era briefing is an optional 2 minute read.
                 </Link>
               </div>
             )}
