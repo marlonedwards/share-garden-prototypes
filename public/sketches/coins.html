@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coins, visual contract</title>
+<style>
+  :root {
+    --ink: #F2F5FA;
+    --muted: #8B99AC;
+    --line: #2A3447;
+    --bg: #080B12;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 24px 20px 60px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  .stage {
+    background: #0D1220;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  canvas { display: block; width: 100%; height: auto; }
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--line);
+    background: #10182A;
+  }
+  button {
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: #1B2740;
+    border: 1px solid #2E3B55;
+    border-radius: 9px;
+    padding: 7px 13px;
+    cursor: pointer;
+  }
+  button:hover { border-color: #4A5C7E; }
+  button:disabled { color: #55627A; cursor: default; border-color: #232E44; background: #141C2E; }
+  button.primary { background: #F2F5FA; color: #0B1120; border-color: #F2F5FA; }
+  .spacer { flex: 1; }
+  .sel { color: var(--muted); font-size: 14px; }
+  input[type=range] { width: 260px; }
+  .notes { margin-top: 26px; color: var(--muted); font-size: 14px; max-width: 760px; }
+  .notes p { margin: 0 0 10px; }
+  .notes b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Coins, visual contract</h1>
+  <p class="sub">Wave one, real monthly prices from 2019 to 2024, drawn at the constants in docs/coins-spec.md. Flat two dimensional stand-in for the three.js scene, so the heights are the point and the lighting is not.</p>
+
+  <div class="stage">
+    <canvas id="c" width="2360" height="1960"></canvas>
+    <div class="bar">
+      <button id="play" class="primary">Play</button>
+      <input id="scrub" type="range" min="0" max="71" step="0.01" value="0" />
+      <span id="date" class="sel">January 2019</span>
+      <span class="spacer"></span>
+      <span id="sel" class="sel">Tap a stack</span>
+      <button id="buy1">Buy 1</button>
+      <button id="buy5">Buy 5</button>
+      <button id="sell1">Sell 1</button>
+      <button id="sellall">Sell all</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><b>Rule one.</b> GameStop at $2.84 and Amazon at $86 are on the same ruler. One coin is a wafer, one is a slab, and the ratio of the drawn thicknesses is the ratio of the prices.</p>
+    <p><b>Rule two.</b> Press play and watch Nvidia. Its coins never multiply. They get fatter, and the column rises because of it.</p>
+    <p><b>Rule three.</b> Sell a share and it lands in the trough as dollar coins, all of them the same size, ten dollars each. The total height on the board does not change at the moment of the trade.</p>
+    <p><b>The frame never moves when you trade.</b> Buy all you like and every other column stays exactly where it was. It is set once from what you are worth at the open, and it only pulls back when prices push a column past the top. The space above the stacks is the room they grow into, so press play and watch it fill.</p>
+  </div>
+</div>
+
+<script>
+const DATA = {"months":["2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12"],"series":{"GME":[2.84,2.93,2.63,2.24,1.96,1.41,1.04,1.03,1.43,1.41,1.64,1.57,0.99,0.93,0.9,1.48,1.05,1.12,1.04,1.73,2.64,2.71,4.28,4.87,84.01,26.3,49.07,44.87,57.38,55.35,41.65,56.41,45.36,47.43,50.72,38.36,28.16,31.88,43.06,32.33,32.24,31.61,35.16,29.61,25.98,29.27,27.1,19.09,22.61,19.88,23.8,19.94,24.87,25.07,22.95,19.18,17.02,14.24,15.04,18.12,14.71,14.75,12.94,11.47,23.93,25.53,23.44,24.21,23.71,22.93,30.04,32.4],"NVDA":[3.59,3.86,4.49,4.53,3.39,4.11,4.23,4.2,4.37,5.04,5.44,5.91,5.93,6.78,6.62,7.34,8.92,9.54,10.67,13.44,13.6,12.6,13.47,13.13,13.06,13.79,13.43,15.1,16.34,20.13,19.62,22.53,20.85,25.73,32.88,29.6,24.64,24.54,27.47,18.67,18.8,15.26,18.29,15.2,12.23,13.59,17.05,14.72,19.68,23.39,27.99,27.96,38.12,42.63,47.09,49.73,43.84,41.1,47.13,49.91,62.01,79.73,91.07,87.08,110.5,124.52,117.95,120.32,122.42,133.83,139.36,135.38],"TSLA":[20.47,21.33,18.66,15.91,12.34,14.9,16.11,15.04,16.06,20.99,22,27.89,43.37,44.53,34.93,52.13,55.67,71.99,95.38,166.11,143,129.35,189.2,235.22,264.51,225.17,222.64,236.48,208.41,226.57,229.07,245.24,258.49,371.33,381.59,352.26,312.24,290.14,359.2,290.25,252.75,224.47,297.15,275.61,265.25,227.54,194.7,123.18,173.22,205.71,207.46,164.31,203.93,261.77,267.43,258.08,250.22,200.84,240.08,248.48,187.29,201.88,175.79,183.28,178.08,197.88,232.07,214.11,261.63,249.85,345.16,403.84],"PTON":[25.1,25.1,25.1,25.1,25.1,25.1,25.1,25.1,25.1,23.87,35.23,28.4,32.36,26.69,26.55,31.5,42.19,57.77,68.22,76.67,99.24,110.21,116.35,151.72,146.13,120.47,112.44,98.35,110.31,124.02,118.05,100.19,87.05,91.44,44,35.76,27.33,29.06,26.42,17.56,13.96,9.18,9.49,10.19,6.93,8.4,11.38,7.94,12.93,12.92,11.34,8.88,7.28,7.69,9.71,6.38,5.05,4.76,5.66,6.09,5.56,4.52,4.29,3.11,3.64,3.38,3.56,4.66,4.68,8.5,10.34,8.7],"AAPL":[41.61,43.47,47.69,50.38,44.12,49.88,53.69,52.81,56.66,62.94,67.82,74.52,78.54,69.53,64.68,74.73,81.09,93.04,108.41,131.88,118.36,111.26,121.88,135.85,135.1,124.33,125.24,134.79,127.98,140.67,149.81,156.17,145.55,154.08,170.28,182.92,180.04,170.31,180.1,162.6,153.74,141.22,167.86,162.62,142.95,158.61,153.37,134.62,149.5,152.96,171.11,176.07,184.18,201.55,204.13,195.48,178.14,177.69,197.9,200.59,192.12,188.56,178.89,177.69,200.83,220.02,231.99,239.49,243.68,236.26,248.48,262.18],"ZM":[72.47,72.47,72.47,72.47,79.73,88.79,95.51,91.67,76.2,69.89,74.5,68.04,76.3,105,146.12,135.17,179.48,253.54,253.91,325.1,470.11,460.91,478.36,337.32,372.07,373.61,321.29,319.57,331.53,387.03,378.1,289.5,261.5,274.65,211.41,183.91,154.28,132.6,117.23,99.57,107.45,107.97,103.86,80.4,73.59,83.44,75.43,67.74,75,74.59,73.84,61.43,67.13,67.88,73.35,71.03,69.94,59.98,67.83,71.91,64.61,70.73,65.37,61.1,61.34,59.19,60.4,69.08,69.74,74.74,82.69,81.61],"AMZN":[85.94,81.99,89.04,96.33,88.75,94.68,93.34,88.81,86.8,88.83,90.04,92.39,100.44,94.19,97.49,123.7,122.12,137.94,158.23,172.55,157.44,151.81,158.4,162.85,160.31,154.65,154.7,173.37,161.15,172.01,166.38,173.54,164.25,168.62,175.35,166.72,149.57,153.56,163,124.28,120.21,106.21,134.95,126.77,113,102.44,96.54,84,103.13,94.23,103.29,105.45,120.58,130.36,133.68,138.01,127.12,133.09,146.09,151.94,155.2,176.76,180.38,175,176.44,193.25,186.98,178.5,186.33,186.4,207.89,219.39]}};
+
+// The shelf, left to right, cheapest share first so rule one reads immediately.
+// logo is the file key in public/logos; Zoom has no baked mark yet and falls
+// back to its ticker, the same fallback Takeover uses.
+const SHELF = [
+  { t: "GME",  name: "GameStop", color: "#E4002B", logo: "gme" },
+  { t: "NVDA", name: "Nvidia",   color: "#76B900", logo: "nvidia" },
+  { t: "TSLA", name: "Tesla",    color: "#CC0000", logo: "tesla" },
+  { t: "PTON", name: "Peloton",  color: "#111111", logo: "peloton" },
+  { t: "AAPL", name: "Apple",    color: "#8E9196", logo: "apple" },
+  { t: "ZM",   name: "Zoom",     color: "#2D8CFF", logo: null },
+  { t: "AMZN", name: "Amazon",   color: "#FF9900", logo: "amazon" },
+];
+
+const START_CASH = 2000;   // enough to hold a real stack of most of the shelf
+const DENOM = 10;          // one dollar coin is ten dollars
+const STAGE_H = 760;       // usable height for stacks, in css px of the design
+const FILL = 0.85;         // a full position uses this much of the stage at wave start
+const COIN_D = 76;         // share coin diameter, wide enough for a logo on top
+const CHIP_D = 44;         // dollar coin diameter, narrower on purpose
+
+const logos = {};
+function loadLogos(done) {
+  const keys = SHELF.map((s) => s.logo).filter(Boolean);
+  let left = keys.length;
+  if (!left) return done();
+  for (const k of keys) {
+    const img = new Image();
+    img.onload = () => { logos[k] = img; if (--left === 0) done(); };
+    img.onerror = () => { if (--left === 0) done(); };
+    img.src = "../logos/" + encodeURI(k) + ".png";
+  }
+}
+const INK = "#F2F5FA", MUTED = "#8B99AC", LINE = "#2A3447";
+const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let state = null;
+function reset() {
+  state = { t: 0, cash: START_CASH, held: {}, sel: null, playing: false, S: STAGE_H * FILL / START_CASH };
+  for (const c of SHELF) state.held[c.t] = 0;
+  scrub.value = "0";
+  play.textContent = "Play";
+}
+
+function smooth(x) { return x * x * (3 - 2 * x); }
+
+function priceAt(ticker, t) {
+  const s = DATA.series[ticker];
+  const i = Math.min(s.length - 1, Math.max(0, Math.floor(t)));
+  const j = Math.min(s.length - 1, i + 1);
+  return s[i] + (s[j] - s[i]) * smooth(t - i);
+}
+
+function worth() {
+  let w = state.cash;
+  for (const c of SHELF) w += state.held[c.t] * priceAt(c.t, state.t);
+  return w;
+}
+
+// The ratchet: S only ever falls, so a decline is never hidden by the camera
+// creeping back in.
+// The camera must not move when you trade. It is set once from the wave's
+// opening worth and only ever eases out, and only for prices.
+//
+// This is safe because of conservation: a trade never changes what you are
+// worth, and no column can be taller than your worth, so starting at 0.85 of
+// the stage means no amount of buying can ever overflow the frame. Fitting to
+// the tallest column was tried and it rescaled the whole board every time you
+// bought, which is exactly the thing that felt broken.
+//
+// The empty space above the stacks is not waste. It is the room they grow into
+// over the wave, and watching them fill it is rule 2.
+function updateScale() {
+  let tallest = state.cash;
+  for (const c of SHELF) tallest = Math.max(tallest, state.held[c.t] * priceAt(c.t, state.t));
+  if (tallest * state.S > STAGE_H * 0.92) {
+    state.S += (STAGE_H * FILL / tallest - state.S) * 0.12;
+  }
+}
+
+function money(n) {
+  return "$" + n.toLocaleString("en-US", { maximumFractionDigits: n < 100 ? 2 : 0 });
+}
+
+function dateLabel() {
+  const m = DATA.months[Math.min(DATA.months.length - 1, Math.floor(state.t))];
+  const [y, mo] = m.split("-");
+  return MONTH_NAMES[parseInt(mo, 10) - 1] + " " + y;
+}
+
+// drawing ---------------------------------------------------------------
+
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
+const W = 1180, H = 980, DPR = 2;
+c.width = W * DPR; c.height = H * DPR;
+
+const BASE_Y = 880;        // the shelf surface
+const TROUGH_X = 92;
+const SLOT_X = 214, SLOT_W = 138;
+
+function slotX(i) { return SLOT_X + i * SLOT_W; }
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  r = Math.round(Math.min(255, Math.max(0, r + amt)));
+  g = Math.round(Math.min(255, Math.max(0, g + amt)));
+  b = Math.round(Math.min(255, Math.max(0, b + amt)));
+  return "rgb(" + r + "," + g + "," + b + ")";
+}
+
+function lum(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+}
+
+// The line between two stacked coins. Dark on a light coin, light on a dark one,
+// so Peloton's black stack separates as clearly as Amazon's orange.
+function seamOf(color) {
+  return lum(color) < 70 ? shade(color, 62) : shade(color, -78);
+}
+
+const sideCache = new Map();
+function sideFill(cx, rx, color) {
+  const key = color + ":" + Math.round(cx);
+  let g = sideCache.get(key);
+  if (!g) {
+    g = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    g.addColorStop(0, shade(color, -66));
+    g.addColorStop(0.14, shade(color, -22));
+    g.addColorStop(0.32, shade(color, 34));
+    g.addColorStop(0.5, shade(color, 4));
+    g.addColorStop(0.78, shade(color, -30));
+    g.addColorStop(1, shade(color, -70));
+    sideCache.set(key, g);
+  }
+  return g;
+}
+
+// One coin: a shaded side wall and an elliptical top. The ellipse never changes
+// with height, so thickness stays honest no matter how thin the coin gets.
+function coin(cx, top, h, d, color) {
+  const rx = d / 2, ry = d * 0.17;
+  ctx.fillStyle = sideFill(cx, rx, color);
+  ctx.beginPath();
+  ctx.moveTo(cx - rx, top);
+  ctx.lineTo(cx - rx, top + h);
+  ctx.ellipse(cx, top + h, rx, ry, 0, Math.PI, 0, true);
+  ctx.lineTo(cx + rx, top);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shade(color, 22);
+  ctx.beginPath();
+  ctx.ellipse(cx, top, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = seamOf(color);
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.ellipse(cx, top, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // The coin above covers this one's top ellipse completely, so the line a
+  // player actually sees between two coins is this front bulge. Without it the
+  // stack reads as one smooth cylinder.
+  ctx.beginPath();
+  ctx.ellipse(cx, top + h, rx, ry, 0, Math.PI, 0, true);
+  ctx.stroke();
+}
+
+// The logo lies flat on the top face, squashed to the ellipse so it reads as
+// printed on the coin rather than floating above it. It sits on a light inset
+// disc, because the baked marks are dark and some carry their own background.
+function faceMark(cx, top, d, co) {
+  const rx = d / 2, ry = d * 0.17;
+  const irx = rx * 0.78, iry = ry * 0.78;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  ctx.ellipse(cx, top, irx, iry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const img = co.logo ? logos[co.logo] : null;
+  if (img) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, top, irx, iry, 0, 0, Math.PI * 2);
+    ctx.clip();
+    // true perspective would be w * (ry / rx); a mark squashed that hard stops
+    // being readable, and the real scene projects its own texture anyway
+    const w = irx * 1.55, hh = w * 0.46;
+    ctx.drawImage(img, cx - w / 2, top - hh / 2, w, hh);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = shade(co.color, -40);
+    ctx.font = "600 12px " + FONT;
+    ctx.textAlign = "center";
+    ctx.save();
+    ctx.translate(cx, top);
+    ctx.scale(1, ry / rx * 1.9);
+    ctx.fillText(co.t, 0, 4);
+    ctx.restore();
+  }
+  ctx.strokeStyle = "rgba(0,0,0,0.14)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(cx, top, irx, iry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function plate(cx, label, sub, on) {
+  const rx = COIN_D / 2 + 12, ry = 9;
+  // the coin throws a soft shadow onto the table before the plate goes down
+  const sh = ctx.createRadialGradient(cx, BASE_Y + 3, 2, cx, BASE_Y + 3, rx * 1.5);
+  sh.addColorStop(0, "rgba(0,0,0,0.55)");
+  sh.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = sh;
+  ctx.beginPath();
+  ctx.ellipse(cx, BASE_Y + 3, rx * 1.5, ry * 1.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = on ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.07)";
+  ctx.beginPath();
+  ctx.ellipse(cx, BASE_Y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = on ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = on ? INK : MUTED;
+  ctx.font = "600 13px " + FONT;
+  ctx.textAlign = "center";
+  ctx.fillText(label, cx, BASE_Y + 30);
+  if (sub) {
+    ctx.fillStyle = MUTED;
+    ctx.font = "400 13px " + FONT;
+    ctx.fillText(sub, cx, BASE_Y + 48);
+  }
+}
+
+function niceStep(topDollars) {
+  const raw = topDollars / 5;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (raw <= m * mag) return m * mag;
+  return 10 * mag;
+}
+
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const sky = ctx.createLinearGradient(0, 0, 0, BASE_Y);
+  sky.addColorStop(0, "#131C31");
+  sky.addColorStop(1, "#0A0F1C");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+  // a pool of light behind the shelf, so the coins sit in a room and not a void
+  const pool = ctx.createRadialGradient(W / 2, BASE_Y - 40, 40, W / 2, BASE_Y - 40, W * 0.72);
+  pool.addColorStop(0, "rgba(104,140,214,0.20)");
+  pool.addColorStop(0.55, "rgba(80,110,180,0.07)");
+  pool.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = pool;
+  ctx.fillRect(0, 0, W, H);
+
+  const S = state.S, w = worth();
+
+  // the wall ruler
+  const topDollars = (BASE_Y - 70) / S;
+  const step = niceStep(topDollars);
+  ctx.textAlign = "right";
+  for (let v = step; v * S < BASE_Y - 60; v += step) {
+    const y = BASE_Y - v * S;
+    ctx.strokeStyle = "rgba(255,255,255,0.07)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(W - 26, y); ctx.stroke();
+    ctx.fillStyle = "#6B7A90";
+    ctx.font = "400 13px " + FONT;
+    ctx.fillText(money(v), W - 34, y - 6);
+  }
+
+  // No line for worth and none for where you started. Both are totals, and a
+  // total is many times taller than any one column once the money is split, so
+  // either they sit off the top of the frame or they force the whole board into
+  // the bottom third. The ruler carries the dollars; the HUD carries the total.
+
+  // the table, lit from the front so the coins have something to sit on
+  const floor = ctx.createLinearGradient(0, BASE_Y, 0, H);
+  floor.addColorStop(0, "#1A2438");
+  floor.addColorStop(1, "#070B14");
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, BASE_Y, W, H - BASE_Y);
+  ctx.strokeStyle = "rgba(255,255,255,0.14)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, BASE_Y); ctx.lineTo(W, BASE_Y); ctx.stroke();
+
+  // cash, as identical ten dollar coins
+  plate(TROUGH_X, "cash", money(state.cash), state.sel === null);
+  const chips = Math.floor(state.cash / DENOM);
+  const chipH = DENOM * S;
+  const drawn = Math.min(chips, 400);
+  for (let i = 0; i < drawn; i++) {
+    coin(TROUGH_X, BASE_Y - (i + 1) * chipH, chipH, CHIP_D, "#9AA7B4");
+  }
+  const rem = state.cash - chips * DENOM;
+  if (rem > 0.01) coin(TROUGH_X, BASE_Y - chips * chipH - rem * S, rem * S, CHIP_D, "#9AA7B4");
+  if (chips > 0) {
+    ctx.fillStyle = "#5E6B79";
+    ctx.font = "600 15px " + FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("$", TROUGH_X, BASE_Y - chips * chipH - rem * S + 4);
+  }
+
+  // the companies
+  SHELF.forEach((co, i) => {
+    const cx = slotX(i);
+    const p = priceAt(co.t, state.t);
+    const n = state.held[co.t];
+    const h = p * S;
+    plate(cx, co.name, money(p), state.sel === co.t);
+    for (let k = 0; k < Math.min(n, 400); k++) {
+      coin(cx, BASE_Y - (k + 1) * h, h, COIN_D, co.color);
+    }
+
+    // one loose coin sits on the plate when you own none, so a share's price is
+    // always readable as a height and not only as a number
+    if (n === 0) coin(cx, BASE_Y - h, h, COIN_D, co.color);
+    faceMark(cx, BASE_Y - Math.max(n, 1) * h, COIN_D, co);
+
+    if (n > 0) {
+      ctx.fillStyle = INK;
+      ctx.font = "600 13px " + FONT;
+      ctx.textAlign = "center";
+      ctx.fillText(n + (n === 1 ? " share" : " shares"), cx, BASE_Y - n * h - 14);
+    }
+  });
+
+  // hud
+  ctx.textAlign = "left";
+  ctx.fillStyle = INK;
+  ctx.font = "600 26px " + FONT;
+  ctx.fillText(money(w), 26, 44);
+  ctx.fillStyle = MUTED;
+  ctx.font = "400 14px " + FONT;
+  ctx.fillText("cash " + money(state.cash) + ", started with " + money(START_CASH), 26, 66);
+  ctx.textAlign = "right";
+  ctx.fillStyle = INK;
+  ctx.font = "600 15px " + FONT;
+  ctx.fillText(dateLabel(), W - 26, 44);
+  ctx.fillStyle = MUTED;
+  ctx.font = "400 14px " + FONT;
+  ctx.fillText("the 2020s", W - 26, 66);
+}
+
+// controls --------------------------------------------------------------
+
+const play = document.getElementById("play");
+const scrub = document.getElementById("scrub");
+const dateEl = document.getElementById("date");
+const selEl = document.getElementById("sel");
+
+c.addEventListener("click", (e) => {
+  const r = c.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (W / r.width);
+  if (x < (TROUGH_X + SLOT_X) / 2) { state.sel = null; syncSel(); return; }
+  let best = null, bd = 1e9;
+  SHELF.forEach((co, i) => {
+    const d = Math.abs(slotX(i) - x);
+    if (d < bd) { bd = d; best = co.t; }
+  });
+  state.sel = bd < SLOT_W / 2 + 10 ? best : null;
+  syncSel();
+});
+
+function syncSel() {
+  const co = SHELF.find((s) => s.t === state.sel);
+  selEl.textContent = co ? co.name : "Tap a stack";
+  const p = co ? priceAt(co.t, state.t) : 0;
+  buy1.disabled = !co || state.cash < p;
+  buy5.disabled = !co || state.cash < p * 5;
+  sell1.disabled = !co || state.held[co.t] < 1;
+  sellall.disabled = !co || state.held[co.t] < 1;
+}
+
+function buy(n) {
+  const co = SHELF.find((s) => s.t === state.sel);
+  if (!co) return;
+  const p = priceAt(co.t, state.t);
+  for (let i = 0; i < n; i++) {
+    if (state.cash < p) break;
+    state.cash -= p;
+    state.held[co.t] += 1;
+  }
+  syncSel();
+}
+
+function sell(n) {
+  const co = SHELF.find((s) => s.t === state.sel);
+  if (!co) return;
+  const p = priceAt(co.t, state.t);
+  const k = Math.min(n, state.held[co.t]);
+  state.held[co.t] -= k;
+  state.cash += k * p;
+  syncSel();
+}
+
+document.getElementById("buy1").onclick = () => buy(1);
+document.getElementById("buy5").onclick = () => buy(5);
+document.getElementById("sell1").onclick = () => sell(1);
+document.getElementById("sellall").onclick = () => sell(9999);
+document.getElementById("reset").onclick = () => { reset(); syncSel(); };
+
+play.onclick = () => {
+  state.playing = !state.playing;
+  play.textContent = state.playing ? "Pause" : "Play";
+};
+
+scrub.oninput = () => {
+  state.playing = false;
+  play.textContent = "Play";
+  state.t = parseFloat(scrub.value);
+};
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  if (state.playing) {
+    state.t += dt;                       // one second is one month
+    if (state.t >= DATA.months.length - 1) {
+      state.t = DATA.months.length - 1;
+      state.playing = false;
+      play.textContent = "Play";
+    }
+    scrub.value = String(state.t);
+  }
+  updateScale();
+  dateEl.textContent = dateLabel();
+  draw();
+  requestAnimationFrame(frame);
+}
+
+reset();
+syncSel();
+loadLogos(() => {});
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
