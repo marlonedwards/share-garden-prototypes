@@ -94,6 +94,33 @@ function WorthMotif() {
   );
 }
 
+// Trigger's motif: one candle mid-flip between the two calls, in the game's
+// own dark, one-stock language.
+function TriggerMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <rect x="0" y="0" width="118" height="104" rx="14" fill="#0C0F14" />
+      <path d="M14,70 L34,58 L50,64 L68,40 L86,46 L104,24" stroke="#2A3646" strokeWidth="2" fill="none" />
+      <rect x="46" y="38" width="10" height="30" rx="2" fill="#3FAE6B" />
+      <rect x="50" y="28" width="2" height="10" fill="#3FAE6B" />
+      <circle cx="104" cy="24" r="4" fill="#3FAE6B" />
+    </svg>
+  );
+}
+
+// The Floor's motif: a short desk row across five eras, in the game's own
+// flat, dark-arena language.
+function FloorMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <rect x="0" y="0" width="118" height="104" rx="14" fill="#0C0F14" />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <rect key={i} x={12 + i * 20} y={78 - [24, 40, 18, 52, 32][i]} width="14" height={[24, 40, 18, 52, 32][i]} rx="2" fill={i === 3 ? "#D98A00" : "#2A3646"} />
+      ))}
+    </svg>
+  );
+}
+
 export default function Landing() {
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
@@ -104,6 +131,28 @@ export default function Landing() {
         </p>
 
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <Link to="/trigger" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <TriggerMotif />
+            </div>
+            <div className="text-[22px] font-semibold tracking-tight">Trigger</div>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
+              Time the market, if you can.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Trigger</div>
+          </Link>
+
+          <Link to="/floor" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <FloorMotif />
+            </div>
+            <div className="text-[22px] font-semibold tracking-tight">The Floor</div>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
+              Trade five decades and keep what you make.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Floor</div>
+          </Link>
+
           <Link to="/takeover" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <TakeoverMotif />

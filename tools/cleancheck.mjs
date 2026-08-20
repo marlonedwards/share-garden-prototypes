@@ -23,6 +23,8 @@ const ROUTES = [
   ["guess", "/#/guess"],
   ["takeover", "/#/takeover"],
   ["worth", "/#/worth"],
+  ["trigger", "/#/trigger"],
+  ["floor", "/#/floor"],
   ["tally", "/#/tally"],
   ["orb-select", "/#/orb"],
   ["orb-scenario", "/#/orb/s/dotcom"],
