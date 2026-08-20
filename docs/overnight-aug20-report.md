@@ -47,7 +47,12 @@ live links. Written as the run goes.
   round closed both (debrief card split into a scrolling body and a footer
   that owns Continue; collision-aware label layout with leader lines), and
   the reviewer confirmed both closed across four debriefs on three eras.
-- Final verdicts: Trigger SHIP, The Floor SHIP. Deployed to main.
+- Final verdicts: Trigger SHIP, The Floor SHIP.
+- Deployed: commit cdea75a pushed to main, all six gates green (typecheck,
+  build, tapeSim, cleancheck, triggercheck, floorcheck), live bundle
+  verified to carry both games. The build's two CSS warnings pre-exist on
+  main (old Tally walk scripts feeding Tailwind's scanner) and are not from
+  this work.
 
 ## Live links
 
