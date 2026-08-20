@@ -877,7 +877,7 @@ async function R_debrief_card(page, view) {
   if (!(card.total >= 20)) fails.push(`the run only aired ${card.total} headlines`);
   if (!card.scrolls) fails.push("the reveal list does not scroll inside the card");
   if (card.years.length < 2) fails.push(`the worth chart carries ${card.years.length} year labels`);
-  if (!/^\d{4}-\d{2}$/.test(card.months[0] ?? "")) fails.push(`the reveal has no month column, first cell is "${card.months[0]}"`);
+  if (!/^(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/.test(card.months[0] ?? "")) fails.push(`the reveal has no month column, first cell is "${card.months[0]}"`);
   if (!card.continueVisible) fails.push("Continue is below the fold under the reveal list");
   return { fails, note: `${card.rows} of ${card.total} rows, years ${card.years.join(" ")}` };
 }

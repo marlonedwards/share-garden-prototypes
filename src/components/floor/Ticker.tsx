@@ -12,8 +12,8 @@
 import { useMemo } from "react";
 import { PlacedHeadline } from "../../lib/tape/headlines";
 
-export const PX_PER_MONTH = 190;
-const GAP = 56;
+export const PX_PER_MONTH = 150;
+const GAP = 64;
 const LATE_MONTHS = 3;
 
 interface Laid {
@@ -22,10 +22,10 @@ interface Laid {
   width: number;
 }
 
-// A close enough measure of a nowrap 13px system line, deliberately generous so
+// A close enough measure of a nowrap 16px system line, deliberately generous so
 // two headlines never touch.
 function widthOf(text: string): number {
-  return Math.round(text.length * 7 + 32);
+  return Math.round(text.length * 9 + 40);
 }
 
 export function layout(items: PlacedHeadline[], startIndex: number): Laid[] {
@@ -77,7 +77,7 @@ export default function Ticker({
             top: 0,
             transform: `translateX(${Math.round(width + l.start - scroll)}px)`,
             lineHeight: `${height}px`,
-            fontSize: 13,
+            fontSize: 16,
             color: "#B7C2D0",
           }}
         >

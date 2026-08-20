@@ -23,8 +23,8 @@ export default function Feed(
 ) {
   // the calculator is the biggest thing on the run screen, so the feed is
   // handed a ceiling rather than choosing its own size
-  const head = Math.max(12, Math.min(16, maxSize));
-  const plain = Math.max(12, Math.min(15, maxSize));
+  const head = Math.max(12, Math.min(19, maxSize));
+  const plain = Math.max(12, Math.min(18, maxSize));
   return (
     <div style={{ height, position: "relative", fontFamily: UI_FONT, overflow: "hidden" }}>
       <style>{`

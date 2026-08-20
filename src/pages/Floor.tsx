@@ -26,7 +26,7 @@ import {
   CAMPAIGN_START, GateRecord, LADDER, LedgerRow, Level, Phase, Progress,
   RunSave, SAVE_VERSION, STARS_POSSIBLE, STAR_NAMES, STAR_ORDER, StarId,
   biggestOf, campaignIndex, clearSave, compositeHolding, compositeIndex,
-  countOf, isBroke, isListed, ledgerFinal, levelIndexOf, levelOf, money, nameOf, openingFocus,
+  countOf, isBroke, isListed, isTradeable, ledgerFinal, levelIndexOf, levelOf, money, nameOf, openingFocus,
   pct, price as fmtPrice,
   readBest, readMonth, readSave, realizedFrom, settleRun, signedMoney, starsFor, starsIn,
   writeBest, writeSave,
@@ -60,7 +60,7 @@ const SETTLE_MS = 1200;
 // buttons in the same place from the first frame to the last.
 const HEADER_H = 26;
 const CHART_TITLE_H = 30;
-const TICKER_H = 30;
+const TICKER_H = 34;
 const RAIL_PHONE_H = 36;
 const TRADE_BTN_H = 40;
 const TRADE_ROW_H = TRADE_BTN_H;
@@ -169,7 +169,7 @@ function WorthChart({ track, months, holding, index, width, height }: {
   // A twelve pixel number sits in a fifteen pixel line box, so seventeen is one
   // line of type plus a sliver of air: touching is not colliding, but two
   // numbers with nothing between them still read as one.
-  const LABEL_GAP = 17;
+  const LABEL_GAP = 19;
   const topStop = 8;
   const bottomStop = height - 8;
   const order = marks.slice().sort((a, b) => a.at - b.at);
@@ -198,7 +198,7 @@ function WorthChart({ track, months, holding, index, width, height }: {
         <g key={`yr${i}`} data-worth-year={months[i]?.slice(0, 4)}>
           <line x1={x(i)} x2={x(i)} y1={10} y2={10 + plotH} stroke="rgba(215,222,232,0.10)" strokeWidth={1} />
           <text
-            x={x(i)} y={10 + plotH + 16} fill={MUTED} fontSize={12} className="tnum"
+            x={x(i)} y={10 + plotH + 16} fill={MUTED} fontSize={13} className="tnum"
             textAnchor={i === 0 ? "start" : i >= values.length - 3 ? "end" : "middle"}
           >
             {months[i]?.slice(0, 4)}
@@ -222,7 +222,7 @@ function WorthChart({ track, months, holding, index, width, height }: {
               fill="none" stroke={m.color} strokeWidth={1} opacity={0.55}
             />
           )}
-          <text data-worth-label={m.key} x={textX} y={m.label + 4} fill={m.color} fontSize={12} className="tnum">
+          <text data-worth-label={m.key} x={textX} y={m.label + 4} fill={m.color} fontSize={13} className="tnum">
             {money(m.v)}
           </text>
         </g>
@@ -342,7 +342,10 @@ export default function Floor() {
     // The crypto winter lists Bitcoin first and it costs ten thousand dollars a
     // coin, so opening on the data file's first name would open the desk on the
     // one asset a normal carry cannot touch. Open on what the money can buy.
-    const opening = openingFocus(run, cash);
+    const gateStock = openGate && openGate.watch !== "market"
+      && run.tickers.includes(openGate.watch) && isTradeable(run, openGate.watch)
+      ? openGate.watch : "";
+    const opening = gateStock || openingFocus(run, cash);
     focusRef.current = opening;
     setFocus(opening);
     setGate(openGate);
@@ -505,6 +508,12 @@ export default function Floor() {
 
       if (hit) {
         setLive(updated);
+        // the gate is about a stock, so the desk turns to it: the chart behind
+        // the card is that story, and closing the card leaves you on the stock
+        // it asked about, ready to trade it with the normal buttons
+        if (hit.watch !== "market" && advanced.tickers.includes(hit.watch) && isTradeable(advanced, hit.watch)) {
+          focusOn(hit.watch);
+        }
         setGate(hit);
         setPhase("gate");
         phaseRef.current = "gate";
@@ -1145,11 +1154,11 @@ export default function Floor() {
               height back on a real run's tall one. */}
           <div className="mx-auto flex flex-col gap-4" style={{ maxWidth: 560, height: "100%" }}>
             <div className="flex flex-col gap-1">
-              <div className="tnum" data-debrief-you={d.worth.toFixed(2)} style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.01em" }}>You: {money(d.worth)}</div>
-              <div className="tnum" data-debrief-holding={d.holding.toFixed(2)} style={{ fontSize: 15, color: MUTED }}>
+              <div className="tnum" data-debrief-you={d.worth.toFixed(2)} style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.01em" }}>You: {money(d.worth)}</div>
+              <div className="tnum" data-debrief-holding={d.holding.toFixed(2)} style={{ fontSize: 17, color: MUTED }}>
                 Doing nothing: {money(d.holding)}{delta(overHolding)}
               </div>
-              <div className="tnum" data-debrief-index={d.index.toFixed(2)} style={{ fontSize: 15, color: MUTED }}>
+              <div className="tnum" data-debrief-index={d.index.toFixed(2)} style={{ fontSize: 17, color: MUTED }}>
                 The market: {money(d.index)}{delta(overIndex)}
               </div>
             </div>
@@ -1175,8 +1184,8 @@ export default function Floor() {
                   const verb = move >= 0 ? "rose" : "fell";
                   return (
                     <div key={g.gateId} data-gate-quote={g.gateId} className="rounded-xl px-3 py-2" style={{ background: PANEL, border: "1px solid #2C3644" }}>
-                      <div style={{ fontSize: 14 }}>You chose {g.choice}.</div>
-                      <div className="tnum" style={{ fontSize: 13, color: MUTED }}>
+                      <div style={{ fontSize: 16 }}>You chose {g.choice}.</div>
+                      <div className="tnum" style={{ fontSize: 15, color: MUTED }}>
                         {subject} {verb} {pct(move)} by {readMonth(g.afterMonth)}.
                         {g.shares > 0 && ` The move traded ${countOf(g.shares)} shares.`}
                       </div>
@@ -1194,7 +1203,7 @@ export default function Floor() {
                 scrolls inside the card instead of stopping at the first nine.
                 Month, headline, and what the next three months did to it, the
                 same three columns as Trigger's end card. */}
-            <div style={{ fontSize: 13, color: MUTED }}>
+            <div style={{ fontSize: 15, color: MUTED }}>
               {countOf(aired.length)} {aired.length === 1 ? "headline ran" : "headlines ran"} this era.
             </div>
             <div
@@ -1208,16 +1217,16 @@ export default function Floor() {
                 return phone ? (
                   <div key={h.id} data-reveal-row={h.id} data-label={label} style={{ borderTop: "1px solid rgba(215,222,232,0.10)", paddingTop: 6 }}>
                     <div className="flex justify-between gap-3">
-                      <span className="tnum" style={{ fontSize: 12, color: MUTED }}>{h.month}</span>
-                      <span style={{ fontSize: 12, color: LABEL_COLOR[label] }}>{LABEL_COPY[label]}</span>
+                      <span className="tnum" style={{ fontSize: 14, color: MUTED }}>{readMonth(h.month)}</span>
+                      <span style={{ fontSize: 14, color: LABEL_COLOR[label] }}>{LABEL_COPY[label]}</span>
                     </div>
-                    <div style={{ fontSize: 13, color: "#B7C2D0", lineHeight: 1.35 }}>{h.text}</div>
+                    <div style={{ fontSize: 15, color: "#B7C2D0", lineHeight: 1.35 }}>{h.text}</div>
                   </div>
                 ) : (
                   <div key={h.id} data-reveal-row={h.id} data-label={label} className="flex items-baseline gap-3" style={{ borderTop: "1px solid rgba(215,222,232,0.10)", paddingTop: 6 }}>
-                    <span className="tnum flex-none" style={{ fontSize: 12, color: MUTED, width: 58 }}>{h.month}</span>
-                    <span className="flex-1" style={{ fontSize: 13, color: "#B7C2D0", lineHeight: 1.35 }}>{h.text}</span>
-                    <span className="flex-none text-right" style={{ fontSize: 12, color: LABEL_COLOR[label], width: 148 }}>{LABEL_COPY[label]}</span>
+                    <span className="tnum flex-none" style={{ fontSize: 14, color: MUTED, width: 118 }}>{readMonth(h.month)}</span>
+                    <span className="flex-1" style={{ fontSize: 15, color: "#B7C2D0", lineHeight: 1.35 }}>{h.text}</span>
+                    <span className="flex-none text-right" style={{ fontSize: 14, color: LABEL_COLOR[label], width: 172 }}>{LABEL_COPY[label]}</span>
                   </div>
                 );
               })}

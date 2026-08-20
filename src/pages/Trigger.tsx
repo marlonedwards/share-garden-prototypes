@@ -462,7 +462,7 @@ export default function Trigger() {
         </div>
       </div>
 
-      <Feed item={feedItem} height={phone ? 74 : 70} maxSize={under(16)} />
+      <Feed item={feedItem} height={phone ? 84 : 80} maxSize={under(19)} />
 
       <div
         data-calc=""
