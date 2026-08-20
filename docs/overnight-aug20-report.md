@@ -256,3 +256,22 @@ Floor fix round, after the house-bar review (all thirteen findings closed):
 ## Acceptance checklist
 
 (filled in when the walk scripts land)
+
+## Morning feedback round, August 20
+
+Marlon's first-play notes, applied and deployed at ce1fbd1:
+
+- Trigger keeps its single all-in button by his own call; sized trading is
+  The Floor's job.
+- Trigger headline cards read at up to 19px in a taller feed slot, still
+  capped below the calculator.
+- The Floor's ticker is 16px and runs about a fifth slower; crowding drops a
+  few more late headlines, which the reveal already counts honestly.
+- The debrief reads at 15 to 17px and dates read January 2019, via the
+  existing readMonth.
+- A firing gate turns the desk to the stock it asks about, so closing the
+  card leaves you focused on it with the normal trade buttons live. Buying
+  a chosen amount inside the gate card itself is left as an open idea.
+- Income during a campaign is deferred: free deposits would beat both
+  baselines by default, so it only works as a paycheck mode where doing
+  nothing and the market receive the same deposits. Logged, not built.
