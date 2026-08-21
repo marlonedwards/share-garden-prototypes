@@ -66,6 +66,15 @@ export interface StripProps {
   onGuideDone?: () => void;
 }
 
+/** Where the bubble's tail leaves it: which edge, and how far along that edge
+ *  measured from the named side. The default is the tail the guide's slot on
+ *  the rank strip wants, pointing down at the monkey under it. */
+export interface GuideTail {
+  edge: "top" | "bottom";
+  from: "left" | "right";
+  at: number;
+}
+
 export interface GuideProps {
   line: string | null;
   onShown?: () => void;
@@ -76,4 +85,31 @@ export interface GuideProps {
   /** optional: skip the hold/fade timers and keep the line shown until it
    *  changes (the end card's line, which stays up for good, section 7) */
   persist?: boolean;
+  /** optional: where the tail points, for a bubble that hangs under its monkey
+   *  rather than over it, or that sits at the right edge of the strip */
+  tail?: GuideTail;
+}
+
+/** The open screen's troop: the ten monkeys standing over the board, throwing
+ *  as their darts fly, with the guide's bubble hanging off the guide monkey. */
+export interface TroopProps {
+  /** every monkey's darts, in throw order: the same list the board is given, so
+   *  a monkey throws on the beat its dart lands on */
+  darts: Dart[];
+  /** false = the troop is still holding its darts; flipping to true throws */
+  thrown: boolean;
+  /** how many monkeys are in the troop */
+  count: number;
+  /** the monkey that talks */
+  guideIndex: number;
+  /** the guide's current line, or null */
+  guideLine: string | null;
+  onGuideDone?: () => void;
+  /** tie colour per monkey index 1..10 (index 0 unused ok) */
+  ties: string[];
+  width: number;
+  /** optional: the band's height, 96 by default */
+  height?: number;
+  /** optional: skip the throw beat and stand the troop up already thrown */
+  instant?: boolean;
 }

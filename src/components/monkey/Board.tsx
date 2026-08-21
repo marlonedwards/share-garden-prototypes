@@ -80,6 +80,21 @@ function railRow(k: number, m: number, cell: Place, cellW: number, cellH: number
   };
 }
 
+// The wedge numbers used to sit on the outer eighth of the dial, which is
+// exactly where the darts land: on a ten wedge board the 7 came down under a
+// dart and beside "Johnson & Johnson", and a number you have to look twice at is
+// not a label. The open dial now carries a ring of warm panel outside itself and
+// the numbers live on that ring, clear of every dart and every name; the rail
+// keeps its numbers inside, because its darts are packed into rows rather than
+// scattered and its dial has no room to spare.
+const OPEN_RING = 26;
+
+// Where a wedge writes its name, as a fraction of the dial. Pulled in from 0.54
+// so the name block and the dart band stop sharing radius: with the darts thrown
+// between 0.72 and 0.90 there are now about fifteen pixels of clear ground
+// between the far corner of a two line name and the nearest dart tip.
+const LABEL_AT = 0.50;
+
 // The pinned dart's tip is not the middle of its own image: it sits about a
 // quarter across and four fifths down. Anchoring on the tip is what makes a
 // dart look stuck in a wedge rather than laid on top of one.
@@ -160,6 +175,10 @@ function midAngle(i: number, n: number): number {
 interface Layout {
   // the dial
   cx: number; cy: number; r: number;
+  // how far the panel ring stands out past the dial, and where a wedge's own
+  // number sits, measured from the middle
+  ring: number;
+  numAt: number;
   // where a wedge's label block sits, and how wide it may be
   label: Place[];
   labelWidth: number;
@@ -177,19 +196,24 @@ interface Layout {
 
 function boardLayout(n: number, form: "open" | "rail", w: number, h: number): Layout {
   if (form === "open") {
-    const r = Math.max(80, Math.min((h - 96) / 2, (w - 120) / 2));
+    // The dial takes the middle of whatever it is given, less the ring its
+    // numbers sit on. It used to hang from a fixed forty pixel top margin, which
+    // was invisible while the board owned the whole stage and became seventy
+    // five pixels of empty panel the moment the troop took a band off the top.
+    const r = Math.max(80, Math.min((h - 24 - OPEN_RING * 2) / 2, (w - 60 - OPEN_RING * 2) / 2));
     const cx = w / 2;
-    const cy = 40 + r;
+    const cy = h / 2;
     const labelSize = n > 6 ? 14 : SIZE.body;
     const label: Place[] = [];
     for (let i = 0; i < n; i += 1) {
       const a = midAngle(i, n);
-      const at = n === 1 ? 0 : 0.54;
+      const at = n === 1 ? 0 : LABEL_AT;
       label.push({ x: cx + Math.cos(a) * r * at, y: cy + Math.sin(a) * r * at });
     }
     return {
-      cx, cy, r, label,
-      labelWidth: n === 1 ? r * 1.4 : Math.max(64, (2 * Math.PI * r * 0.54) / n - 10),
+      cx, cy, r, ring: OPEN_RING, numAt: r + OPEN_RING / 2,
+      label,
+      labelWidth: n === 1 ? r * 1.4 : Math.max(64, (2 * Math.PI * r * LABEL_AT) / n - 10),
       labelAnchor: "middle",
       labelSize,
       row: null,
@@ -217,7 +241,8 @@ function boardLayout(n: number, form: "open" | "rail", w: number, h: number): La
     row.push({ x: 6, y, w: w - 12, h: rowH - 4 });
   }
   return {
-    cx, cy, r, label, labelWidth: w - 82, labelAnchor: "start", labelSize: 13, row,
+    cx, cy, r, ring: 8, numAt: r * 0.93,
+    label, labelWidth: w - 82, labelAnchor: "start", labelSize: 13, row,
     cell: [], cellW: 0, cellH: 0, titleX: 0, titleY: 0,
     dartPx: RAIL_DART_PX,
   };
@@ -225,7 +250,7 @@ function boardLayout(n: number, form: "open" | "rail", w: number, h: number): La
 
 function calendarLayout(months: number, form: "open" | "rail", w: number, h: number): Layout {
   const base: Layout = {
-    cx: 0, cy: 0, r: 0, label: [], labelWidth: 0, labelAnchor: "middle",
+    cx: 0, cy: 0, r: 0, ring: 0, numAt: 0, label: [], labelWidth: 0, labelAnchor: "middle",
     labelSize: SIZE.body, row: null, cell: [], cellW: 0, cellH: 0,
     titleX: 0, titleY: 0, dartPx: form === "open" ? 40 : RAIL_DART_PX,
   };
@@ -233,12 +258,16 @@ function calendarLayout(months: number, form: "open" | "rail", w: number, h: num
     const pad = 24;
     const gap = 4;
     const cellW = Math.max(1, (w - pad * 2 - gap * (months - 1)) / months);
-    const cellH = Math.max(56, Math.min(96, h - 150));
-    const top = 96;
+    // The strip of months takes a third of whatever it is given and stands in
+    // the middle of it. It used to be a fixed 96px block pinned 96px from the
+    // top, which on the open screen left four hundred pixels of empty panel
+    // under two dozen small cells and made the one wedge level look unfinished.
+    const cellH = Math.max(56, Math.min(180, h * 0.34));
+    const top = Math.max(84, (h - cellH) / 2);
     for (let i = 0; i < months; i += 1) {
       base.cell.push({ x: pad + i * (cellW + gap), y: top });
     }
-    return { ...base, cellW, cellH, titleX: w / 2, titleY: 48 };
+    return { ...base, cellW, cellH, titleX: w / 2, titleY: top - 44 };
   }
   const pad = 8;
   const gap = 3;
@@ -348,7 +377,9 @@ export default function Board(props: BoardProps) {
         };
       }
       const a = mid + j.a * half * 0.55;
-      const rad = layout.r * (n <= 1 ? 0.42 + j.b * 0.28 : 0.80 + j.b * 0.13);
+      // the outer band of the dial, between the name block and the rim: a dart
+      // never lands on a company's name and never reaches the number ring
+      const rad = layout.r * (n <= 1 ? 0.42 + j.b * 0.28 : 0.81 + j.b * 0.09);
       return {
         x: layout.cx + Math.cos(a) * rad,
         y: layout.cy + Math.sin(a) * rad,
@@ -393,7 +424,7 @@ export default function Board(props: BoardProps) {
           <circle
             cx={layout.cx}
             cy={layout.cy}
-            r={layout.r + 8}
+            r={layout.r + layout.ring}
             fill={PANEL}
             style={{ transition: still ? "none" : `all ${MOVE_MS}ms ${EASE}` }}
           />
@@ -485,11 +516,16 @@ export default function Board(props: BoardProps) {
             {/* the wedge's own number, so the dial and the rail's legend read as
                 one thing */}
             <text
-              x={layout.cx + Math.cos(midAngle(i, n)) * layout.r * (n > 1 ? 0.93 : 0)}
-              y={layout.cy + Math.sin(midAngle(i, n)) * layout.r * (n > 1 ? 0.93 : 0) + 4}
+              x={layout.cx + Math.cos(midAngle(i, n)) * (n > 1 ? layout.numAt : 0)}
+              y={layout.cy + Math.sin(midAngle(i, n)) * (n > 1 ? layout.numAt : 0) + 4}
               textAnchor="middle"
               fill={gone ? MUTED : INK}
-              style={{ fontSize: 12, fontWeight: WEIGHT.emphasis, transition: move, pointerEvents: "none" }}
+              style={{
+                fontSize: form === "open" ? 13 : 12,
+                fontWeight: WEIGHT.emphasis,
+                transition: move,
+                pointerEvents: "none",
+              }}
             >
               {n > 1 ? String(i + 1) : ""}
             </text>

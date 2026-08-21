@@ -5,9 +5,16 @@
 //
 // The bubble is a soft tint panel with a small tail, sentence case, 16px, ink
 // on warm white. No caption above it, no icon, no dismiss.
+//
+// The tail is a prop rather than a constant because the guide is drawn in two
+// places. On the rank strip the bubble hangs over the guide's own slot and the
+// tail points down at it; in the troop over the open board the monkeys are the
+// top of the screen, so the bubble hangs under the guide and the tail points up.
+// Either way the tail is on the guide, which is the whole reason the bubble
+// reads as something a monkey said.
 
 import { useEffect, useRef, useState } from "react";
-import type { GuideProps } from "./props";
+import type { GuideProps, GuideTail } from "./props";
 import { UI_FONT } from "../../lib/type";
 import { EASE, INK, RADIUS, SIZE, WEIGHT, reducedMotion } from "../../lib/monkey/look";
 
@@ -19,7 +26,11 @@ const BUBBLE = "#FFFFFF";
 export const GUIDE_HOLD_MS = 4000;
 const FADE_MS = 320;
 
-export default function Guide({ line, onShown, onDone, width = 260, persist = false }: GuideProps) {
+const TAIL_DEFAULT: GuideTail = { edge: "bottom", from: "left", at: 22 };
+
+export default function Guide({
+  line, onShown, onDone, width = 260, persist = false, tail = TAIL_DEFAULT,
+}: GuideProps) {
   const [shown, setShown] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const shownRef = useRef(onShown);
@@ -69,7 +80,7 @@ export default function Guide({ line, onShown, onDone, width = 260, persist = fa
         lineHeight: "22px",
         position: "relative",
         opacity: visible ? 1 : 0,
-        transform: still ? "none" : `translateY(${visible ? 0 : 6}px)`,
+        transform: still ? "none" : `translateY(${visible ? 0 : tail.edge === "top" ? -6 : 6}px)`,
         transition: still
           ? `opacity ${FADE_MS}ms linear`
           : `opacity ${FADE_MS}ms ease-out, transform 240ms ${EASE}`,
@@ -77,12 +88,12 @@ export default function Guide({ line, onShown, onDone, width = 260, persist = fa
       }}
     >
       {shown}
-      {/* the tail, pointing down at the guide's slot */}
+      {/* the tail, pointing at the monkey that said it */}
       <span
         style={{
           position: "absolute",
-          left: 22,
-          bottom: -7,
+          [tail.from]: tail.at,
+          [tail.edge]: -7,
           width: 14,
           height: 14,
           background: BUBBLE,

@@ -121,6 +121,58 @@ and the live link. Written as the run goes.
   header reads "you beat 0 of 10" instead of "1 of 10" the instant the round
   opens. Worth itself is computed and displayed exactly as before; only the
   comparison rounds.
+- **Level 3 only opens on windows where all ten companies are alive.** The
+  house-bar review found boards of eight and nine wedges under a card that says
+  "Ten stocks" and a guide that says "Ten wedges". The start is now filtered to
+  the ones where every company on the file is openable, computed from the data
+  rather than written down: eToys is at zero from April 2001 and WorldCom from
+  December 2002, so the windows run January 2000 to March 2001. Two things fall
+  out of that. Every window now reaches September 2002, the worst month the
+  dot-com index has, so the end card's "that was the dot-com bust" is true of
+  every seed; and every window carries both deaths, so the level's lesson is
+  always on the board. The cost is fifteen windows instead of sixty-one, which
+  the seed still spreads the darts across.
+- **Level 1 windows have to rise overall.** The same rule level 2 already runs,
+  now on the calendar level: on top of buyable, listed and alive, the dealt
+  stock's last close must be at or above its first. Thirty-eight percent of the
+  2020s windows ended below where they opened, and in those the winning monkey
+  is the one whose dart landed latest, the one that sat in cash longest, which
+  teaches timing rather than "when you got in mattered less than staying in".
+  The window and the stock are drawn together and redrawn together, so no start
+  is ever pinned with a pool the rule cannot fill. Every 2020s window has at
+  least one rising stock in it, so the redraw lands on the first attempt for
+  every seed today. The sim now asserts over 200 seeds that the month one monkey
+  beats sitting in cash, by at least $8.96 in the leanest seed, and reports that
+  the best monkey bought in the front half 152 times against 48 in the back.
+- **Level 2 wedges have a mania cap of five times as well as a recovery
+  floor.** The 2020s window was dealing Tesla at 17 times its open and GameStop
+  at 30, which turns "crashes are survivable if you stay" into a rocket and
+  hands out $16,896 monkeys. A wedge's last close over its first must now be at
+  most 5x. That leaves the crash era Apple, Amazon, Ford and Walmart, unchanged,
+  and the 2020s Apple, Amazon, Zoom and Peloton, four wedges each for a board of
+  three, so the deal never fails and no loosening is needed. If a future file
+  left fewer than three, the cap loosens to the smallest multiple that fills the
+  board rather than failing; the recovery rule keeps its own older fallback to
+  everything buyable. Acceptance test D stays green, with the low seller behind
+  all ten monkeys in every seed.
+- **The mania cap is shared, so level 1 runs it too.** `MAX_GAIN` is one
+  constant for both levels rather than a level 2 rule. Level 1's rise rule lets
+  a GameStop or a Tesla window through, because a lottery is a rising window,
+  and those rounds finished with monkeys worth twenty to thirty nine thousand
+  dollars against a thousand dollar stake, which reads as a jackpot rather than
+  as staying in. Capping the dealt stock at five times its open leaves every one
+  of the 2020s windows at least one candidate, so no window is lost, and the
+  richest monkey over 200 seeds falls from $39,489 to $6,468. The sim asserts
+  the cap per seed alongside the rise.
+- **The sim prints two re-pin tables.** Any change to the deal rules moves the
+  rounds the walk's pinned seeds deal, so `tools/monkeySim.ts` now prints, above
+  the check lines, what each of the first forty level 1 seeds deals and how the
+  never-trading player and the buy-max-at-open player finish in it, and what
+  level 3 deals on seeds 7 and 23. Level 1 seed 23 still satisfies the unlock
+  walk after all four rules, the mania cap included: Apple from August 2019,
+  never trading beats none of the ten and buying max at the open and holding
+  beats all ten. Seeds 27 and 33 are the only others in the first forty that do
+  both, if the pin ever has to move.
 
 ### Stage team
 
@@ -268,6 +320,99 @@ and the live link. Written as the run goes.
   and at 2000ms after `[data-end-card]` on level 1 seed 23: 56 pieces visible
   at both, none at 3200ms. Still hash placed, still none under reduced motion.
 
+- **The troop stands over the board, and it throws.** The round opened on a
+  screen with no monkeys on it: darts arrived out of nowhere, the guide's bubble
+  pointed its tail at bare ground, and `monkey-throw.png` was generated and never
+  drawn. `src/components/monkey/Troop.tsx` is the fix, a 96px band under the
+  header holding all ten monkeys in tie order. Each one flips into the throw pose
+  as its own dart flies and drops back to idle once it has landed, on the board's
+  own schedule: `dartStepMs` is imported from `Board.tsx` rather than copied, so
+  the two cannot drift, and a monkey with three darts counts them up and down
+  instead of setting a flag, which is what lets its poses chain rather than
+  fight. The guide talks in the talk pose with the bubble hanging off its own
+  head, tail pointing up. Under reduced motion the troop stands still and idle.
+- **The guide's tail is a prop now.** The bubble is drawn in two places and the
+  monkey is above it in one and below it in the other, so `GuideProps.tail` names
+  the edge the tail leaves from, the side it is measured from, and how far along.
+  The default is the strip's old tail, pointing down, so nothing that already
+  called `Guide` had to change.
+- **The tie is on the chest, and the anchors were measured rather than guessed.**
+  A coloured glyph under a monkey's feet reads as a fault, not as a suit. The
+  overlay has to register on five poses that turn the body by up to forty pixels,
+  so each pose was measured once: the tie's fill is the only light unsaturated
+  ink inside the suit, so a mask of alpha over 200, saturation under 26 and value
+  between 120 and 215 isolates it exactly in all five 512px frames. `TIE_ANCHOR`
+  in `look.ts` holds that box per pose (knot middle, drop, width, lean) and the
+  tie is two paths drawn in a hundred by hundred box placed from it, inside the
+  sprite's own dark outline rather than over it. Confirmed by screenshot at 1x
+  and at 2x on every pose the game draws: idle and talk on the live strip, throw
+  in the troop mid beat, cheer and slump on the end card. The old 58px face is
+  gone, so the small size confirmed is the 72px one the strip now draws.
+- **The strip gave its headroom back.** Faces go from 58 to 72 and the worth from
+  13 to 18, the tie row under the feet is gone, and the bubble now stands on its
+  own monkey's head and grows upward out of the strip's own band instead of
+  hanging above it in reserved space. It is 460 wide, which puts every line in
+  `src/content/monkey.ts` on two lines at 16px, and it anchors to the near edge of
+  the guide's slot and flips to the far edge once the guide climbs past the middle
+  of the rank, so a guide at either end still draws inside the strip. Measured at
+  1440x950 with the guide talking: the bubble clears both the clock and the "you
+  beat" line by the whole header row.
+- **`STRIP_GUIDE_ROOM` replaces the page's 64.** The strip's own band carries 32
+  pixels of the bubble and the page has to leave 24 above it, exported so the two
+  cannot disagree. Until the page takes it the strip band is 222 tall, down from
+  240; with it the band is 182 and the desk gains 58 pixels. The page change is a
+  one line swap and is written up in the handback.
+- **A desk column's width scales with what the desk is holding.** The Floor plays
+  ten wedges wide, so its 92px column is what fits there; this game opens on one
+  holding and cash and two 92px columns in a stage 1,180 across read as empty
+  panel with a stripe down the middle. `columnWidth()` draws one or two holdings
+  at 160, ten at 92, and everything between off the same line, cash included, so
+  the band never carries two column widths at once. Measured on level 3 with four
+  holdings: five columns, 715 of 1,180 pixels painted, 61 percent. Level 1 with
+  its single stock is the floor of this at 27 percent, which is two columns as
+  wide as the rule allows. Nothing about the dollar scale or the flat unit rules
+  moves: a wider column is a wider slab and never a taller one.
+- **The wedge numbers moved out of the dial and the darts moved off the names.**
+  The numbers sat at 0.93 of the radius, which is exactly where the darts land,
+  so on level 3 the 7 came down under a dart beside "Johnson & Johnson". The open
+  dial now carries a 26px ring of warm ground outside itself and the numbers live
+  on that ring, clear of every dart and every name; the rail keeps its numbers
+  inside, because its darts are packed into rows and its dial has no room to
+  spare. The dart band tightened from 0.67 to 0.93 down to 0.72 to 0.90 and the
+  name block pulled in from 0.54 to 0.50, which leaves about fifteen pixels of
+  clear ground between the far corner of a two line name and the nearest dart
+  tip.
+- **The dial takes the middle of what it is given.** It used to hang from a fixed
+  forty pixel top margin, which was invisible while the board owned the whole
+  stage and became seventy five pixels of empty panel the moment the troop took a
+  band off the top. Centred and re-measured, the level 3 dial draws at a 297px
+  radius under the troop, against 345 before the troop and 261 if it had kept the
+  old margin.
+- **Level 1's calendar fills its card.** Twenty four cells 96px tall pinned 96px
+  from the top left four hundred pixels of empty panel under them. The strip of
+  months now takes a third of the height it is given and stands in the middle of
+  it, with the stock's name above.
+- **The mix, to the reviewer's numbers.** The dart thock is a triangle rather
+  than a square and peaks at 0.035 rather than 0.055, because a square's odd
+  harmonics turned thirty landings in two seconds into a buzz. A master
+  `GainNode` at 0.8 sits between every note and the destination, built with the
+  context and never rebuilt, so overlapping thocks cannot sum past a ceiling and
+  there is one place to reach for if the game ever needs to duck itself. Both
+  rank reveal figures peak at 0.08, more than twice a dart, which is what makes
+  the one sound that says how the round went stand clear of the settle pour
+  running under it. Every other parameter and every counter is untouched:
+  `played` and `attempted` still count exactly what they counted.
+- **The six red checks in the walk are a page gate the walk does not know about.**
+  `F`, `H`, `J`, `K`, `N` and the screenshots all fail with the same
+  `page.click: Timeout 15000ms exceeded`, and all six are clicking Buy 5 or Buy
+  max straight out of `openRound`. The page now opens the round with nothing
+  focused and disables the trade buttons until a wedge is picked, and
+  `monkeycheck.mjs` never picks one. Proved rather than assumed: a copy of the
+  walk with one wedge click added to `openRound` and nothing else changed runs
+  all thirteen checks green against this stage, including `F` at 28 live frames
+  with 98 ties held and `H` at 10 ticks of 15.2px on a scale that never moved.
+  The copy was deleted. The walk needs the pick, not the stage.
+
 ### Page team
 
 - **The play chart's month axis is a synthetic month array, not a fork of the
@@ -344,8 +489,120 @@ and the live link. Written as the run goes.
   change: 28px text fits inside the existing 44px `HEADER_H`, so `topH` and the
   strip's 64px guide headroom are untouched and the chart stays exactly the
   bottom third.
+- **The fix round after the first HOLD starts here.** Six findings, all in
+  `src/pages/Monkey.tsx`, plus one ask each for the stage team and the harness.
+- **Every round dealt from a button pins itself in the url.** `dealPinned()`
+  wraps `openRound` and writes `?level=&seed=` with `setSearchParams(...,
+  { replace: true })`, so Throw on a level card, Play again and Next level all
+  leave the address bar reading the round on screen and a reload reproduces it.
+  Replace rather than push, because a back button full of dealt rounds is not
+  navigation anyone asked for; other params ride along, so a walk's `turbo`
+  survives a Play again. Levels still strips both keys, as before.
+- **The page tells its own writes apart from a player editing the link.**
+  Writing the params runs the pinning effect again, which would deal the round
+  a second time and throw the darts over a round already being played.
+  `lastDealtRef` holds the last `level|seed` this page dealt, set inside
+  `openRound` itself so both paths fill it, and the effect returns early when
+  the params it reads are its own. An edited url still re-deals, because the
+  key it carries is one the page never wrote.
+- **Board levels open with nothing picked.** `openRound` focuses
+  `d.tickers[0]` only when the level's target is the calendar. On levels 2 and
+  3 the focus opens empty, all six trade buttons are dark, and the trade row
+  reads "Tap a wedge to pick a stock" in muted 16px. Pre-focusing Apple made
+  one click of Buy max the dominant play on level 3 and turned the board into a
+  decoration; the board is the level's whole choice, so the round now waits for
+  it. Level 1 keeps its focus: a calendar has one stock and nothing to pick.
+- **Two things follow from an empty focus, and both are handled.** The play
+  chart draws the focused stock, so with nothing picked it shows the same line
+  of copy centred in the chart's own slot rather than a Chart handed an empty
+  series, which would ask `Chart.tsx` to label an axis with no months on it.
+  And the end card's chart is a reveal rather than a trade surface, so it falls
+  back to the biggest position the player ended on, or the first wedge if they
+  held nothing, which is what keeps real years on the end axis after a round
+  played without a single pick.
+- **The trade row's price line reads "Amazon now $88.83".** "at $131.88" sat
+  next to the rail's opening price for the same stock with nothing to tell the
+  two figures apart. This half is the page's and is fixed; the other half is
+  the stage team's, below. The line moved from 14px to 16px so the hint and the
+  price read at one size in one slot.
+- **Ask for the stage team: label the rail's figure as the open.** The board's
+  legend prints `priceText(openPrices[i])` inside `Board.tsx` (the wedge label
+  block around line 543, and line 425 for level 1's calendar title), and
+  `BoardProps` carries `openPrices` as numbers with no label prop, so the page
+  cannot pass "open $102" through. A wedge currently reads "1 Apple $102" while
+  the trade row reads "Apple now $30.12": two prices for one stock, neither
+  labelled. Asked rather than edited, per this round's ownership.
+- **The level cards' proves line takes a full stop** to match its own heading,
+  added at the render rather than in `LEVELS[id].proves`, which is the rules
+  team's table. The locked line is left as section 12 writes it, without one.
+  The best-score row's height is now reserved by `minHeight` alone: the
+  transparent "." that held it was invisible to a reader and a stray full stop
+  to anything that copies the card's text.
+- **Audio is armed on the Throw click itself.** The window-level arming
+  listener fires on the same gesture, but ordering it against the first dart of
+  a round opened from a level card is not something the page should be guessing
+  at, so `dealPinned` calls `armAudio()` before it deals. A card-opened round
+  now plays all ten thocks, verified by `window.__monkeySound.played.dartThock`
+  at the end of the throw. A cold deep link still has no gesture to arm on and
+  stays a known debt.
+- **The rank line's green waits for a monkey to be in the market.** Level 1's
+  troop sits in cash until each monkey's own buy month, so "you beat 10 of 10"
+  is honest and stays, but it is not a win worth colouring: the green now needs
+  `deal.monkeys.some((m) => m.buyMonth <= run.t)` as well as five beaten. On
+  board levels every buy month is 0, so nothing changes there. Walked at
+  1440x950: on one level 1 seed the header read five or more beaten from month
+  0 and stayed ink until month 3, which is the earliest dart's month.
+- **`tools/monkeycheck.mjs` needs a wedge tap before it trades on levels 2 and
+  3.** The walk clicks `[data-action="buymax"]` straight after Start, which
+  Playwright now waits on until it times out, because the button is correctly
+  dark until a wedge is picked. Six checks fail on that one cause:
+  `F_strip_order` (line 454), `H_desk_rules` (597 and 629), `J_no_year_in_play`
+  (764), `K_guide_four` (805), `N_type_contract` (1025) and the screenshot pass
+  (1050). The fix is one line before the first trade on any board level, taking
+  the wedge from the DOM the walk already reads:
+  `await page.click('[data-wedge="' + wedges[0] + '"]')`. Left to the harness
+  owner rather than edited mid-round. `I_chart_third_rail` failed the same run
+  for a different reason, an end card with no year on its axis, and that one
+  was the page's: it is the end-card fallback above, and the check passes now.
 
 ## Known debts
+
+- The guide's end line is keyed to the rank outcome, per spec section 8, so
+  a level 2 player who never sold can read "Selling in a crash locks the
+  loss in." Keying the line to what the player did is a spec change for
+  Marlon.
+- Level 1's live rank is flat for the first half: every monkey is worth
+  exactly $1,000 until its buy month, so a player one dollar up beats all
+  ten. Inherent to the calendar design in section 3.
+- Level 2 has three wedges and two darts, so only six baskets exist and the
+  ten monkeys average about five distinct worths; several faces show the
+  same number. Inherent to section 4's dart counts.
+- Once worth grows several times, the shared dollar scale eases down until a
+  $10 tick is under three pixels and the desk bands cash in tens; at very
+  small cash balances the tick draws as a hairline. Same rule as The Floor.
+- A round keeps its state in memory only; a reload during the sixty seconds
+  loses it. Sixty seconds is short enough that this was not built.
+- A deep-linked round (cold URL with seed) plays the first dart thocks
+  before any gesture has armed audio, so they are silent by policy.
+- The raw sprite sheets (about 4 MB) sit in public/monkey/ for the record
+  and ship with the site; nothing references them at runtime.
+- The dart monkeys beat the index by several times on rising windows, which
+  is the real history of these files, not the Forbes claim that darts land
+  near the index. A wider stock universe would close that gap.
+
+## House bar
+
+First review: HOLD. Mechanics green (chart 317 of 950 on every frame, strip
+order exact on 353 frames with no duplicate x, no year leak, dollar scale
+bit-identical across trades, one monkey's worth recomputed by hand to the
+cent, fourteen guide lines byte-identical to the spec), but the dealt
+windows could not carry the levels' lessons: level 3 dealt eight or nine
+wedges on three seeds in four while the copy said ten, a dot-com window
+with no bust was still named the bust, level 1's falling windows made the
+cash-sitting monkey the winner, and level 2's 2020s window dealt Tesla at
+17x. Also: no monkey on the open screen, tie glyph under the feet, an
+empty stage, stale URL after Play again, a harsh square-wave thock with no
+master gain. Fix round dispatched to three teams; second review below.
 
 ## Playtest notes
 

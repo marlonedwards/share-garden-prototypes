@@ -31,13 +31,35 @@ import type { Pose, StripProps, StripSlot } from "./props";
 import Guide from "./Guide";
 import { UI_FONT } from "../../lib/type";
 import {
-  EASE, GOLD, GREEN, INK, MOVE_MS, MUTED, RED, SKY, SIZE, WEIGHT,
-  reducedMotion, tint,
+  EASE, GOLD, GREEN, INK, MOVE_MS, MUTED, RED, SKY, SIZE, SPRITE_PX,
+  TIE_BLADE, TIE_KNOT, WEIGHT, reducedMotion, tieAnchor, tint,
 } from "../../lib/monkey/look";
 
 const REACT_MS = 900;
-export const STRIP_HEIGHT = 132;
+
+// The live strip. The faces are the troop, so they are drawn at a size a face
+// reads at rather than at a size that fits whatever was left over: 72px, with
+// the worth under it at 18px. The band is the face block plus the room the
+// guide's bubble grows up into, and no more, because the strip used to reserve
+// sixty four pixels of headroom for a bubble that is up for four seconds of a
+// sixty second round and left the stage reading as empty panel the rest of the
+// time.
+export const FACE_PX = 72;
+export const STRIP_HEIGHT = 134;
 export const SETTLED_HEIGHT = 210;
+
+// What the page still has to leave above the strip's own box. The bubble grows
+// upward out of the guide's own face; the strip's own band carries thirty two
+// pixels of that and this is the rest, exported so the page and the strip
+// cannot disagree about the number. The longest line in src/content/monkey.ts
+// is two lines at this width, which puts the top of the bubble level with the
+// top of the strip's panel: over the strip, never over the clock.
+export const STRIP_GUIDE_ROOM = 24;
+
+// How wide the guide's bubble is drawn on the strip. Wide enough that every
+// line in src/content/monkey.ts falls on two lines at 16px, which is what keeps
+// the bubble inside the strip's own band and off the clock.
+const BUBBLE_W = 460;
 
 function keyOf(who: "you" | number): string {
   return who === "you" ? "you" : String(who);
@@ -70,17 +92,31 @@ function currentX(el: HTMLElement): number | null {
 
 // ------------------------------------------------------------------ the tie
 
-// The suit's own tie and the suit itself came back within a few values of each
-// other, so a mask on the sprite keys the lapels along with the tie. The tie is
-// drawn instead: one small glyph under the face, in the monkey's colour, which
-// is legible at strip size and identical in every pose.
-function Tie({ color, size }: { color: string; size: number }) {
-  const w = size;
-  const h = size * 1.45;
+// The tie is what tells one monkey from another, and it belongs on the chest.
+// Keying the sprite's own grey tie was tried and abandoned (the suit sits within
+// thirty values of it), and a glyph under the feet was what shipped instead:
+// a coloured mark on the ground that read as a fault rather than as a suit.
+//
+// So the tie is drawn over the sprite, on the knot the artist already painted.
+// Every pose was measured once (see TIE_ANCHOR in look.ts) and the overlay is
+// placed from that table in the sprite's own 512 frame, which is what lets one
+// glyph register on five different poses including the turned throw and the
+// hunched slump. The sprite's dark outline is left showing around it, so the
+// colour is laid inside the line art rather than over it.
+function Tie({ color, pose, size }: { color: string; pose: Pose; size: number }) {
+  const a = tieAnchor(pose);
   return (
-    <svg width={w} height={h} viewBox="0 0 10 14" style={{ display: "block", flex: "0 0 auto" }}>
-      <path d="M 5 0 L 8 2.4 L 6.4 4.2 L 3.6 4.2 L 2 2.4 Z" fill={color} />
-      <path d="M 3.7 5 L 6.3 5 L 7.4 11 L 5 14 L 2.6 11 Z" fill={color} />
+    <svg
+      aria-hidden
+      width={size}
+      height={size}
+      viewBox={`0 0 ${SPRITE_PX} ${SPRITE_PX}`}
+      style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+    >
+      <g transform={`translate(${a.cx} ${a.top}) rotate(${a.deg}) scale(${a.w / 100} ${a.h / 100})`}>
+        <path d={TIE_KNOT} fill={color} />
+        <path d={TIE_BLADE} fill={color} />
+      </g>
     </svg>
   );
 }
@@ -179,14 +215,19 @@ function Confetti({ width, height }: { width: number; height: number }) {
 
 // ------------------------------------------------------------------ a slot
 
-function Face({ pose, size }: { pose: Pose; size: number }) {
+// One monkey, wearing its own tie. Exported because the troop over the open
+// board draws the same monkeys and the two have to be the same monkey.
+export function Face({ pose, size, tie }: { pose: Pose; size: number; tie?: string }) {
   return (
-    <img
-      src={`/monkey/monkey-${pose}.png`}
-      alt=""
-      draggable={false}
-      style={{ width: size, height: size, display: "block", objectFit: "contain" }}
-    />
+    <div style={{ position: "relative", width: size, height: size, flex: "0 0 auto" }}>
+      <img
+        src={`/monkey/monkey-${pose}.png`}
+        alt=""
+        draggable={false}
+        style={{ width: size, height: size, display: "block", objectFit: "contain" }}
+      />
+      {tie && <Tie color={tie} pose={pose} size={size} />}
+    </div>
   );
 }
 
@@ -228,8 +269,11 @@ export default function Strip({
   const still = reducedMotion();
   const rank = useMemo(() => ordered(slots), [slots]);
   const h = height ?? (settled ? SETTLED_HEIGHT : STRIP_HEIGHT);
-  const faceSize = settled ? 88 : 58;
-  const worthSize = settled ? 15 : 13;
+  const faceSize = settled ? 96 : FACE_PX;
+  const worthSize = settled ? 17 : 18;
+  // the worth's own line, and with it where the top of a face sits
+  const worthLine = 22;
+  const faceTop = 6 + worthLine + 2 + faceSize;
 
   // The reactions. Only the live strip reacts; the end card's mood is the
   // page's to set and a slot that is already cheering does not need to be
@@ -368,10 +412,32 @@ export default function Strip({
               paddingBottom: 6,
             }}
           >
-            {/* the guide's bubble hangs over its own slot and fades on its own */}
+            {/* The guide's bubble stands on its own monkey's head and grows
+                upward out of the strip's own band, so no headroom has to be
+                reserved for the fifty six seconds a round it is not up. It is
+                anchored to the near edge of the slot and flips to the far edge
+                once the guide has climbed past the middle of the rank, which is
+                what keeps a 460px bubble inside a strip it can be at either end
+                of. */}
             {isGuide && !settled && (
-              <div style={{ position: "absolute", bottom: h - 6, left: -24, zIndex: 3 }}>
-                <Guide line={guideLine} onDone={onGuideDone} width={272} />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: faceTop,
+                  ...(i > count / 2 ? { right: 0 } : { left: 0 }),
+                  zIndex: 3,
+                }}
+              >
+                <Guide
+                  line={guideLine}
+                  onDone={onGuideDone}
+                  width={Math.min(BUBBLE_W, width)}
+                  tail={{
+                    edge: "bottom",
+                    from: i > count / 2 ? "right" : "left",
+                    at: Math.max(14, slotW / 2 - 7),
+                  }}
+                />
               </div>
             )}
 
@@ -396,10 +462,8 @@ export default function Strip({
                 {playerInitial}
               </div>
             ) : (
-              <Face pose={pose} size={faceSize} />
+              <Face pose={pose} size={faceSize} tie={tie} />
             )}
-
-            {!you && <Tie color={tie} size={settled ? 11 : 9} />}
 
             <div
               className="tnum"
@@ -408,7 +472,7 @@ export default function Strip({
                 fontWeight: lit ? WEIGHT.heading : WEIGHT.emphasis,
                 fontVariantNumeric: "tabular-nums",
                 color: lit ? INK : you ? SKY : INK,
-                lineHeight: "18px",
+                lineHeight: `${worthLine}px`,
               }}
             >
               {money(slot.worth)}

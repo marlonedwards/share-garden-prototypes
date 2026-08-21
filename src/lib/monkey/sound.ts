@@ -25,8 +25,17 @@
 const KEY = "monkey-muted";
 
 let ctx: AudioContext | null = null;
+let bus: GainNode | null = null;
 let gestured = false;
 let muted = false;
+
+// Every note in this game is short and several of them overlap: thirty darts
+// land inside two seconds on level 3, and a buy pours up to twelve ticks while
+// the strip is blipping. Oscillators sum on the way to the speakers, so peaks
+// tuned one at a time can stack into a clip. One master gain sits between every
+// note and the destination and holds the whole mix under a ceiling, which is
+// also the one place to reach for if the game ever needs to duck itself.
+const MASTER = 0.8;
 
 function store(): Storage | null {
   try {
@@ -110,6 +119,16 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
+// The master gain, built with the context and never rebuilt.
+function out(ac: AudioContext): AudioNode {
+  if (!bus || bus.context !== ac) {
+    bus = ac.createGain();
+    bus.gain.setValueAtTime(MASTER, ac.currentTime);
+    bus.connect(ac.destination);
+  }
+  return bus;
+}
+
 // Whether a call would reach the speakers. Read once per public function so the
 // counters and the notes agree about what happened.
 function live(): boolean {
@@ -137,21 +156,22 @@ function play(t: Tone, delayMs = 0): void {
   gain.gain.setValueAtTime(0.0001, at);
   gain.gain.exponentialRampToValueAtTime(t.peak, at + 0.006);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + t.ms / 1000);
-  osc.connect(gain).connect(ac.destination);
+  osc.connect(gain).connect(out(ac));
   osc.start(at);
   osc.stop(at + t.ms / 1000 + 0.02);
 }
 
 // A dart landing. Short and woody, and the pitch steps up dart by dart, so ten
 // darts across two seconds are one rising figure rather than ten identical
-// knocks. The square opening and the fast downward glide are what make it a
-// thock instead of a beep.
+// knocks. The fast downward glide is what makes it a thock instead of a beep;
+// the wave is a triangle rather than a square, because a square's odd harmonics
+// turned thirty landings in two seconds into a buzz.
 export function dartThock(step: number, of = 10): void {
   const on = live();
   mark("dartThock", on);
   if (!on) return;
   const climb = Math.min(1, Math.max(0, step / Math.max(1, of)));
-  play({ freq: 300 + climb * 260, ms: 46, peak: 0.055, type: "square", glide: -150 });
+  play({ freq: 300 + climb * 260, ms: 46, peak: 0.035, type: "triangle", glide: -150 });
   play({ freq: 132 + climb * 60, ms: 70, peak: 0.03, type: "sine", glide: -30 });
 }
 
@@ -207,18 +227,20 @@ export function settleRun(): void {
 
 // The rank reveal. A rising three-note figure when you beat five or more, a low
 // two-note when you do not. This is the only sound that says whether the round
-// went your way, so it is the loudest one here.
+// went your way, so it is the loudest one here: both figures peak around 0.08,
+// which is more than twice a dart and stands clear of the settle pour running
+// under it.
 export function rankReveal(win: boolean): void {
   const on = live();
   mark("rankReveal", on);
   if (!on) return;
   if (win) {
-    play({ freq: 523.25, ms: 180, peak: 0.055, type: "triangle" });
-    play({ freq: 659.25, ms: 180, peak: 0.055, type: "triangle" }, 130);
-    play({ freq: 880, ms: 320, peak: 0.06, type: "triangle" }, 260);
+    play({ freq: 523.25, ms: 180, peak: 0.073, type: "triangle" });
+    play({ freq: 659.25, ms: 180, peak: 0.073, type: "triangle" }, 130);
+    play({ freq: 880, ms: 320, peak: 0.08, type: "triangle" }, 260);
   } else {
-    play({ freq: 293.66, ms: 220, peak: 0.045, type: "sine" });
-    play({ freq: 233.08, ms: 340, peak: 0.04, type: "sine", glide: -20 }, 180);
+    play({ freq: 293.66, ms: 220, peak: 0.08, type: "sine" });
+    play({ freq: 233.08, ms: 340, peak: 0.071, type: "sine", glide: -20 }, 180);
   }
 }
 

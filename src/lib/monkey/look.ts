@@ -98,3 +98,46 @@ export function reducedMotion(): boolean {
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+// ------------------------------------------------------- the tie on the chest
+
+// The tie used to be a glyph under the monkey's feet, which read as a fault
+// rather than as a suit. It sits on the chest now, drawn over the sprite's own
+// grey tie, so the colour that tells the troop apart is worn rather than
+// stacked underneath.
+//
+// The overlay has to register on five different poses, so the knot was measured
+// once per pose rather than guessed: every sprite is 512 square on a shared
+// baseline, and the tie's fill is the only light, unsaturated ink inside the
+// suit, so a mask of (alpha > 200, saturation < 26, value 120 to 215) isolates
+// it exactly. The numbers below are that mask's box in the 512 frame: `cx` and
+// `top` are the middle of the knot, `w` the widest part of the tie, `h` the drop
+// from the knot to the point of the blade, and `deg` the lean measured between
+// the knot's centre and the blade's. The throw and slump poses turn the body,
+// which is why their boxes sit twenty to forty pixels off the idle one and why a
+// single fixed overlay could never have registered on all five.
+export interface TieAnchor {
+  cx: number; top: number; w: number; h: number; deg: number;
+}
+
+export const TIE_ANCHOR: Record<string, TieAnchor> = {
+  idle:  { cx: 254, top: 264, w: 24, h: 76, deg: 3 },
+  throw: { cx: 268, top: 269, w: 20, h: 64, deg: 6 },
+  cheer: { cx: 251, top: 265, w: 26, h: 73, deg: 1 },
+  slump: { cx: 294, top: 267, w: 24, h: 66, deg: -5 },
+  talk:  { cx: 239, top: 265, w: 25, h: 71, deg: 1 },
+};
+
+// The sprite frame the anchors are measured in.
+export const SPRITE_PX = 512;
+
+// The tie itself, in a hundred by hundred box: a knot that hangs from the
+// collar and a blade that widens and comes to a point. The sprite keeps its own
+// dark outline around both, so the colour is laid inside the line art rather
+// than over it.
+export const TIE_KNOT = "M -16 0 L 16 0 L 50 13 L 44 22 L -44 22 L -50 13 Z";
+export const TIE_BLADE = "M -26 26 L 26 26 L 47 68 L 0 100 L -47 68 Z";
+
+export function tieAnchor(pose: string): TieAnchor {
+  return TIE_ANCHOR[pose] ?? TIE_ANCHOR.idle;
+}

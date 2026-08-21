@@ -34,6 +34,7 @@ import Board, { RAIL_WIDTH } from "../components/monkey/Board";
 import Button from "../components/monkey/Button";
 import Guide from "../components/monkey/Guide";
 import Strip, { SETTLED_HEIGHT, STRIP_HEIGHT } from "../components/monkey/Strip";
+import Troop, { TROOP_HEIGHT } from "../components/monkey/Troop";
 import {
   GREEN, GROUND, INK, MUTED, PANEL, RADIUS, SIZE, SKY, TIES, WEIGHT,
 } from "../lib/monkey/look";
@@ -58,6 +59,11 @@ const GUIDE_MS = 4200;
 // audible ticks, so the run is capped and stepped.
 const MAX_TICKS = 12;
 const TICK_MS = 45;
+
+// What the trade row says while no wedge is picked. The buttons act on the
+// focused wedge, so with nothing focused they are dark and this is the only
+// thing to read.
+const PICK_HINT = "Tap a wedge to pick a stock";
 
 const PAGE_PAD = 16;
 const HEADER_H = 44;
@@ -184,6 +190,12 @@ export default function Monkey() {
   // stays "play" for the 1.2 seconds the settle pour runs: without a latch the
   // frame after the last one would end the round again, and again.
   const overRef = useRef(false);
+  // The round this page last dealt itself, "level|seed". The buttons write
+  // their round into the url, which runs the pinning effect below again; this
+  // is what tells that effect the params are its own writing and not a player
+  // editing the link, so a deal is never doubled and a round in progress is
+  // never reset under the player.
+  const lastDealtRef = useRef<string | null>(null);
   const endRoundRef = useRef<(finished: RunState) => void>(() => {});
   const chartBox = useRef<HTMLDivElement | null>(null);
   const [chartW, setChartW] = useState(1300);
@@ -232,6 +244,7 @@ export default function Monkey() {
   // ---------------------------------------------------------------- the deal
 
   const openRound = useCallback((level: LevelId, seed: number) => {
+    lastDealtRef.current = `${level}|${seed}`;
     const d = dealRound(level, seed);
     const opened = newPlayerRun(d);
     spokenRef.current = new Set();
@@ -244,8 +257,13 @@ export default function Monkey() {
     dealRef.current = d;
     setRun(opened);
     runRef.current = opened;
-    setFocus(d.tickers[0]);
-    focusRef.current = d.tickers[0];
+    // Every board level opens with nothing picked: pre-focusing the first
+    // wedge made one click of Buy max the dominant play and the board a
+    // decoration. Level 1's calendar has a single stock and nothing to pick,
+    // so it keeps its focus.
+    const opening = d.target === "calendar" ? d.tickers[0] : "";
+    setFocus(opening);
+    focusRef.current = opening;
     setGuideLine(null);
     setGuideCount(0);
     setSettle(null);
@@ -256,6 +274,20 @@ export default function Monkey() {
     setPhase("open");
     phaseRef.current = "open";
   }, []);
+
+  // Every round dealt from a button pins itself: the url carries the level and
+  // the seed it is actually playing, with replace semantics so the back button
+  // is not filled with rounds, and a reload reproduces the round on screen.
+  // The click is also the gesture that arms audio, so the first dart of a
+  // round opened from a level card lands with a sound on it.
+  const dealPinned = useCallback((level: LevelId, seed: number) => {
+    armAudio();
+    openRound(level, seed);
+    const next = new URLSearchParams(params);
+    next.set("level", String(level));
+    next.set("seed", String(seed));
+    setParams(next, { replace: true });
+  }, [openRound, params, setParams]);
 
   const showLevels = useCallback(() => {
     setPhase("levels");
@@ -285,6 +317,9 @@ export default function Monkey() {
     }
     lastPin.current = pinKey;
     const d = dealFromParams(levelParam, seedParam);
+    // The page's own buttons write these params; re-dealing here would deal
+    // the round twice and throw the darts over a round already being played.
+    if (lastDealtRef.current === `${d.level}|${d.seed}`) return;
     openRound(d.level, d.seed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pinKey]);
@@ -357,6 +392,16 @@ export default function Monkey() {
     [deal, run, tick],
   );
   const beaten = liveRank?.beaten ?? 0;
+
+  // Level 1's monkeys sit in cash until their own buy month, so for the first
+  // half of the round a player one dollar up honestly beats all ten. The
+  // number stays honest; the green does not arrive until there is a monkey in
+  // the market to have beaten.
+  const monkeysIn = useMemo(
+    () => (deal && run ? deal.monkeys.some((m) => m.buyMonth <= run.t) : false),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deal, run, tick],
+  );
 
   // Passing a monkey and being passed are the only two things the strip says
   // out loud while the tape runs.
@@ -599,6 +644,29 @@ export default function Monkey() {
   }, [run, focus, tick]);
 
   const series = run && focus ? run.prices[focus] ?? [] : [];
+
+  // The end card's chart is a reveal, not a trade surface, so a round played
+  // without ever picking a wedge still gets a line with real years on it: the
+  // biggest position the player ended on, or the first wedge if they held
+  // nothing at all.
+  const endTicker = useMemo(() => {
+    if (!deal || !run) return "";
+    if (focus) return focus;
+    let pick = deal.tickers[0] ?? "";
+    let most = 0;
+    for (const t of deal.tickers) {
+      const n = run.holdings[t] ?? 0;
+      if (n > most) { most = n; pick = t; }
+    }
+    return pick;
+  }, [deal, run, focus]);
+  const endSeries = run && endTicker ? run.prices[endTicker] ?? [] : [];
+  const endTrades: ChartTrade[] = useMemo(() => {
+    if (!run || !endTicker) return [];
+    return run.trades
+      .filter((tr) => tr.ticker === endTicker)
+      .map((tr) => ({ at: tr.at, price: tr.price, side: tr.kind }));
+  }, [run, endTicker]);
   const monthLabels = phase === "end" ? deal?.months ?? [] : playMonths(series.length);
 
   // ------------------------------------------------------------- the buttons
@@ -660,16 +728,18 @@ export default function Monkey() {
             <Card key={`${id}-${saveTick}`} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{LEVELS[id].card}</div>
               <div style={{ fontSize: 14, color: MUTED, minHeight: 38 }}>
-                {open ? LEVELS[id].proves : levelLocked()}
+                {open ? `${LEVELS[id].proves}.` : levelLocked()}
               </div>
-              <div className="tnum" style={{ fontSize: 14, color: best > 0 ? INK : "transparent", minHeight: 20 }}>
-                {best > 0 ? `Best: beat ${best} of ${MONKEYS}` : "."}
+              {/* the best line's row is reserved by its height, not by a
+                  transparent full stop nobody can see but a reader can copy */}
+              <div className="tnum" style={{ fontSize: 14, color: INK, minHeight: 20 }}>
+                {best > 0 ? `Best: beat ${best} of ${MONKEYS}` : ""}
               </div>
               <div>
                 <Button
                   action={`throw-${id}`}
                   disabled={!open}
-                  onClick={() => openRound(id, randomSeed())}
+                  onClick={() => dealPinned(id, randomSeed())}
                 >
                   Throw
                 </Button>
@@ -698,7 +768,7 @@ export default function Monkey() {
       <div className="tnum" data-clock={Math.floor(run.t)} style={{ fontSize: 18, fontWeight: 600 }}>
         {clockLabel(deal, run.t)}
       </div>
-      <div className="tnum" data-beaten={beaten} style={{ fontSize: SIZE.rank, fontWeight: WEIGHT.heading, color: beaten >= 5 ? GREEN : INK }}>
+      <div className="tnum" data-beaten={beaten} style={{ fontSize: SIZE.rank, fontWeight: WEIGHT.heading, color: beaten >= 5 && monkeysIn ? GREEN : INK }}>
         {beatenLine(beaten)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
@@ -717,16 +787,18 @@ export default function Monkey() {
 
   const tradeRow = (
     <div style={{ height: TRADE_H, display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
-      <Button action="buy1" tone="green" disabled={!tradesLive || !canBuy(1)} onClick={() => trade((r) => buy(r, focus, price))}>Buy 1</Button>
-      <Button action="buy5" tone="green" disabled={!tradesLive || !canBuy(5)} onClick={() => trade((r) => buy(r, focus, price * 5))}>Buy 5</Button>
-      <Button action="buymax" tone="green" disabled={!tradesLive || !canBuy()} onClick={() => trade((r) => buy(r, focus))}>Buy max</Button>
+      <Button action="buy1" tone="green" disabled={!tradesLive || !focus || !canBuy(1)} onClick={() => trade((r) => buy(r, focus, price))}>Buy 1</Button>
+      <Button action="buy5" tone="green" disabled={!tradesLive || !focus || !canBuy(5)} onClick={() => trade((r) => buy(r, focus, price * 5))}>Buy 5</Button>
+      <Button action="buymax" tone="green" disabled={!tradesLive || !focus || !canBuy()} onClick={() => trade((r) => buy(r, focus))}>Buy max</Button>
       <div style={{ width: 16 }} />
-      <Button action="sell1" tone="red" disabled={!tradesLive || held < 1} onClick={() => trade((r) => sell(r, focus, 1))}>Sell 1</Button>
-      <Button action="sell5" tone="red" disabled={!tradesLive || held < 1} onClick={() => trade((r) => sell(r, focus, 5))}>Sell 5</Button>
-      <Button action="sellall" tone="red" disabled={!tradesLive || held < 1} onClick={() => trade((r) => sell(r, focus))}>Sell all</Button>
+      <Button action="sell1" tone="red" disabled={!tradesLive || !focus || held < 1} onClick={() => trade((r) => sell(r, focus, 1))}>Sell 1</Button>
+      <Button action="sell5" tone="red" disabled={!tradesLive || !focus || held < 1} onClick={() => trade((r) => sell(r, focus, 5))}>Sell 5</Button>
+      <Button action="sellall" tone="red" disabled={!tradesLive || !focus || held < 1} onClick={() => trade((r) => sell(r, focus))}>Sell all</Button>
       <div style={{ flex: 1 }} />
-      <span style={{ fontSize: 14, color: MUTED }}>
-        {focus ? `${companyName(focus)} ${dead ? "went to zero" : `at $${price.toFixed(2)}`}` : ""}
+      <span data-trade-note style={{ fontSize: 16, color: MUTED }}>
+        {focus
+          ? `${companyName(focus)} ${dead ? "went to zero" : `now $${price.toFixed(2)}`}`
+          : PICK_HINT}
       </span>
     </div>
   );
@@ -749,6 +821,18 @@ export default function Monkey() {
   const openScreen = run && deal ? (
     <div style={{ padding: PAGE_PAD, display: "flex", flexDirection: "column", gap: GAP, height: "100vh" }}>
       {header}
+      {/* the troop, over the board it is about to throw at; it carries the
+          guide's bubble, so the open screen reserves no room for one */}
+      <Troop
+        darts={dartList}
+        thrown={thrown}
+        count={MONKEYS}
+        guideIndex={deal.guideIndex}
+        guideLine={guideLine}
+        ties={TIES}
+        width={viewW - PAGE_PAD * 2}
+        height={TROOP_HEIGHT}
+      />
       <div style={{ flex: 1, display: "flex", gap: GAP, minHeight: 0 }}>
         <Card ref={boardBox} style={{ flex: "1 1 0", minWidth: 0, minHeight: 0, padding: 16, overflow: "hidden" }}>
           <Board
@@ -771,9 +855,6 @@ export default function Monkey() {
           />
         </Card>
         <div style={{ flex: "0 0 380px", width: 380, display: "flex", flexDirection: "column", gap: GAP, minHeight: 0 }}>
-          <div style={{ minHeight: 76 }}>
-            <Guide line={guideLine} />
-          </div>
           {desk}
         </div>
       </div>
@@ -831,19 +912,28 @@ export default function Monkey() {
         data-chart-labels="months"
         style={{ height: chartH, flex: "none", background: PANEL, borderRadius: RADIUS, padding: 8, overflow: "hidden" }}
       >
-        <Chart
-          series={series}
-          months={monthLabels}
-          t={run.t}
-          livePrice={price}
-          width={chartW - 16}
-          height={chartH - 16}
-          trades={chartTrades}
-          chip
-          lineColor={INK}
-          textColor={MUTED}
-          gridColor="rgba(60,60,60,0.14)"
-        />
+        {focus ? (
+          <Chart
+            series={series}
+            months={monthLabels}
+            t={run.t}
+            livePrice={price}
+            width={chartW - 16}
+            height={chartH - 16}
+            trades={chartTrades}
+            chip
+            lineColor={INK}
+            textColor={MUTED}
+            gridColor="rgba(60,60,60,0.14)"
+          />
+        ) : (
+          <div style={{
+            height: chartH - 16, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16, color: MUTED,
+          }}>
+            {PICK_HINT}
+          </div>
+        )}
       </div>
     </div>
   ) : null;
@@ -893,12 +983,12 @@ export default function Monkey() {
           style={{ height: 208, background: PANEL, borderRadius: RADIUS, padding: 8, flex: "none" }}
         >
           <Chart
-            series={series}
+            series={endSeries}
             months={deal.months}
             t={lastIndex(run)}
             width={Math.min(1200, viewW - 100)}
             height={192}
-            trades={chartTrades}
+            trades={endTrades}
             chip={false}
             lineColor={INK}
             textColor={MUTED}
@@ -914,9 +1004,9 @@ export default function Monkey() {
       </div>
 
       <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 8px", flex: "none" }}>
-        <Button action="again" tone="green" size="lg" onClick={() => openRound(deal.level, randomSeed())}>Play again</Button>
+        <Button action="again" tone="green" size="lg" onClick={() => dealPinned(deal.level, randomSeed())}>Play again</Button>
         {deal.level < 3 && isUnlocked((deal.level + 1) as LevelId) && (
-          <Button action="next" tone="sky" size="lg" onClick={() => openRound((deal.level + 1) as LevelId, randomSeed())}>Next level</Button>
+          <Button action="next" tone="sky" size="lg" onClick={() => dealPinned((deal.level + 1) as LevelId, randomSeed())}>Next level</Button>
         )}
         <Button action="levels" tone="grey" size="lg" onClick={goLevels}>Levels</Button>
       </div>

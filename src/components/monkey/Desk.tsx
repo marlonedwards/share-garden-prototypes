@@ -27,6 +27,16 @@
 // Countability has a floor. A column draws the smallest power of ten of its own
 // unit that is at least three pixels thick, and the count under the column
 // always says the exact number, so a banded column still reads as a number.
+//
+// A column's width is the one thing the fork sizes differently, and it is a
+// reading fix rather than a styling one. The Floor plays ten wedges wide, so its
+// 92px column is what fits; this game opens on one holding and cash, and two
+// 92px columns in a stage a thousand pixels across left the desk band reading as
+// empty panel with a stripe in the middle. The width now scales with the count:
+// a round holding one or two things draws them at 160, ten at 92, and the widths
+// in between come off the same line. The dollar scale is untouched by this: a
+// slab is still price times scale tall, so a wider column is a wider slab and
+// never a taller one, and the three flat rules read exactly as before.
 
 import { CSSProperties } from "react";
 import { Ticker } from "../../lib/tape/engine";
@@ -38,6 +48,21 @@ import {
 } from "../../lib/monkey/look";
 
 export const TICK_DOLLARS = 10;
+
+// A column is this wide when the desk holds one or two things, and this narrow
+// when it holds ten. Cash counts as a column and takes the same width as the
+// rest, so the band never draws two different column widths at once.
+export const COL_WIDE = 160;
+export const COL_NARROW = 92;
+export const COL_PHONE = 74;
+
+export function columnWidth(holdings: number, phone = false): number {
+  if (phone) return COL_PHONE;
+  const n = Math.max(0, holdings);
+  if (n <= 2) return COL_WIDE;
+  if (n >= 10) return COL_NARROW;
+  return Math.round(COL_WIDE - ((COL_WIDE - COL_NARROW) * (n - 2)) / 8);
+}
 
 // Below three pixels a seam per unit is not readable, which is what makes the
 // column band up to the next power of ten.
@@ -181,6 +206,8 @@ export default function Desk({
   pour: Pour | null;
 }) {
   const stackH = height - 44;
+  // holdings, not columns: cash is always there and is not a thing you picked.
+  const colW = columnWidth(columns.filter((c) => c.ticker !== null).length, phone);
   return (
     <div
       data-desk
@@ -236,7 +263,7 @@ export default function Desk({
                 alignItems: "stretch",
                 textAlign: "left",
                 border: "none",
-                width: phone ? 74 : 92,
+                width: colW,
                 height: "100%",
                 flex: "0 0 auto",
                 borderRadius: 12,

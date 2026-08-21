@@ -6,16 +6,21 @@
 //   A  same seed reproduces the window, the stocks and every dart and basket
 //   B  every monkey buys whole shares, conserves worth, and walks a worth path
 //      equal to a zero-trade engine run of its basket entered at its buy month
-//   C  level 1 spreads ten buy months over the calendar, and a monkey that
-//      bought in month one equals the engine's holding baseline to the cent
-//   D  level 2's window carries the crash month, and selling everything at the
-//      low finishes behind at least eight monkeys
-//   E  level 3's board is every company alive at the window's open, a company
-//      dying inside it is flagged, and three distinct wedges survive the death
+//   C  level 1 spreads ten buy months over the calendar, a monkey that bought
+//      in month one equals the engine's holding baseline to the cent, and the
+//      window rises without running past the mania cap, so buying in month
+//      one beats sitting in cash and the round reads in human dollars
+//   D  level 2's window carries the crash month, every wedge recovered without
+//      running away to a mania, and selling everything at the low finishes
+//      behind at least eight monkeys
+//   E  level 3's board is all ten companies, every window reaches the file's
+//      worst index month, a company dying inside it is flagged, and three
+//      distinct wedges survive the death
 //   G  beating five monkeys unlocks the next level and survives a reload
 //
 // It also prints the pinned deals tools/monkeycheck.mjs walks, between two
-// markers, so the walk holds the live DOM against numbers computed here.
+// markers, so the walk holds the live DOM against numbers computed here, and
+// two re-pin tables the walk's own pinned seeds are chosen from.
 //
 // Run it with: npx tsx tools/monkeySim.ts
 //
@@ -26,12 +31,13 @@ declare const process: { exit(code: number): never };
 
 import {
   RunState, Ticker,
+  INDEX_TICKER,
   advanceTo, buy, deathIndex, eraMonths, eraTickers, holdingBaseline, lastIndex,
   newRun, priceAt, sell, seriesOf, wholeShares, worthAt, worthOf,
 } from "../src/lib/tape/engine";
 import { listingIndexOf } from "../src/lib/floor/campaign";
 import {
-  BEST_KEY, Deal, LEVELS, LEVEL_IDS, LevelId, MONKEYS, Monkey, PROGRESS_KEY, START_CASH,
+  BEST_KEY, Deal, LEVELS, LEVEL_IDS, LevelId, MAX_GAIN, MONKEYS, Monkey, PROGRESS_KEY, START_CASH,
   allotmentOf, bestFor, clearSave, crashIndexOf, dealRound, deadLine, isUnlocked,
   lastMonthIndex, monkeyFinalWorth, monkeyLine, monkeyWorthAt, monkeyWorths, newPlayerRun, rank,
   readUnlocked, recordRound, runConfigFor,
@@ -189,7 +195,14 @@ cB.notes.push(`${monkeysChecked} monkeys over ${B_SEEDS} seeds a level, ${pathsC
 
 const cC = check("C", "level 1 spreads its buy months and month one is the baseline");
 const C_SEEDS = 300;
+// the window that has to hold the lesson: 200 seeds, the count the rules pass
+// asks the holding claim to be true over
+const C_LESSON_SEEDS = 200;
 let leanest = MONKEYS;
+let richest = 0;
+let frontHalfBest = 0;
+let backHalfBest = 0;
+let thinnestHold = Infinity;
 
 for (let seed = 1; seed <= C_SEEDS; seed++) {
   const deal = dealRound(1, seed);
@@ -203,6 +216,15 @@ for (let seed = 1; seed <= C_SEEDS; seed++) {
     `level 1 seed ${seed} dealt ${ticker} at ${openPrice}, more than a fifth of the stake`);
   want(cC, seriesOf(deal.era, ticker)[deal.endIndex] > 0,
     `level 1 seed ${seed} dealt ${ticker}, which dies inside the window`);
+  // the window rises overall, so staying in is what wins the level rather
+  // than the monkey that sat in cash longest
+  const closePrice = seriesOf(deal.era, ticker)[deal.endIndex];
+  want(cC, closePrice >= openPrice,
+    `level 1 seed ${seed} dealt ${ticker} from ${openPrice} to ${closePrice}, a falling window`);
+  // and it rose without running away: a stock at more than five times its open
+  // prints monkeys worth tens of thousands against a thousand dollar stake
+  want(cC, closePrice <= openPrice * MAX_GAIN,
+    `level 1 seed ${seed} dealt ${ticker} at ${(closePrice / openPrice).toFixed(2)} times its open, over the mania cap of ${MAX_GAIN}`);
   const months = new Set<number>();
   for (const monkey of deal.monkeys) {
     months.add(monkey.buyMonth);
@@ -228,8 +250,27 @@ for (let seed = 1; seed <= C_SEEDS; seed++) {
   const worth = monkeyWorthAt(deal, first, lastMonthIndex(deal));
   want(cC, near(worth, baseline), `level 1 seed ${seed} month one monkey is ${worth}, the holding baseline is ${baseline}`);
   want(cC, near(worth, monkeyFinalWorth(deal, first)), `level 1 seed ${seed} final worth disagreed with the path`);
+
+  if (seed <= C_LESSON_SEEDS) {
+    // the lesson itself: staying in beats sitting in cash. The cash monkey is
+    // the one that never bought at all, worth its thousand dollars at the
+    // last month; the month one monkey is the holding baseline above.
+    want(cC, worth > START_CASH + CENT,
+      `level 1 seed ${seed}: buying in month one finished at ${worth.toFixed(2)}, no better than sitting in cash`);
+    if (worth - START_CASH < thinnestHold) thinnestHold = worth - START_CASH;
+    // and where the winning dart landed: the front half of the window or the
+    // back half. A level that teaches timing puts the winner in the back half
+    // every time; a level that teaches staying in spreads them.
+    const best = [...deal.monkeys].sort((a, b) => monkeyFinalWorth(deal, b) - monkeyFinalWorth(deal, a))[0];
+    if (monkeyFinalWorth(deal, best) > richest) richest = monkeyFinalWorth(deal, best);
+    if (best.buyMonth < deal.months.length / 2) frontHalfBest++;
+    else backHalfBest++;
+  }
 }
 cC.notes.push(`${C_SEEDS} seeds, the leanest spread was ${leanest} distinct buy months of ten`);
+cC.notes.push(`every window rose, none of them past the ${MAX_GAIN}x mania cap, richest monkey $${richest.toFixed(2)}`);
+cC.notes.push(`${C_LESSON_SEEDS} seeds: month one beat sitting in cash every time, by at least ${thinnestHold === Infinity ? "n/a" : `$${thinnestHold.toFixed(2)}`}`);
+cC.notes.push(`the best monkey bought in the front half ${frontHalfBest} times and the back half ${backHalfBest}`);
 
 // ------------------------------------------------------------- D, the crash
 
@@ -237,6 +278,7 @@ const cD = check("D", "level 2 carries the crash and selling at the low loses");
 const D_SEEDS = 120;
 const CRASH_MONTH: Record<string, string> = { gfc: "2008-10", covid: "2020-03" };
 const eraSeen: Record<string, number> = {};
+const eraPool: Record<string, Set<string>> = {};
 let worstBeat = MONKEYS;
 
 // The panic seller, played through the engine: the same equal split every
@@ -273,6 +315,17 @@ for (let seed = 1; seed <= D_SEEDS; seed++) {
   for (const monkey of deal.monkeys) {
     want(cD, monkey.darts.length === 2, `level 2 seed ${seed} monkey ${monkey.index} threw ${monkey.darts.length} darts`);
   }
+  // every wedge recovered, and none of them ran away: a wedge at more than
+  // five times its open turns the crash level into a mania level
+  for (const ticker of deal.tickers) {
+    const values = seriesOf(deal.era, ticker);
+    const gain = values[deal.endIndex] / values[deal.startIndex];
+    want(cD, gain >= 1,
+      `level 2 seed ${seed} dealt ${ticker} at ${gain.toFixed(2)} times its open, a wedge that never recovered`);
+    want(cD, gain <= MAX_GAIN,
+      `level 2 seed ${seed} dealt ${ticker} at ${gain.toFixed(2)} times its open, over the mania cap of ${MAX_GAIN}`);
+    (eraPool[deal.era] ??= new Set<string>()).add(ticker);
+  }
 
   const seller = sellAtTheLow(deal);
   const finals = deal.monkeys.map((m) => monkeyFinalWorth(deal, m));
@@ -295,6 +348,11 @@ for (let seed = 1; seed <= D_SEEDS; seed++) {
 }
 cD.notes.push(`${D_SEEDS} seeds, ${eraSeen["gfc"] ?? 0} in the crash and ${eraSeen["covid"] ?? 0} in the 2020s`);
 cD.notes.push(`the low seller was behind at least ${worstBeat} of ten monkeys in every seed`);
+for (const era of Object.keys(eraPool).sort()) {
+  const dealt = Array.from(eraPool[era]).sort();
+  want(cD, dealt.length >= 3, `level 2 in ${era} only ever dealt ${dealt.length} wedges: ${dealt.join(", ")}`);
+  cD.notes.push(`${era} pool under the recovery rule and the ${MAX_GAIN}x cap: ${dealt.join(", ")}`);
+}
 
 // ------------------------------------------------- R, ties go to the monkey
 
@@ -334,7 +392,7 @@ cR.notes.push(`${LEVEL_IDS.length} levels, ${R_SEEDS} seeds, cash and every monk
 // -------------------------------------------------------- E, the whole board
 
 const cE = check("E", "level 3's board is the living companies and spreading survives a death");
-const E_SEEDS = 120;
+const E_SEEDS = 200;
 // five percent of the stake. The worst three wedge basket the dot-com file can
 // deal is Cisco with WorldCom and eToys from March 2000, which finishes at
 // $102.88, so a floor at fifty dollars is under every real outcome and still
@@ -346,13 +404,37 @@ let deathSeeds = 0;
 
 const dotcomTickers = eraTickers("dotcom");
 
+// The worst month the dot-com index ever had, computed over the whole file
+// rather than inside a window: September 2002, the bottom of the bust. Level 3
+// only opens on windows where all ten companies are still alive, and every one
+// of those windows reaches this month, which is what makes the end card's
+// "that was the dot-com bust" true of every seed rather than most of them.
+function worstIndexMonth(): number {
+  const values = seriesOf("dotcom", INDEX_TICKER);
+  let worst = Infinity;
+  let at = -1;
+  for (let i = 0; i + 1 < values.length; i++) {
+    if (!(values[i] > 0)) continue;
+    const step = values[i + 1] / values[i];
+    if (step < worst) {
+      worst = step;
+      at = i + 1;
+    }
+  }
+  return at;
+}
+const WORST_MONTH = worstIndexMonth();
+
 for (let seed = 1; seed <= E_SEEDS; seed++) {
   const deal = dealRound(3, seed);
   // the board, recomputed here off the raw series
   const alive = dotcomTickers.filter((t) => seriesOf("dotcom", t)[deal.startIndex] > 0);
   want(cE, deal.tickers.join(",") === alive.join(","),
     `level 3 seed ${seed} dealt ${deal.tickers.join(",")} for a board of ${alive.join(",")}`);
-  want(cE, deal.tickers.length >= 8, `level 3 seed ${seed} dealt a board of ${deal.tickers.length}`);
+  want(cE, deal.tickers.length === dotcomTickers.length,
+    `level 3 seed ${seed} dealt a board of ${deal.tickers.length}, not the whole ${dotcomTickers.length}`);
+  want(cE, deal.startIndex <= WORST_MONTH && deal.endIndex >= WORST_MONTH,
+    `level 3 seed ${seed} ran ${deal.startMonth} to ${deal.endMonth}, missing the bust's worst month ${eraMonths("dotcom")[WORST_MONTH]}`);
 
   const dying = deal.tickers.filter((t) => {
     const death = deathIndex(seriesOf("dotcom", t));
@@ -428,7 +510,8 @@ for (let start = 0; start + 36 <= dotcomMonths; start++) {
   }
 }
 want(cE, sweepWorst >= SURVIVAL_FLOOR, `the worst three wedge basket in the file is ${sweepDesc}, under the floor`);
-cE.notes.push(`${E_SEEDS} seeds, ${deathSeeds} windows with a death, ${spreadSeen} three wedge monkeys held against a floor of ${SURVIVAL_FLOOR}`);
+cE.notes.push(`${E_SEEDS} seeds, every board ten wedges, every window over ${eraMonths("dotcom")[WORST_MONTH]}, the file's worst index month`);
+cE.notes.push(`${deathSeeds} windows with a death, ${spreadSeen} three wedge monkeys held against a floor of ${SURVIVAL_FLOOR}`);
 cE.notes.push(`worst dealt three wedge basket ${worstSpread === Infinity ? "none" : worstSpread.toFixed(2)}, worst of all ${combos} in the file ${sweepDesc}`);
 
 // ------------------------------------------------------------ G, the save
@@ -513,11 +596,51 @@ const fixture = {
   }),
 };
 
+// ------------------------------------------------------- the re-pin tables
+
+// tools/monkeycheck.mjs pins two seeds: seed 7 for the fixture above and seed
+// 23 on level 1 for the unlock walk, which needs a round where never trading
+// loses to all ten monkeys and buying max at the open and holding beats all
+// ten. Any change to the deal rules moves those rounds, so the sim prints what
+// each of the first forty level 1 seeds now deals and how the two players
+// finish in it, and what level 3 deals on both pinned seeds.
+
+// the player who never touches the buttons is worth a thousand dollars at the
+// last month, exactly what it was at the first, so START_CASH is the whole
+// story on that side. The other player spends everything at the open and sits.
+function boughtAtOpen(deal: Deal): number {
+  let run = newPlayerRun(deal);
+  for (const ticker of deal.tickers) run = buy(run, ticker, START_CASH / deal.tickers.length);
+  return worthAt(run, lastMonthIndex(deal));
+}
+
+const repin: string[] = [];
+repin.push("level 1, seeds 1 to 40: what the seed deals and what the two walked players beat");
+repin.push(`  ${pad("seed", 6)}${pad("stock", 8)}${pad("window", 20)}${pad("never traded", 14)}buy max at open and hold`);
+for (let seed = 1; seed <= 40; seed++) {
+  const deal = dealRound(1, seed);
+  const finals = deal.monkeys.map((m) => monkeyFinalWorth(deal, m));
+  const idle = rank(START_CASH, finals);
+  const held = boughtAtOpen(deal);
+  const holder = rank(held, finals);
+  repin.push(`  ${pad(String(seed), 6)}${pad(deal.tickers[0], 8)}${pad(`${deal.startMonth} to ${deal.endMonth}`, 20)}${pad(`${idle.beaten} of 10`, 14)}${holder.beaten} of 10 ($${held.toFixed(2)})`);
+}
+repin.push("");
+repin.push("level 3, the two pinned seeds: the board and the deaths inside the window");
+for (const seed of [7, 23]) {
+  const deal = dealRound(3, seed);
+  const died = deal.dead.length > 0 ? deal.dead.join(", ") : "none";
+  repin.push(`  seed ${pad(String(seed), 4)}${pad(`${deal.startMonth} to ${deal.endMonth}`, 20)}${deal.tickers.length} wedges: ${deal.tickers.join(", ")}`);
+  repin.push(`  ${pad("", 11)}dies mid-window: ${died}`);
+}
+
 // ------------------------------------------------------------------- output
 
 console.log("<<<FIXTURE");
 console.log(JSON.stringify(fixture));
 console.log("FIXTURE>>>");
+console.log("");
+for (const line of repin) console.log(line);
 console.log("");
 console.log(`monkey sim, ${LEVEL_IDS.length} levels, ${MONKEYS} monkeys a round`);
 console.log("");

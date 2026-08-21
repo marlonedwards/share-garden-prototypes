@@ -59,6 +59,19 @@ export const LEVEL_ONE_MAX_PRICE = START_CASH / 5;
 // Level 2 needs a stock the money can open a position in at all.
 export const LEVEL_TWO_MAX_PRICE = START_CASH;
 
+// The mania cap, shared by levels 1 and 2: a stock that ends the window at
+// more than five times its opening price is not teaching the level's lesson,
+// it is teaching a mania. Tesla runs 17x and GameStop 30x across the 2020s,
+// and a board carrying either one hands out sixteen thousand dollar monkeys,
+// which turns level 2's crash into a rocket and prints level 1 rounds nobody
+// can read as money. Five times is the smallest round multiple that still
+// leaves level 2 four wedges in both eras and level 1 a stock in every window,
+// so the cap costs the deal nothing but the manias.
+export const MAX_GAIN = 5;
+
+// The level 2 wedge count the deal has to be able to fill.
+const LEVEL_TWO_WEDGES = 3;
+
 export const LEVELS: Record<LevelId, LevelSpec> = {
   1: {
     id: 1, stocks: 1, eras: ["covid"], windowMonths: 24, speed: 0.4, darts: 1,
@@ -176,30 +189,70 @@ function deadInside(era: EraId, tickers: Ticker[], startIndex: number, endIndex:
   });
 }
 
-// Level 1's pool: listed, alive through the window, and cheap enough that a
-// thousand dollars buys five shares at the open.
+// How far a ticker travelled across the window: its last close over its first.
+// One is flat, under one fell, over one rose.
+function windowGain(era: EraId, ticker: Ticker, startIndex: number, endIndex: number): number {
+  const values = seriesOf(era, ticker);
+  const open = values[startIndex];
+  return open > 0 ? values[endIndex] / open : 0;
+}
+
+// Level 1's pool: listed, alive through the window, cheap enough that a
+// thousand dollars buys five shares at the open, and rising across the window
+// as a whole. The last clause is the same kind of rule level 2 already runs,
+// and it is what makes the level's lesson true. Level 1 proves "when you got
+// in mattered less than staying in", but 38 percent of the 2020s windows end
+// below where they opened, and in one of those the winning monkey is the one
+// whose dart landed latest, the one that sat in cash longest. That teaches
+// market timing, the opposite of the line on the card. A window whose last
+// close is at or above its first still spreads the ten entry months over very
+// different outcomes; it just cannot make waiting the winning move.
+//
+// The same mania cap level 2 runs applies here too. A GameStop or Tesla window
+// is a rising window, so the rule above lets it through, and it ends with
+// monkeys worth thirty thousand dollars against a thousand dollar stake, which
+// reads as a lottery rather than as staying in. Every 2020s window still keeps
+// at least one stock under the cap, so nothing is lost but the lotteries.
 function levelOnePool(era: EraId, startIndex: number, endIndex: number): Ticker[] {
   return eraTickers(era).filter((t) =>
     isOpenable(era, t, startIndex)
     && aliveThrough(era, t, endIndex)
-    && seriesOf(era, t)[startIndex] <= LEVEL_ONE_MAX_PRICE);
+    && seriesOf(era, t)[startIndex] <= LEVEL_ONE_MAX_PRICE
+    && windowGain(era, t, startIndex, endIndex) >= 1
+    && windowGain(era, t, startIndex, endIndex) <= MAX_GAIN);
 }
 
-// Level 2's pool: listed, buyable at the open, alive through the window, and
-// carrying its own recovery. The last clause is the spec's promise made true
-// of every wedge: "monkeys that sat through it recover". A wedge whose last
-// close sits below its first one never recovered, and dealing it would make
-// the level teach the opposite of what section 3 says it proves.
+// Level 2's pool: listed, buyable at the open, alive through the window,
+// carrying its own recovery, and short of a mania. The recovery clause is the
+// spec's promise made true of every wedge, "monkeys that sat through it
+// recover": a wedge whose last close sits below its first one never
+// recovered, and dealing it would make the level teach the opposite of what
+// section 3 says it proves. The mania clause is the same promise from the
+// other side. A wedge that ends five times up did not recover from the crash,
+// it ran away from it, and a board with one on it reads as a rocket rather
+// than a survival.
+//
+// Both eras keep four wedges under the pair of rules: the crash deals Apple,
+// Amazon, Ford and Walmart, the 2020s deal Apple, Amazon, Zoom and Peloton.
+// If a future file left fewer than three, the cap loosens to the smallest
+// multiple that fills the board rather than failing the deal, and only if the
+// recovery rule itself cannot fill it does the pool fall back to everything
+// buyable.
 function levelTwoPool(era: EraId, startIndex: number, endIndex: number): Ticker[] {
   const buyable = eraTickers(era).filter((t) =>
     isOpenable(era, t, startIndex)
     && aliveThrough(era, t, endIndex)
     && seriesOf(era, t)[startIndex] <= LEVEL_TWO_MAX_PRICE);
-  const recovered = buyable.filter((t) => {
-    const values = seriesOf(era, t);
-    return values[endIndex] >= values[startIndex];
-  });
-  return recovered.length >= 3 ? recovered : buyable;
+  const recovered = buyable.filter((t) => windowGain(era, t, startIndex, endIndex) >= 1);
+  if (recovered.length < LEVEL_TWO_WEDGES) return buyable;
+  const calm = recovered.filter((t) => windowGain(era, t, startIndex, endIndex) <= MAX_GAIN);
+  if (calm.length >= LEVEL_TWO_WEDGES) return calm;
+  // the smallest cap that still fills the board: the third smallest gain
+  const gains = recovered
+    .map((t) => windowGain(era, t, startIndex, endIndex))
+    .sort((a, b) => a - b);
+  const loosened = gains[LEVEL_TWO_WEDGES - 1];
+  return recovered.filter((t) => windowGain(era, t, startIndex, endIndex) <= loosened);
 }
 
 // The crash month: the month the index falls hardest inside the window. It is
@@ -226,6 +279,20 @@ function windowStarts(era: EraId, months: number): number[] {
   const total = eraMonths(era).length;
   for (let s = 0; s + months <= total; s++) out.push(s);
   return out;
+}
+
+// Level 3's windows: the ones where every company on the file is still alive
+// at the open, so the board is always the whole ten wedges section 3 promises
+// and the card can say "Ten stocks" without lying. It is computed from the
+// data, never a hardcoded month: the latest start is the one before the first
+// company dies, which on the dot-com file is eToys in April 2001, so the
+// windows run from January 2000 to March 2001. Every one of them therefore
+// carries the bust itself, which is what makes the end card's "that was the
+// dot-com bust" true of every seed, and every one of them carries both deaths,
+// which is the level's lesson.
+function fullBoardStarts(era: EraId, months: number): number[] {
+  const board = eraTickers(era);
+  return windowStarts(era, months).filter((s) => board.every((t) => isOpenable(era, t, s)));
 }
 
 // How many dollars each monkey aims at each ticker. Two darts on one wedge
@@ -305,16 +372,37 @@ export function dealRound(level: LevelId, seed: number): Deal {
     const pool = levelTwoPool(era, startIndex, endIndex);
     tickers = shuffled(rnd, pool).slice(0, Math.min(spec.stocks as number, pool.length));
   } else if (level === 3) {
-    const starts = windowStarts(era, spec.windowMonths);
+    const whole = fullBoardStarts(era, spec.windowMonths);
+    const starts = whole.length > 0 ? whole : windowStarts(era, spec.windowMonths);
     startIndex = pick(rnd, starts);
     endIndex = startIndex + spec.windowMonths - 1;
     tickers = eraTickers(era).filter((t) => isOpenable(era, t, startIndex));
   } else {
-    const starts = windowStarts(era, spec.windowMonths)
-      .filter((s) => levelOnePool(era, s, s + spec.windowMonths - 1).length > 0);
-    startIndex = pick(rnd, starts);
+    // the window and the stock are drawn together and redrawn together: a
+    // window with nothing rising in it is thrown away whole rather than
+    // pinned while the stock is rerolled, so no start is ever dealt with a
+    // pool the rules cannot fill.
+    const starts = windowStarts(era, spec.windowMonths);
+    const poolAt = (s: number) => levelOnePool(era, s, s + spec.windowMonths - 1);
+    let drawn: number | null = null;
+    let stock: Ticker | null = null;
+    for (let attempt = 0; attempt < DRAW_ATTEMPTS && stock === null; attempt++) {
+      const s = pick(rnd, starts);
+      const pool = poolAt(s);
+      if (pool.length === 0) continue;
+      drawn = s;
+      stock = pick(rnd, pool);
+    }
+    if (drawn === null || stock === null) {
+      // every 2020s window has a rising stock in it, so this is the guard for
+      // a file that does not rather than a path any seed walks today
+      const usable = starts.filter((s) => poolAt(s).length > 0);
+      drawn = pick(rnd, usable);
+      stock = pick(rnd, poolAt(drawn));
+    }
+    startIndex = drawn;
     endIndex = startIndex + spec.windowMonths - 1;
-    tickers = [pick(rnd, levelOnePool(era, startIndex, endIndex))];
+    tickers = [stock];
   }
 
   const months = eraMonths(era).slice(startIndex, endIndex + 1);
