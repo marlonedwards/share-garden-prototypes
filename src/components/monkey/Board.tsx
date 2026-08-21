@@ -36,14 +36,57 @@ export function dartStepMs(total: number): number {
   return Math.max(STEP_MIN, Math.min(STEP_MAX, THROW_MS / (total - 1)));
 }
 
-// The rail's width, section 5's "a rail along the right edge".
-export const RAIL_WIDTH = 200;
+// The rail's width, section 5's "a rail along the right edge". The column is
+// sized so the dial inside it is a full 200px across with its panel ring still
+// inside the column: at level 3 a tenth of a smaller dial cannot be counted,
+// and the rail has to stay countable to be worth keeping on screen.
+export const RAIL_WIDTH = 216;
+
+// The rail's darts are packed rather than scattered. Thirty scattered darts on
+// a 180px dial were a smear you could not count, so in rail form every dart
+// shrinks to a dot and takes a numbered place in its own wedge: down the wedge
+// by index first, into a second lane only when a wedge holds more than five.
+// The arrangement is a pure function of the dart's place in its wedge, so the
+// same board always packs the same way and the open to rail tween is a move
+// rather than a reshuffle.
+const RAIL_DART_PX = 12;
+const RAIL_DOT_GAP = 13;
+const RAIL_ROWS = 5;
+
+function railSpot(k: number, m: number, mid: number, half: number, r: number): { a: number; rad: number } {
+  const rows = Math.min(RAIL_ROWS, Math.max(1, m));
+  const cols = Math.max(1, Math.ceil(m / rows));
+  const row = k % rows;
+  const col = Math.floor(k / rows);
+  const top = 0.88;
+  const bottom = 0.34;
+  const rf = rows <= 1 ? 0.70 : top - (row * (top - bottom)) / (rows - 1);
+  const rad = r * rf;
+  const lane = cols <= 1
+    ? 0
+    : (col - (cols - 1) / 2) * Math.min(RAIL_DOT_GAP / Math.max(1, rad), (1.5 * half) / cols);
+  return { a: mid + lane, rad };
+}
+
+// The same idea on level 1's rail, where a month is a row rather than a wedge:
+// the darts on one month sit in a row of dots at its right edge, so the count
+// on a month reads at a glance and the month's own number stays clear of them.
+function railRow(k: number, m: number, cell: Place, cellW: number, cellH: number): Place {
+  const right = cell.x + cellW - 9;
+  const left = Math.max(cell.x + 34, right - (m - 1) * RAIL_DOT_GAP);
+  return {
+    x: m <= 1 ? right : left + (k * (right - left)) / (m - 1),
+    y: cell.y + cellH / 2,
+  };
+}
 
 // The pinned dart's tip is not the middle of its own image: it sits about a
 // quarter across and four fifths down. Anchoring on the tip is what makes a
 // dart look stuck in a wedge rather than laid on top of one.
 const TIP_X = 0.25;
 const TIP_Y = 0.82;
+
+interface Place { x: number; y: number }
 
 // ------------------------------------------------------------ the jitter
 
@@ -114,8 +157,6 @@ function midAngle(i: number, n: number): number {
   return ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
 }
 
-interface Place { x: number; y: number }
-
 interface Layout {
   // the dial
   cx: number; cy: number; r: number;
@@ -156,16 +197,18 @@ function boardLayout(n: number, form: "open" | "rail", w: number, h: number): La
       dartPx: 40,
     };
   }
-  // The rail: the dial at the top using the full width, and the names moved out
-  // of the wedges into a legend under it, because a tenth of a 180px dial is
-  // thirty pixels of arc and the type contract has a floor of twelve.
-  const r = Math.min(82, (w - 28) / 2);
+  // The rail: the dial at the top using the whole column, and the names moved
+  // out of the wedges into a legend under it, because a tenth of a small dial
+  // is thirty pixels of arc and the type contract has a floor of twelve. The
+  // dial takes every pixel the column has left after its panel ring, which is
+  // what makes ten wedges and their packed darts countable at this size.
+  const r = (w - 16) / 2;
   const cx = w / 2;
-  // the darts stand proud of the rim, so the dial hangs low enough that a rail
-  // with a clipping parent does not shave their flights off
-  const cy = 22 + r;
-  const rowH = Math.max(28, Math.min(38, (h - (cy + r + 20)) / Math.max(1, n)));
-  const top = cy + r + 16;
+  // the packed darts sit inside the rim, so the dial only has to hang clear of
+  // its own panel ring
+  const cy = 10 + r + 8;
+  const rowH = Math.max(26, Math.min(38, (h - (cy + r + 26)) / Math.max(1, n)));
+  const top = cy + r + 22;
   const label: Place[] = [];
   const row: Layout["row"] = [];
   for (let i = 0; i < n; i += 1) {
@@ -174,9 +217,9 @@ function boardLayout(n: number, form: "open" | "rail", w: number, h: number): La
     row.push({ x: 6, y, w: w - 12, h: rowH - 4 });
   }
   return {
-    cx, cy, r, label, labelWidth: w - 76, labelAnchor: "start", labelSize: 13, row,
+    cx, cy, r, label, labelWidth: w - 82, labelAnchor: "start", labelSize: 13, row,
     cell: [], cellW: 0, cellH: 0, titleX: 0, titleY: 0,
-    dartPx: 26,
+    dartPx: RAIL_DART_PX,
   };
 }
 
@@ -184,7 +227,7 @@ function calendarLayout(months: number, form: "open" | "rail", w: number, h: num
   const base: Layout = {
     cx: 0, cy: 0, r: 0, label: [], labelWidth: 0, labelAnchor: "middle",
     labelSize: SIZE.body, row: null, cell: [], cellW: 0, cellH: 0,
-    titleX: 0, titleY: 0, dartPx: form === "open" ? 40 : 26,
+    titleX: 0, titleY: 0, dartPx: form === "open" ? 40 : RAIL_DART_PX,
   };
   if (form === "open") {
     const pad = 24;
@@ -263,31 +306,56 @@ export default function Board(props: BoardProps) {
   );
 
   const deadSet = useMemo(() => new Set(dead), [dead]);
+  const focusIndex = focus === null ? -1 : tickers.indexOf(focus);
 
   // Where every dart's tip lands, in board coordinates, for this form. Computed
   // for both forms from the same jitter, so a form change moves a dart and
   // never re-rolls it.
-  const dartAt = useMemo(() => darts.map((d, i) => {
-    const j = jitter(i);
-    if (mode === "calendar") {
-      const at = Math.max(0, Math.min(months - 1, d.at));
-      const c = layout.cell[at] ?? { x: 0, y: 0 };
+  const dartAt = useMemo(() => {
+    // a dart's place among the darts sharing its target, counted in throw order
+    const seen = new Map<number, number>();
+    const slot = darts.map((d) => {
+      const k = seen.get(d.at) ?? 0;
+      seen.set(d.at, k + 1);
+      return k;
+    });
+    return darts.map((d, i) => {
+      const j = jitter(i);
+      const k = slot[i];
+      const m = seen.get(d.at) ?? 1;
+      if (mode === "calendar") {
+        const at = Math.max(0, Math.min(months - 1, d.at));
+        const c = layout.cell[at] ?? { x: 0, y: 0 };
+        if (form === "rail") {
+          const p = railRow(k, m, c, layout.cellW, layout.cellH);
+          return { x: p.x, y: p.y, spin: j.spin * 0.3 };
+        }
+        return {
+          x: c.x + layout.cellW * (0.5 + j.a * 0.22),
+          y: c.y + layout.cellH * (0.5 + j.b * 0.22),
+          spin: j.spin,
+        };
+      }
+      const at = Math.max(0, Math.min(Math.max(0, n - 1), d.at));
+      const half = n <= 1 ? Math.PI : Math.PI / n;
+      const mid = midAngle(at, n);
+      if (form === "rail") {
+        const p = railSpot(k, m, mid, half, layout.r);
+        return {
+          x: layout.cx + Math.cos(p.a) * p.rad,
+          y: layout.cy + Math.sin(p.a) * p.rad,
+          spin: j.spin * 0.3,
+        };
+      }
+      const a = mid + j.a * half * 0.55;
+      const rad = layout.r * (n <= 1 ? 0.42 + j.b * 0.28 : 0.80 + j.b * 0.13);
       return {
-        x: c.x + layout.cellW * (0.5 + j.a * 0.22),
-        y: c.y + layout.cellH * (0.5 + j.b * 0.22),
+        x: layout.cx + Math.cos(a) * rad,
+        y: layout.cy + Math.sin(a) * rad,
         spin: j.spin,
       };
-    }
-    const at = Math.max(0, Math.min(Math.max(0, n - 1), d.at));
-    const half = n <= 1 ? Math.PI : Math.PI / n;
-    const a = midAngle(at, n) + j.a * half * 0.55;
-    const rad = layout.r * (n <= 1 ? 0.42 + j.b * 0.28 : 0.80 + j.b * 0.13);
-    return {
-      x: layout.cx + Math.cos(a) * rad,
-      y: layout.cy + Math.sin(a) * rad,
-      spin: j.spin,
-    };
-  }), [darts, mode, months, n, layout]);
+    });
+  }, [darts, mode, months, n, form, layout]);
 
   const move = still ? "none" : `transform ${MOVE_MS}ms ${EASE}`;
 
@@ -311,6 +379,12 @@ export default function Board(props: BoardProps) {
           55%  { transform: translate(0, 3px) scale(0.86, 1.16); opacity: 1 }
           100% { transform: translate(0, 0) scale(1, 1); opacity: 1 }
         }
+        /* a wedge is a button and has to look like one before it is pressed:
+           the pointer, a small pull out of the dial, and a stronger fill */
+        .mk-pick { cursor: pointer }
+        .mk-lift { transition: transform 170ms ${EASE} }
+        .mk-lift:hover { transform: translate(var(--mk-lx), var(--mk-ly)) }
+        .mk-pick:hover .mk-face { fill: var(--mk-hover) }
       `}</style>
 
       {/* ------------------------------------------------- the dial or the strip */}
@@ -377,12 +451,19 @@ export default function Board(props: BoardProps) {
             data-wedge={t}
             data-wedge-focus={focused ? "1" : "0"}
             data-wedge-dead={gone ? "1" : "0"}
+            className={form === "open" && !still ? "mk-pick mk-lift" : "mk-pick"}
             onClick={() => onFocus(t)}
-            style={{ cursor: "pointer" }}
+            style={{
+              cursor: "pointer",
+              ["--mk-lx" as string]: `${(Math.cos(midAngle(i, n)) * 9).toFixed(2)}px`,
+              ["--mk-ly" as string]: `${(Math.sin(midAngle(i, n)) * 9).toFixed(2)}px`,
+              ["--mk-hover" as string]: gone ? "#E0DACE" : tint(SKY, focused ? 0.50 : 0.26),
+            }}
           >
             <path
+              className="mk-face"
               d={sectorPath(i, n)}
-              fill={gone ? "#E6E1D7" : focused ? tint(SKY, 0.34) : tint(SKY, 0.10 + (i % 3) * 0.045)}
+              fill={gone ? "#E6E1D7" : focused ? tint(SKY, 0.42) : tint(SKY, 0.10 + (i % 3) * 0.045)}
               style={{
                 transform: `translate(${layout.cx}px, ${layout.cy}px) scale(${layout.r})`,
                 transition: move,
@@ -414,11 +495,20 @@ export default function Board(props: BoardProps) {
             </text>
 
             {row && (
-              <rect
-                x={row.x} y={row.y} width={row.w} height={row.h} rx={10}
-                fill={focused ? tint(SKY, 0.20) : "transparent"}
-                style={{ transition: move }}
-              />
+              <g>
+                <rect
+                  x={row.x} y={row.y} width={row.w} height={row.h} rx={10}
+                  fill={focused ? tint(SKY, 0.28) : "transparent"}
+                  style={{ transition: move }}
+                />
+                {/* the focused row carries a solid bar of the focus colour, so
+                    the rail says which stock the trade buttons are aimed at
+                    without the reader having to compare two soft tints */}
+                <rect
+                  x={row.x} y={row.y + 3} width={4} height={Math.max(0, row.h - 6)} rx={2}
+                  fill={focused ? SKY : "transparent"}
+                />
+              </g>
             )}
 
             <g
@@ -435,7 +525,10 @@ export default function Board(props: BoardProps) {
                   y={(k - (lines.length - 1) / 2) * (layout.labelSize + 3) - (form === "rail" ? 5 : 6)}
                   textAnchor={layout.labelAnchor}
                   fill={gone ? MUTED : INK}
-                  style={{ fontSize: layout.labelSize, fontWeight: WEIGHT.emphasis }}
+                  style={{
+                    fontSize: layout.labelSize,
+                    fontWeight: focused ? WEIGHT.heading : WEIGHT.emphasis,
+                  }}
                 >
                   {line}
                 </text>
@@ -475,15 +568,39 @@ export default function Board(props: BoardProps) {
         );
       })}
 
+      {/* the focused wedge's own outline. One element for the whole board,
+          drawn after the wedges so a neighbour's fill cannot cover half of it,
+          and never unmounted: an unfocused board draws it in no colour. */}
+      {mode === "board" && (
+        <path
+          data-focus-ring
+          d={sectorPath(Math.max(0, focusIndex), n)}
+          fill="none"
+          stroke={focusIndex >= 0 ? SKY : "transparent"}
+          strokeWidth={(form === "rail" ? 5 : 4) / Math.max(1, layout.r)}
+          strokeLinejoin="round"
+          style={{
+            transform: `translate(${layout.cx}px, ${layout.cy}px) scale(${layout.r})`,
+            transition: move,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+
       {/* ------------------------------------------------- the calendar's cells */}
       {mode === "calendar" && layout.cell.map((c, i) => (
         <g
           key={i}
           data-month={i}
+          className="mk-pick"
           onClick={() => tickers[0] && onFocus(tickers[0])}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            ["--mk-hover" as string]: tint(SKY, 0.26),
+          }}
         >
           <rect
+            className="mk-face"
             x={c.x}
             y={c.y}
             width={layout.cellW}
@@ -493,9 +610,9 @@ export default function Board(props: BoardProps) {
             style={{ transition: still ? "none" : `x ${MOVE_MS}ms ${EASE}, y ${MOVE_MS}ms ${EASE}` }}
           />
           <text
-            x={c.x + layout.cellW / 2}
+            x={form === "open" ? c.x + layout.cellW / 2 : c.x + 10}
             y={c.y + (form === "open" ? layout.cellH - 10 : layout.cellH / 2 + 4)}
-            textAnchor="middle"
+            textAnchor={form === "open" ? "middle" : "start"}
             fill={MUTED}
             style={{ fontSize: 12, fontVariantNumeric: "tabular-nums", pointerEvents: "none" }}
           >

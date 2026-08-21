@@ -224,8 +224,8 @@ export default function Monkey() {
     setGuideCount(spokenRef.current.size);
     setGuideLine(line);
     guidePop();
-    if (moment === "end") return;      // the end card's line stays put
     window.clearTimeout(guideTimer.current);
+    if (moment === "end") return;      // the end card's line stays put
     guideTimer.current = window.setTimeout(() => setGuideLine(null), GUIDE_MS);
   }, []);
 
@@ -910,7 +910,7 @@ export default function Monkey() {
           <div key={t} style={{ fontSize: SIZE.small, color: MUTED }}>{deadLine(t)}</div>
         ))}
 
-        <Guide line={guideLine} width={640} />
+        <Guide line={guideLine} width={640} persist />
       </div>
 
       <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 8px", flex: "none" }}>

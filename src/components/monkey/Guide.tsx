@@ -19,7 +19,7 @@ const BUBBLE = "#FFFFFF";
 export const GUIDE_HOLD_MS = 4000;
 const FADE_MS = 320;
 
-export default function Guide({ line, onShown, onDone, width = 260 }: GuideProps) {
+export default function Guide({ line, onShown, onDone, width = 260, persist = false }: GuideProps) {
   const [shown, setShown] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const shownRef = useRef(onShown);
@@ -35,6 +35,9 @@ export default function Guide({ line, onShown, onDone, width = 260 }: GuideProps
     setShown(line);
     setVisible(true);
     shownRef.current?.();
+    // The end card's line (persist) stays up for good, section 7 item 7 -
+    // only lines shown during play fade on their own, section 8.
+    if (persist) return;
     const hold = window.setTimeout(() => setVisible(false), GUIDE_HOLD_MS);
     const clear = window.setTimeout(() => {
       setShown(null);
@@ -44,7 +47,7 @@ export default function Guide({ line, onShown, onDone, width = 260 }: GuideProps
       window.clearTimeout(hold);
       window.clearTimeout(clear);
     };
-  }, [line]);
+  }, [line, persist]);
 
   if (!shown) return null;
   const still = reducedMotion();

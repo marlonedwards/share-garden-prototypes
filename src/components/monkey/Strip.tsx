@@ -87,11 +87,25 @@ function Tie({ color, size }: { color: string; size: number }) {
 
 // -------------------------------------------------------------- the confetti
 
-// Twenty-four pieces in the look's four colours, placed by a hash of their own
-// index so the same rank always celebrates the same way and no render path ever
-// calls Math.random. Reduced motion gets no confetti at all rather than a still
-// one, because a frozen scatter of paper reads as a bug.
+// The celebration has to be unmistakable, and the first cut was not: two dozen
+// pieces fell straight through the strip and out of the bottom, so by two
+// seconds after the end card painted there was nothing left to see and a
+// playtester who reached four winning cards reported no confetti at all. So the
+// paper now falls and then lands. Fifty-six pieces drop into the settled strip
+// over the first two and a half seconds, each one coming to rest in a scatter
+// across the lower half rather than leaving the frame, and the whole pile fades
+// together at the end. That is roughly a two and a half to three second
+// celebration whose middle second is a strip full of paper, which is what a
+// screenshot at any moment in it will show.
+//
+// Every piece is placed by a hash of its own index, so the same win always
+// celebrates the same way and no render path ever calls Math.random. Reduced
+// motion gets no confetti at all rather than a still one, because a frozen
+// scatter of paper reads as a bug.
 const CONFETTI = ["#58CC02", "#FFC800", "#1CB0F6", "#FF4B4B"];
+const CONFETTI_COUNT = 56;
+const CONFETTI_REST_MS = 2450;   // every piece has landed by here
+const CONFETTI_FADE_MS = 400;    // and the pile is gone 400ms later
 
 function hash01(n: number): number {
   let h = (n + 7) * 374761393;
@@ -102,29 +116,43 @@ function hash01(n: number): number {
 }
 
 function Confetti({ width, height }: { width: number; height: number }) {
-  const pieces = useMemo(() => Array.from({ length: 24 }, (_, i) => ({
-    left: hash01(i * 3) * width,
-    delay: hash01(i * 3 + 1) * 900,
-    fall: 1500 + hash01(i * 3 + 2) * 900,
-    tilt: hash01(i * 5) * 260 - 130,
-    color: CONFETTI[i % CONFETTI.length],
-    w: 7 + Math.round(hash01(i * 7) * 5),
-  })), [width]);
+  const pieces = useMemo(() => Array.from({ length: CONFETTI_COUNT }, (_, i) => {
+    const w = 7 + Math.round(hash01(i * 7) * 5);
+    const delay = hash01(i * 3 + 1) * 480;
+    return {
+      left: hash01(i * 3) * Math.max(1, width - w),
+      delay,
+      // the last piece to start still lands before the pile fades
+      fall: (CONFETTI_REST_MS - delay) * (0.72 + hash01(i * 3 + 2) * 0.28),
+      drift: hash01(i * 11) * 64 - 32,
+      // the pile rests over the troop and stops short of the worths, because
+      // the rank line is the end card's first sentence and paper on top of a
+      // number is a number nobody can read
+      rest: Math.min(height * 0.70 - w * 1.6, height * (0.26 + hash01(i * 13) * 0.44)),
+      tilt: hash01(i * 5) * 260 - 130,
+      color: CONFETTI[i % CONFETTI.length],
+      w,
+    };
+  }), [width, height]);
   return (
     <div
       aria-hidden
       style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", borderRadius: 16 }}
     >
       <style>{`
-        @keyframes monkey-confetti {
-          0%   { transform: translateY(-24px) rotate(0deg); opacity: 0 }
-          12%  { opacity: 1 }
-          100% { transform: translateY(${height + 30}px) rotate(var(--tilt)); opacity: 0 }
+        @keyframes monkey-confetti-fall {
+          from { transform: translate(0, -30px) rotate(0deg) }
+          to   { transform: translate(var(--drift), var(--rest)) rotate(var(--tilt)) }
+        }
+        @keyframes monkey-confetti-rest {
+          from { opacity: 1 }
+          to   { opacity: 0 }
         }
       `}</style>
       {pieces.map((p, i) => (
         <span
           key={i}
+          data-confetti
           style={{
             position: "absolute",
             top: 0,
@@ -133,8 +161,15 @@ function Confetti({ width, height }: { width: number; height: number }) {
             height: p.w * 1.6,
             borderRadius: 2,
             background: p.color,
-            ["--tilt" as string]: `${p.tilt}deg`,
-            animation: `monkey-confetti ${p.fall}ms ${p.delay}ms ease-in forwards`,
+            ["--drift" as string]: `${p.drift.toFixed(1)}px`,
+            ["--rest" as string]: `${p.rest.toFixed(1)}px`,
+            ["--tilt" as string]: `${p.tilt.toFixed(0)}deg`,
+            // the fall owns the transform, the rest owns the opacity, and the
+            // rest is declared second so its fade wins at the end
+            animation: [
+              `monkey-confetti-fall ${p.fall.toFixed(0)}ms ${p.delay.toFixed(0)}ms cubic-bezier(0.36, 0, 0.24, 1) both`,
+              `monkey-confetti-rest ${CONFETTI_FADE_MS}ms ${CONFETTI_REST_MS}ms linear both`,
+            ].join(", "),
           }}
         />
       ))}

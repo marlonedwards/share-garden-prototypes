@@ -73,4 +73,7 @@ export interface GuideProps {
   onDone?: () => void;
   /** optional: max width of the bubble in px */
   width?: number;
+  /** optional: skip the hold/fade timers and keep the line shown until it
+   *  changes (the end card's line, which stays up for good, section 7) */
+  persist?: boolean;
 }

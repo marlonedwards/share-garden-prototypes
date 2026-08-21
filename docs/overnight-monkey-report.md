@@ -217,6 +217,56 @@ and the live link. Written as the run goes.
   its box and the press is felt rather than seen. `DuoButton` is the default
   export of `src/components/monkey/Button.tsx` so the page's trade row, level
   cards and end card all press the same way.
+- **The rail column is 216 wide so its dial can be 200.** At the old 200 the
+  dial came out 164px across with a 180px panel ring, and a tenth of that is
+  arc nobody can read. `RAIL_WIDTH` is now 216 and the dial takes every pixel
+  the column has left after its ring, which is a 200px board and the smallest
+  one on which ten wedges still separate. The page reads the constant to size
+  its own left column, so the sixteen pixels come out of the stage and nothing
+  else had to move.
+- **The rail's darts are packed, not scattered.** Level 3's thirty scattered
+  darts landed with pairs 1.5px apart on the small dial, which is a smear and
+  not a count. In rail form a dart shrinks from 26px to a 12px dot and takes a
+  numbered place in its own wedge: down the wedge by index, into a second lane
+  only past five, spaced 13px, so the closest pair on the same wedge now sits
+  12.9px apart and you can count the monkeys on a wedge at a glance. The place
+  is a pure function of the dart's index among the darts sharing its target, so
+  the packing is deterministic and the open to rail change is still a move of
+  the same nodes rather than a reshuffle of new ones. Verified: the walk's
+  rail check still passes with nine clock steps across the flip.
+- **Level 1's rail packs into rows and moves its month number left.** A month
+  is a row rather than a wedge there, so the darts on a month sit in a row of
+  dots at its right edge and the month's own number moves from the middle of
+  the row to its left edge, out of their way. Ten dots on twenty-four rows
+  reads as a count without a single overlap.
+- **The focused wedge is one outline for the whole board.** A stroke inside
+  each wedge's own group had its neighbour's fill drawn over half of it, so the
+  focus ring is a single path drawn after every wedge, its `d` following the
+  focused wedge and its stroke going transparent when nothing is focused. It is
+  never unmounted, so focus never costs a node. In the rail the legend row
+  behind the focused name also takes a solid bar of the focus colour and the
+  name goes to heading weight, because two soft tints beside each other is not
+  an answer to "which stock will Buy 5 buy".
+- **A wedge looks pressable before it is pressed.** Section 5 says tap a wedge
+  to focus it and nothing on the board said so. Every wedge and every calendar
+  cell now carries the pointer, and hovering one pulls it nine pixels out of
+  the dial along its own mid angle and lifts its fill to a stronger tint of the
+  focus blue. The pull is a class the board only adds in open form and only
+  when reduced motion is off; the fill and the pointer stay in both forms,
+  because the rail is tappable too.
+- **The confetti lands instead of leaving.** Twenty-four pieces fell straight
+  through the strip and out of the bottom, so two seconds after a winning card
+  painted there was nothing left to see, which is why four winning end cards
+  came back with no confetti in them. Fifty-six pieces now drop into the
+  settled strip over two and a half seconds and each one comes to rest in a
+  scatter over the troop, then the whole pile fades together over 400ms, so the
+  celebration runs about 2.85 seconds and every moment of it is a strip full of
+  paper. The pile stops short of the worths, because the rank line is the end
+  card's first sentence and paper on a number is a number nobody can read. The
+  fall owns the transform and the fade owns the opacity, which is what lets one
+  shared fade end fifty-six different falls. Verified by screenshot at 800ms
+  and at 2000ms after `[data-end-card]` on level 1 seed 23: 56 pieces visible
+  at both, none at 3200ms. Still hash placed, still none under reduced motion.
 
 ### Page team
 
@@ -289,6 +339,63 @@ and the live link. Written as the run goes.
 ## Known debts
 
 ## Playtest notes
+
+Two blind playtests at real speed (no turbo), a Sonnet tester over about
+fifteen rounds across all three levels and a Haiku tester over three rounds,
+each playing as a high school student who has never traded.
+
+First ten seconds:
+- The level card button reads "Throw" and takes a beat to connect to
+  starting a round; the header line bridges it. Copy table kept as written.
+- Start is disabled for the two seconds the darts land, with no hint why.
+- Nothing says that tapping a wedge is how you choose the stock the buttons
+  act on; testers found it by poking. Fixed with a pointer cursor and hover
+  lift on wedges.
+- "Buy max" and the worth versus cash pair read as unexplained to the Haiku
+  tester; the first buy explains both.
+
+What felt dead:
+- Levels 1 and 3 have two guide lines before the round and none during it,
+  so the middle forty seconds run with no commentary. The spec defines no
+  mid-round moment for those levels; logged, not changed.
+- Level 3: with the focused wedge neither held nor affordable every trade
+  button is grey at once. Correct, but unexplained.
+- The rail dial at ten wedges smeared thirty darts into an unreadable blob.
+  Fixed in the rail form.
+
+What they learned without being told, in the testers' words:
+- Level 1: when you buy in matters less than whether you stay invested.
+- Level 2: crashes are survivable if you hold; the crash line landed as the
+  desk was cratering.
+- Level 3: concentrating in favourites loses to monkeys who spread across
+  sectors when WorldCom and eToys go to nothing.
+- End-card lines matched play on every level except one level 2 run where a
+  player who never sold still read "Selling in a crash locks the loss in",
+  since the lines are keyed to the rank outcome, not the trades. Spec
+  section 8 as written; logged as a debt.
+
+Opponents: the live strip reordering every tick and the plain-words baskets
+on the end card kept the troop present and legible. Testers noted the troop
+shares one face and one mood (the whole troop cheers or slumps on your
+outcome), which is spec section 7 as written.
+
+Sound, from the play counters and the module's parameters: dart thocks only
+during the throw and equal to the dart count; buy ticks from the player and
+from monkeys reaching their month, up to about fifteen a round on level 3,
+short and quiet; pass blips up to about thirteen up and twelve down in a busy
+round, bursty at month boundaries, never per frame, 70 to 80ms each at low
+gain; settle run and rank reveal exactly once; guide pop two to four a level.
+Nothing fires per frame.
+
+Broken, as reported, and what happened to each:
+- The end card's guide line faded after four seconds: fixed, it persists.
+- No confetti seen on four winning end cards: the fall was too brief to
+  catch in a screenshot; lengthened to about three seconds.
+- Two faces hidden under others on the live strip: fixed (the slide
+  animation was cancelled by React's node moves; see Judgment calls).
+- Mid-round resets during the session were hot reloads from concurrent
+  edits, not a defect; but a round keeps its state in memory only, so a
+  reload during the sixty seconds loses it. Logged as a debt.
 
 ## Art review
 
