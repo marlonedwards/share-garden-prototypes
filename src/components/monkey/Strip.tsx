@@ -10,13 +10,24 @@
 // the rank straight off it. Positions are absolute and animated by transform
 // alone, which is why a reorder is a slide and never a reflow.
 //
+// The slide is driven from a layout effect rather than from a CSS transition on
+// the inline style, and the reason is worth writing down. Keeping DOM order
+// equal to rank order means React moves nodes on every reshuffle, and a moved
+// node is detached and reinserted, which cancels any transition running on it.
+// A reshuffle therefore used to teleport the monkeys React chose to move and
+// slide only the two or three it left alone, so for the length of a slide a
+// sliding monkey sat exactly on a teleported one and its own place stood empty:
+// eleven monkeys, nine visible, two worths doubled up. Setting the transform
+// after the move and animating from where the monkey actually was makes every
+// slot move on the same beat, so no two ever park on the same x.
+//
 // The monkeys also react. When one passes you it cheers for a beat, and when
 // you pass one it slumps, both detected by comparing this render's order to the
 // last one. That is the whole of the troop's personality during play and it
 // costs one ref.
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Pose, StripProps } from "./props";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { Pose, StripProps, StripSlot } from "./props";
 import Guide from "./Guide";
 import { UI_FONT } from "../../lib/type";
 import {
@@ -34,6 +45,27 @@ function keyOf(who: "you" | number): string {
 
 function money(n: number): string {
   return `$${Math.round(n).toLocaleString("en-US")}`;
+}
+
+// Where a slot is right now, read off the element rather than off what we last
+// asked for, so a monkey whose rank flips again mid slide carries on from where
+// the eye last saw it instead of snapping back to the place it was leaving.
+function currentX(el: HTMLElement): number | null {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === "none") return null;
+  const flat = /^matrix\(([^)]+)\)$/.exec(t);
+  if (flat) {
+    const parts = flat[1].split(",");
+    const x = Number(parts[4]);
+    return Number.isFinite(x) ? x : null;
+  }
+  const deep = /^matrix3d\(([^)]+)\)$/.exec(t);
+  if (deep) {
+    const parts = deep[1].split(",");
+    const x = Number(parts[12]);
+    return Number.isFinite(x) ? x : null;
+  }
+  return null;
 }
 
 // ------------------------------------------------------------------ the tie
@@ -123,6 +155,35 @@ function Face({ pose, size }: { pose: Pose; size: number }) {
   );
 }
 
+// ----------------------------------------------------------------- the order
+
+// A monkey holding three stocks adds three products together, so a troop that
+// is all square at the open comes out of the arithmetic as $1,000 nine times
+// and $999.9999999999999 once, and a strict sort reads that dust as a place. It
+// is a tie to every eye and to every reading of the money, so the strip settles
+// the order on worths rounded to the cent: monkeys ahead of you when you draw
+// level, and monkeys among themselves by index, which is the same rule
+// round.ts sorts by and leaves the order the page hands in untouched whenever
+// the worths really do differ.
+function cents(n: number): number {
+  return Math.round(n * 100);
+}
+
+function ordered(slots: StripSlot[]): StripSlot[] {
+  const out = slots.map((slot, i) => ({ slot, i }));
+  out.sort((a, b) => {
+    const gap = cents(b.slot.worth) - cents(a.slot.worth);
+    if (gap !== 0) return gap;
+    if (a.slot.who === "you") return 1;      // ties go to the monkey
+    if (b.slot.who === "you") return -1;
+    if (typeof a.slot.who === "number" && typeof b.slot.who === "number") {
+      return a.slot.who - b.slot.who;
+    }
+    return a.i - b.i;
+  });
+  return out.map((e) => e.slot);
+}
+
 // --------------------------------------------------------------- the strip
 
 export default function Strip({
@@ -130,6 +191,7 @@ export default function Strip({
   onGuideDone,
 }: StripProps) {
   const still = reducedMotion();
+  const rank = useMemo(() => ordered(slots), [slots]);
   const h = height ?? (settled ? SETTLED_HEIGHT : STRIP_HEIGHT);
   const faceSize = settled ? 88 : 58;
   const worthSize = settled ? 15 : 13;
@@ -143,9 +205,9 @@ export default function Strip({
 
   const order = useMemo(() => {
     const map: Record<string, number> = {};
-    slots.forEach((s, i) => { map[keyOf(s.who)] = i; });
+    rank.forEach((s, i) => { map[keyOf(s.who)] = i; });
     return map;
-  }, [slots]);
+  }, [rank]);
 
   useEffect(() => {
     const prev = prevOrder.current;
@@ -183,13 +245,45 @@ export default function Strip({
     Object.values(timers.current).forEach((t) => window.clearTimeout(t));
   }, []);
 
-  const count = Math.max(1, slots.length);
+  const count = Math.max(1, rank.length);
   const pad = settled ? 8 : 4;
   const step = (width - pad * 2) / count;
   const slotW = Math.max(48, step - (settled ? 8 : 4));
 
+  // The placement. Every slot's x comes from its own position in the DOM, which
+  // is the rank order React just committed, so a place can never be claimed
+  // twice and can never stand empty. Runs after every render, before paint.
+  const root = useRef<HTMLDivElement | null>(null);
+  const placed = useRef<Map<string, number>>(new Map());
+
+  useLayoutEffect(() => {
+    const box = root.current;
+    if (!box) return;
+    const els = Array.from(box.querySelectorAll<HTMLElement>("[data-slot-who]"));
+    const here = new Set<string>();
+    els.forEach((el, i) => {
+      const k = el.getAttribute("data-slot-who") ?? String(i);
+      here.add(k);
+      const target = pad + i * step + (step - slotW) / 2;
+      if (placed.current.get(k) === target) return;
+      const first = !placed.current.has(k);
+      const from = first ? target : currentX(el) ?? placed.current.get(k) ?? target;
+      placed.current.set(k, target);
+      if (typeof el.animate === "function") el.getAnimations().forEach((a) => a.cancel());
+      el.style.transform = `translateX(${target}px)`;
+      if (still || first || Math.abs(from - target) < 0.5) return;
+      if (typeof el.animate !== "function") return;
+      el.animate(
+        [{ transform: `translateX(${from}px)` }, { transform: `translateX(${target}px)` }],
+        { duration: MOVE_MS, easing: EASE },
+      );
+    });
+    placed.current.forEach((_, k) => { if (!here.has(k)) placed.current.delete(k); });
+  });
+
   return (
     <div
+      ref={root}
       data-strip
       data-strip-settled={settled ? "1" : "0"}
       data-strip-mood={mood ?? ""}
@@ -203,7 +297,7 @@ export default function Strip({
     >
       {settled && mood === "cheer" && !still && <Confetti width={width} height={h} />}
 
-      {slots.map((slot, i) => {
+      {rank.map((slot, i) => {
         const k = keyOf(slot.who);
         const you = slot.who === "you";
         const lit = settled && you;
@@ -228,8 +322,7 @@ export default function Strip({
               left: 0,
               width: slotW,
               height: h,
-              transform: `translateX(${pad + i * step + (step - slotW) / 2}px)`,
-              transition: still ? "none" : `transform ${MOVE_MS}ms ${EASE}`,
+              willChange: "transform",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",

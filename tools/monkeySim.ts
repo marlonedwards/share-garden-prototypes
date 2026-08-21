@@ -33,7 +33,7 @@ import { listingIndexOf } from "../src/lib/floor/campaign";
 import {
   BEST_KEY, Deal, LEVELS, LEVEL_IDS, LevelId, MONKEYS, Monkey, PROGRESS_KEY, START_CASH,
   allotmentOf, bestFor, clearSave, crashIndexOf, dealRound, deadLine, isUnlocked,
-  lastMonthIndex, monkeyFinalWorth, monkeyLine, monkeyWorthAt, newPlayerRun, rank,
+  lastMonthIndex, monkeyFinalWorth, monkeyLine, monkeyWorthAt, monkeyWorths, newPlayerRun, rank,
   readUnlocked, recordRound, runConfigFor,
 } from "../src/lib/monkey/round";
 
@@ -296,6 +296,41 @@ for (let seed = 1; seed <= D_SEEDS; seed++) {
 cD.notes.push(`${D_SEEDS} seeds, ${eraSeen["gfc"] ?? 0} in the crash and ${eraSeen["covid"] ?? 0} in the 2020s`);
 cD.notes.push(`the low seller was behind at least ${worstBeat} of ten monkeys in every seed`);
 
+// ------------------------------------------------- R, ties go to the monkey
+
+// Worth is compared to the cent, not the raw float: a monkey that bought
+// whole shares with exactly $1,000 can carry float dust (999.9999999999999)
+// that a raw compare would read as behind a player holding exactly 1000,
+// though the two are the same dollar and cent. At a round's open nobody has
+// traded yet, so a player holding cash, or a player who bought the very
+// basket a monkey bought, must beat nobody, and a worth tied to a monkey's
+// to the cent must still rank the monkey above "you".
+const cR = check("R", "worths tied to the cent rank the monkey above you at the open");
+const R_SEEDS = 50;
+
+for (const level of LEVEL_IDS) {
+  for (let seed = 1; seed <= R_SEEDS; seed++) {
+    const deal = dealRound(level, seed);
+    const worths0 = monkeyWorths(deal, 0);
+
+    const cashRank = rank(deal.startCash, worths0);
+    want(cR, cashRank.beaten === 0,
+      `level ${level} seed ${seed} holding cash at t=0 beat ${cashRank.beaten} monkeys`);
+
+    for (const monkey of deal.monkeys) {
+      const worth = monkeyWorthAt(deal, monkey, 0);
+      const sameBasketRank = rank(worth, worths0);
+      want(cR, sameBasketRank.beaten === 0,
+        `level ${level} seed ${seed} monkey ${monkey.index}'s own basket at t=0 beat ${sameBasketRank.beaten} monkeys`);
+      const meAt = sameBasketRank.order.findIndex((slot) => slot.who === "you");
+      const themAt = sameBasketRank.order.findIndex((slot) => slot.who === monkey.index);
+      want(cR, themAt >= 0 && meAt >= 0 && themAt < meAt,
+        `level ${level} seed ${seed} a worth tied to monkey ${monkey.index} to the cent ranked you at ${meAt} and it at ${themAt}`);
+    }
+  }
+}
+cR.notes.push(`${LEVEL_IDS.length} levels, ${R_SEEDS} seeds, cash and every monkey's own basket at t=0 beat nobody and lost every tie`);
+
 // -------------------------------------------------------- E, the whole board
 
 const cE = check("E", "level 3's board is the living companies and spreading survives a death");
@@ -502,5 +537,9 @@ if (failed > 0) {
   console.log(`${failed} acceptance test${failed === 1 ? "" : "s"} failed`);
   process.exit(1);
 }
-console.log("acceptance tests A, B, C, D, E and G pass");
+const letters = checks.map((c) => c.letter);
+const listed = letters.length > 1
+  ? `${letters.slice(0, -1).join(", ")} and ${letters[letters.length - 1]}`
+  : letters[0];
+console.log(`acceptance tests ${listed} pass`);
 process.exit(0);

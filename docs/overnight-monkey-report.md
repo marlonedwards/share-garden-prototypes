@@ -111,6 +111,16 @@ and the live link. Written as the run goes.
   pinned deals at seed 7 with their windows, boards, crash months, buy months
   and final worths, so `tools/monkeycheck.mjs` can hold the live DOM against
   numbers this harness computed.
+- **Rank compares worth to the cent, not the raw float.** A monkey holding
+  whole shares bought with exactly $1,000 can carry float dust
+  (999.9999999999999) that a raw compare would read as behind a player worth
+  exactly 1000, though the two are the same dollar and cent. `rank()` and
+  `bestMonkey`/`worstMonkey` now round both sides with `Math.round(w * 100)`
+  before comparing, monkeys still win ties on the player, and monkeys tied
+  against each other order by index ascending. This is why a fresh round's
+  header reads "you beat 0 of 10" instead of "1 of 10" the instant the round
+  opens. Worth itself is computed and displayed exactly as before; only the
+  comparison rounds.
 
 ### Stage team
 

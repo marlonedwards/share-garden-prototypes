@@ -462,16 +462,29 @@ export interface Rank {
   order: RankSlot[];        // largest worth first, ties to the monkey
 }
 
+// Worth compared to the cent, never to the raw float. A monkey that holds
+// whole shares bought with exactly $1,000 accumulates float dust (say
+// 999.9999999999999) that a raw compare would read as behind a player worth
+// exactly 1000, when the two are the same dollar and cent and the tie is the
+// monkey's by rule. Rounding both sides the same way before comparing is what
+// keeps a fresh round's header reading "you beat 0 of 10" instead of "1 of 10".
+function cents(worth: number): number {
+  return Math.round(worth * 100);
+}
+
 export function rank(playerWorth: number, worths: number[]): Rank {
   const order: RankSlot[] = worths.map((worth, i) => ({ who: i + 1, worth } as RankSlot));
   order.push({ who: "you", worth: playerWorth });
   order.sort((a, b) => {
-    if (b.worth !== a.worth) return b.worth - a.worth;
+    const ca = cents(a.worth);
+    const cb = cents(b.worth);
+    if (cb !== ca) return cb - ca;
     if (a.who === "you") return 1;      // ties go to the monkey
     if (b.who === "you") return -1;
-    return (a.who as number) - (b.who as number);
+    return (a.who as number) - (b.who as number);   // monkeys tied on each other, by index
   });
-  return { beaten: worths.filter((w) => w < playerWorth).length, order };
+  const playerCents = cents(playerWorth);
+  return { beaten: worths.filter((w) => cents(w) < playerCents).length, order };
 }
 
 export function rankAt(deal: Deal, playerWorth: number, t: number): Rank {
@@ -479,11 +492,17 @@ export function rankAt(deal: Deal, playerWorth: number, t: number): Rank {
 }
 
 export function bestMonkey(deal: Deal): Monkey {
-  return [...deal.monkeys].sort((a, b) => monkeyFinalWorth(deal, b) - monkeyFinalWorth(deal, a))[0];
+  return [...deal.monkeys].sort((a, b) => {
+    const diff = cents(monkeyFinalWorth(deal, b)) - cents(monkeyFinalWorth(deal, a));
+    return diff !== 0 ? diff : a.index - b.index;
+  })[0];
 }
 
 export function worstMonkey(deal: Deal): Monkey {
-  return [...deal.monkeys].sort((a, b) => monkeyFinalWorth(deal, a) - monkeyFinalWorth(deal, b))[0];
+  return [...deal.monkeys].sort((a, b) => {
+    const diff = cents(monkeyFinalWorth(deal, a)) - cents(monkeyFinalWorth(deal, b));
+    return diff !== 0 ? diff : a.index - b.index;
+  })[0];
 }
 
 // --------------------------------------------------------------- the save
