@@ -112,6 +112,170 @@ and the live link. Written as the run goes.
   and final worths, so `tools/monkeycheck.mjs` can hold the live DOM against
   numbers this harness computed.
 
+### Stage team
+
+- **The Floor's desk is forked, not restyled.** Its slab green, tick grey,
+  seam, dead grey, panel gradient, border and both text colours are module
+  constants and inline literals; no prop reaches any of them, so the warm ground
+  cannot be had by props. `src/components/monkey/Desk.tsx` is the copy, with
+  every prop name (columns, scale, height, focus, onFocus, settling, phone,
+  pour) and every data attribute (data-desk, data-stack, data-dollars,
+  data-shares, data-price, data-units, data-unit-band, data-banded, data-sliver,
+  data-column, data-scale, data-tick-px, data-pour, data-settling) unchanged, so
+  the two desks stay one representation with two palettes. The band, sliver and
+  scale arithmetic is copied verbatim, which is what keeps the three flat rules
+  true: buys pour ticks into slabs, sells break slabs into ticks, and the one
+  dollar scale is a prop the desk never touches. Only three things changed
+  besides colour: names come from Trigger's `companyName` rather than The
+  Floor's `nameOf`, so the desk and `monkeyLine` write "Exxon Mobil" the same
+  way; `focus` widens to `Ticker | null`, because the round opens with nothing
+  focused; and the labels move from 12px to 13px on the warmer ground.
+- **The tie is drawn, not tinted.** The art report's read that a flat grey tie
+  could be tinted in code did not survive sampling: the suit sits around
+  rgb(64,72,88) and the tie within about thirty values of it, so no threshold
+  separates them without keying the lapels too, and the tie's own box drifts
+  about six percent of the frame between poses, so a fixed overlay misregisters
+  on the slump. Section 11's escape hatch is taken: a small tie glyph, knot and
+  blade, drawn in SVG under each face in the monkey's colour. It is identical in
+  every pose, legible at strip size, and costs no asset.
+- **TIES is eleven long, not ten.** Index 0 holds the muted grey and is never a
+  monkey, so `TIES[monkey.index]` reads straight through without an off-by-one
+  at every call site. The ten colours are the look's own five plus five that
+  hold up beside them on the warm ground.
+- **The throw beat is two seconds total, not 180ms a dart.** Ten darts 180ms
+  apart is the 1.8 seconds section 5 asks for, but level 3 throws thirty and the
+  same spacing would run five and a half seconds and hold the round open. The
+  step is `1900 / (darts - 1)`, floored at 55ms so the last level does not
+  machine gun and capped at 190ms so the first one keeps its rhythm. Measured:
+  thirty darts land in 2.25 seconds including the landing squash.
+- **The rail moves the names out of the wedges.** A tenth of a 180px dial is
+  about thirty pixels of arc and the type contract's floor is twelve, so the
+  rail form keeps the dial with its darts, chips and wedge numbers at the top
+  and slides the same name and price text elements into a legend under it, at
+  13px. The wedge number is drawn on the rim in both forms, so the dial and the
+  legend read as one thing. Nothing is remounted to do it: verified by tagging
+  every dart and wedge node, switching forms, and finding all thirty darts and
+  all ten wedges to be the same elements afterwards.
+- **Wedges are unit-radius sector paths.** Each wedge's `d` is a sector of the
+  unit circle and its group carries `translate(cx, cy) scale(r)`, so a form
+  change is a transform change the browser tweens rather than a path the game
+  has to rebuild. That is what lets the board shrink into the rail while the
+  darts stay pinned and the tape never pauses.
+- **Darts anchor on the tip, not the middle.** The pinned dart's point sits
+  about a quarter across and four fifths down its own image, so the image is
+  offset by that fraction. A dart centred on its box looks laid on a wedge; a
+  dart anchored on its tip looks stuck in one.
+- **A dart's scatter is a hash of its index.** Two darts on one wedge have to
+  sit apart and have to sit in the same place every redraw, so the offset and
+  the spin come from a hash of the dart's own index. No render path calls
+  Math.random, which is also what lets the same props always draw the same
+  board.
+- **The calendar's chip sits beside the stock name.** A month is not a holding,
+  so a chip on one would say the player bought that month. The single stock's
+  chip goes next to its name, which is where section 5's "your holdings mark
+  the wedge" lands when there is only one wedge.
+- **A dead wedge is a muted fill, a small cross and the word "zero".** The
+  sentence ("eToys went to zero.") is the page's, per the brief; the board only
+  says which wedge it is.
+- **The strip's DOM order is the rank order and its keys are the players.**
+  The handoff asks for both, and React reorders keyed nodes rather than
+  rebuilding them, so a monkey that climbs two places is the same element at a
+  new transform. Positions are absolute and animated by transform alone, which
+  is why a reorder is a slide and never a reflow. Verified: eleven slot nodes
+  survive a reorder and the DOM order matches the rank.
+- **The number under a face appears on the end card only.** During play the
+  troop is told apart by tie colour, which is what the art was built for; the
+  end card names "Monkey 4" because its own lines do. Every slot carries the
+  number in `title` and in `data-slot-who` throughout.
+- **The sound module counts `attempted` as well as `played`.** Acceptance test L
+  has to assert two different things: that every listed moment fired exactly
+  once, and that mute and reduced motion really do silence it.
+  `window.__monkeySound.played` counts only calls that reached an oscillator and
+  `.attempted` counts every call the game made. Verified under reduced motion:
+  thirty attempts, zero plays, and no AudioContext before the gesture.
+- **Confetti is deterministic and reduced motion gets none.** Twenty-four pieces
+  in the look's four colours, placed by a hash of their own index, so the same
+  rank always celebrates the same way. Under reduced motion the confetti is not
+  drawn at all rather than drawn still, because a frozen scatter of paper reads
+  as a bug.
+- **The guide's bubble owns its own fade.** `Guide` holds the line for four
+  seconds and fades it over 320ms without being told to, so the page can set a
+  line and forget it and the tape is never waiting on a dismissal. It reports
+  back through `onShown` and `onDone`.
+- **The button is a face on a band, and the press collapses the band.** Pressing
+  moves the face down two pixels and takes two off the band, so the button keeps
+  its box and the press is felt rather than seen. `DuoButton` is the default
+  export of `src/components/monkey/Button.tsx` so the page's trade row, level
+  cards and end card all press the same way.
+
+### Page team
+
+- **The play chart's month axis is a synthetic month array, not a fork of the
+  chart.** `Chart.tsx` is used unmodified and it takes its labels off the month
+  strings it is handed: a tick is a month ending `-01` and its label is that
+  string's first four characters. Handing it the real months would print years
+  into the DOM, which section 2 forbids during play. So `playMonths(n)` in
+  `src/pages/Monkey.tsx` builds a parallel array where the tick months are the
+  label right-padded to four characters (`"   6-01"`) and every other month is
+  a string that is not a January. SVG collapses the padding, so the axis reads
+  1, 6, 12, 18, 24 and the DOM carries no year. The end card hands the same
+  chart `deal.months` and gets real years back. This was chosen over hiding the
+  axis and drawing a second one, which is more code and two axis styles to keep
+  in step.
+- **The settle pour reports as `data-monkey-phase="play"`.** The handoff names
+  four phase values and the pour is not one of them, so the 1.2 seconds between
+  the last month and the end card stay on `play` with a separate
+  `data-settling="1"` on the page root beside the desk's own.
+- **The round-over latch is its own ref.** The render pass writes `phaseRef`
+  back from the phase state and the phase state stays `play` through the pour,
+  so `phaseRef` alone let the frame after the last one end the round again, and
+  again: the walk caught the settle sound firing 108 times and a `Play again`
+  click being stomped back to the end card by a queue of stale timers.
+  `overRef` latches instead, and is cleared only by a new deal.
+- **Months in the market is counted on total shares held, not on Trigger's
+  `monthsInMarket`.** That helper closes the span on any sell at all and only
+  reopens on a later buy, which is exact for a one-stock game that only sells
+  out; this game has Sell 1 and Sell 5 and up to ten wedges, so selling five of
+  twenty shares would report a player out of a market they are still standing
+  in. `monthsHolding()` walks the same trade log on the running total instead.
+- **The biggest single decision is computed per wedge.** `decisionsOf` prices
+  every trade in a run against one ticker, so the run is sliced per ticker and
+  the largest magnitude across the slices is what the end card prints.
+- **The desk was taken from `src/components/monkey/Desk.tsx`,** the stage
+  team's fork, with the same props The Floor's takes. It paints its own warm
+  band, so the page does not wrap it in a second panel.
+- **The guide's bubble gets its own headroom on the rank strip.** `Strip` hangs
+  the bubble above the guide's slot, which put the line over the clock; the
+  strip's panel now carries 64px of top padding and the desk is that much
+  shorter. Only the play stage pays this; the open phase and the end card render
+  `Guide` directly.
+- **Only one `[data-guide-line]` is ever in the DOM.** The play stage passes the
+  line to `Strip`, which owns the bubble; the open phase and the end card render
+  `Guide` themselves and pass `Strip` a null line, so the end card's line is the
+  spec's item 7 rather than a bubble over a settled monkey.
+- **`?level=` or `?seed=` alone pins.** `dealFromParams` fills the other half
+  in, so a half written link plays rather than dropping the player on the level
+  cards. Editing the pin away lands on the level cards: the hash router does not
+  remount the page, so nothing else would notice the round was cancelled.
+- **Buy 1 and Buy 5 are budgets, not counts.** They call the engine's `buy` with
+  `price * n`, so the whole-share rule stays the engine's and a player who
+  cannot afford five shares buys what the budget covers rather than nothing.
+- **The end card reads the player's run, never the settled one.** The pour's
+  automatic sells would otherwise count as trades made, draw as trade dots on
+  the revealed chart, and move the biggest decision. `settleRun` is used only
+  for the cash figure the pour eases to.
+- **Buy ticks are stepped and capped.** One tick per share bought, at most
+  twelve, 45ms apart, so a 144 share buy is a run and not a wall.
+- **`window.__monkeySound` is left to `sound.ts`.** It counts calls that
+  reached an oscillator, which is the number acceptance test L wants; counting
+  in the page would count intent and double every entry.
+- **The header's `data-cash` reports the drawn cash during the pour** so the
+  attribute and the number on screen never disagree. They are equal at every
+  other moment.
+- **Live rank, the strip's order and the header's count all come from one
+  `rankAt` call** per commit, so acceptance test F cannot fail one and pass the
+  other.
+
 ## Known debts
 
 ## Playtest notes

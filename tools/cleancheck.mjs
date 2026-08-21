@@ -25,6 +25,7 @@ const ROUTES = [
   ["worth", "/#/worth"],
   ["trigger", "/#/trigger"],
   ["floor", "/#/floor"],
+  ["monkey", "/#/monkey"],
   ["tally", "/#/tally"],
   ["orb-select", "/#/orb"],
   ["orb-scenario", "/#/orb/s/dotcom"],

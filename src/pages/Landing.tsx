@@ -121,6 +121,24 @@ function FloorMotif() {
   );
 }
 
+// Monkey Trade's motif: a dart board with one dart in it, in the game's own
+// warm, sky and gold language.
+function MonkeyMotif() {
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <circle cx="52" cy="52" r="40" fill="#1CB0F6" />
+      <circle cx="52" cy="52" r="30" fill="#FFFBF2" />
+      <circle cx="52" cy="52" r="20" fill="#1CB0F6" />
+      <circle cx="52" cy="52" r="10" fill="#FFFBF2" />
+      <circle cx="52" cy="52" r="4" fill="#FFC800" />
+      <path d="M52,12 V92 M12,52 H92" stroke="rgba(60,60,60,0.16)" strokeWidth="1.5" />
+      <path d="M66,38 L104,14" stroke="#3C3C3C" strokeWidth="3" strokeLinecap="round" />
+      <path d="M104,14 L96,12 L98,20 Z" fill="#FFC800" />
+      <circle cx="66" cy="38" r="4.5" fill="#FFC800" />
+    </svg>
+  );
+}
+
 export default function Landing() {
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
@@ -151,6 +169,17 @@ export default function Landing() {
               Trade five decades and keep what you make.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Floor</div>
+          </Link>
+
+          <Link to="/monkey" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <MonkeyMotif />
+            </div>
+            <div className="text-[22px] font-semibold tracking-tight">Monkey Trade</div>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
+              Beat the monkeys who threw darts.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#46A302" }}>Play Monkey Trade</div>
           </Link>
 
           <Link to="/takeover" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
