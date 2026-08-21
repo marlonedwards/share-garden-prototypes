@@ -74,6 +74,23 @@ export const TIES: string[] = [
 
 export const RADIUS = 16;
 export const RADIUS_SM = 10;
+
+// ------------------------------------------------------------- the grid
+//
+// One gutter, one gap, one padding, one radius, on every phase. The craft pass
+// found four different page paddings, three different gaps and panels that
+// started at four different left edges, which is what made the game read as
+// blocks of beige rather than as a screen. Nothing in this game sets a spacing
+// number of its own any more: it takes one of these.
+export const LAYOUT = {
+  gutter: 20,      // the page's own margin, the same on all four sides
+  gap: 12,         // between two panels
+  pad: 16,         // inside a panel
+  radius: RADIUS,  // a panel's corner
+  header: 48,      // the header row, whose text sits on the panels' edges
+  control: 52,     // a button row, and the height every button in it shares
+  row: 40,         // one row of a list
+} as const;
 export const BUTTON_EDGE = 4;      // the darker band under a button
 export const BUTTON_PRESS = 2;     // how far the face travels when pressed
 

@@ -38,13 +38,13 @@
 // slab is still price times scale tall, so a wider column is a wider slab and
 // never a taller one, and the three flat rules read exactly as before.
 
-import { CSSProperties } from "react";
+import { CSSProperties, ReactNode } from "react";
 import { Ticker } from "../../lib/tape/engine";
 import { companyName } from "../../lib/trigger/deal";
 import { money } from "../../lib/trigger/format";
 import { UI_FONT } from "../../lib/type";
 import {
-  DESK, GREEN, INK, MUTED, RADIUS, SEAM as SEAM_TOKEN, SIZE, WEIGHT, tint,
+  DESK, GREEN, INK, LAYOUT, MUTED, RADIUS, SEAM as SEAM_TOKEN, WEIGHT, tint,
 } from "../../lib/monkey/look";
 
 export const TICK_DOLLARS = 10;
@@ -56,12 +56,21 @@ export const COL_WIDE = 160;
 export const COL_NARROW = 92;
 export const COL_PHONE = 74;
 
-export function columnWidth(holdings: number, phone = false): number {
+// A desk holding one thing in a band eighteen hundred pixels across drew two
+// narrow stripes in the middle of it, so a column also takes a share of the
+// room it is actually given: never narrower than the count says, never wider
+// than a slab you can still read as a slab.
+export const COL_MAX = 220;
+
+export function columnWidth(holdings: number, phone = false, band = 0, count = 0): number {
   if (phone) return COL_PHONE;
   const n = Math.max(0, holdings);
-  if (n <= 2) return COL_WIDE;
-  if (n >= 10) return COL_NARROW;
-  return Math.round(COL_WIDE - ((COL_WIDE - COL_NARROW) * (n - 2)) / 8);
+  const base = n <= 2 ? COL_WIDE
+    : n >= 10 ? COL_NARROW
+      : Math.round(COL_WIDE - ((COL_WIDE - COL_NARROW) * (n - 2)) / 8);
+  if (!(band > 0) || count <= 0) return base;
+  const room = (band - 10 * (count - 1)) / count;
+  return Math.round(Math.max(base, Math.min(COL_MAX, room * 0.62)));
 }
 
 // Below three pixels a seam per unit is not readable, which is what makes the
@@ -193,21 +202,33 @@ export interface Pour {
   kind: "buy" | "sell";
 }
 
+// The two lines of words under a column: the name and the count. The stack gets
+// everything else, which is what makes `height` the height of the whole band
+// rather than the height of the band plus its own labels: the desk used to draw
+// forty four pixels of words and sixteen of padding under a box it had already
+// filled, and the overflow landed on the trade row under it.
+const LABEL_BLOCK = 40;
+
 export default function Desk({
-  columns, scale, height, focus, onFocus, settling, phone, pour,
+  columns, scale, height, focus, onFocus, settling, phone, pour, footer, band,
 }: {
   columns: DeskColumn[];
   scale: number;
+  /** the height of the whole band, words included */
   height: number;
   focus: Ticker | null;
   onFocus: (ticker: Ticker) => void;
   settling: boolean;
   phone: boolean;
   pour: Pour | null;
+  /** optional: the row of buttons the desk band carries at its foot, section 6 */
+  footer?: ReactNode;
+  /** optional: how wide the band is, so a column can take a share of it */
+  band?: number;
 }) {
-  const stackH = height - 44;
+  const stackH = Math.max(40, height - LABEL_BLOCK);
   // holdings, not columns: cash is always there and is not a thing you picked.
-  const colW = columnWidth(columns.filter((c) => c.ticker !== null).length, phone);
+  const colW = columnWidth(columns.filter((c) => c.ticker !== null).length, phone, band ?? 0, columns.length);
   return (
     <div
       data-desk
@@ -219,9 +240,12 @@ export default function Desk({
       style={{
         background: DESK,
         borderRadius: RADIUS,
-        padding: "8px 12px",
+        padding: LAYOUT.pad,
         width: "100%",
-        flex: "none",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: LAYOUT.gap,
         fontFamily: UI_FONT,
       }}
     >
@@ -238,9 +262,10 @@ export default function Desk({
         style={{
           display: "flex",
           alignItems: "flex-end",
-          gap: 8,
+          gap: 10,
           width: "100%",
           height,
+          flex: "none",
           overflowX: "auto",
           overflowY: "hidden",
           justifyContent: "safe center",
@@ -271,7 +296,13 @@ export default function Desk({
                 animation: inPour
                   ? `monkey-pour-${fills ? "in" : "out"}-${pour.id % 2 === 0 ? "a" : "b"} 320ms ease-out`
                   : undefined,
-                background: focused ? tint("#1CB0F6", 0.16) : "transparent",
+                // the focused column is lit from its own base and underlined,
+                // rather than filled top to bottom: a full slab of colour over a
+                // short stack read as a grey box and not as a selection
+                background: focused
+                  ? `linear-gradient(180deg, rgba(28,176,246,0) 0%, ${tint("#1CB0F6", 0.16)} 70%)`
+                  : "transparent",
+                boxShadow: focused ? "inset 0 -3px 0 #1CB0F6" : "none",
                 cursor: col.ticker ? "pointer" : "default",
                 fontFamily: UI_FONT,
               }}
@@ -280,8 +311,8 @@ export default function Desk({
               <div
                 style={{
                   marginTop: 4,
-                  fontSize: SIZE.small,
-                  lineHeight: "16px",
+                  fontSize: 15,
+                  lineHeight: "18px",
                   fontWeight: WEIGHT.emphasis,
                   color: col.dead ? MUTED : INK,
                   whiteSpace: "nowrap",
@@ -296,8 +327,8 @@ export default function Desk({
                   on the number the round ended with. */}
               <div
                 style={{
-                  fontSize: SIZE.small,
-                  lineHeight: "16px",
+                  fontSize: 14,
+                  lineHeight: "18px",
                   color: MUTED,
                   fontVariantNumeric: "tabular-nums",
                   whiteSpace: "nowrap",
@@ -315,6 +346,7 @@ export default function Desk({
           );
         })}
       </div>
+      {footer}
     </div>
   );
 }

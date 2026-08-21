@@ -750,6 +750,102 @@ and the live link. Written as the run goes.
   picked, Buy max, held to the end) still reads `data-strip-mood="cheer"`
   with confetti present, so an earned win is untouched.
 
+### Craft pass, August 21
+
+Marlon looked at the live site and said the screen had had no design pass: the
+dial clipped by the trade row, darts outside their wedges, wedge numbers
+floating in space, a rail legend whose focus pill sat off its own text, panels
+of empty beige, nothing on a grid. It was all true. This pass is the fix, held
+against the Tally for density and rhythm, inside the spec's layout (sections 5,
+6, 7 and 9) and the type contract.
+
+- **One grid, exported once.** `LAYOUT` in `src/lib/monkey/look.ts` carries the
+  gutter (20), the gap between panels (12), the padding inside one (16), the
+  panel radius (16), the header row (48) and a control row (52). Every phase is
+  now a column of panels inside that one gutter, so the header's clock starts on
+  the panels' left edge and its mute ends on their right edge, and no phase sets
+  a spacing number of its own. The page had been carrying four different
+  paddings, three gaps and a 44px header that lined up with nothing.
+- **The board fits its box in both directions.** The open dial's outer radius is
+  half the smaller side of the panel it is handed, so a wide short window draws a
+  smaller board rather than one whose bottom is under the trade row. Walked at
+  1280x720, 1440x950, 1536x864 and 1920x1080 on all three levels: the dial is
+  centred and inside its panel at every one.
+- **The dial reads as a board.** A rim ring in a deeper tint of the sky runs
+  outside the wedges, the wedges alternate between two clear tints (a third on an
+  odd count so no two neighbours match), the seams stay 3px gaps in the fill, and
+  a warm hub covers the point where the wedges meet. No hairline anywhere.
+- **Wedge numbers are gone from three wedges and moved inside on ten.** They had
+  been sitting on an outer ring sized for a ten wedge board, which on level 2 put
+  a "3" in empty panel two hundred pixels from the dial. A board of four or more
+  wedges numbers them inside the rim at 0.94 of the radius, clear of the darts; a
+  three wedge board does not number them at all, because the name is the label.
+- **Darts land in slots, not in a scatter.** Every dart on a wedge takes a place
+  on one of up to three arcs inside it (one arc up to four darts, two up to ten,
+  three beyond), evenly spaced along the arc and inset from both seams and from
+  the rim by the width of a dart picture rather than of a dart point. An arc that
+  would run through the wedge's name block opens a gap in the middle for the
+  block and puts its darts either side; a dart that still lands on the block is
+  walked along its arc and then tried on the other arcs until it is clear. The
+  deterministic nudge is applied before the clearance rather than after it, which
+  is what lets a dart be scattered and guaranteed at the same time. A dart is
+  0.10 of the radius, floor 19px, ceiling 34px.
+- **Proven rather than eyeballed.** The craft harness read the rim's own centre
+  and radius out of the DOM and checked every dart on every level at all four
+  sizes: inside the wedge its `data-dart-at` names, at least half a dart's width
+  from either seam, inside the rim, and not overlapping any label's box. Level 3
+  at 1280 and 1536 failed that last one twice and was fixed rather than
+  screenshotted around.
+- **Level 1's darts stack.** A month's darts now pile up from the floor of its
+  cell instead of scattering in the middle of it, so a month three monkeys picked
+  is visibly three deep and the strip counts without carrying a number. The stock
+  name is pinned to the top of the panel, clear of the guide's bubble, which used
+  to be drawn straight through it.
+- **The open screen is one scene and one column.** The troop and the board it is
+  about to throw at share the left panel, so the monkeys stand across the top of
+  the board rather than on bare ground above an empty rectangle. The desk takes
+  the right column at full height, which is what turns the thousand you start
+  with into a hundred countable ten dollar ticks instead of a chip in the corner
+  of a panel. The desk's ruler is now set from the band it is actually drawn in
+  and eased down when play gives it a shorter one, which is the spec's rule for
+  the scale and not a new one.
+- **The trade row is the desk's own foot during play,** the way section 6 draws
+  it, and one panel spans the page at the round open. Every button in it is one
+  size, so they share one height and one baseline; Start is the same button made
+  wider rather than a taller one.
+- **The rail is a list.** The dial and the legend are solved together: the list
+  takes the rows it needs at a legible height and the dial takes what is left, so
+  nine rows in a 720 tall window get a small dial and nine readable rows instead
+  of rows running off the bottom of the column. A row is one line, the focus pill
+  sits exactly behind it with the row's words starting on the dial's own left
+  edge, and the opening price is right aligned in its own column so three or nine
+  rows read as a list. The column went to 276px, which is what "Johnson &
+  Johnson open $108" needs on one line with room for the chip.
+- **The desk stopped being a stripe in a field.** A column takes a share of the
+  band it is given, up to 220px, so a desk holding one thing in an 1800px window
+  is not two narrow stripes in the middle of it; the focused column is lit from
+  its base and underlined rather than filled top to bottom with a slab of colour;
+  the words under a column read at 15 and 14px. The desk's `height` prop is now
+  the height of the whole band, words included, which is the bug that had been
+  drawing sixty pixels of desk over the trade row.
+- **The end card is on the same grid.** The lead, the settled strip and two
+  panels of one height, all inside the one gutter. What the round came to reads
+  down the left panel, ending in the buttons, and what it was reads down the
+  right, with the chart filling its own card. Putting the buttons at the foot of
+  the card the round is summed up in is what closed the hole a row of its own
+  left under two panels. A tall window gives its extra height to the strip, which
+  is the card's first sentence and the thing the confetti falls through, rather
+  than spreading six lines out to fill it. Checked at 1280x720: nothing overlaps
+  and nothing scrolls.
+- **The level select fills its window.** Title, three cards of one height whose
+  buttons stand on one line, and the troop under them, centred as one
+  composition. The screen that picks a round had no monkey on it, which is also
+  what left the bottom half of a 1080 window empty.
+- **What was not changed.** `src/lib/tape`, `round.ts` and Trigger's `Chart.tsx`
+  are untouched, every data attribute the walk reads is unchanged, and no copy
+  was rewritten. `npm run typecheck` is clean and `node tools/monkeycheck.mjs`
+  walks all fourteen checks green.
+
 ## Decision taken: level 3 deals a nine wedge board
 
 **The question was whether level 3 could prove "spreading beats picking" on a
@@ -831,6 +927,29 @@ native title tooltips on strip and troop slots, which drew a black "You"
 box over the clock on hover, became aria-labels. Debt added: the walk runs
 against the dev server at the root, so it cannot catch sub path asset bugs;
 a preview walk against the built dist under the deploy base would.
+
+## Craft pass, August 21, interrupted
+
+Marlon's second look: "was there any design pass? this does not even align
+properly." Correct. The walk and the house bar measured proportions and
+passed a screen with the three-wedge dial clipped by the trade row, darts
+outside their wedges, wedge numbers floating on an outer ring, a rail
+legend whose focus pill missed its row, and panels of empty beige. The
+board sized off width only, and the walk pinned one viewport.
+
+A design lead pass began against Tally as the bar: one layout grid
+(gutter, gap, radius, padding) on every phase, the board sized to
+min(width, height) so it never clips, darts placed on slots inside the
+wedge, the trade row inside the desk panel, a proper rail legend with the
+focus pill behind its row, a two-column end card. The pass was cut off by a
+session limit partway through the page work. The state it left typechecks
+and walks clean and is clearly better than what was live, so it shipped
+as an interim. Still open for the next pass: the desk with one holding is
+mostly empty panel; a cash balance under a few ticks draws as a hairline
+once the scale has eased; the guide bubble overlaps the board on the open
+screen; dart scatter inside wedges is still loose rather than on tidy
+arcs; the open screen's right column is a lone cash column; the walk
+should check two more desktop sizes (1280x720, 1920x1080).
 
 ## Known debts
 

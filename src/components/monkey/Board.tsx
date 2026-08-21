@@ -9,16 +9,26 @@
 // tweens. That is what lets the board shrink into the rail while the darts stay
 // pinned exactly where they landed and the tape never pauses.
 //
+// Two rules decide every number in here, and both came out of the craft pass:
+//
+//   the dial fits its box in both directions   the outer radius is half the
+//   smaller side of whatever box the page hands in, so a wide short panel draws
+//   a smaller board rather than a clipped one, at every desktop size.
+//
+//   a dart lands in a slot, not in a scatter   every dart on a wedge takes a
+//   numbered place on one of up to three arcs inside that wedge, clear of the
+//   name block and clear of the rim, with a hair of deterministic nudge on top.
+//   Nothing here calls Math.random, so a re-render cannot move a dart that has
+//   already landed and the same board always draws the same picture.
+//
 // Nothing here reads a clock or a price. The page hands it the board it wants
-// drawn, and the same props always draw the same picture: the dart jitter is a
-// hash of the dart's own index, never Math.random, so a re-render cannot move a
-// dart that has already landed.
+// drawn, and the same props always draw the same picture.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "./props";
 import { UI_FONT } from "../../lib/type";
 import {
-  EASE, INK, MOVE_MS, MUTED, PANEL, SKY, SIZE, WEIGHT, reducedMotion, tint,
+  EASE, GROUND, INK, MOVE_MS, MUTED, PANEL, SKY, SIZE, WEIGHT, reducedMotion, tint,
   art,
 } from "../../lib/monkey/look";
 
@@ -37,64 +47,15 @@ export function dartStepMs(total: number): number {
   return Math.max(STEP_MIN, Math.min(STEP_MAX, THROW_MS / (total - 1)));
 }
 
-// The rail's width, section 5's "a rail along the right edge". The column is
-// sized so the dial inside it is a full 200px across with its panel ring still
-// inside the column: at level 3 a tenth of a smaller dial cannot be counted,
-// and the rail has to stay countable to be worth keeping on screen.
-export const RAIL_WIDTH = 216;
-
-// The rail's darts are packed rather than scattered. Thirty scattered darts on
-// a 180px dial were a smear you could not count, so in rail form every dart
-// shrinks to a dot and takes a numbered place in its own wedge: down the wedge
-// by index first, into a second lane only when a wedge holds more than five.
-// The arrangement is a pure function of the dart's place in its wedge, so the
-// same board always packs the same way and the open to rail tween is a move
-// rather than a reshuffle.
-const RAIL_DART_PX = 12;
-const RAIL_DOT_GAP = 13;
-const RAIL_ROWS = 5;
-
-function railSpot(k: number, m: number, mid: number, half: number, r: number): { a: number; rad: number } {
-  const rows = Math.min(RAIL_ROWS, Math.max(1, m));
-  const cols = Math.max(1, Math.ceil(m / rows));
-  const row = k % rows;
-  const col = Math.floor(k / rows);
-  const top = 0.88;
-  const bottom = 0.34;
-  const rf = rows <= 1 ? 0.70 : top - (row * (top - bottom)) / (rows - 1);
-  const rad = r * rf;
-  const lane = cols <= 1
-    ? 0
-    : (col - (cols - 1) / 2) * Math.min(RAIL_DOT_GAP / Math.max(1, rad), (1.5 * half) / cols);
-  return { a: mid + lane, rad };
-}
-
-// The same idea on level 1's rail, where a month is a row rather than a wedge:
-// the darts on one month sit in a row of dots at its right edge, so the count
-// on a month reads at a glance and the month's own number stays clear of them.
-function railRow(k: number, m: number, cell: Place, cellW: number, cellH: number): Place {
-  const right = cell.x + cellW - 9;
-  const left = Math.max(cell.x + 34, right - (m - 1) * RAIL_DOT_GAP);
-  return {
-    x: m <= 1 ? right : left + (k * (right - left)) / (m - 1),
-    y: cell.y + cellH / 2,
-  };
-}
-
-// The wedge numbers used to sit on the outer eighth of the dial, which is
-// exactly where the darts land: on a ten wedge board the 7 came down under a
-// dart and beside "Johnson & Johnson", and a number you have to look twice at is
-// not a label. The open dial now carries a ring of warm panel outside itself and
-// the numbers live on that ring, clear of every dart and every name; the rail
-// keeps its numbers inside, because its darts are packed into rows rather than
-// scattered and its dial has no room to spare.
-const OPEN_RING = 26;
-
-// Where a wedge writes its name, as a fraction of the dial. Pulled in from 0.54
-// so the name block and the dart band stop sharing radius: with the darts thrown
-// between 0.72 and 0.90 there are now about fifteen pixels of clear ground
-// between the far corner of a two line name and the nearest dart tip.
-const LABEL_AT = 0.50;
+// The rail's width, section 5's "a rail along the right edge". The column is as
+// wide as its longest legend row needs: a name and its opening price on one
+// line, with room for the chip at the end. Level 3 deals names as long as
+// "Johnson & Johnson", and a legend that wraps or drops half its prices is a
+// list of fragments rather than a list.
+export const RAIL_WIDTH = 276;
+export const RAIL_PAD = 16;
+const RAIL_ROW_H = 40;
+const RAIL_ROW_MIN = 30;
 
 // The pinned dart's tip is not the middle of its own image: it sits about a
 // quarter across and four fifths down. Anchoring on the tip is what makes a
@@ -102,13 +63,22 @@ const LABEL_AT = 0.50;
 const TIP_X = 0.25;
 const TIP_Y = 0.82;
 
+// Where a wedge writes its name, as a fraction of the dial's own radius, and
+// how far out the darts' arcs sit. The name block is measured rather than
+// assumed, so the arc that would run through it steps aside instead.
+const LABEL_AT = 0.55;
+const ARC_ONE = [0.74];
+const ARC_TWO = [0.62, 0.80];
+const ARC_THREE = [0.58, 0.71, 0.84];
+
 interface Place { x: number; y: number }
+interface Slot { a: number; rad: number }
 
-// ------------------------------------------------------------ the jitter
+// ------------------------------------------------------------ the nudge
 
-// A dart's scatter inside its target, from its own index alone. Two darts on
-// one wedge have to sit apart, and they have to sit in the same place every
-// time the board redraws, so the offset is a hash and never a random.
+// A dart's own hair of scatter, from its index alone. Two darts in one slot
+// would sit exactly on each other; a hash of the index moves each one a
+// fraction of a slot, the same fraction on every render.
 function hash01(n: number): number {
   let h = (n + 1) * 2654435761;
   h ^= h >>> 15;
@@ -117,11 +87,11 @@ function hash01(n: number): number {
   return ((h >>> 0) % 100000) / 100000;
 }
 
-function jitter(i: number): { a: number; b: number; spin: number } {
+function nudge(i: number): { a: number; r: number; spin: number } {
   return {
     a: hash01(i * 3 + 1) * 2 - 1,
-    b: hash01(i * 3 + 2) * 2 - 1,
-    spin: (hash01(i * 3 + 3) * 2 - 1) * 16,
+    r: hash01(i * 3 + 2) * 2 - 1,
+    spin: (hash01(i * 3 + 3) * 2 - 1) * 13,
   };
 }
 
@@ -130,9 +100,12 @@ function jitter(i: number): { a: number; b: number; spin: number } {
 // A name that will not fit on one line breaks at its widest space rather than
 // shrinking under the 12px floor. Two lines is the limit; a single long word
 // simply runs, because a truncated company name is worse than a wide one.
+function textWidth(s: string, size: number): number {
+  return s.length * size * 0.55;
+}
+
 function fitLines(name: string, maxPx: number, size: number): string[] {
-  const per = size * 0.55;
-  if (name.length * per <= maxPx) return [name];
+  if (textWidth(name, size) <= maxPx) return [name];
   const words = name.split(" ");
   if (words.length < 2) return [name];
   let best = 1;
@@ -155,10 +128,6 @@ function priceText(p: number): string {
 // price now: the trade row already reads "Apple now $30.12" while the tape
 // runs, and a bare figure beside it was read as a second live price. The word
 // is the whole of the difference, so it is written here once.
-//
-// It fits everywhere it is used. The tightest box is the ten wedge dial at the
-// round open, whose label is 84px of arc at LABEL_AT; the longest line the word
-// makes there is "open $30.12", 77px at 13px. The rail legend has 134px.
 function openPriceText(p: number): string {
   const t = priceText(p);
   return t === "" ? "" : `open ${t}`;
@@ -186,112 +155,267 @@ function midAngle(i: number, n: number): number {
   return ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
 }
 
+// Where the darts on one wedge sit, and the whole of the tidiness. Up to three
+// arcs inside the wedge, the darts dealt round the arcs by their own index and
+// spaced evenly along each one, every arc inset from both seams and from the
+// rim by the width of a dart. An arc that would run through the wedge's name
+// block opens a gap in the middle for it, and any dart still landing on the
+// block is walked along its arc until it is clear of it, so a troop that all
+// threw at one stock never covers the name of the stock they threw at.
+//
+// The nudge is applied before the clearance rather than after it, which is the
+// reason a dart can be scattered and guaranteed at the same time.
+function wedgeSlots(
+  m: number, mid: number, half: number, r: number, px: number,
+  labelHalfW: number, labelHalfH: number,
+  jit: (k: number) => { a: number; r: number },
+): Slot[] {
+  const out: Slot[] = new Array(m);
+  if (m <= 0) return out;
+  const arcs = m <= 4 ? ARC_ONE : m <= 10 ? ARC_TWO : ARC_THREE;
+  // a dart is a picture that hangs off its own tip, so the clearance it needs
+  // from a seam, from the rim and from a name is the picture, not the point
+  const reach = px * 0.85;
+  const lx = Math.cos(mid) * r * LABEL_AT;
+  const ly = Math.sin(mid) * r * LABEL_AT;
+  const onLabel = (a: number, rad: number): boolean => {
+    if (labelHalfW <= 0) return false;
+    const x = Math.cos(a) * rad;
+    const y = Math.sin(a) * rad;
+    // the dart's own box, hanging up and to the right of its tip, with a
+    // margin for the spin
+    const left = x - px * 0.42;
+    const right = x + px * 0.92;
+    const top = y - px * 0.98;
+    const bottom = y + px * 0.34;
+    return right > lx - labelHalfW && left < lx + labelHalfW
+      && bottom > ly - labelHalfH && top < ly + labelHalfH;
+  };
+  for (let row = 0; row < arcs.length; row += 1) {
+    const idx: number[] = [];
+    for (let k = row; k < m; k += arcs.length) idx.push(k);
+    const cnt = idx.length;
+    if (cnt === 0) continue;
+    const base = Math.min(r * arcs[row], r - reach);
+    const pad = Math.min(half * 0.55, Math.asin(Math.min(1, reach / base)) + 0.03);
+    const usable = Math.max(half * 0.12, half - pad);
+    const straddle = base < r * LABEL_AT + labelHalfH + reach;
+    const minOff = straddle
+      ? Math.min(usable * 0.66, (labelHalfW + reach) / base)
+      : 0;
+    let step = 0;
+    if (straddle) {
+      const pairs = Math.ceil(cnt / 2);
+      step = pairs > 1 ? (usable - minOff) / (pairs - 1) : 0;
+    } else {
+      const span = (cnt - 1) / 2;
+      step = span > 0 ? usable / span : 0;
+    }
+    idx.forEach((k, i) => {
+      let off: number;
+      if (straddle) {
+        const pair = Math.floor(i / 2);
+        off = (i % 2 === 0 ? -1 : 1) * (minOff + pair * step);
+      } else {
+        off = (i - (cnt - 1) / 2) * step;
+      }
+      const j = jit(k);
+      off += j.a * (step === 0 ? usable * 0.5 : step) * 0.16;
+      off = Math.max(-usable, Math.min(usable, off));
+      let rad = Math.min(r - reach, base + j.r * r * 0.012);
+      if (labelHalfW > 0) {
+        const dir = off < 0 ? -1 : 1;
+        let guard = 0;
+        while (guard < 80 && onLabel(mid + off, rad)) {
+          off += dir * 0.015;
+          guard += 1;
+          if (Math.abs(off) > usable) { off = dir * usable; break; }
+        }
+        // a wedge too narrow to walk clear of its own name along one arc tries
+        // the other arcs at the two ends of the wedge, which is what a ten
+        // wedge board needs and a three wedge board never reaches
+        if (onLabel(mid + off, rad)) {
+          const dirs = [off, dir * usable, -dir * usable];
+          const rads = [r - reach, r * 0.87, r * 0.79, r * 0.70, r * 0.60, r * 0.48]
+            .map((v) => Math.min(r - reach, Math.max(px * 0.9, v)));
+          let done = false;
+          for (const cand of rads) {
+            for (const d of dirs) {
+              if (!onLabel(mid + d, cand)) { off = d; rad = cand; done = true; break; }
+            }
+            if (done) break;
+          }
+        }
+      }
+      out[k] = { a: mid + off, rad };
+    });
+  }
+  return out;
+}
+
 interface Layout {
-  // the dial
-  cx: number; cy: number; r: number;
-  // how far the panel ring stands out past the dial, and where a wedge's own
-  // number sits, measured from the middle
-  ring: number;
-  numAt: number;
-  // where a wedge's label block sits, and how wide it may be
+  // the dial: the wedges reach r, the rim ring runs from r out to outer
+  cx: number; cy: number; r: number; outer: number;
+  // a wedge's own number, and whether this board is wide enough to want one
+  numAt: number; showNum: boolean;
+  // where a wedge's name block sits, how wide it may be, and the box it takes,
+  // which is what the darts step around
   label: Place[];
   labelWidth: number;
-  labelAnchor: "middle" | "start";
   labelSize: number;
-  // the legend row a wedge's tap target covers in rail form, null in open form
+  labelHalfW: number[];
+  labelHalfH: number[];
+  // the legend row a wedge owns in rail form, null in open form
   row: { x: number; y: number; w: number; h: number }[] | null;
   // calendar cells
   cell: Place[];
   cellW: number; cellH: number;
-  // the stock name block on the calendar
   titleX: number; titleY: number;
   dartPx: number;
 }
 
-function boardLayout(n: number, form: "open" | "rail", w: number, h: number): Layout {
+function labelBoxes(
+  n: number, r: number, cx: number, cy: number,
+  names: string[], openPrices: number[], size: number, width: number,
+): { label: Place[]; halfW: number[]; halfH: number[] } {
+  const label: Place[] = [];
+  const halfW: number[] = [];
+  const halfH: number[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const a = midAngle(i, n);
+    const at = n === 1 ? 0 : LABEL_AT;
+    label.push({ x: cx + Math.cos(a) * r * at, y: cy + Math.sin(a) * r * at });
+    const lines = fitLines(names[i] ?? "", width, size);
+    const wide = Math.max(
+      ...lines.map((l) => textWidth(l, size)),
+      textWidth(openPriceText(openPrices[i] ?? 0), 13),
+    );
+    // the block is the name's lines and the open price under them, centred on
+    // the label point
+    const tall = lines.length * (size + 4) + 20;
+    halfW.push(wide / 2 + 7);
+    halfH.push(tall / 2 + 4);
+  }
+  return { label, halfW, halfH };
+}
+
+function boardLayout(
+  n: number, form: "open" | "rail", w: number, h: number,
+  names: string[], openPrices: number[],
+): Layout {
   if (form === "open") {
-    // The dial takes the middle of whatever it is given, less the ring its
-    // numbers sit on. It used to hang from a fixed forty pixel top margin, which
-    // was invisible while the board owned the whole stage and became seventy
-    // five pixels of empty panel the moment the troop took a band off the top.
-    const r = Math.max(80, Math.min((h - 24 - OPEN_RING * 2) / 2, (w - 60 - OPEN_RING * 2) / 2));
-    const cx = w / 2;
-    const cy = h / 2;
-    const labelSize = n > 6 ? 14 : SIZE.body;
-    const label: Place[] = [];
-    for (let i = 0; i < n; i += 1) {
-      const a = midAngle(i, n);
-      const at = n === 1 ? 0 : LABEL_AT;
-      label.push({ x: cx + Math.cos(a) * r * at, y: cy + Math.sin(a) * r * at });
-    }
+    // The dial takes the middle of whatever box it is given and fits it in both
+    // directions, which is the whole of the fix: it used to size off width and
+    // hang its bottom under the trade row.
+    const outer = Math.max(70, Math.floor(Math.min(w, h) / 2) - 2);
+    const ring = Math.max(7, Math.round(outer * 0.05));
+    const r = outer - ring;
+    const cx = Math.round(w / 2);
+    const cy = Math.round(h / 2);
+    const labelSize = n > 6 || r < 170 ? 14 : SIZE.body;
+    const chord = n <= 1 ? r * 1.5 : 2 * r * LABEL_AT * Math.sin(Math.PI / n);
+    const labelWidth = Math.max(64, Math.min(chord - 14, r * 1.05));
+    const boxes = labelBoxes(n, r, cx, cy, names, openPrices, labelSize, labelWidth);
     return {
-      cx, cy, r, ring: OPEN_RING, numAt: r + OPEN_RING / 2,
-      label,
-      labelWidth: n === 1 ? r * 1.4 : Math.max(64, (2 * Math.PI * r * LABEL_AT) / n - 10),
-      labelAnchor: "middle",
+      cx, cy, r, outer,
+      numAt: r - Math.max(11, r * 0.06),
+      // three wedges do not need numbering: the name is the label and the
+      // number was chrome floating on an outer ring built for ten
+      showNum: n >= 4,
+      label: boxes.label,
+      labelWidth,
       labelSize,
+      labelHalfW: boxes.halfW,
+      labelHalfH: boxes.halfH,
       row: null,
       cell: [], cellW: 0, cellH: 0, titleX: 0, titleY: 0,
-      dartPx: 40,
+      dartPx: Math.max(19, Math.min(34, r * 0.10)),
     };
   }
-  // The rail: the dial at the top using the whole column, and the names moved
-  // out of the wedges into a legend under it, because a tenth of a small dial
-  // is thirty pixels of arc and the type contract has a floor of twelve. The
-  // dial takes every pixel the column has left after its panel ring, which is
-  // what makes ten wedges and their packed darts countable at this size.
-  const r = (w - 16) / 2;
-  const cx = w / 2;
-  // the packed darts sit inside the rim, so the dial only has to hang clear of
-  // its own panel ring
-  const cy = 10 + r + 8;
-  const rowH = Math.max(26, Math.min(38, (h - (cy + r + 26)) / Math.max(1, n)));
-  const top = cy + r + 22;
+  // The rail: the dial at the top of the column and the names under it as a
+  // list, because a tenth of a small dial is thirty pixels of arc and the type
+  // contract has a floor of twelve. The two are solved together rather than one
+  // after the other: the list takes the rows it needs at a legible height, the
+  // dial takes what is left, and a nine wedge board in a 720 tall window ends
+  // up with a small dial and nine readable rows instead of nine rows running
+  // off the bottom of the column.
+  const inner = w - RAIL_PAD * 2;
+  const head = RAIL_PAD * 2 + 18;
+  let outer = Math.max(46, Math.floor(inner / 2));
+  let rowH = Math.max(RAIL_ROW_MIN, Math.min(RAIL_ROW_H, (h - head - outer * 2) / Math.max(1, n)));
+  if (rowH * n > h - head - outer * 2) {
+    outer = Math.max(46, Math.floor((h - head - RAIL_ROW_MIN * n) / 2));
+    rowH = Math.max(20, Math.min(RAIL_ROW_H, (h - head - outer * 2) / Math.max(1, n)));
+  }
+  const ring = Math.max(5, Math.round(outer * 0.06));
+  const r = outer - ring;
+  const cx = Math.round(w / 2);
+  const cy = RAIL_PAD + outer;
+  const top = Math.round(cy + outer + 18);
   const label: Place[] = [];
   const row: Layout["row"] = [];
   for (let i = 0; i < n; i += 1) {
     const y = top + i * rowH;
-    label.push({ x: 14, y: y + rowH / 2 });
-    row.push({ x: 6, y, w: w - 12, h: rowH - 4 });
+    // the pill bleeds eight pixels to either side of the text, so the row's
+    // words start on the dial's own left edge
+    row.push({ x: RAIL_PAD - 8, y, w: w - (RAIL_PAD - 8) * 2, h: rowH - 2 });
+    label.push({ x: RAIL_PAD, y: y + (rowH - 2) / 2 });
   }
   return {
-    cx, cy, r, ring: 8, numAt: r * 0.93,
-    label, labelWidth: w - 82, labelAnchor: "start", labelSize: 13, row,
+    cx, cy, r, outer,
+    numAt: r * 0.9, showNum: false,
+    label, labelWidth: w - RAIL_PAD * 2 - 44, labelSize: 14,
+    labelHalfW: [], labelHalfH: [],
+    row,
     cell: [], cellW: 0, cellH: 0, titleX: 0, titleY: 0,
-    dartPx: RAIL_DART_PX,
+    dartPx: Math.max(8, Math.min(14, r * 0.11)),
   };
 }
 
 function calendarLayout(months: number, form: "open" | "rail", w: number, h: number): Layout {
   const base: Layout = {
-    cx: 0, cy: 0, r: 0, ring: 0, numAt: 0, label: [], labelWidth: 0, labelAnchor: "middle",
-    labelSize: SIZE.body, row: null, cell: [], cellW: 0, cellH: 0,
-    titleX: 0, titleY: 0, dartPx: form === "open" ? 40 : RAIL_DART_PX,
+    cx: 0, cy: 0, r: 0, outer: 0, numAt: 0, showNum: false,
+    label: [], labelWidth: 0, labelSize: SIZE.body, labelHalfW: [], labelHalfH: [],
+    row: null, cell: [], cellW: 0, cellH: 0, titleX: 0, titleY: 0, dartPx: 24,
   };
   if (form === "open") {
-    const pad = 24;
-    const gap = 4;
-    const cellW = Math.max(1, (w - pad * 2 - gap * (months - 1)) / months);
-    // The strip of months takes a third of whatever it is given and stands in
-    // the middle of it. It used to be a fixed 96px block pinned 96px from the
-    // top, which on the open screen left four hundred pixels of empty panel
-    // under two dozen small cells and made the one wedge level look unfinished.
-    const cellH = Math.max(56, Math.min(180, h * 0.34));
-    const top = Math.max(84, (h - cellH) / 2);
+    const gap = 5;
+    const cellW = Math.max(1, (w - gap * (months - 1)) / months);
+    // The stock's name is pinned to the top of the box rather than floated over
+    // the strip: the guide's bubble hangs off the troop into the top of this
+    // panel, and a title in the middle of that band was read through it.
+    const head = 118;
+    const cellH = Math.max(110, Math.min(240, Math.min(h * 0.55, h - head - 8)));
+    const top = Math.round(head + (h - head - cellH) * 0.44);
     for (let i = 0; i < months; i += 1) {
-      base.cell.push({ x: pad + i * (cellW + gap), y: top });
+      base.cell.push({ x: i * (cellW + gap), y: top });
     }
-    return { ...base, cellW, cellH, titleX: w / 2, titleY: top - 44 };
+    return {
+      ...base, cellW, cellH,
+      titleX: Math.round(w / 2), titleY: 84,
+      dartPx: Math.max(14, Math.min(30, cellW * 0.78)),
+    };
   }
-  const pad = 8;
   const gap = 3;
-  const top = 64;
-  const cellW = w - pad * 2;
-  const cellH = Math.max(16, (h - top - 12 - gap * (months - 1)) / months);
+  const top = 58;
+  const cellW = w - RAIL_PAD * 2;
+  const cellH = Math.max(14, (h - top - RAIL_PAD - gap * (months - 1)) / months);
   for (let i = 0; i < months; i += 1) {
-    base.cell.push({ x: pad, y: top + i * (cellH + gap) });
+    base.cell.push({ x: RAIL_PAD, y: top + i * (cellH + gap) });
   }
-  return { ...base, cellW, cellH, titleX: pad, titleY: 30 };
+  return { ...base, cellW, cellH, titleX: RAIL_PAD, titleY: 30, dartPx: 12 };
+}
+
+// The rail's darts are packed rather than scattered: on level 1 a month is a
+// row, so its darts line up along the right of the row and the count on a month
+// reads at a glance.
+function railRow(k: number, m: number, cell: Place, cellW: number, cellH: number): Place {
+  const right = cell.x + cellW - 9;
+  const left = Math.max(cell.x + 34, right - (m - 1) * 13);
+  return {
+    x: m <= 1 ? right : left + (k * (right - left)) / (m - 1),
+    y: cell.y + cellH / 2,
+  };
 }
 
 // --------------------------------------------------------------- the board
@@ -308,7 +432,7 @@ export default function Board(props: BoardProps) {
   // The throw beat. Darts land one by one; once they are down they are down,
   // and nothing about a later render can lift them again.
   const total = darts.length;
-  const [landed, setLanded] = useState(() => (thrown && (instant || still) ? total : thrown ? 0 : 0));
+  const [landed, setLanded] = useState(() => (thrown && (instant || still) ? total : 0));
   const wasThrown = useRef(thrown);
   const landedCb = useRef(onDartLanded);
   const doneCb = useRef(onThrowDone);
@@ -344,62 +468,67 @@ export default function Board(props: BoardProps) {
   const layout = useMemo(
     () => (mode === "calendar"
       ? calendarLayout(months, form, width, height)
-      : boardLayout(n, form, width, height)),
-    [mode, months, form, width, height, n],
+      : boardLayout(n, form, width, height, names, openPrices)),
+    [mode, months, form, width, height, n, names, openPrices],
   );
 
   const deadSet = useMemo(() => new Set(dead), [dead]);
   const focusIndex = focus === null ? -1 : tickers.indexOf(focus);
 
   // Where every dart's tip lands, in board coordinates, for this form. Computed
-  // for both forms from the same jitter, so a form change moves a dart and
-  // never re-rolls it.
+  // for both forms from the same slots, so a form change moves a dart along a
+  // path and never re-rolls it.
   const dartAt = useMemo(() => {
-    // a dart's place among the darts sharing its target, counted in throw order
-    const seen = new Map<number, number>();
-    const slot = darts.map((d) => {
-      const k = seen.get(d.at) ?? 0;
-      seen.set(d.at, k + 1);
-      return k;
+    const perTarget = new Map<number, number[]>();
+    darts.forEach((d, i) => {
+      const list = perTarget.get(d.at);
+      if (list) list.push(i); else perTarget.set(d.at, [i]);
     });
-    return darts.map((d, i) => {
-      const j = jitter(i);
-      const k = slot[i];
-      const m = seen.get(d.at) ?? 1;
+    const out: { x: number; y: number; spin: number }[] = new Array(darts.length);
+    perTarget.forEach((list, target) => {
       if (mode === "calendar") {
-        const at = Math.max(0, Math.min(months - 1, d.at));
+        const at = Math.max(0, Math.min(months - 1, target));
         const c = layout.cell[at] ?? { x: 0, y: 0 };
-        if (form === "rail") {
-          const p = railRow(k, m, c, layout.cellW, layout.cellH);
-          return { x: p.x, y: p.y, spin: j.spin * 0.3 };
-        }
-        return {
-          x: c.x + layout.cellW * (0.5 + j.a * 0.22),
-          y: c.y + layout.cellH * (0.5 + j.b * 0.22),
-          spin: j.spin,
-        };
+        list.forEach((i, k) => {
+          const j = nudge(i);
+          if (form === "rail") {
+            const p = railRow(k, list.length, c, layout.cellW, layout.cellH);
+            out[i] = { x: p.x, y: p.y, spin: j.spin * 0.3 };
+            return;
+          }
+          // the darts on a month stack up from the floor of its cell, so a
+          // month three monkeys picked is visibly three deep and the strip
+          // reads as a count without carrying a single number
+          const step = layout.dartPx * 0.78;
+          const floorY = layout.cellH - 34;
+          const y = Math.max(layout.dartPx * 0.9, floorY - k * step);
+          out[i] = {
+            x: c.x + layout.cellW / 2 + j.a * layout.cellW * 0.06,
+            y: c.y + y,
+            spin: j.spin * 0.5,
+          };
+        });
+        return;
       }
-      const at = Math.max(0, Math.min(Math.max(0, n - 1), d.at));
+      const at = Math.max(0, Math.min(Math.max(0, n - 1), target));
       const half = n <= 1 ? Math.PI : Math.PI / n;
       const mid = midAngle(at, n);
-      if (form === "rail") {
-        const p = railSpot(k, m, mid, half, layout.r);
-        return {
-          x: layout.cx + Math.cos(p.a) * p.rad,
-          y: layout.cy + Math.sin(p.a) * p.rad,
-          spin: j.spin * 0.3,
+      const slots = wedgeSlots(
+        list.length, mid, half, layout.r, layout.dartPx,
+        form === "rail" ? 0 : layout.labelHalfW[at] ?? 0,
+        form === "rail" ? 0 : layout.labelHalfH[at] ?? 0,
+        (k) => nudge(list[k]),
+      );
+      list.forEach((i, k) => {
+        const s = slots[k] ?? { a: mid, rad: layout.r * 0.74 };
+        out[i] = {
+          x: layout.cx + Math.cos(s.a) * s.rad,
+          y: layout.cy + Math.sin(s.a) * s.rad,
+          spin: form === "rail" ? nudge(i).spin * 0.3 : nudge(i).spin,
         };
-      }
-      const a = mid + j.a * half * 0.55;
-      // the outer band of the dial, between the name block and the rim: a dart
-      // never lands on a company's name and never reaches the number ring
-      const rad = layout.r * (n <= 1 ? 0.42 + j.b * 0.28 : 0.81 + j.b * 0.09);
-      return {
-        x: layout.cx + Math.cos(a) * rad,
-        y: layout.cy + Math.sin(a) * rad,
-        spin: j.spin,
-      };
+      });
     });
+    return out;
   }, [darts, mode, months, n, form, layout]);
 
   const move = still ? "none" : `transform ${MOVE_MS}ms ${EASE}`;
@@ -415,7 +544,7 @@ export default function Board(props: BoardProps) {
         display: "block",
         fontFamily: UI_FONT,
         transition: still ? "none" : `width ${MOVE_MS}ms ${EASE}, height ${MOVE_MS}ms ${EASE}`,
-        overflow: "visible",
+        overflow: "hidden",
       }}
     >
       <style>{`
@@ -432,17 +561,17 @@ export default function Board(props: BoardProps) {
         .mk-pick:hover .mk-face { fill: var(--mk-hover) }
       `}</style>
 
-      {/* ------------------------------------------------- the dial or the strip */}
+      {/* the rim: the ring of board the wedges are set into, so the dial reads
+          as a thing on the panel rather than as a pie chart of it */}
       {mode === "board" && (
-        <g>
-          <circle
-            cx={layout.cx}
-            cy={layout.cy}
-            r={layout.r + layout.ring}
-            fill={PANEL}
-            style={{ transition: still ? "none" : `all ${MOVE_MS}ms ${EASE}` }}
-          />
-        </g>
+        <circle
+          data-dial-rim
+          cx={layout.cx}
+          cy={layout.cy}
+          r={layout.outer}
+          fill={tint(SKY, 0.46)}
+          style={{ transition: still ? "none" : `all ${MOVE_MS}ms ${EASE}` }}
+        />
       )}
 
       {mode === "calendar" && (
@@ -456,13 +585,13 @@ export default function Board(props: BoardProps) {
             y={layout.titleY}
             textAnchor={form === "open" ? "middle" : "start"}
             fill={INK}
-            style={{ fontSize: form === "open" ? 22 : 15, fontWeight: WEIGHT.heading }}
+            style={{ fontSize: form === "open" ? 20 : 15, fontWeight: WEIGHT.heading }}
           >
             {names[0] ?? ""}
           </text>
           <text
-            x={layout.titleX}
-            y={layout.titleY + (form === "open" ? 24 : 18)}
+            x={layout.titleX + (form === "open" ? 0 : 0)}
+            y={layout.titleY + (form === "open" ? 22 : 18)}
             textAnchor={form === "open" ? "middle" : "start"}
             fill={MUTED}
             style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
@@ -475,7 +604,7 @@ export default function Board(props: BoardProps) {
           <Chip
             shares={chips[tickers[0]] ?? 0}
             x={form === "open"
-              ? layout.titleX + (names[0] ?? "").length * 6 + 30
+              ? layout.titleX + textWidth(names[0] ?? "", 20) / 2 + 28
               : layout.titleX + 92}
             y={layout.titleY - 6}
             move={move}
@@ -487,9 +616,11 @@ export default function Board(props: BoardProps) {
       {mode === "board" && tickers.map((t, i) => {
         const focused = focus === t;
         const gone = deadSet.has(t);
-        const lines = fitLines(names[i] ?? t, layout.labelWidth, layout.labelSize);
         const p = layout.label[i] ?? { x: 0, y: 0 };
         const row = layout.row?.[i];
+        // two tones, far enough apart to count the wedges by; an odd board
+        // gets a third so no two neighbours share a tone
+        const tones = n % 2 === 0 ? [0.12, 0.30] : [0.12, 0.30, 0.21];
         return (
           <g
             key={t}
@@ -500,15 +631,15 @@ export default function Board(props: BoardProps) {
             onClick={() => onFocus(t)}
             style={{
               cursor: "pointer",
-              ["--mk-lx" as string]: `${(Math.cos(midAngle(i, n)) * 9).toFixed(2)}px`,
-              ["--mk-ly" as string]: `${(Math.sin(midAngle(i, n)) * 9).toFixed(2)}px`,
-              ["--mk-hover" as string]: gone ? "#E0DACE" : tint(SKY, focused ? 0.50 : 0.26),
+              ["--mk-lx" as string]: `${(Math.cos(midAngle(i, n)) * 8).toFixed(2)}px`,
+              ["--mk-ly" as string]: `${(Math.sin(midAngle(i, n)) * 8).toFixed(2)}px`,
+              ["--mk-hover" as string]: gone ? "#E0DACE" : tint(SKY, focused ? 0.66 : 0.36),
             }}
           >
             <path
               className="mk-face"
               d={sectorPath(i, n)}
-              fill={gone ? "#E6E1D7" : focused ? tint(SKY, 0.42) : tint(SKY, 0.10 + (i % 3) * 0.045)}
+              fill={gone ? "#E6E1D7" : focused ? tint(SKY, 0.62) : tint(SKY, tones[i % tones.length])}
               style={{
                 transform: `translate(${layout.cx}px, ${layout.cy}px) scale(${layout.r})`,
                 transition: move,
@@ -527,96 +658,111 @@ export default function Board(props: BoardProps) {
                 }}
               />
             )}
-            {/* the wedge's own number, so the dial and the rail's legend read as
-                one thing */}
-            <text
-              x={layout.cx + Math.cos(midAngle(i, n)) * (n > 1 ? layout.numAt : 0)}
-              y={layout.cy + Math.sin(midAngle(i, n)) * (n > 1 ? layout.numAt : 0) + 4}
-              textAnchor="middle"
-              fill={gone ? MUTED : INK}
-              style={{
-                fontSize: form === "open" ? 13 : 12,
-                fontWeight: WEIGHT.emphasis,
-                transition: move,
-                pointerEvents: "none",
-              }}
-            >
-              {n > 1 ? String(i + 1) : ""}
-            </text>
 
-            {row && (
-              <g>
+            {/* the wedge's own number, inside the rim where the eye already is */}
+            {layout.showNum && (
+              <text
+                x={layout.cx + Math.cos(midAngle(i, n)) * layout.numAt}
+                y={layout.cy + Math.sin(midAngle(i, n)) * layout.numAt + 4}
+                textAnchor="middle"
+                fill={gone ? MUTED : INK}
+                style={{
+                  fontSize: 13,
+                  fontWeight: WEIGHT.emphasis,
+                  opacity: 0.55,
+                  transition: move,
+                  pointerEvents: "none",
+                }}
+              >
+                {String(i + 1)}
+              </text>
+            )}
+
+            {row ? (
+              <g style={{ pointerEvents: "none" }}>
                 <rect
                   x={row.x} y={row.y} width={row.w} height={row.h} rx={10}
-                  fill={focused ? tint(SKY, 0.28) : "transparent"}
+                  fill={focused ? tint(SKY, 0.30) : "transparent"}
                   style={{ transition: move }}
                 />
                 {/* the focused row carries a solid bar of the focus colour, so
-                    the rail says which stock the trade buttons are aimed at
-                    without the reader having to compare two soft tints */}
+                    the rail says which stock the trade buttons are aimed at */}
                 <rect
-                  x={row.x} y={row.y + 3} width={4} height={Math.max(0, row.h - 6)} rx={2}
+                  x={row.x + 2} y={row.y + 5} width={4} height={Math.max(0, row.h - 10)} rx={2}
                   fill={focused ? SKY : "transparent"}
                 />
+                <RailRow
+                  name={names[i] ?? t}
+                  price={gone ? "zero" : openPriceText(openPrices[i] ?? 0)}
+                  x={p.x}
+                  y={p.y}
+                  right={row.x + row.w - 44}
+                  focused={focused}
+                  gone={gone}
+                />
+              </g>
+            ) : (
+              <g
+                style={{
+                  transform: `translate(${p.x}px, ${p.y}px)`,
+                  transition: move,
+                  pointerEvents: "none",
+                }}
+              >
+                {fitLines(names[i] ?? t, layout.labelWidth, layout.labelSize).map((line, k, all) => (
+                  <text
+                    key={k}
+                    x={0}
+                    y={(k - (all.length - 1) / 2) * (layout.labelSize + 4) - 6}
+                    textAnchor="middle"
+                    fill={gone ? MUTED : INK}
+                    style={{
+                      fontSize: layout.labelSize,
+                      fontWeight: focused ? WEIGHT.heading : WEIGHT.emphasis,
+                    }}
+                  >
+                    {line}
+                  </text>
+                ))}
+                <text
+                  x={0}
+                  y={((fitLines(names[i] ?? t, layout.labelWidth, layout.labelSize).length - 1) / 2)
+                    * (layout.labelSize + 4) + 14}
+                  textAnchor="middle"
+                  fill={MUTED}
+                  style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
+                >
+                  {gone ? "zero" : openPriceText(openPrices[i] ?? 0)}
+                </text>
               </g>
             )}
-
-            <g
-              style={{
-                transform: `translate(${p.x}px, ${p.y}px)`,
-                transition: move,
-                pointerEvents: "none",
-              }}
-            >
-              {lines.map((line, k) => (
-                <text
-                  key={k}
-                  x={0}
-                  y={(k - (lines.length - 1) / 2) * (layout.labelSize + 3) - (form === "rail" ? 5 : 6)}
-                  textAnchor={layout.labelAnchor}
-                  fill={gone ? MUTED : INK}
-                  style={{
-                    fontSize: layout.labelSize,
-                    fontWeight: focused ? WEIGHT.heading : WEIGHT.emphasis,
-                  }}
-                >
-                  {line}
-                </text>
-              ))}
-              <text
-                x={0}
-                y={(lines.length - 1) / 2 * (layout.labelSize + 3) + (form === "rail" ? 11 : 14)}
-                textAnchor={layout.labelAnchor}
-                fill={MUTED}
-                style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
-              >
-                {gone ? "zero" : openPriceText(openPrices[i] ?? 0)}
-              </text>
-              {/* the small mark a dead wedge carries; the words are the page's */}
-              {gone && (
-                <path
-                  d="M -6 -6 L 6 6 M 6 -6 L -6 6"
-                  stroke={MUTED}
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  transform={`translate(${layout.labelAnchor === "start" ? layout.labelWidth + 10 : 0}, ${layout.labelAnchor === "start" ? 0 : -layout.labelSize - 14})`}
-                />
-              )}
-            </g>
 
             <Chip
               shares={chips[t] ?? 0}
               x={form === "open"
-                ? layout.cx + Math.cos(midAngle(i, n)) * layout.r * (n > 1 ? 0.24 : 0.55)
-                : (row ? row.x + row.w - 26 : 0)}
+                ? layout.cx + Math.cos(midAngle(i, n)) * layout.r * (n > 1 ? 0.33 : 0.55)
+                : (row ? row.x + row.w - 20 : 0)}
               y={form === "open"
-                ? layout.cy + Math.sin(midAngle(i, n)) * layout.r * (n > 1 ? 0.24 : 0.55)
+                ? layout.cy + Math.sin(midAngle(i, n)) * layout.r * (n > 1 ? 0.33 : 0.55)
                 : (row ? row.y + row.h / 2 : 0)}
+              max={form === "rail" ? 15 : 24}
               move={move}
             />
           </g>
         );
       })}
+
+      {/* the hub, drawn over the seams so the middle of the board is a middle
+          and not a place where three wedges meet in a point */}
+      {mode === "board" && n > 1 && (
+        <circle
+          cx={layout.cx}
+          cy={layout.cy}
+          r={Math.max(8, layout.r * 0.15)}
+          fill={GROUND}
+          style={{ transition: still ? "none" : `all ${MOVE_MS}ms ${EASE}`, pointerEvents: "none" }}
+        />
+      )}
 
       {/* the focused wedge's own outline. One element for the whole board,
           drawn after the wedges so a neighbour's fill cannot cover half of it,
@@ -627,7 +773,7 @@ export default function Board(props: BoardProps) {
           d={sectorPath(Math.max(0, focusIndex), n)}
           fill="none"
           stroke={focusIndex >= 0 ? SKY : "transparent"}
-          strokeWidth={(form === "rail" ? 5 : 4) / Math.max(1, layout.r)}
+          strokeWidth={(form === "rail" ? 4 : 5) / Math.max(1, layout.r)}
           strokeLinejoin="round"
           style={{
             transform: `translate(${layout.cx}px, ${layout.cy}px) scale(${layout.r})`,
@@ -646,7 +792,7 @@ export default function Board(props: BoardProps) {
           onClick={() => tickers[0] && onFocus(tickers[0])}
           style={{
             cursor: "pointer",
-            ["--mk-hover" as string]: tint(SKY, 0.26),
+            ["--mk-hover" as string]: tint(SKY, 0.30),
           }}
         >
           <rect
@@ -655,8 +801,8 @@ export default function Board(props: BoardProps) {
             y={c.y}
             width={layout.cellW}
             height={layout.cellH}
-            rx={form === "open" ? 10 : 6}
-            fill={tint(SKY, i % 2 === 0 ? 0.13 : 0.08)}
+            rx={form === "open" ? 8 : 6}
+            fill={tint(SKY, i % 2 === 0 ? 0.16 : 0.10)}
             style={{ transition: still ? "none" : `x ${MOVE_MS}ms ${EASE}, y ${MOVE_MS}ms ${EASE}` }}
           />
           <text
@@ -674,7 +820,7 @@ export default function Board(props: BoardProps) {
       {/* ---------------------------------------------------------- the darts */}
       <g data-darts>
         {darts.map((d, i) => {
-          const at = dartAt[i];
+          const at = dartAt[i] ?? { x: 0, y: 0, spin: 0 };
           const down = i < landed;
           const px = layout.dartPx;
           return (
@@ -713,12 +859,48 @@ export default function Board(props: BoardProps) {
   );
 }
 
+// One row of the rail's legend: the name and, on the same line when the column
+// has the room for it, the price the window opened at. The row is a list row
+// and not a caption, so its text sits on the middle of its own pill.
+function RailRow({ name, price, x, y, right, focused, gone }: {
+  name: string; price: string; x: number; y: number; right: number;
+  focused: boolean; gone: boolean;
+}) {
+  const size = 14;
+  // One line, always. The opening price is a column and not a suffix, so it
+  // ends where every other row's ends and three rows read as a list; a row too
+  // narrow for both drops the price rather than wrapping, because a wrapped
+  // row cannot hold its height and a ten row legend has no height to give.
+  const room = right - x - 14;
+  const fits = textWidth(name, size) + textWidth(price, 13) <= room;
+  return (
+    <g>
+      <text
+        x={x} y={y + 5} fill={gone ? MUTED : INK}
+        style={{ fontSize: size, fontWeight: focused ? WEIGHT.heading : WEIGHT.emphasis }}
+      >
+        {name}
+      </text>
+      {fits && (
+        <text
+          x={right} y={y + 5} textAnchor="end" fill={MUTED}
+          style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
+        >
+          {price}
+        </text>
+      )}
+    </g>
+  );
+}
+
 // The player's chip: one sky circle, sized by how many shares are in it, with
 // the count inside in tabular digits. It is never a monkey's colour and never a
 // dart, because the one thing on this board that is not random is you.
-function Chip({ shares, x, y, move }: { shares: number; x: number; y: number; move: string }) {
+function Chip({ shares, x, y, move, max = 24 }: {
+  shares: number; x: number; y: number; move: string; max?: number;
+}) {
   if (!(shares > 0)) return null;
-  const r = Math.max(13, Math.min(24, 12 + Math.sqrt(shares) * 2.2));
+  const r = Math.max(13, Math.min(max, 12 + Math.sqrt(shares) * 2.2));
   return (
     <g
       data-chip={shares}

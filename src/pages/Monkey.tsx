@@ -36,7 +36,7 @@ import Guide from "../components/monkey/Guide";
 import Strip, { SETTLED_HEIGHT, STRIP_GUIDE_ROOM, STRIP_HEIGHT } from "../components/monkey/Strip";
 import Troop, { TROOP_HEIGHT } from "../components/monkey/Troop";
 import {
-  GREEN, GROUND, INK, MUTED, PANEL, RADIUS, SIZE, SKY, TIES, WEIGHT,
+  DESK, GREEN, GROUND, INK, LAYOUT, MUTED, PANEL, RADIUS, SIZE, SKY, TIES, WEIGHT,
 } from "../lib/monkey/look";
 import {
   armAudio, buyTick, dartThock, guidePop, loadMuted, passDown, passUp,
@@ -65,17 +65,20 @@ const TICK_MS = 45;
 // thing to read.
 const PICK_HINT = "Tap a wedge to pick a stock";
 
-const PAGE_PAD = 16;
-const HEADER_H = 44;
-const GAP = 12;
-const STRIP_PAD = 12;
-const TRADE_H = 52;
-const DESK_PAD = 8;
-const COL_GAP = 10;
-// The end card's revealed chart. Tightened from 208 so the card's own rhythm
-// (the strip, the lines, the stats, two death lines and the persisted guide)
-// fits inside a 1440x950 window above the button footer without a scroll.
-const END_CHART_H = 180;
+// The grid, and there is only one. Every phase is a column of panels inside one
+// gutter, every panel carries the same padding and the same radius, every gap
+// between two panels is the same, and the header's text starts and ends on the
+// panels' own edges. The numbers live in look.ts so the stage and the page
+// cannot drift apart.
+const GUTTER = LAYOUT.gutter;
+const GAP = LAYOUT.gap;
+const PAD = LAYOUT.pad;
+const HEADER_H = LAYOUT.header;
+const CONTROL_H = LAYOUT.control;
+
+// The strip's panel: the strip's own band plus the room its bubble grows into,
+// inside the one panel padding.
+const STRIP_BAND = STRIP_HEIGHT + STRIP_GUIDE_ROOM + PAD * 2;
 
 function readNumber(params: URLSearchParams, key: string, fallback: number): number {
   const raw = params.get(key);
@@ -556,14 +559,37 @@ export default function Monkey() {
 
   // ------------------------------------------------------------------ layout
 
-  const chartH = Math.round(viewH / 3);
-  const topH = Math.max(320, viewH - PAGE_PAD * 2 - HEADER_H - GAP * 2 - chartH);
-  // The guide's bubble hangs above its own slot on the rank strip, so the
-  // strip's panel carries the headroom for it. The number is the strip's own,
-  // imported rather than guessed, so the page and the strip cannot disagree.
-  const stripBandH = STRIP_HEIGHT + STRIP_GUIDE_ROOM + STRIP_PAD * 2;
-  const deskH = Math.max(180, topH - stripBandH - TRADE_H - COL_GAP * 2 - DESK_PAD * 2);
-  const leftW = Math.max(600, viewW - PAGE_PAD * 2 - RAIL_WIDTH - GAP);
+  // The play stage, from the window down. The chart is the bottom third and
+  // never more (section 6), the stage row is what is left over, and the desk
+  // band is what is left of that once the rank strip and the trade row have
+  // taken their fixed heights. Every number here is a difference of grid
+  // tokens, so nothing is ever a pixel out.
+  const stageW = viewW - GUTTER * 2;
+  const chartH = Math.max(180, Math.min(340, Math.round(viewH * 0.30)));
+  const topH = Math.max(300, viewH - GUTTER * 2 - HEADER_H - GAP * 2 - chartH);
+  const leftW = Math.max(520, stageW - RAIL_WIDTH - GAP);
+  // the desk's panel, and inside it the band of columns above the trade row
+  const deskPanelH = Math.max(150, topH - STRIP_BAND - GAP);
+  const deskH = Math.max(72, deskPanelH - PAD * 2 - CONTROL_H - GAP);
+
+  // The open screen: the troop and the board share one panel on the left, the
+  // desk takes the column on the right, and the trade row spans the foot of the
+  // page exactly where it sits during play.
+  const openStageH = Math.max(260, viewH - GUTTER * 2 - HEADER_H - GAP * 2 - (CONTROL_H + PAD * 2));
+  const openRightW = 340;
+  const troopH = openStageH >= 620 ? TROOP_HEIGHT : 78;
+
+  // The end card, laid on the same grid: the lead, the settled strip, two
+  // panels of the same height, and the buttons.
+  const endRoom = Math.max(200,
+    viewH - GUTTER * 2 - HEADER_H - (SETTLED_HEIGHT + PAD * 2) - GAP * 2);
+  // a tall window gives its extra height to the settled strip, which is the end
+  // card's first sentence and the thing the confetti falls through, rather than
+  // to a column of six lines that would have to be spread out to fill it
+  const endBodyH = Math.min(endRoom, 560);
+  const endStripH = SETTLED_HEIGHT + (endRoom - endBodyH);
+  const endColW = Math.floor((stageW - GAP) / 2);
+  const endChartH = Math.max(140, endBodyH - PAD * 2 - 30 - GAP);
 
   useLayoutEffect(() => {
     const box = chartBox.current;
@@ -611,7 +637,13 @@ export default function Monkey() {
     return out;
   }, [run, settle, settleEase, tick]);
 
-  const meterH = deskH - 44;
+  // The desk's own ruler is set from the band it is actually drawn in, which is
+  // the whole column at the round open and the band between the strip and the
+  // trade row once the tape runs. The scale is set once and only ever eased
+  // down, so the shorter band at the start of play brings it down and no trade
+  // ever moves it again.
+  const deskBand = phase === "open" ? openStageH - PAD * 2 : deskH;
+  const meterH = deskBand - 40;
   if (run && scaleRef.current === 0 && run.startCash > 0) {
     scaleRef.current = (0.85 * meterH) / run.startCash;
   }
@@ -713,6 +745,9 @@ export default function Monkey() {
 
   // ------------------------------------------------------------------ levels
 
+  // one height for all three level cards, so their buttons stand on one line
+  const cardH = 232;
+
   const goLevels = useCallback(() => {
     if (pinned) {
       const next = new URLSearchParams(params);
@@ -724,44 +759,81 @@ export default function Monkey() {
   }, [pinned, params, setParams, showLevels]);
 
   const levelsScreen = (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 64px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: 40, fontWeight: 700, letterSpacing: "-0.02em" }}>Monkey Trade</h1>
+    <div
+      style={{
+        height: "100vh", padding: GUTTER, display: "flex", flexDirection: "column",
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", justifyContent: "flex-end", flex: "none" }}>
         {mute}
       </div>
-      <p style={{ fontSize: 16, color: MUTED, marginTop: 8 }}>
-        Ten monkeys threw darts. Beat them if you can.
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 32 }}>
-        {LEVEL_IDS.map((id) => {
-          const open = isUnlocked(id);
-          const best = bestFor(id);
-          return (
-            <Card key={`${id}-${saveTick}`} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{levelCard(id)}</div>
-              <div style={{ fontSize: 14, color: MUTED, minHeight: 38 }}>
-                {open ? `${LEVELS[id].proves}.` : levelLocked()}
-              </div>
-              {/* the best line's row is reserved by its height, not by a
-                  transparent full stop nobody can see but a reader can copy */}
-              <div className="tnum" style={{ fontSize: 14, color: INK, minHeight: 20 }}>
-                {best > 0 ? `Best: beat ${best} of ${MONKEYS}` : ""}
-              </div>
-              <div>
-                <Button
-                  action={`throw-${id}`}
-                  disabled={!open}
-                  onClick={() => dealPinned(id, randomSeed())}
+      {/* the title, the three cards and the troop are one block, centred in
+          what is left of the window, so a tall screen puts air above and below
+          the composition rather than a hole in the middle of it */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 0, gap: 32 }}>
+        <div style={{ width: "100%", maxWidth: 1120 }}>
+          <h1 style={{ fontSize: 40, fontWeight: WEIGHT.heading, letterSpacing: "-0.02em", lineHeight: "46px" }}>
+            Monkey Trade
+          </h1>
+          <p style={{ fontSize: SIZE.body, color: MUTED, marginTop: 8 }}>
+            Ten monkeys threw darts. Beat them if you can.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: GAP, marginTop: 28 }}>
+            {LEVEL_IDS.map((id) => {
+              const open = isUnlocked(id);
+              const best = bestFor(id);
+              return (
+                <Card
+                  key={`${id}-${saveTick}`}
+                  style={{
+                    padding: PAD + 4, display: "flex", flexDirection: "column",
+                    gap: 8, minHeight: cardH, boxSizing: "border-box",
+                  }}
                 >
-                  Throw
-                </Button>
-              </div>
-            </Card>
-          );
-        })}
+                  <div style={{ fontSize: SIZE.lead, fontWeight: WEIGHT.heading }}>{levelCard(id)}</div>
+                  <div style={{ fontSize: 15, color: MUTED, lineHeight: "22px" }}>
+                    {open ? `${LEVELS[id].proves}.` : levelLocked()}
+                  </div>
+                  {/* the best line's row is reserved by its height, not by a
+                      transparent full stop nobody can see but a reader can copy */}
+                  <div className="tnum" style={{ fontSize: 15, color: INK, minHeight: 22, lineHeight: "22px" }}>
+                    {best > 0 ? `Best: beat ${best} of ${MONKEYS}` : ""}
+                  </div>
+                  {/* every card's button stands on the same line, whatever the
+                      words above it did */}
+                  <div style={{ flex: 1 }} />
+                  <div>
+                    <Button
+                      action={`throw-${id}`}
+                      disabled={!open}
+                      onClick={() => dealPinned(id, randomSeed())}
+                    >
+                      Throw
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+        {/* the troop stands under the cards. The game is called Monkey Trade and
+            the screen that picks a round used to have no monkey on it, which is
+            also what left half of a 1080 window empty */}
+        <Troop
+          darts={[]}
+          thrown={false}
+          count={MONKEYS}
+          guideIndex={1}
+          guideLine={null}
+          ties={TIES}
+          width={Math.min(1120, stageW)}
+          height={TROOP_HEIGHT}
+          instant
+        />
       </div>
-      <div style={{ marginTop: 28 }}>
-        <Link to="/" style={{ fontSize: 14, color: SKY }}>Back to the games</Link>
+      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", flex: "none" }}>
+        <Link to="/" style={{ fontSize: 15, color: SKY }}>Back to the games</Link>
       </div>
     </div>
   );
@@ -777,14 +849,21 @@ export default function Monkey() {
         gap: 16, flex: "none", whiteSpace: "nowrap",
       }}
     >
-      <div className="tnum" data-clock={Math.floor(run.t)} style={{ fontSize: 18, fontWeight: 600 }}>
+      <div className="tnum" data-clock={Math.floor(run.t)} style={{ fontSize: 18, fontWeight: WEIGHT.emphasis }}>
         {clockLabel(deal, run.t)}
       </div>
-      <div className="tnum" data-beaten={beaten} style={{ fontSize: SIZE.rank, fontWeight: WEIGHT.heading, color: beaten >= 5 && monkeysIn ? GREEN : INK }}>
+      <div
+        className="tnum"
+        data-beaten={beaten}
+        style={{
+          fontSize: SIZE.rank, fontWeight: WEIGHT.heading, lineHeight: `${HEADER_H}px`,
+          color: beaten >= 5 && monkeysIn ? GREEN : INK,
+        }}
+      >
         {beatenLine(beaten)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-        <span className="tnum" data-worth={worth.toFixed(4)} style={{ fontSize: 18, fontWeight: 600 }}>
+        <span className="tnum" data-worth={worth.toFixed(4)} style={{ fontSize: 18, fontWeight: WEIGHT.emphasis }}>
           {`worth ${money(worth)}`}
         </span>
         <span className="tnum" data-cash={cashDrawn.toFixed(4)} style={{ fontSize: 18, color: MUTED }}>
@@ -797,82 +876,108 @@ export default function Monkey() {
 
   // ------------------------------------------------------------- trade row
 
+  // Every button in the row is one size, so they share one height and one
+  // baseline; Start is the same button, wider, because it is the one that ends
+  // the round open rather than a seventh trade.
   const tradeRow = (
-    <div style={{ height: TRADE_H, display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
+    <div
+      style={{
+        height: CONTROL_H, display: "flex", alignItems: "center", gap: 10, flex: "none",
+      }}
+    >
       <Button action="buy1" tone="green" disabled={!tradesLive || !focus || !canBuy(1)} onClick={() => trade((r) => buy(r, focus, price))}>Buy 1</Button>
       <Button action="buy5" tone="green" disabled={!tradesLive || !focus || !canBuy(5)} onClick={() => trade((r) => buy(r, focus, price * 5))}>Buy 5</Button>
       <Button action="buymax" tone="green" disabled={!tradesLive || !focus || !canBuy()} onClick={() => trade((r) => buy(r, focus))}>Buy max</Button>
-      <div style={{ width: 16 }} />
+      <div style={{ width: 20 }} />
       <Button action="sell1" tone="red" disabled={!tradesLive || !focus || held < 1} onClick={() => trade((r) => sell(r, focus, 1))}>Sell 1</Button>
       <Button action="sell5" tone="red" disabled={!tradesLive || !focus || held < 1} onClick={() => trade((r) => sell(r, focus, 5))}>Sell 5</Button>
       <Button action="sellall" tone="red" disabled={!tradesLive || !focus || held < 1} onClick={() => trade((r) => sell(r, focus))}>Sell all</Button>
-      <div style={{ flex: 1 }} />
-      <span data-trade-note style={{ fontSize: 16, color: MUTED }}>
+      <div style={{ flex: 1, minWidth: 16 }} />
+      <span
+        data-trade-note
+        style={{ fontSize: SIZE.body, color: MUTED, overflow: "hidden", textOverflow: "ellipsis" }}
+      >
         {focus
           ? `${companyName(focus)} ${dead ? "went to zero" : `now $${price.toFixed(2)}`}`
           : PICK_HINT}
       </span>
+      {phase === "open" && (
+        <Button action="start" tone="sky" disabled={!throwDone} onClick={start} style={{ minWidth: 132 }}>
+          Start
+        </Button>
+      )}
     </div>
   );
-
-  const desk = run ? (
-    <Desk
-      columns={columns}
-      scale={scaleRef.current}
-      height={deskH}
-      focus={focus}
-      onFocus={focusOn}
-      settling={settle !== null}
-      phone={false}
-      pour={pour}
-    />
-  ) : null;
 
   // -------------------------------------------------------------- open phase
 
   const openScreen = run && deal ? (
-    <div style={{ padding: PAGE_PAD, display: "flex", flexDirection: "column", gap: GAP, height: "100vh" }}>
+    <div
+      style={{
+        height: "100vh", padding: GUTTER, display: "flex", flexDirection: "column", gap: GAP,
+        boxSizing: "border-box",
+      }}
+    >
       {header}
-      {/* the troop, over the board it is about to throw at; it carries the
-          guide's bubble, so the open screen reserves no room for one */}
-      <Troop
-        darts={dartList}
-        thrown={thrown}
-        count={MONKEYS}
-        guideIndex={deal.guideIndex}
-        guideLine={guideLine}
-        ties={TIES}
-        width={viewW - PAGE_PAD * 2}
-        height={TROOP_HEIGHT}
-      />
-      <div style={{ flex: 1, display: "flex", gap: GAP, minHeight: 0 }}>
-        <Card ref={boardBox} style={{ flex: "1 1 0", minWidth: 0, minHeight: 0, padding: 16, overflow: "hidden" }}>
-          <Board
-            mode={deal.target === "calendar" ? "calendar" : "board"}
-            form="open"
-            tickers={deal.tickers}
-            names={deal.tickers.map(companyName)}
-            openPrices={openPrices}
-            months={deal.months.length}
+      <div style={{ height: openStageH, display: "flex", gap: GAP, flex: "none" }}>
+        {/* the troop and the board it is about to throw at, one scene in one
+            panel: the monkeys stand across the top of it and the dial fills
+            everything under them */}
+        <Card
+          style={{
+            flex: "1 1 0", minWidth: 0, padding: PAD, display: "flex", flexDirection: "column",
+            gap: GAP, overflow: "hidden", boxSizing: "border-box",
+          }}
+        >
+          <Troop
             darts={dartList}
             thrown={thrown}
-            onDartLanded={(i, of) => dartThock(i, of)}
-            onThrowDone={() => setThrowDone(true)}
-            chips={chips}
-            dead={deadNow}
+            count={MONKEYS}
+            guideIndex={deal.guideIndex}
+            guideLine={guideLine}
+            ties={TIES}
+            width={Math.max(240, stageW - openRightW - GAP - PAD * 2)}
+            height={troopH}
+          />
+          <div ref={boardBox} style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <Board
+              mode={deal.target === "calendar" ? "calendar" : "board"}
+              form="open"
+              tickers={deal.tickers}
+              names={deal.tickers.map(companyName)}
+              openPrices={openPrices}
+              months={deal.months.length}
+              darts={dartList}
+              thrown={thrown}
+              onDartLanded={(i, of) => dartThock(i, of)}
+              onThrowDone={() => setThrowDone(true)}
+              chips={chips}
+              dead={deadNow}
+              focus={focus}
+              onFocus={focusOn}
+              width={boardSize.w}
+              height={boardSize.h}
+            />
+          </div>
+        </Card>
+        {/* the desk takes the right column at full height, so the thousand you
+            start with is a stack you can count rather than a chip in a corner */}
+        <div style={{ flex: `0 0 ${openRightW}px`, width: openRightW, minHeight: 0 }}>
+          <Desk
+            columns={columns}
+            scale={scaleRef.current}
+            height={openStageH - PAD * 2}
             focus={focus}
             onFocus={focusOn}
-            width={boardSize.w}
-            height={boardSize.h}
+            settling={settle !== null}
+            phone={false}
+            pour={pour}
+            band={openRightW - PAD * 2}
           />
-        </Card>
-        <div style={{ flex: "0 0 380px", width: 380, display: "flex", flexDirection: "column", gap: GAP, minHeight: 0 }}>
-          {desk}
         </div>
       </div>
-      <Card style={{ padding: "4px 14px", display: "flex", alignItems: "center", gap: 14, flex: "none" }}>
+      <Card style={{ padding: PAD, flex: "none" }}>
         {tradeRow}
-        <Button action="start" tone="sky" size="lg" disabled={!throwDone} onClick={start}>Start</Button>
       </Card>
     </div>
   ) : null;
@@ -880,11 +985,16 @@ export default function Monkey() {
   // -------------------------------------------------------------- play phase
 
   const playScreen = run && deal && liveRank ? (
-    <div style={{ padding: PAGE_PAD, display: "flex", flexDirection: "column", gap: GAP, height: "100vh" }}>
+    <div
+      style={{
+        height: "100vh", padding: GUTTER, display: "flex", flexDirection: "column", gap: GAP,
+        boxSizing: "border-box",
+      }}
+    >
       {header}
       <div style={{ height: topH, display: "flex", gap: GAP, flex: "none" }}>
-        <div style={{ width: leftW, display: "flex", flexDirection: "column", gap: COL_GAP, minWidth: 0 }}>
-          <Card style={{ height: stripBandH, padding: STRIP_PAD, paddingTop: STRIP_PAD + STRIP_GUIDE_ROOM, flex: "none" }}>
+        <div style={{ width: leftW, display: "flex", flexDirection: "column", gap: GAP, minWidth: 0 }}>
+          <Card style={{ height: STRIP_BAND, padding: PAD, paddingTop: PAD + STRIP_GUIDE_ROOM, flex: "none", boxSizing: "border-box" }}>
             <Strip
               slots={liveRank.order.map((s) => ({ who: s.who, worth: s.worth }))}
               guideIndex={deal.guideIndex}
@@ -893,36 +1003,58 @@ export default function Monkey() {
               mood={null}
               playerInitial="Y"
               ties={TIES}
-              width={leftW - STRIP_PAD * 2}
+              width={leftW - PAD * 2}
               height={STRIP_HEIGHT}
             />
           </Card>
-          {desk}
-          {tradeRow}
+          {/* the desk band and the trade row are one panel, the way section 6
+              draws them: the buttons belong to the desk they act on */}
+          <Desk
+            columns={columns}
+            scale={scaleRef.current}
+            height={deskH}
+            focus={focus}
+            onFocus={focusOn}
+            settling={settle !== null}
+            phone={false}
+            pour={pour}
+            band={leftW - PAD * 2}
+            footer={tradeRow}
+          />
         </div>
-        <Board
-          mode={deal.target === "calendar" ? "calendar" : "board"}
-          form="rail"
-          tickers={deal.tickers}
-          names={deal.tickers.map(companyName)}
-          openPrices={openPrices}
-          months={deal.months.length}
-          darts={dartList}
-          thrown
-          instant
-          chips={chips}
-          dead={deadNow}
-          focus={focus}
-          onFocus={focusOn}
-          width={RAIL_WIDTH}
-          height={topH}
-        />
+        <div
+          style={{
+            width: RAIL_WIDTH, flex: "none", background: PANEL, borderRadius: RADIUS,
+            height: topH, overflow: "hidden",
+          }}
+        >
+          <Board
+            mode={deal.target === "calendar" ? "calendar" : "board"}
+            form="rail"
+            tickers={deal.tickers}
+            names={deal.tickers.map(companyName)}
+            openPrices={openPrices}
+            months={deal.months.length}
+            darts={dartList}
+            thrown
+            instant
+            chips={chips}
+            dead={deadNow}
+            focus={focus}
+            onFocus={focusOn}
+            width={RAIL_WIDTH}
+            height={topH}
+          />
+        </div>
       </div>
       <div
         ref={chartBox}
         data-chart="monkey"
         data-chart-labels="months"
-        style={{ height: chartH, flex: "none", background: PANEL, borderRadius: RADIUS, padding: 8, overflow: "hidden" }}
+        style={{
+          height: chartH, flex: "none", background: PANEL, borderRadius: RADIUS,
+          padding: PAD, overflow: "hidden", boxSizing: "border-box",
+        }}
       >
         {focus ? (
           <Chart
@@ -930,8 +1062,8 @@ export default function Monkey() {
             months={monthLabels}
             t={run.t}
             livePrice={price}
-            width={chartW - 16}
-            height={chartH - 16}
+            width={chartW - PAD * 2}
+            height={chartH - PAD * 2}
             trades={chartTrades}
             chip
             lineColor={INK}
@@ -940,8 +1072,8 @@ export default function Monkey() {
           />
         ) : (
           <div style={{
-            height: chartH - 16, display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16, color: MUTED,
+            height: chartH - PAD * 2, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: SIZE.body, color: MUTED,
           }}>
             {PICK_HINT}
           </div>
@@ -953,75 +1085,101 @@ export default function Monkey() {
   // -------------------------------------------------------------- the end
 
   const endScreen = run && deal && ending ? (
-    <div style={{ padding: PAGE_PAD, height: "100vh", display: "flex", flexDirection: "column", gap: GAP }}>
-      <div data-end-card style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "8px 24px" }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <div style={{ fontSize: SIZE.end, fontWeight: WEIGHT.heading, letterSpacing: "-0.02em" }}>{endLead(ending.beaten)}</div>
-          {mute}
+    <div
+      data-end-card
+      style={{
+        height: "100vh", padding: GUTTER, display: "flex", flexDirection: "column", gap: GAP,
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", justifyContent: "space-between", flex: "none" }}>
+        <div style={{ fontSize: SIZE.end, fontWeight: WEIGHT.heading, letterSpacing: "-0.02em", lineHeight: `${HEADER_H}px` }}>
+          {endLead(ending.beaten)}
         </div>
+        {mute}
+      </div>
 
-        <Card style={{ padding: 6 }}>
-          <Strip
-            slots={ending.order.map((s) => ({ who: s.who, worth: s.worth }))}
-            guideIndex={deal.guideIndex}
-            guideLine={null}
-            settled
-            mood={ending.neverInvested ? null : ending.win ? "cheer" : "slump"}
-            playerInitial="Y"
-            ties={TIES}
-            width={Math.min(1200, viewW - 100)}
-            height={SETTLED_HEIGHT}
-          />
+      <Card style={{ padding: PAD, flex: "none", boxSizing: "border-box" }}>
+        <Strip
+          slots={ending.order.map((s) => ({ who: s.who, worth: s.worth }))}
+          guideIndex={deal.guideIndex}
+          guideLine={null}
+          settled
+          mood={ending.neverInvested ? null : ending.win ? "cheer" : "slump"}
+          playerInitial="Y"
+          ties={TIES}
+          width={stageW - PAD * 2}
+          height={endStripH}
+        />
+      </Card>
+
+      <div style={{ height: endBodyH, display: "flex", gap: GAP, flex: "none" }}>
+        {/* what the round came to, in order, largest first (section 7) */}
+        <Card
+          style={{
+            width: endColW, flex: "none", padding: PAD, display: "flex", flexDirection: "column",
+            gap: 10, overflowY: "auto", boxSizing: "border-box",
+          }}
+        >
+          <div className="tnum" style={{ fontSize: SIZE.rank, fontWeight: WEIGHT.heading, lineHeight: "34px" }}>
+            {youLine(ending.finalWorth)}
+          </div>
+          {/* the two baskets and the round's own numbers, one block, so the
+              card reads as three things and not as nine loose lines */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: SIZE.body, lineHeight: "24px" }}>{ending.bestLine}</div>
+            <div style={{ fontSize: SIZE.body, lineHeight: "24px" }}>{ending.worstLine}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 24px", fontSize: 14, color: MUTED, lineHeight: "22px" }}>
+              <span className="tnum">{`${ending.trades} ${plural(ending.trades, "trade", "trades")} made.`}</span>
+              <span className="tnum">{`${ending.held} of ${deal.months.length} months in the market.`}</span>
+              <span className="tnum">{`Biggest single decision: ${money(ending.biggest)}.`}</span>
+            </div>
+            <div style={{ fontSize: 14, color: MUTED, lineHeight: "22px" }}>{indexLine(ending.index)}</div>
+            {deal.dead.map((t) => (
+              <div key={t} style={{ fontSize: 14, color: MUTED, lineHeight: "22px" }}>{deadLine(t)}</div>
+            ))}
+          </div>
+          <Guide line={guideLine} width={endColW - PAD * 2} persist />
+          {/* the buttons stand at the foot of the card the round is summed up
+              in, rather than in a row of their own under two panels that then
+              had to be spread out to reach them */}
+          <div style={{ flex: 1, minHeight: GAP }} />
+          <div style={{ height: CONTROL_H, display: "flex", gap: GAP, alignItems: "center", flex: "none" }}>
+            <Button action="again" tone="green" onClick={() => dealPinned(deal.level, randomSeed())}>Play again</Button>
+            {deal.level < 3 && isUnlocked((deal.level + 1) as LevelId) && (
+              <Button action="next" tone="sky" onClick={() => dealPinned((deal.level + 1) as LevelId, randomSeed())}>Next level</Button>
+            )}
+            <Button action="levels" tone="grey" onClick={goLevels}>Levels</Button>
+          </div>
         </Card>
 
-        <div className="tnum" style={{ fontSize: SIZE.rank, fontWeight: WEIGHT.heading }}>{youLine(ending.finalWorth)}</div>
-
-        <div style={{ fontSize: SIZE.body }}>{ending.bestLine}</div>
-        <div style={{ fontSize: SIZE.body }}>{ending.worstLine}</div>
-
-        <div style={{ display: "flex", gap: 28, fontSize: SIZE.small, color: MUTED }}>
-          <span className="tnum">{`${ending.trades} ${plural(ending.trades, "trade", "trades")} made.`}</span>
-          <span className="tnum">{`${ending.held} of ${deal.months.length} months in the market.`}</span>
-          <span className="tnum">{`Biggest single decision: ${money(ending.biggest)}.`}</span>
-        </div>
-
-        <div style={{ fontSize: SIZE.small, color: MUTED }}>{indexLine(ending.index)}</div>
-
-        <div data-era-reveal style={{ fontSize: SIZE.lead, fontWeight: WEIGHT.emphasis }}>{eraRevealText(deal)}</div>
-
-        <div
-          data-chart="monkey"
-          data-chart-labels="years"
-          style={{ height: END_CHART_H, background: PANEL, borderRadius: RADIUS, padding: 8, flex: "none" }}
+        {/* and what it was: the era named, with the chart redrawn on real years */}
+        <Card
+          style={{
+            width: endColW, flex: "none", padding: PAD, display: "flex", flexDirection: "column",
+            gap: GAP, boxSizing: "border-box",
+          }}
         >
-          <Chart
-            series={endSeries}
-            months={deal.months}
-            t={lastIndex(run)}
-            width={Math.min(1200, viewW - 100)}
-            height={END_CHART_H - 16}
-            trades={endTrades}
-            chip={false}
-            lineColor={INK}
-            textColor={MUTED}
-            gridColor="rgba(60,60,60,0.14)"
-          />
-        </div>
-
-        {deal.dead.map((t) => (
-          <div key={t} style={{ fontSize: SIZE.small, color: MUTED }}>{deadLine(t)}</div>
-        ))}
-
-        <Guide line={guideLine} width={640} persist />
+          <div data-era-reveal style={{ fontSize: SIZE.lead, fontWeight: WEIGHT.emphasis, lineHeight: "30px" }}>
+            {eraRevealText(deal)}
+          </div>
+          <div data-chart="monkey" data-chart-labels="years" style={{ flex: 1, minHeight: 0 }}>
+            <Chart
+              series={endSeries}
+              months={deal.months}
+              t={lastIndex(run)}
+              width={endColW - PAD * 2}
+              height={endChartH}
+              trades={endTrades}
+              chip={false}
+              lineColor={INK}
+              textColor={MUTED}
+              gridColor="rgba(60,60,60,0.14)"
+            />
+          </div>
+        </Card>
       </div>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "0 24px 8px", flex: "none" }}>
-        <Button action="again" tone="green" size="lg" onClick={() => dealPinned(deal.level, randomSeed())}>Play again</Button>
-        {deal.level < 3 && isUnlocked((deal.level + 1) as LevelId) && (
-          <Button action="next" tone="sky" size="lg" onClick={() => dealPinned((deal.level + 1) as LevelId, randomSeed())}>Next level</Button>
-        )}
-        <Button action="levels" tone="grey" size="lg" onClick={goLevels}>Levels</Button>
-      </div>
     </div>
   ) : null;
 
