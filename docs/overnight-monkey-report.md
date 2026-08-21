@@ -13,6 +13,23 @@ and the live link. Written as the run goes.
   carries seven, gfc nine, inflation five, crypto six. The spec's "only the
   dot-com file has ten" holds. "The 2020s" is eraCovid.json (2019-01 to
   2024-12); "the crash" is eraGfc.json.
+- Rules gate green first (round.ts and monkeySim, A to E and G plus a tie
+  check R), art reviewed and promoted on batch 3 in parallel, then a stage
+  team (Board, Strip, Guide, Troop, a forked Desk, look, sound) and a page
+  team (Monkey.tsx, route, landing card, cleancheck route) built against a
+  published props contract in docs/monkey-handoff.md.
+- Walk tools/monkeycheck.mjs at 1440x950 on seeds 7 and 23, fourteen checks.
+- Two blind playtests and two spec verifiers ran; fix rounds closed the
+  strip overlap, the rank tie on float dust, the end card guide line, the
+  rail dart smear, the confetti, the rank line size.
+- House bar ran three times: HOLD (the dealt windows could not carry the
+  lessons, plus stage and sound notes), HOLD (level 3's ten-wedge windows
+  were all deep bust windows so cash won), SHIP (nine-wedge level 3 on
+  windows where cash cannot win; see the decision section).
+- Deployed on green: typecheck, build, tapeSim, monkeySim, cleancheck with
+  /monkey in ROUTES, monkeycheck, triggercheck and floorcheck (run one at a
+  time, both still clean). Sibling files unchanged since d00f5d6.
+- Desktop only, 1440x950, per the spec; phone was not walked.
 
 ## Judgment calls
 
@@ -982,4 +999,29 @@ generator is `tools/gen_monkeys_gpt.py`.
 
 ## Acceptance checklist
 
+Every acceptance test in docs/monkey-spec.md section 14 maps to a named
+check in tools/monkeycheck.mjs (1440x950, seeds 7 and 23) or an assertion in
+tools/monkeySim.ts. All pass at deploy.
+
+| Test | Proven by |
+| --- | --- |
+| A | monkeySim plus A_seed_pins_dom |
+| B | monkeySim (1500 monkeys over 50 seeds a level, 9000 worth samples to the cent) |
+| C | monkeySim plus C_level1_calendar |
+| D | monkeySim (low seller behind all ten on every seed, both eras) |
+| E | monkeySim plus E_dead_company_line |
+| F | F_strip_order |
+| G | monkeySim plus G_unlock_persists |
+| H | H_desk_rules |
+| I | I_chart_third_rail |
+| J | J_no_year_in_play |
+| K | K_guide_four |
+| L | L_sound |
+| M | the art review above, an eye and not an assertion |
+| N | N_type_contract plus cleancheck on the route |
+| extra | R (rank ties to the cent) in monkeySim, T_open_troop in the walk |
+
 ## Live link
+
+- Monkey Trade: https://marlonedwards.github.io/share-garden-prototypes/#/monkey
+- Pinned rounds for review: ?level=1&seed=23, ?level=2&seed=7, ?level=3&seed=7
