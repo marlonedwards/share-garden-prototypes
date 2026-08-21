@@ -698,7 +698,7 @@ export default function Monkey() {
       <div className="tnum" data-clock={Math.floor(run.t)} style={{ fontSize: 18, fontWeight: 600 }}>
         {clockLabel(deal, run.t)}
       </div>
-      <div className="tnum" data-beaten={beaten} style={{ fontSize: 18, fontWeight: 600, color: beaten >= 5 ? GREEN : INK }}>
+      <div className="tnum" data-beaten={beaten} style={{ fontSize: SIZE.rank, fontWeight: WEIGHT.heading, color: beaten >= 5 ? GREEN : INK }}>
         {beatenLine(beaten)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>

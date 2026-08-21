@@ -335,6 +335,15 @@ and the live link. Written as the run goes.
 - **Live rank, the strip's order and the header's count all come from one
   `rankAt` call** per commit, so acceptance test F cannot fail one and pass the
   other.
+- **Buy ticks are capped at twelve per buy.** Buy max on a cheap stock would
+  otherwise tick for many seconds, so `runTicks` clamps the run to
+  `MAX_TICKS` regardless of shares bought.
+- **The header's rank line rendered at 18px instead of section 9's 28px.**
+  `[data-beaten]` now reads `SIZE.rank` at `WEIGHT.heading`, still tabular and
+  still green at five or more beaten. The header row's height did not need to
+  change: 28px text fits inside the existing 44px `HEADER_H`, so `topH` and the
+  strip's 64px guide headroom are untouched and the chart stays exactly the
+  bottom third.
 
 ## Known debts
 
