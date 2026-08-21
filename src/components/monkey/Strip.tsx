@@ -33,6 +33,7 @@ import { UI_FONT } from "../../lib/type";
 import {
   EASE, GOLD, GREEN, INK, MOVE_MS, MUTED, RED, SKY, SIZE, SPRITE_PX,
   TIE_BLADE, TIE_KNOT, WEIGHT, reducedMotion, tieAnchor, tint,
+  art,
 } from "../../lib/monkey/look";
 
 const REACT_MS = 900;
@@ -221,7 +222,7 @@ export function Face({ pose, size, tie }: { pose: Pose; size: number; tie?: stri
   return (
     <div style={{ position: "relative", width: size, height: size, flex: "0 0 auto" }}>
       <img
-        src={`/monkey/monkey-${pose}.png`}
+        src={art(`monkey-${pose}.png`)}
         alt=""
         draggable={false}
         style={{ width: size, height: size, display: "block", objectFit: "contain" }}
@@ -394,7 +395,7 @@ export default function Strip({
             data-slot-who={k}
             data-slot-worth={slot.worth}
             data-slot-rank={i}
-            title={you ? "You" : `Monkey ${slot.who}`}
+            aria-label={you ? "You" : `Monkey ${slot.who}`}
             style={{
               position: "absolute",
               top: 0,

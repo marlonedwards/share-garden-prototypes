@@ -818,6 +818,20 @@ in git at commit aafac8c if the whole board is ever wanted back.
 **Level 3 is no longer proposed for locking.** It ships in the ladder with the
 other two, and `?level=3&seed=` still opens any round directly for evaluation.
 
+## Morning fix, August 21
+
+Marlon's first look at the live site showed broken image icons where the
+monkeys and darts should be. The art was referenced as an absolute
+`/monkey/...` path, which works on localhost and breaks under the Pages
+sub path `/share-garden-prototypes/`. Every reference now goes through
+`art()` in src/lib/monkey/look.ts, built on `import.meta.env.BASE_URL` the
+same way src/lib/sprites.ts does; verified by serving the built dist under
+a sub path with Playwright (0 of 10 faces broken, 30 darts resolved). The
+native title tooltips on strip and troop slots, which drew a black "You"
+box over the clock on hover, became aria-labels. Debt added: the walk runs
+against the dev server at the root, so it cannot catch sub path asset bugs;
+a preview walk against the built dist under the deploy base would.
+
 ## Known debts
 
 - The guide's end line is keyed to the rank outcome, per spec section 8, so

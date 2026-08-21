@@ -19,6 +19,7 @@ import type { BoardProps } from "./props";
 import { UI_FONT } from "../../lib/type";
 import {
   EASE, INK, MOVE_MS, MUTED, PANEL, SKY, SIZE, WEIGHT, reducedMotion, tint,
+  art,
 } from "../../lib/monkey/look";
 
 // The throw beat is two seconds for the whole troop, whatever the troop is
@@ -695,7 +696,7 @@ export default function Board(props: BoardProps) {
                 }}
               >
                 <image
-                  href="/monkey/dart-pinned.png"
+                  href={art("dart-pinned.png")}
                   width={px}
                   height={px}
                   x={-px * TIP_X}

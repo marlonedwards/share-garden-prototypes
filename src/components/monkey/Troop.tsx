@@ -112,7 +112,7 @@ export default function Troop({
             key={index}
             data-troop-monkey={index}
             data-troop-pose={pose}
-            title={`Monkey ${index}`}
+            aria-label={`Monkey ${index}`}
             style={{
               position: "absolute",
               left: k * step + (step - size) / 2,

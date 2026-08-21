@@ -11,6 +11,13 @@
 
 // ------------------------------------------------------------- the palette
 
+// generated art lives in public/monkey/; the site deploys under a sub path, so
+// every reference goes through the build base, the same way src/lib/sprites.ts does
+export const ART_BASE = `${import.meta.env.BASE_URL}monkey/`;
+export function art(file: string): string {
+  return `${ART_BASE}${file}`;
+}
+
 export const GROUND = "#FFFBF2";   // warm white, the stage
 export const GREEN = "#58CC02";    // up, and your wins
 export const RED = "#FF4B4B";      // down
