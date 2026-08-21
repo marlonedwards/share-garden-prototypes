@@ -25,7 +25,7 @@ import {
   Deal, LEVELS, LEVEL_IDS, LevelId, MONKEYS,
   beatenLine, bestFor, bestMonkey, clockLabel, companyName, deadLine,
   dealFromParams, dealRound, endLead, eraRevealText, indexLine, indexWorth,
-  isUnlocked, levelLocked, monkeyFinalWorth, monkeyLine, newPlayerRun,
+  isUnlocked, levelCard, levelLocked, monkeyFinalWorth, monkeyLine, newPlayerRun,
   randomSeed, rankAt, recordRound, worstMonkey, youLine,
 } from "../lib/monkey/round";
 import { UI_FONT } from "../lib/type";
@@ -72,6 +72,10 @@ const STRIP_PAD = 12;
 const TRADE_H = 52;
 const DESK_PAD = 8;
 const COL_GAP = 10;
+// The end card's revealed chart. Tightened from 208 so the card's own rhythm
+// (the strip, the lines, the stats, two death lines and the persisted guide)
+// fits inside a 1440x950 window above the button footer without a scroll.
+const END_CHART_H = 180;
 
 function readNumber(params: URLSearchParams, key: string, fallback: number): number {
   const raw = params.get(key);
@@ -337,7 +341,9 @@ export default function Monkey() {
 
   useEffect(() => {
     if (!throwDone || !deal || phase !== "open") return;
-    speak("open", lineFor(deal.level, "open"));
+    // the open line counts the board this round was dealt, which is nine
+    // wedges on level 3 and not the ten section 3's prose assumed
+    speak("open", lineFor(deal.level, "open", deal.tickers.length));
   }, [throwDone, deal, phase, speak]);
 
   // ----------------------------------------------------------------- the tape
@@ -503,12 +509,18 @@ export default function Monkey() {
       const scoped: RunState = { ...run, trades: run.trades.filter((tr) => tr.ticker === t) };
       for (const dec of decisionsOf(scoped, t)) biggest = Math.max(biggest, Math.abs(dec.delta));
     }
-    const held = Math.round(monthsHolding(run));
+    const heldMonths = monthsHolding(run);
+    const held = Math.round(heldMonths);
     return {
       finalWorth,
       beaten: ranked.beaten,
       order: ranked.order,
       win: ranked.beaten >= 5,
+      // A rank earned on bust windows alone, with no share ever held, is not
+      // a win worth celebrating: the guide's line stays (rank-keyed, per
+      // spec) but the troop's cheer, its confetti and its slump both need a
+      // player who actually stood in the market at some point.
+      neverInvested: heldMonths === 0,
       best, worst,
       bestLine: monkeyLine(deal, best, monkeyFinalWorth(deal, best)),
       worstLine: monkeyLine(deal, worst, monkeyFinalWorth(deal, worst)),
@@ -726,7 +738,7 @@ export default function Monkey() {
           const best = bestFor(id);
           return (
             <Card key={`${id}-${saveTick}`} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{LEVELS[id].card}</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{levelCard(id)}</div>
               <div style={{ fontSize: 14, color: MUTED, minHeight: 38 }}>
                 {open ? `${LEVELS[id].proves}.` : levelLocked()}
               </div>
@@ -942,19 +954,19 @@ export default function Monkey() {
 
   const endScreen = run && deal && ending ? (
     <div style={{ padding: PAGE_PAD, height: "100vh", display: "flex", flexDirection: "column", gap: GAP }}>
-      <div data-end-card style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: "8px 24px" }}>
+      <div data-end-card style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "8px 24px" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <div style={{ fontSize: SIZE.end, fontWeight: WEIGHT.heading, letterSpacing: "-0.02em" }}>{endLead(ending.beaten)}</div>
           {mute}
         </div>
 
-        <Card style={{ padding: 10 }}>
+        <Card style={{ padding: 6 }}>
           <Strip
             slots={ending.order.map((s) => ({ who: s.who, worth: s.worth }))}
             guideIndex={deal.guideIndex}
             guideLine={null}
             settled
-            mood={ending.win ? "cheer" : "slump"}
+            mood={ending.neverInvested ? null : ending.win ? "cheer" : "slump"}
             playerInitial="Y"
             ties={TIES}
             width={Math.min(1200, viewW - 100)}
@@ -980,14 +992,14 @@ export default function Monkey() {
         <div
           data-chart="monkey"
           data-chart-labels="years"
-          style={{ height: 208, background: PANEL, borderRadius: RADIUS, padding: 8, flex: "none" }}
+          style={{ height: END_CHART_H, background: PANEL, borderRadius: RADIUS, padding: 8, flex: "none" }}
         >
           <Chart
             series={endSeries}
             months={deal.months}
             t={lastIndex(run)}
             width={Math.min(1200, viewW - 100)}
-            height={192}
+            height={END_CHART_H - 16}
             trades={endTrades}
             chip={false}
             lineColor={INK}

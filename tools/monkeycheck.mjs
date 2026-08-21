@@ -74,10 +74,11 @@ const WIDE = { width: 1440, height: 950 };
 const PIN = 7;
 const ALT = 23;
 const MONKEYS = 10;
-// The wedges level 3 lays out. Level 1 is one stock on a calendar and level 2's
-// count comes off the fixture; only the top level's ten are a fixed number in
-// the spec, so only that one is written down here.
-const BOARD_WEDGES = 10;
+// Every level's wedge count comes off the fixture now, level 3's included. The
+// board is whatever companies the window leaves alive, which is nine on the
+// dot-com file rather than the ten section 3's prose assumes, so a number
+// written down here would be a second source of truth that goes stale the
+// first time the window rules move.
 const DARTS = { 1: 1, 2: 2, 3: 3 };
 const LEVELS = [1, 2, 3];
 // The era names section 2 forbids on screen until the end card, lowercased.
@@ -389,8 +390,9 @@ async function A_seed_pins_dom(page) {
     if (first === null) { fails.push(`level ${level} drew no board`); continue; }
 
     // the untouched open, read before anything is tapped
-    if (level === 3 && first.wedges.length !== BOARD_WEDGES) {
-      fails.push(`level 3 laid out ${first.wedges.length} wedges, section 5 asks for ${BOARD_WEDGES}`);
+    const dealtWedges = deal.tickers.length;
+    if (level === 3 && first.wedges.length !== dealtWedges) {
+      fails.push(`level 3 laid out ${first.wedges.length} wedges, the sim deals ${dealtWedges}`);
     }
     const untouched = await tradeButtons(page);
     const buysOf = (bs) => bs.filter((b) => b.action.startsWith("buy"));
@@ -865,6 +867,16 @@ async function K_guide_four(page) {
   for (const level of LEVELS) {
     await openRound(page, level, PIN, 14);
     const opened = await count(page);
+    // the first of the four is the open line, and on level 3 it counts the
+    // board: the walk holds it against the content file's own output rather
+    // than against a sentence copied into this file
+    const openSaid = await page.evaluate(() => {
+      const el = document.querySelector("[data-guide-line]");
+      return el ? el.getAttribute("data-guide-line") : null;
+    });
+    if (openSaid !== null && openSaid !== dealOf(level).openLine) {
+      fails.push(`L${level} opened with "${openSaid}", the content file asks for "${dealOf(level).openLine}"`);
+    }
     if (opened < 1) fails.push(`L${level} spoke ${opened} lines by the time the darts had landed`);
     if (opened > 4) fails.push(`L${level} spoke ${opened} lines before the tape even started`);
     await page.click('[data-action="buymax"]');
@@ -1153,6 +1165,16 @@ async function T_open_troop(page) {
     ));
     if (!spoke) fails.push(`L${level} put no guide line on screen once the darts were down`);
     if (!(said >= 1)) fails.push(`L${level} counted ${said} guide lines by the end of the throw`);
+    // and it is the line the content file writes for the board this round was
+    // dealt, counted rather than copied: level 3's open line names its wedges
+    const openLine = await page.evaluate(() => {
+      const el = document.querySelector("[data-guide-line]");
+      return el ? el.getAttribute("data-guide-line") : null;
+    });
+    const wantOpen = dealOf(level).openLine;
+    if (spoke && openLine !== wantOpen) {
+      fails.push(`L${level} opened with "${openLine}", the content file asks for "${wantOpen}"`);
+    }
     notes.push(`L${level} ${troop.count} monkeys, ${said} line${said === 1 ? "" : "s"}`);
   }
   return { fails, note: notes.join(", ") };

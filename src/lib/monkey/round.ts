@@ -88,6 +88,10 @@ export const LEVELS: Record<LevelId, LevelSpec> = {
   3: {
     id: 3, stocks: "all", eras: ["dotcom"], windowMonths: 36, speed: 0.6, darts: 3,
     target: "board", seconds: ROUND_SECONDS,
+    // superseded by levelCard(), which counts the board the window deals.
+    // Section 12's copy table writes "Ten stocks" here; the dealt board is
+    // nine, and a card that promises a tenth wedge nobody can see is worse
+    // than a card that counts.
     card: "Level 3. Ten stocks.",
     proves: "Spreading beats picking",
   },
@@ -281,18 +285,152 @@ function windowStarts(era: EraId, months: number): number[] {
   return out;
 }
 
-// Level 3's windows: the ones where every company on the file is still alive
-// at the open, so the board is always the whole ten wedges section 3 promises
-// and the card can say "Ten stocks" without lying. It is computed from the
-// data, never a hardcoded month: the latest start is the one before the first
-// company dies, which on the dot-com file is eToys in April 2001, so the
-// windows run from January 2000 to March 2001. Every one of them therefore
-// carries the bust itself, which is what makes the end card's "that was the
-// dot-com bust" true of every seed, and every one of them carries both deaths,
-// which is the level's lesson.
-function fullBoardStarts(era: EraId, months: number): number[] {
-  const board = eraTickers(era);
-  return windowStarts(era, months).filter((s) => board.every((t) => isOpenable(era, t, s)));
+// The board a window opens on: every company still alive at that month, in the
+// file's order. Section 3's rule, exactly as written, so a company already at
+// zero when the window opens is not a wedge.
+export function boardAt(era: EraId, startIndex: number): Ticker[] {
+  return eraTickers(era).filter((t) => isOpenable(era, t, startIndex));
+}
+
+// The month the era's index fell hardest, over the whole file rather than
+// inside a window. On the dot-com file that is September 2002, the bottom of
+// the bust, which is the month level 3's windows have to reach for the end
+// card's "that was the dot-com bust" to be true of every seed.
+export function worstIndexMonth(era: EraId): number {
+  const values = seriesOf(era, INDEX_TICKER);
+  let worst = Infinity;
+  let at = 0;
+  for (let i = 0; i + 1 < values.length; i++) {
+    if (!(values[i] > 0)) continue;
+    const step = values[i + 1] / values[i];
+    if (step < worst) {
+      worst = step;
+      at = i + 1;
+    }
+  }
+  return at;
+}
+
+// ------------------------------------------------ level 3's measured windows
+//
+// Levels 1 and 2 keep a rule that makes the window carry the level's lesson.
+// Level 3's lesson is "spreading beats picking", and it needs a third clause
+// that neither of the others does, because on level 3 the thing that can
+// disprove the lesson is not a wedge, it is the player's own untouched cash.
+//
+// Measured over the dot-com file: every window where all ten companies are
+// still alive is a 36 month slice of the fall itself, the index ends between
+// 0.59x and 1.03x, and a player who never touches the buttons beats a mean of
+// 3.8 to 9.9 monkeys and unlocks the level on 31 to 100 percent of troops. The
+// troop is a spread of a falling board, so cash beats it, and the level proves
+// the opposite of what its card says.
+//
+// So the third clause is measured rather than reasoned: a window is only dealt
+// if a cash-only player beats five or more monkeys on at most one troop in ten.
+// eToys is at zero from April 2001, so a window that passes has nine wedges
+// rather than ten, which section 3 licenses in the same breath as the board:
+// companies already at zero when the window opens are not on the board. The
+// count is carried by boardSizeOf() into the level card and the guide's line
+// instead of being written down anywhere.
+const AUDIT_TROOPS = 120;
+const CASH_UNLOCK_LIMIT = 0.1;
+const AUDIT_SALT = 0x9e3779b9;
+
+// One troop's worth of monkeys against an untouched thousand dollars: how many
+// of the ten a cash-only player finishes ahead of. The monkeys are built with
+// the same darts, the same equal split and the same whole-share rule the deal
+// uses, and read at the window's last month, so the audit measures the game
+// rather than a model of it.
+function cashBeatsIn(
+  prices: number[][], board: number, darts: number, rnd: () => number,
+): number {
+  const last = prices[0].length - 1;
+  let beaten = 0;
+  for (let m = 0; m < MONKEYS; m++) {
+    const allot = new Array<number>(board).fill(0);
+    const share = START_CASH / darts;
+    for (let d = 0; d < darts; d++) allot[pickIndex(rnd, board)] += share;
+    let cash = START_CASH;
+    let held = 0;
+    for (let w = 0; w < board; w++) {
+      if (allot[w] <= 0) continue;
+      const open = prices[w][0];
+      const shares = wholeShares(cash, open, allot[w]);
+      cash -= shares * open;
+      held += shares * prices[w][last];
+    }
+    if (Math.round((cash + held) * 100) < Math.round(START_CASH * 100)) beaten++;
+  }
+  return beaten;
+}
+
+// The share of troops a cash-only player unlocks the level against.
+export function cashUnlockRate(
+  era: EraId, startIndex: number, endIndex: number, darts: number, troops = AUDIT_TROOPS,
+): number {
+  const board = boardAt(era, startIndex);
+  const prices = board.map((t) => seriesOf(era, t).slice(startIndex, endIndex + 1));
+  let unlocked = 0;
+  for (let troop = 0; troop < troops; troop++) {
+    const rnd = mulberry32((((startIndex + 1) * AUDIT_SALT) ^ (troop + 1)) >>> 0);
+    if (cashBeatsIn(prices, board.length, darts, rnd) >= UNLOCK_AT) unlocked++;
+  }
+  return unlocked / troops;
+}
+
+// The audit is a few hundred thousand multiplications, which is nothing once
+// but wasteful on every deal, and it never changes for a given file. So it is
+// computed lazily on the first level 3 deal and memoised by era and window
+// width for the life of the page.
+const LESSON_STARTS = new Map<string, number[]>();
+
+export function lessonStarts(era: EraId, months: number, darts: number): number[] {
+  const key = `${era}:${months}:${darts}`;
+  const hit = LESSON_STARTS.get(key);
+  if (hit) return hit;
+  const worst = worstIndexMonth(era);
+  // the windows that show the bust and lay out a board at all
+  const covering = windowStarts(era, months).filter((s) =>
+    s <= worst && s + months - 1 >= worst && boardAt(era, s).length >= darts);
+  const carried = covering.filter((s) =>
+    cashUnlockRate(era, s, s + months - 1, darts) <= CASH_UNLOCK_LIMIT);
+  const out = carried.length > 0 ? carried : covering.length > 0 ? covering : windowStarts(era, months);
+  LESSON_STARTS.set(key, out);
+  return out;
+}
+
+// How many wedges a level lays out, for the copy that counts them. Levels 1
+// and 2 are fixed by the level table; level 3 is whatever its windows deal,
+// which is nine on the dot-com file and computed rather than written down.
+export function boardSizeOf(level: LevelId): number {
+  const spec = levelOf(level);
+  if (spec.stocks !== "all") return spec.stocks;
+  const era = spec.eras[0];
+  const starts = lessonStarts(era, spec.windowMonths, spec.darts);
+  return boardAt(era, starts[0]).length;
+}
+
+const COUNT_WORDS = [
+  "no", "one", "two", "three", "four", "five",
+  "six", "seven", "eight", "nine", "ten",
+];
+
+// "nine", for copy that counts a board.
+export function countWord(n: number): string {
+  return COUNT_WORDS[n] ?? String(n);
+}
+
+export function capitalize(word: string): string {
+  return word.length === 0 ? word : word[0].toUpperCase() + word.slice(1);
+}
+
+// The level card. Levels 1 and 2 read their line off the copy table; level 3
+// counts the board it deals, so the card cannot promise a wedge the window
+// does not have.
+export function levelCard(level: LevelId): string {
+  const spec = levelOf(level);
+  if (spec.stocks !== "all") return spec.card;
+  return `Level ${level}. ${capitalize(countWord(boardSizeOf(level)))} stocks.`;
 }
 
 // How many dollars each monkey aims at each ticker. Two darts on one wedge
@@ -372,11 +510,10 @@ export function dealRound(level: LevelId, seed: number): Deal {
     const pool = levelTwoPool(era, startIndex, endIndex);
     tickers = shuffled(rnd, pool).slice(0, Math.min(spec.stocks as number, pool.length));
   } else if (level === 3) {
-    const whole = fullBoardStarts(era, spec.windowMonths);
-    const starts = whole.length > 0 ? whole : windowStarts(era, spec.windowMonths);
+    const starts = lessonStarts(era, spec.windowMonths, spec.darts);
     startIndex = pick(rnd, starts);
     endIndex = startIndex + spec.windowMonths - 1;
-    tickers = eraTickers(era).filter((t) => isOpenable(era, t, startIndex));
+    tickers = boardAt(era, startIndex);
   } else {
     // the window and the stock are drawn together and redrawn together: a
     // window with nothing rising in it is thrown away whole rather than

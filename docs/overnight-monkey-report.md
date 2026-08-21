@@ -164,6 +164,80 @@ and the live link. Written as the run goes.
   of the 2020s windows at least one candidate, so no window is lost, and the
   richest monkey over 200 seeds falls from $39,489 to $6,468. The sim asserts
   the cap per seed alongside the rise.
+- **Level 3's windows were measured against the cash baseline and left
+  alone.** The second house bar found that a player who never trades beats most
+  of the troop on level 3, which disproves "Spreading beats picking" with an
+  empty desk. Measured over all fifteen full-board starts, 200 seeded troops
+  each, ten monkeys of three darts, cash-only against the troop and the median
+  monkey's final worth:
+
+  | window | index | cash beats five or more | mean beaten by cash | median monkey |
+  | --- | --- | --- | --- | --- |
+  | 2000-01 to 2002-12 | 0.66x | 100.0% | 9.87 | $487 |
+  | 2000-02 to 2003-01 | 0.65x | 100.0% | 9.56 | $535 |
+  | 2000-03 to 2003-02 | 0.59x | 100.0% | 9.61 | $482 |
+  | 2000-04 to 2003-03 | 0.61x | 100.0% | 9.55 | $556 |
+  | 2000-05 to 2003-04 | 0.67x | 100.0% | 9.69 | $592 |
+  | 2000-06 to 2003-05 | 0.69x | 100.0% | 9.76 | $586 |
+  | 2000-07 to 2003-06 | 0.71x | 100.0% | 9.46 | $620 |
+  | 2000-08 to 2003-07 | 0.68x | 100.0% | 9.65 | $613 |
+  | 2000-09 to 2003-08 | 0.73x | 100.0% | 9.18 | $695 |
+  | 2000-10 to 2003-09 | 0.73x | 100.0% | 8.79 | $720 |
+  | 2000-11 to 2003-10 | 0.84x | 92.5% | 6.67 | $862 |
+  | 2000-12 to 2003-11 | 0.84x | 73.0% | 5.47 | $949 |
+  | 2001-01 to 2003-12 | 0.85x | 89.0% | 6.41 | $912 |
+  | 2001-02 to 2004-01 | 0.96x | 34.5% | 3.99 | $1,049 |
+  | 2001-03 to 2004-02 | 1.03x | 31.5% | 3.83 | $1,128 |
+
+  The rule levels 1 and 2 carry cannot be written here. It would read "a
+  cash-only player beats fewer than five monkeys on at least ninety percent of
+  troops", which means a cash-unlock rate at or under ten percent, and **no
+  start comes near it**: the best is 31.5 percent, and the tightest threshold
+  that still leaves three starts is 73 percent, a level where cash unlocks three
+  troops out of four. So the windows are unchanged, all ten wedges and the bust
+  coverage stay, and no assertion was added. The FIXTURE is unchanged for the
+  same reason.
+- **Why no window can carry level 3's lesson as written.** Every window where
+  all ten dot-com companies are alive is a window where the market is under
+  water: the index ends between 0.59x and 1.03x, and only the very last start
+  clears one. The monkeys are spreads of a falling board, so cash beats them,
+  and the level as specced asks the player to lose to a spread in a bust. What
+  spreading actually does in these windows is cut ruin, not beat cash. Over
+  every three wedge basket and every single wedge in the file:
+
+  | window | median all-in | median spread | tenth percentile all-in | tenth percentile spread | all-in under $500 | spread under $500 |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 2000-01 to 2002-12 | $325 | $493 | $42 | $248 | 60% | 51% |
+  | 2000-07 to 2003-06 | $743 | $638 | $7 | $399 | 50% | 28% |
+  | 2001-03 to 2004-02 | $1,122 | $1,121 | $9 | $714 | 20% | 6% |
+
+  Spreading is worth two to eighty times as much at the tenth percentile and
+  ends under half the stake far less often, but its median is level with picking
+  and both sit under a thousand dollars. Against the troop it is no better: a
+  three wedge spread unlocks on 52.8 to 59.0 percent of troops and going all in
+  on one wedge unlocks on 37.1 to 65.5 percent, and at the two least sunk
+  windows all-in unlocks more often than spreading does. The honest fixes are
+  outside the rules team's file: score level 3 against the troop's own median
+  rather than against five of ten, or say the lesson as "spreading survives what
+  picking does not" and put ruin on the end card, or give the dot-com file more
+  months so a recovery window exists. Level 3 ships locked or as-is on the
+  coordinator's call.
+- **Level 3's windows are chosen by a measured rule, not a reasoned one.** The
+  first two clauses are the kind levels 1 and 2 carry: the board is every
+  company alive at the open per section 3, and the window has to cover the
+  file's worst index month, computed rather than written down, which is
+  September 2002. The third is measured, because what disproves level 3's lesson
+  is not a wedge but the player's untouched cash: a window is only dealt if a
+  cash-only player unlocks the level on at most one troop in ten, over 120
+  seeded troops built with the same darts, the same equal split and the same
+  whole-share rule the deal uses. Nine windows survive, July 2001 to September
+  2002, all of them nine wedges with WorldCom dying inside. The audit is lazy
+  and memoised by era and window width: 8ms on the first level 3 deal, nothing
+  after. `boardSizeOf()` carries the count into `levelCard()` and the guide's
+  open line, so no copy anywhere writes a wedge count down. Measured before and
+  after: the house bar found cash alone beating a mean of 7.88 monkeys and
+  unlocking 80 percent of seeds, and the sim now measures it beating a mean of
+  1.98 and unlocking 8 of 200 seeds, 4.0 percent. The sim's E asserts the whole of it end to end.
 - **The sim prints two re-pin tables.** Any change to the deal rules moves the
   rounds the walk's pinned seeds deal, so `tools/monkeySim.ts` now prints, above
   the check lines, what each of the first forty level 1 seeds deals and how the
@@ -615,6 +689,88 @@ and the live link. Written as the run goes.
   on a 1440x950 window. The end card is its own `overflow-y: auto` column, so
   the line is a scroll away rather than lost, and nothing in this pass moved
   it. Noted rather than fixed.
+- **The level 3 end card's guide bubble is fixed, not just noted.** The scroll
+  body was already sized right (`overflow-y: auto` on a `flex: 1` column
+  against a `flex: none` button footer below it, the same shape as The
+  Floor's debrief card); what did not fit was the content, 24px taller than
+  the 842px it had at 1440x950 with two death lines under the chart. Tightened
+  the card's own rhythm rather than the button row: the end-card column's gap
+  10px to 8px, the strip's wrapping card's padding 10px to 6px, and the
+  revealed chart 208px to 180px (`END_CHART_H`, with `Chart` handed
+  `END_CHART_H - 16` as before). That drops the seed-7 level-3 total to 806px
+  against the 842px available, so the guide's bounding box clears every
+  button's by 56px and reads with nothing to scroll to. Walked headlessly:
+  `getBoundingClientRect` on `[data-guide-line]` against the three action
+  buttons reports no intersection and the bubble's own box sits entirely
+  inside the viewport.
+- **A zero-investment win no longer cheers.** Level 3's bust windows let a
+  player who never enters the market beat five monkeys and see "You spread
+  out and it worked" over a cheering troop and confetti, which reads as a
+  strategy paying off rather than as three baskets happening to break. The
+  guide's line is spec copy and stays keyed to the rank exactly as before;
+  only the mood changed. `ending` now carries `neverInvested`, true when
+  `monthsHolding(run)` is exactly zero, and the end card's `Strip` gets
+  `mood={ending.neverInvested ? null : ending.win ? "cheer" : "slump"}`.
+  `Strip.tsx` was not touched: a null mood already falls through to `idle` on
+  every monkey and skips the confetti block, both by its own existing
+  fallback chain. Walked across twelve level-3 seeds, Start clicked with no
+  wedge ever tapped: every one read `data-strip-mood=""` with no
+  `[data-confetti]` in the DOM, win or lose. A seed played normally (wedge
+  picked, Buy max, held to the end) still reads `data-strip-mood="cheer"`
+  with confetti present, so an earned win is untouched.
+
+## Decision taken: level 3 deals a nine wedge board
+
+**The question was whether level 3 could prove "spreading beats picking" on a
+ten wedge board. Measured, it could not, so it does not any more.** The board is
+ten wedges only while eToys is still trading, which ends in April 2001, so every
+ten wedge window was a 36 month slice of the fall itself. Over all fifteen of
+them, 200 seeded troops each, the index ended between 0.59x and 1.03x, a
+cash-only player beat a mean of 3.83 to 9.87 monkeys, and cash unlocked the
+level on 31.5 to 100 percent of troops. The rule levels 1 and 2 carry would have
+needed cash unlocking on at most one troop in ten, which no ten wedge start came
+near, and spreading was no better than picking against the troop there: a three
+wedge spread unlocked 52.8 to 59.0 percent of troops against 37.1 to 65.5 for
+going all in on a single wedge.
+
+The nine wedge reading of section 3 was measured the same way, over the windows
+that still cover September 2002 and still kill WorldCom inside themselves. The
+index ends between 0.92x and 1.58x, the median monkey holds $1,078 to $1,717,
+cash unlocks on 0.5 to 27.5 percent of troops, spreading beats picking on the
+troop in sixteen of the eighteen windows, and the tenth percentile spread is
+worth $660 to $997 where the tenth percentile single wedge is worth $0 to $17.
+Spreading survives what picking does not, and cash no longer walks the level.
+
+**What was implemented.** Level 3's windows are chosen by three clauses, all
+computed from the data: the board is every company alive at the open, which is
+section 3's own rule and leaves nine wedges once eToys is gone; the window
+covers the file's worst index month, September 2002, so the end card's "that was
+the dot-com bust" stays true; and a cash-only player unlocks the level on at
+most one troop in ten, measured over 120 seeded troops a start with the same
+darts, the same equal split and the same whole-share rule the deal itself uses.
+Nine windows survive, July 2001 through September 2002. The audit runs once,
+lazily, memoised by era and window width: eight milliseconds on the first level
+3 deal and nothing after it. The wedge count is carried into the level card and
+the guide's open line by `boardSizeOf()` rather than written down, so the copy
+counts the board it was dealt.
+
+**The reason it is nine and not ten.** Section 3 asks for both "the whole board"
+and "companies already at zero when the window opens are not on the board", and
+on this file those two sentences disagree from April 2001 on. Keeping ten wedges
+meant keeping a window where the lesson is false. Keeping the lesson means
+counting the board. Section 12's copy table row, "Level 3. Ten stocks.", is
+superseded by that count; the level card now reads "Level 3. Nine stocks." and
+the guide opens with "Nine wedges. We each threw three darts and spread out."
+
+**The revert path is one constant.** `CASH_UNLOCK_LIMIT` in
+`src/lib/monkey/round.ts` is the bar. Raising it to 1 drops the lesson clause
+and hands level 3 every window that shows the bust, boards of eight to ten
+wedges, with cash unlocking most of them: the copy follows the count on its own,
+so nothing else has to move. The ten wedge only variant, `fullBoardStarts()`, is
+in git at commit aafac8c if the whole board is ever wanted back.
+
+**Level 3 is no longer proposed for locking.** It ships in the ladder with the
+other two, and `?level=3&seed=` still opens any round directly for evaluation.
 
 ## Known debts
 
@@ -654,6 +810,27 @@ cash-sitting monkey the winner, and level 2's 2020s window dealt Tesla at
 17x. Also: no monkey on the open screen, tie glyph under the feet, an
 empty stage, stale URL after Play again, a harsh square-wave thock with no
 master gain. Fix round dispatched to three teams; second review below.
+
+Second review: HOLD on one new finding, fourteen of the fifteen closed and
+the desk density partly. Sound mix approved for default-on (quiet triangle
+thock, one master bus, the rank reveal the loudest thing and clear of the
+pour). Statistics off round.ts over 120 seeds a level: level 3 deals ten
+wedges on every seed and every window covers 2002-09; level 1 rises on
+every seed and the best monkey bought in the front half 90 of 120; level 2
+has no wedge over 5x and no monkey over $3,000; doing nothing unlocks
+level 2 on 0 of 120 seeds. The new blocker: the ten-wedge windows are by
+construction the deepest bust windows, so on level 3 a player who never
+trades beats a median of nine monkeys and unlocks 80% of seeds, and the
+card can celebrate a player who never entered the market. Ten live wedges
+and a window that reaches the recovery cannot both be had on the dot-com
+file. Third pass below.
+
+Also from the second review: acceptance test H's phrase "one dollar scale
+that never moves on a trade" is stricter than section 6, which lets the
+scale ease down when a column would overflow; a Buy 5 concentrating
+dollars into one column can ease it. The desk follows section 6 and The
+Floor verbatim; the test's wording is the looser of the two and the walk
+samples a trade that does not overflow.
 
 ## Playtest notes
 

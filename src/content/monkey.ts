@@ -10,12 +10,20 @@
 // is optional here rather than an empty string on the other two: a line the
 // guide never speaks should not be a line at all.
 
-import type { LevelId } from "../lib/monkey/round";
+import { LevelId, boardSizeOf, capitalize, countWord } from "../lib/monkey/round";
 
 export type GuideMoment = "open" | "firstTrade" | "crash" | "endWin" | "endLose";
 
+// The open line is the one line that counts something on screen. Level 3's
+// board is whatever the window leaves alive, which is nine wedges on the
+// dot-com file rather than the ten section 3's prose assumes, so its line is a
+// template over the count instead of a sentence with a number baked into it.
+// Every other line is literal, level 2's included: three wedges are three
+// wedges on every seed.
+export type OpenLine = string | ((wedges: number) => string);
+
 export interface GuideLevelLines {
-  open: string;
+  open: OpenLine;
   firstTrade: string;
   crash?: string;
   endWin: string;
@@ -37,7 +45,7 @@ export const GUIDE_LINES: Record<LevelId, GuideLevelLines> = {
     endLose: "Selling in a crash locks the loss in. We just waited.",
   },
   3: {
-    open: "Ten wedges. We each threw three darts and spread out.",
+    open: (wedges: number) => `${capitalize(countWord(wedges))} wedges. We each threw three darts and spread out.`,
     firstTrade: "Picking favorites. We did not bother.",
     endWin: "You spread out and it worked. Or you got lucky. Play it again.",
     endLose: "A few random darts beat your picks. Spreading out is the trick.",
@@ -46,9 +54,15 @@ export const GUIDE_LINES: Record<LevelId, GuideLevelLines> = {
 
 // The line for a moment, or null when this level does not have one. The page
 // counts a line only when it speaks, so a null here never burns one of the
-// guide's four turns.
-export function guideLine(level: LevelId, moment: GuideMoment): string | null {
-  return GUIDE_LINES[level][moment] ?? null;
+// guide's four turns. The wedge count is the board the round was actually
+// dealt; left out, it falls back to the count the level's windows deal, so a
+// caller that has no deal in hand still gets the true number.
+export function guideLine(
+  level: LevelId, moment: GuideMoment, wedges?: number,
+): string | null {
+  const line = GUIDE_LINES[level][moment];
+  if (line === undefined) return null;
+  return typeof line === "function" ? line(wedges ?? boardSizeOf(level)) : line;
 }
 
 // The end card's line follows the rank outcome, which is what acceptance test K

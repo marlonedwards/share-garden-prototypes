@@ -13,9 +13,10 @@
 //   D  level 2's window carries the crash month, every wedge recovered without
 //      running away to a mania, and selling everything at the low finishes
 //      behind at least eight monkeys
-//   E  level 3's board is all ten companies, every window reaches the file's
-//      worst index month, a company dying inside it is flagged, and three
-//      distinct wedges survive the death
+//   E  level 3's board is every company alive at the open, nine on this file,
+//      every window reaches the file's worst index month and kills WorldCom
+//      inside itself, cash alone almost never unlocks the level, a company
+//      dying inside the window is flagged, and three distinct wedges survive it
 //   G  beating five monkeys unlocks the next level and survives a reload
 //
 // It also prints the pinned deals tools/monkeycheck.mjs walks, between two
@@ -38,10 +39,12 @@ import {
 import { listingIndexOf } from "../src/lib/floor/campaign";
 import {
   BEST_KEY, Deal, LEVELS, LEVEL_IDS, LevelId, MAX_GAIN, MONKEYS, Monkey, PROGRESS_KEY, START_CASH,
-  allotmentOf, bestFor, clearSave, crashIndexOf, dealRound, deadLine, isUnlocked,
-  lastMonthIndex, monkeyFinalWorth, monkeyLine, monkeyWorthAt, monkeyWorths, newPlayerRun, rank,
-  readUnlocked, recordRound, runConfigFor,
+  UNLOCK_AT,
+  allotmentOf, bestFor, boardSizeOf, clearSave, crashIndexOf, dealRound, deadLine, isUnlocked,
+  lastMonthIndex, lessonStarts, levelCard, monkeyFinalWorth, monkeyLine, monkeyWorthAt, monkeyWorths, newPlayerRun,
+  rank, readUnlocked, recordRound, runConfigFor,
 } from "../src/lib/monkey/round";
+import { guideLine } from "../src/content/monkey";
 
 // ---------------------------------------------------------------- reporting
 
@@ -94,6 +97,10 @@ function windowSignature(deal: Deal): string {
 
 const cA = check("A", "a seed pins the window, the stocks and every dart");
 const SEEDS = 160;
+// how many windows level 3's rules leave, counted off the data
+const LEVEL_THREE_WINDOWS = lessonStarts(
+  LEVELS[3].eras[0], LEVELS[3].windowMonths, LEVELS[3].darts,
+).length;
 
 for (const level of LEVEL_IDS) {
   const sigs: string[] = [];
@@ -113,10 +120,12 @@ for (const level of LEVEL_IDS) {
   want(cA, distinct >= SEEDS - 2, `level ${level} only ${distinct} distinct rounds over ${SEEDS} seeds`);
   want(cA, sameAsNeighbour === 0, `level ${level} had ${sameAsNeighbour} neighbouring seeds deal the same round`);
   // level 2's window is fixed by the spec, so only the era and the three
-  // stocks can vary there; levels 1 and 3 roll the window too.
-  const wantWindows = level === 2 ? 4 : 12;
+  // stocks can vary there; levels 1 and 3 roll the window too. Level 3's board
+  // is the whole living file, so a window and a board are the same thing on
+  // that level and the seed has to reach every window the rules leave.
+  const wantWindows = level === 2 ? 4 : level === 3 ? LEVEL_THREE_WINDOWS : 12;
   want(cA, windows.size >= wantWindows, `level ${level} drew only ${windows.size} distinct window and stock sets`);
-  cA.notes.push(`level ${level}: ${distinct}/${SEEDS} distinct rounds, ${windows.size} distinct window and stock sets`);
+  cA.notes.push(`level ${level}: ${distinct}/${SEEDS} distinct rounds, ${windows.size} distinct window and stock sets${level === 3 ? ` of ${LEVEL_THREE_WINDOWS} the rules leave` : ""}`);
 }
 
 // -------------------------------------- B, whole shares, conservation, path
@@ -424,6 +433,16 @@ function worstIndexMonth(): number {
   return at;
 }
 const WORST_MONTH = worstIndexMonth();
+// the board the level lays out, counted off the data rather than written down
+const WEDGES = boardSizeOf(3);
+// the company whose death is the level's lesson on every window it deals
+const DEAD_COMPANY = "WCOM";
+// how often an untouched thousand dollars unlocks the level. The rule the
+// windows are chosen by allows one troop in ten; this holds the dealt rounds
+// to the same bar end to end, through the real seeds and the real engine.
+const CASH_UNLOCK_LIMIT = 0.1;
+let cashUnlockSeeds = 0;
+let cashBeatSum = 0;
 
 for (let seed = 1; seed <= E_SEEDS; seed++) {
   const deal = dealRound(3, seed);
@@ -431,10 +450,24 @@ for (let seed = 1; seed <= E_SEEDS; seed++) {
   const alive = dotcomTickers.filter((t) => seriesOf("dotcom", t)[deal.startIndex] > 0);
   want(cE, deal.tickers.join(",") === alive.join(","),
     `level 3 seed ${seed} dealt ${deal.tickers.join(",")} for a board of ${alive.join(",")}`);
-  want(cE, deal.tickers.length === dotcomTickers.length,
-    `level 3 seed ${seed} dealt a board of ${deal.tickers.length}, not the whole ${dotcomTickers.length}`);
+  want(cE, deal.tickers.length === WEDGES,
+    `level 3 seed ${seed} dealt a board of ${deal.tickers.length}, the level lays out ${WEDGES}`);
+  want(cE, WEDGES < dotcomTickers.length,
+    `level 3 lays out ${WEDGES} of the file's ${dotcomTickers.length}, so no company is being left off`);
   want(cE, deal.startIndex <= WORST_MONTH && deal.endIndex >= WORST_MONTH,
     `level 3 seed ${seed} ran ${deal.startMonth} to ${deal.endMonth}, missing the bust's worst month ${eraMonths("dotcom")[WORST_MONTH]}`);
+  // WorldCom dies inside every window, so the death lesson is never off the board
+  const wcomDeath = deathIndex(seriesOf("dotcom", DEAD_COMPANY));
+  want(cE, wcomDeath !== null && wcomDeath > deal.startIndex && wcomDeath <= deal.endIndex,
+    `level 3 seed ${seed} ran ${deal.startMonth} to ${deal.endMonth}, with ${DEAD_COMPANY} dying outside it`);
+  want(cE, deal.dead.includes(DEAD_COMPANY),
+    `level 3 seed ${seed} did not flag ${DEAD_COMPANY} as dying inside the window`);
+  // and the lesson itself: a player who never touches the buttons should not
+  // be able to unlock the level off an untouched thousand dollars
+  const finalsAll = deal.monkeys.map((m) => monkeyFinalWorth(deal, m));
+  const cashBeat = rank(START_CASH, finalsAll).beaten;
+  if (cashBeat >= UNLOCK_AT) cashUnlockSeeds++;
+  cashBeatSum += cashBeat;
 
   const dying = deal.tickers.filter((t) => {
     const death = deathIndex(seriesOf("dotcom", t));
@@ -471,6 +504,10 @@ for (let seed = 1; seed <= E_SEEDS; seed++) {
       `level 3 seed ${seed} monkey ${monkey.index} line reads "${monkeyLine(deal, monkey, worth)}"`);
   }
 }
+
+const cashRate = cashUnlockSeeds / E_SEEDS;
+want(cE, cashRate <= CASH_UNLOCK_LIMIT,
+  `level 3: sitting in cash unlocked ${cashUnlockSeeds} of ${E_SEEDS} seeds, ${(cashRate * 100).toFixed(1)} percent, over the ${CASH_UNLOCK_LIMIT * 100} percent bar`);
 
 // the same claim exhaustively, over every window the level can deal and every
 // three wedge basket in it, so the floor is a fact about the data and not luck
@@ -510,7 +547,8 @@ for (let start = 0; start + 36 <= dotcomMonths; start++) {
   }
 }
 want(cE, sweepWorst >= SURVIVAL_FLOOR, `the worst three wedge basket in the file is ${sweepDesc}, under the floor`);
-cE.notes.push(`${E_SEEDS} seeds, every board ten wedges, every window over ${eraMonths("dotcom")[WORST_MONTH]}, the file's worst index month`);
+cE.notes.push(`${E_SEEDS} seeds, every board ${WEDGES} wedges, every window over ${eraMonths("dotcom")[WORST_MONTH]} and over ${DEAD_COMPANY}'s death`);
+cE.notes.push(`cash alone beat a mean of ${(cashBeatSum / E_SEEDS).toFixed(2)} monkeys and unlocked ${cashUnlockSeeds} of ${E_SEEDS} seeds, ${(cashRate * 100).toFixed(1)} percent`);
 cE.notes.push(`${deathSeeds} windows with a death, ${spreadSeen} three wedge monkeys held against a floor of ${SURVIVAL_FLOOR}`);
 cE.notes.push(`worst dealt three wedge basket ${worstSpread === Infinity ? "none" : worstSpread.toFixed(2)}, worst of all ${combos} in the file ${sweepDesc}`);
 
@@ -589,6 +627,10 @@ const fixture = {
       level, seed: 7, era: deal.era,
       startMonth: deal.startMonth, endMonth: deal.endMonth,
       tickers: deal.tickers, dead: deal.dead,
+      // the copy that counts the board, so the walk holds the page against the
+      // content file's own output instead of a literal it keeps in step by hand
+      card: levelCard(level as LevelId),
+      openLine: guideLine(level as LevelId, "open", deal.tickers.length),
       crashMonth: deal.crashIndex === null ? null : deal.months[deal.crashIndex],
       buyMonths: deal.monkeys.map((m) => m.buyMonth),
       finals: deal.monkeys.map((m) => Math.round(monkeyFinalWorth(deal, m) * 100) / 100),
