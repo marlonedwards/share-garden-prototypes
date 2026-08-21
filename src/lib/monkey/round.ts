@@ -332,7 +332,7 @@ export function worstIndexMonth(era: EraId): number {
 // companies already at zero when the window opens are not on the board. The
 // count is carried by boardSizeOf() into the level card and the guide's line
 // instead of being written down anywhere.
-const AUDIT_TROOPS = 120;
+const AUDIT_TROOPS = 1000;
 const CASH_UNLOCK_LIMIT = 0.1;
 const AUDIT_SALT = 0x9e3779b9;
 

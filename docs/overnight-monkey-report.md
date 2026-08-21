@@ -247,6 +247,18 @@ and the live link. Written as the run goes.
   never trading beats none of the ten and buying max at the open and holding
   beats all ten. Seeds 27 and 33 are the only others in the first forty that do
   both, if the pin ever has to move.
+- **The window audit's troop count moved from 120 to 1,000, post-deploy.**
+  120 troops was sampling noise, not a measurement: four windows read under
+  the ten percent cash-unlock bar there and 11 to 14 percent at 2,000 troops,
+  the house bar's own finding. At 1,000 troops those four now correctly fail
+  and one window that failed at 120 (10.8%) correctly passes at 1,000 (6.7%),
+  leaving six windows instead of nine, all nine wedges, September 2001 through
+  September 2002. The audit still runs once, lazily, memoised by era and
+  window width, and costs 55ms on the first level 3 deal and under a
+  millisecond after, both under the 150ms bar. `tools/monkeySim.ts`'s pinned
+  seeds 7 and 23 both move to a different one of the six windows; `npm run
+  typecheck` and `node tools/monkeycheck.mjs` both stayed green against the
+  new pins.
 
 ### Stage team
 
@@ -746,13 +758,28 @@ computed from the data: the board is every company alive at the open, which is
 section 3's own rule and leaves nine wedges once eToys is gone; the window
 covers the file's worst index month, September 2002, so the end card's "that was
 the dot-com bust" stays true; and a cash-only player unlocks the level on at
-most one troop in ten, measured over 120 seeded troops a start with the same
+most one troop in ten, measured over 1,000 seeded troops a start with the same
 darts, the same equal split and the same whole-share rule the deal itself uses.
-Nine windows survive, July 2001 through September 2002. The audit runs once,
-lazily, memoised by era and window width: eight milliseconds on the first level
-3 deal and nothing after it. The wedge count is carried into the level card and
-the guide's open line by `boardSizeOf()` rather than written down, so the copy
-counts the board it was dealt.
+The troop count was raised from 120 after the house bar found the smaller
+sample let four windows through on noise: windows opening July 2001, August
+2001, January 2002 and April 2002 read under the ten percent bar at 120
+troops but 11 to 14 percent at 1,000, so they now correctly fail it. Six
+windows survive:
+
+| window | cash-unlock rate, 1,000 troops | mean beaten by cash | wedges |
+| --- | --- | --- | --- |
+| 2001-09 to 2004-08 | 2.4% | 1.69 | 9 |
+| 2002-02 to 2005-01 | 6.7% | 2.47 | 9 |
+| 2002-06 to 2005-05 | 2.0% | 1.76 | 9 |
+| 2002-07 to 2005-06 | 1.8% | 1.66 | 9 |
+| 2002-08 to 2005-07 | 1.9% | 1.71 | 9 |
+| 2002-09 to 2005-08 | 0.4% | 1.19 | 9 |
+
+All nine wedges, WorldCom dying inside every one. The audit runs once, lazily,
+memoised by era and window width: 55ms on the first level 3 deal at 1,000
+troops, under 1ms on every deal after it. The wedge count is carried into the
+level card and the guide's open line by `boardSizeOf()` rather than written
+down, so the copy counts the board it was dealt.
 
 **The reason it is nine and not ten.** Section 3 asks for both "the whole board"
 and "companies already at zero when the window opens are not on the board", and
@@ -793,6 +820,11 @@ other two, and `?level=3&seed=` still opens any round directly for evaluation.
   before any gesture has armed audio, so they are silent by policy.
 - The raw sprite sheets (about 4 MB) sit in public/monkey/ for the record
   and ship with the site; nothing references them at runtime.
+- Level 3's era reveal reads "That was the dot-com bust, 2002 to 2005." over
+  windows that run into the recovery; the years are the window's real years
+  and the chart shows them, but the sentence names the span as the bust.
+  Clipping the span to the bust years or dropping it on level 3 is a copy
+  call for Marlon.
 - The dart monkeys beat the index by several times on rising windows, which
   is the real history of these files, not the Forbes claim that darts land
   near the index. A wider stock universe would close that gap.
@@ -824,6 +856,25 @@ trades beats a median of nine monkeys and unlocks 80% of seeds, and the
 card can celebrate a player who never entered the market. Ten live wedges
 and a window that reaches the recovery cannot both be had on the dot-com
 file. Third pass below.
+
+Third review: SHIP. The blocker is closed on the numbers: 200 seeds, nine
+wedges on every seed, cash-only beats a mean 1.98 monkeys and unlocks 4.0
+percent (was a median nine and 80 percent), spreading unlocks on 54.6
+percent of three-wedge baskets against 44.8 for a single wedge, the
+tenth-percentile spread is worth $806 where the tenth-percentile pick is
+$8, WorldCom dies inside every window and September 2002 sits inside
+every window. Levels 1 and 2 unchanged. Level 3 end card does not scroll at
+1440x950, the bubble clears the footer by 83px, a never-invested round gets
+no confetti and an idle troop. The reviewer judged the nine-wedge reading
+faithful to the spec's priority order: section 3's board rule is the
+operative sentence, Jared's ladder by stock count survives as one, three,
+nine, and Nick's test is now met on level 3 where before it was inverted.
+Remaining notes, none holding the ship: the window audit's 120-troop sample
+let four windows through on noise (raised to 1,000 before deploy); the
+rank-keyed end line can tell an all-in player "You spread out" (the logged
+debt, now costliest on level 3); the era reveal names the window's whole
+span as the bust when a third of it is the recovery (the years are the
+chart's real years; left as written, logged below).
 
 Also from the second review: acceptance test H's phrase "one dollar scale
 that never moves on a trade" is stricter than section 6, which lets the
