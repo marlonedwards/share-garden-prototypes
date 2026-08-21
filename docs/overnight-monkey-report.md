@@ -413,6 +413,22 @@ and the live link. Written as the run goes.
   with 98 ties held and `H` at 10 ticks of 15.2px on a scale that never moved.
   The copy was deleted. The walk needs the pick, not the stage.
 
+- **The board's figures are labelled, "open $102" rather than "$102".** The
+  rail legend and the open dial were printing the price at the window's open as
+  a bare number while the trade row a few inches away read "Apple now $30.12",
+  and two figures for the same company with only one of them named reads as two
+  live prices. The word is written once, in `openPriceText`, and used by the
+  dial, the rail legend and level 1's calendar title, all at 13px. It fits at
+  ten wedges: the tightest box is the open dial's label, 84px of arc at
+  `LABEL_AT`, and the longest line the word makes there is "open $30.12" at
+  77px, so nothing was dropped and the dial keeps the word. Measured on the
+  level 3 open at 1440x950, every one of the ten labels draws inside its wedge.
+- **The rail legend's ten rows are tight, and this did not change it.** At ten
+  stocks the row height floors at 26px while a name and its price line want
+  about 29, so the price sits a little below its row's focus pill. It was that
+  way before the word was added and the word does not widen a row; logged for
+  whoever next touches `boardLayout`'s rail branch.
+
 ### Page team
 
 - **The play chart's month axis is a synthetic month array, not a fork of the
@@ -564,6 +580,41 @@ and the live link. Written as the run goes.
   owner rather than edited mid-round. `I_chart_third_rail` failed the same run
   for a different reason, an end card with no year on its axis, and that one
   was the page's: it is the end-card fallback above, and the check passes now.
+
+- **The strip's headroom is the strip's own number, imported.** `GUIDE_ROOM =
+  64` in `Monkey.tsx` was a second guess at a number `Strip.tsx` already
+  exports as `STRIP_GUIDE_ROOM = 24`; the page now imports it, per the stage
+  team's note, and there is one number instead of two. Measured at 1440x950 on
+  level 3: the chart is still exactly 317px of 950, because it is
+  `round(viewH / 3)` and never depended on the guide room, and the bubble's top
+  edge sits at 98px against a clock whose bottom edge is 51.5px, so the line
+  clears the header by 46px and still hangs inside the strip's own panel. The
+  forty pixels the strip band gave back went to the desk, which is where the
+  round is read.
+- **The walk taps a wedge, and now says so out loud.** `openRound` takes a
+  `pick` option, true by default, and calls a new `pickWedge` on levels 2 and
+  3; level 1's calendar is one stock and opens focused, so it is left alone.
+  The tap lands on the wedge's own `path.mk-face` rather than on its group,
+  whose bounding box takes in the label and the chip and whose middle is not
+  always inside the slice, and it is only believed once exactly one wedge
+  reports `data-wedge-focus="1"`. `A_seed_pins_dom` now reads the untouched
+  open before anything is tapped: level 3 lays out ten wedges, no wedge is
+  focused, every trade button is dark, and one tap turns the three buys green
+  and leaves the three sells dark with nothing held. Level 1 is held to the
+  opposite claim, that its buys are live at the open.
+- **`T_open_troop` is new.** All ten monkeys stand over the board at the round
+  open on every level, numbered 1 to 10, each one drawn inside the window and
+  each one carrying a face, and the guide's line is on screen once the darts
+  are down. The bubble fades on its own after about four seconds, so it is
+  polled for rather than read once, and the page's own `data-guide-count` is
+  held against it as the reading that cannot be missed by arriving late.
+  `Troop.tsx` already carried `data-troop-monkey`, so the stage was not
+  touched.
+- **The level 3 end card's guide line sits below the fold at 950px.** With two
+  death lines under the chart the persisted line is half under the button row
+  on a 1440x950 window. The end card is its own `overflow-y: auto` column, so
+  the line is a scroll away rather than lost, and nothing in this pass moved
+  it. Noted rather than fixed.
 
 ## Known debts
 

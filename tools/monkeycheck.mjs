@@ -35,6 +35,8 @@
 //   N_type_contract      one typeface, nothing under 12px, no uppercase, no
 //                        positive tracking, no em dash and no exclamation mark,
 //                        swept over all four phases
+//   T_open_troop         the whole troop of ten stands over the board at the
+//                        round open and the guide speaks once the darts are down
 //
 // Acceptance tests A to E and G are proven headlessly by tools/monkeySim.ts,
 // which this file shells out to first: it prints the deals for seed 7 between
@@ -72,6 +74,10 @@ const WIDE = { width: 1440, height: 950 };
 const PIN = 7;
 const ALT = 23;
 const MONKEYS = 10;
+// The wedges level 3 lays out. Level 1 is one stock on a calendar and level 2's
+// count comes off the fixture; only the top level's ten are a fixed number in
+// the spec, so only that one is written down here.
+const BOARD_WEDGES = 10;
 const DARTS = { 1: 1, 2: 2, 3: 3 };
 const LEVELS = [1, 2, 3];
 // The era names section 2 forbids on screen until the end card, lowercased.
@@ -199,9 +205,41 @@ const startReady = (page) => page.evaluate(() => {
   return !!b && !b.disabled;
 });
 
+// The trade buttons act on the focused wedge, and a board level now opens with
+// nothing focused: the dial is a pick and not a decoration, so every button is
+// dark until the player taps a stock. A walk that means to trade taps first.
+//
+// The tap lands on the wedge's own sector rather than on its group, whose
+// bounding box takes in the label and the chip and whose middle is not always
+// inside the slice. A wedge that will not take a real click, which is what a
+// dart drawn over its middle looks like to Playwright, is clicked through the
+// DOM instead, and either way the tap is only believed once the board says a
+// wedge is focused.
+async function pickWedge(page, index = 0) {
+  const faces = await page.$$('[data-board-form="open"] [data-wedge] path.mk-face');
+  if (faces.length === 0) throw new Error("the open board drew no wedge to tap");
+  const face = faces[Math.min(index, faces.length - 1)];
+  try {
+    await face.click({ timeout: 4000 });
+  } catch {
+    await face.evaluate((el) => el.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  }
+  const took = await until(page, () => page.evaluate(
+    () => document.querySelectorAll('[data-wedge][data-wedge-focus="1"]').length === 1,
+  ), 4000);
+  if (!took) throw new Error("tapping a wedge focused nothing");
+}
+
+// Which trade buttons the page is offering, and which of them are dark.
+const tradeButtons = (page) => page.evaluate(() => Array.from(
+  document.querySelectorAll('[data-action^="buy"], [data-action^="sell"]'),
+).map((b) => ({ action: b.getAttribute("data-action"), disabled: !!b.disabled })));
+
 // A pinned round, dealt from a clean save, waited on until its darts have
-// landed and Start is live.
-async function openRound(page, level, seed, turbo = 0, { clear = true } = {}) {
+// landed and Start is live, with the first wedge tapped so the trade buttons
+// are live. Level 1's calendar carries one stock and opens focused on it, so it
+// is never tapped; pass pick: false to read a board level's untouched open.
+async function openRound(page, level, seed, turbo = 0, { clear = true, pick = true } = {}) {
   await goto(page, `${BASE}/#/monkey?level=${level}&seed=${seed}&turbo=${turbo}`);
   if (clear) await clearSave(page);
   await reload(page);
@@ -211,6 +249,7 @@ async function openRound(page, level, seed, turbo = 0, { clear = true } = {}) {
   if (!await until(page, () => startReady(page), 8000)) {
     throw new Error(`level ${level} seed ${seed} never finished throwing`);
   }
+  if (pick && level !== 1) await pickWedge(page);
 }
 
 async function startTape(page) {
@@ -337,15 +376,41 @@ function beatenOnStrip(state) {
 
 // A. The seed is the round: the darts and the wedges the page draws are the
 // ones the sim deals, the same seed draws them twice, and another seed does
-// not draw them at all.
+// not draw them at all. And the open itself is a gate: level 3 lays out all ten
+// stocks, and on a board level every trade button stays dark until a wedge is
+// tapped, so the round starts with a pick rather than with one click of Buy max.
 async function A_seed_pins_dom(page) {
   const fails = [];
   const notes = [];
   for (const level of LEVELS) {
     const deal = dealOf(level);
-    await openRound(page, level, PIN, 0);
+    await openRound(page, level, PIN, 0, { pick: false });
     const first = await boardState(page);
     if (first === null) { fails.push(`level ${level} drew no board`); continue; }
+
+    // the untouched open, read before anything is tapped
+    if (level === 3 && first.wedges.length !== BOARD_WEDGES) {
+      fails.push(`level 3 laid out ${first.wedges.length} wedges, section 5 asks for ${BOARD_WEDGES}`);
+    }
+    const untouched = await tradeButtons(page);
+    const buysOf = (bs) => bs.filter((b) => b.action.startsWith("buy"));
+    if (level === 1) {
+      const dark = buysOf(untouched).filter((b) => b.disabled).map((b) => b.action);
+      if (dark.length > 0) fails.push(`level 1 opens on its one stock and ${dark.join(", ")} were dark`);
+    } else {
+      const live = untouched.filter((b) => !b.disabled).map((b) => b.action);
+      if (live.length > 0) {
+        fails.push(`level ${level} opened with ${live.join(", ")} live before a wedge was tapped`);
+      }
+      const focused = await page.evaluate(() => document.querySelectorAll('[data-wedge][data-wedge-focus="1"]').length);
+      if (focused !== 0) fails.push(`level ${level} opened with ${focused} wedges already focused`);
+      await pickWedge(page);
+      const tapped = await tradeButtons(page);
+      const dark = buysOf(tapped).filter((b) => b.disabled).map((b) => b.action);
+      if (dark.length > 0) fails.push(`level ${level}: a wedge was tapped and ${dark.join(", ")} stayed dark`);
+      const sells = tapped.filter((b) => b.action.startsWith("sell") && !b.disabled).map((b) => b.action);
+      if (sells.length > 0) fails.push(`level ${level}: ${sells.join(", ")} were live with nothing held`);
+    }
 
     if (first.wedges.join(",") !== deal.tickers.join(",")) {
       fails.push(`level ${level} drew wedges ${first.wedges.join(",")}, the sim deals ${deal.tickers.join(",")}`);
@@ -1039,6 +1104,60 @@ async function N_type_contract(page) {
   return { fails, note: `${fams.size} typeface${fams.size === 1 ? "" : "s"} over four phases` };
 }
 
+// T. The troop is on screen at the round open. Ten monkeys stand over the board
+// they are about to throw at, each one drawn and each one inside the window,
+// and once the darts are down the guide says its line.
+//
+// The line fades on its own after about four seconds, so the bubble is polled
+// for rather than read once, and the page's own count of lines spoken is held
+// against it: the count is monotonic and cannot be missed by arriving late.
+async function T_open_troop(page) {
+  const fails = [];
+  const notes = [];
+  for (const level of LEVELS) {
+    await openRound(page, level, PIN, 0, { pick: false });
+    const troop = await page.evaluate(() => {
+      const all = Array.from(document.querySelectorAll("[data-troop-monkey]"));
+      const inView = (e) => {
+        const b = e.getBoundingClientRect();
+        return b.width > 0 && b.height > 0 && b.top >= 0 && b.bottom <= window.innerHeight;
+      };
+      return {
+        count: all.length,
+        indexes: all.map((e) => Number(e.getAttribute("data-troop-monkey"))).sort((a, b) => a - b),
+        drawn: all.filter(inView).length,
+        faces: all.filter((e) => e.querySelector("img, svg, canvas")).length,
+      };
+    });
+    if (troop.count !== MONKEYS) {
+      fails.push(`L${level} open drew ${troop.count} troop monkeys, not ${MONKEYS}`);
+    }
+    const want = Array.from({ length: MONKEYS }, (_, i) => i + 1).join(",");
+    if (troop.count === MONKEYS && troop.indexes.join(",") !== want) {
+      fails.push(`L${level} numbered its troop ${troop.indexes.join(",")}`);
+    }
+    if (troop.drawn !== troop.count) {
+      fails.push(`L${level} drew ${troop.count} troop monkeys and ${troop.drawn} of them stood inside the window`);
+    }
+    if (troop.faces !== troop.count) {
+      fails.push(`L${level} drew ${troop.count} troop monkeys and ${troop.faces} of them carried a face`);
+    }
+
+    const spoke = await until(page, () => page.evaluate(() => {
+      const el = document.querySelector("[data-guide-line]");
+      const line = el ? (el.getAttribute("data-guide-line") ?? "").trim() : "";
+      return line.length > 0;
+    }), 6000);
+    const said = await page.evaluate(() => Number(
+      document.querySelector("[data-monkey-phase]").getAttribute("data-guide-count"),
+    ));
+    if (!spoke) fails.push(`L${level} put no guide line on screen once the darts were down`);
+    if (!(said >= 1)) fails.push(`L${level} counted ${said} guide lines by the end of the throw`);
+    notes.push(`L${level} ${troop.count} monkeys, ${said} line${said === 1 ? "" : "s"}`);
+  }
+  return { fails, note: notes.join(", ") };
+}
+
 // ------------------------------------------------------------ screenshots
 
 async function shots(page) {
@@ -1077,6 +1196,7 @@ const CHECKS = [
   ["J_no_year_in_play", J_no_year_in_play],
   ["K_guide_four", K_guide_four],
   ["N_type_contract", N_type_contract],
+  ["T_open_troop", T_open_troop],
 ];
 
 // Which acceptance test each line of the table stands for, so the report can be

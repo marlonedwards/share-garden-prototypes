@@ -33,7 +33,7 @@ import { UI_FONT } from "../lib/type";
 import Board, { RAIL_WIDTH } from "../components/monkey/Board";
 import Button from "../components/monkey/Button";
 import Guide from "../components/monkey/Guide";
-import Strip, { SETTLED_HEIGHT, STRIP_HEIGHT } from "../components/monkey/Strip";
+import Strip, { SETTLED_HEIGHT, STRIP_GUIDE_ROOM, STRIP_HEIGHT } from "../components/monkey/Strip";
 import Troop, { TROOP_HEIGHT } from "../components/monkey/Troop";
 import {
   GREEN, GROUND, INK, MUTED, PANEL, RADIUS, SIZE, SKY, TIES, WEIGHT,
@@ -69,9 +69,6 @@ const PAGE_PAD = 16;
 const HEADER_H = 44;
 const GAP = 12;
 const STRIP_PAD = 12;
-// The guide's bubble hangs above its own slot on the rank strip, so the strip's
-// panel carries the headroom for it. Without this the line covers the clock.
-const GUIDE_ROOM = 64;
 const TRADE_H = 52;
 const DESK_PAD = 8;
 const COL_GAP = 10;
@@ -549,7 +546,10 @@ export default function Monkey() {
 
   const chartH = Math.round(viewH / 3);
   const topH = Math.max(320, viewH - PAGE_PAD * 2 - HEADER_H - GAP * 2 - chartH);
-  const stripBandH = STRIP_HEIGHT + GUIDE_ROOM + STRIP_PAD * 2;
+  // The guide's bubble hangs above its own slot on the rank strip, so the
+  // strip's panel carries the headroom for it. The number is the strip's own,
+  // imported rather than guessed, so the page and the strip cannot disagree.
+  const stripBandH = STRIP_HEIGHT + STRIP_GUIDE_ROOM + STRIP_PAD * 2;
   const deskH = Math.max(180, topH - stripBandH - TRADE_H - COL_GAP * 2 - DESK_PAD * 2);
   const leftW = Math.max(600, viewW - PAGE_PAD * 2 - RAIL_WIDTH - GAP);
 
@@ -872,7 +872,7 @@ export default function Monkey() {
       {header}
       <div style={{ height: topH, display: "flex", gap: GAP, flex: "none" }}>
         <div style={{ width: leftW, display: "flex", flexDirection: "column", gap: COL_GAP, minWidth: 0 }}>
-          <Card style={{ height: stripBandH, padding: STRIP_PAD, paddingTop: STRIP_PAD + GUIDE_ROOM, flex: "none" }}>
+          <Card style={{ height: stripBandH, padding: STRIP_PAD, paddingTop: STRIP_PAD + STRIP_GUIDE_ROOM, flex: "none" }}>
             <Strip
               slots={liveRank.order.map((s) => ({ who: s.who, worth: s.worth }))}
               guideIndex={deal.guideIndex}

@@ -150,6 +150,19 @@ function priceText(p: number): string {
   return p >= 100 ? `$${Math.round(p)}` : `$${p.toFixed(2)}`;
 }
 
+// Every figure the board carries is the price at the window's open, never the
+// price now: the trade row already reads "Apple now $30.12" while the tape
+// runs, and a bare figure beside it was read as a second live price. The word
+// is the whole of the difference, so it is written here once.
+//
+// It fits everywhere it is used. The tightest box is the ten wedge dial at the
+// round open, whose label is 84px of arc at LABEL_AT; the longest line the word
+// makes there is "open $30.12", 77px at 13px. The rail legend has 134px.
+function openPriceText(p: number): string {
+  const t = priceText(p);
+  return t === "" ? "" : `open ${t}`;
+}
+
 // ------------------------------------------------------------ the geometry
 
 // A sector of the unit circle, starting at twelve o'clock, so the whole wedge
@@ -453,7 +466,7 @@ export default function Board(props: BoardProps) {
             fill={MUTED}
             style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
           >
-            {priceText(openPrices[0] ?? 0)}
+            {openPriceText(openPrices[0] ?? 0)}
           </text>
           {/* the player's chip on the calendar sits beside the stock name,
               because a month is not a holding and a chip on one would say the
@@ -576,7 +589,7 @@ export default function Board(props: BoardProps) {
                 fill={MUTED}
                 style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
               >
-                {gone ? "zero" : priceText(openPrices[i] ?? 0)}
+                {gone ? "zero" : openPriceText(openPrices[i] ?? 0)}
               </text>
               {/* the small mark a dead wedge carries; the words are the page's */}
               {gone && (
