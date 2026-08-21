@@ -30,6 +30,8 @@ and the live link. Written as the run goes.
   /monkey in ROUTES, monkeycheck, triggercheck and floorcheck (run one at a
   time, both still clean). Sibling files unchanged since d00f5d6.
 - Desktop only, 1440x950, per the spec; phone was not walked.
+- Deployed: ae1a1b7 pushed to main, Pages bundle index-B8uLMK_s.js verified
+  live with the Monkey Trade card and the /monkey route.
 
 ## Judgment calls
 
