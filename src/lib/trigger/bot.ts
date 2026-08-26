@@ -18,28 +18,122 @@ import { price as fmtPrice } from "./format";
 
 export type BotFn = (prices: number[], shares: number, cash: number) => unknown;
 
-// What the editor opens with: the contract in comments and a bot that buys
-// and sells at random, so the first Run bot always produces a full run.
-export const BOT_SCAFFOLD = `// Your bot plays the run one month at a time.
-//
-//   prices  every monthly price so far; prices[prices.length - 1] is this month's
-//   shares  what you hold right now, fractional shares allowed
-//   cash    what you have left to spend
-//
-// Return an action { buy: n }:
-//   n > 0 buys n shares, n < 0 sells n shares, 0 does nothing.
-// Buying more than cash covers, or selling more than you hold, stops the run.
-//
-// Helpers already in scope:
-//   max_shares_can_buy(prices, shares, cash)   the most you can buy this month
-//   max_shares_can_sell(prices, shares, cash)  the most you can sell this month
+// What the editor opens with: the contract as a JSDoc header, a shelf of
+// example bots from a coin flipper up to a self-rebalancing trend sizer, and
+// a last line that picks the player. The default stays random so the first
+// Run bot always produces a full run, and every bot on the shelf is written
+// to finish a run without ever breaking an action rule, dead companies
+// included: the shelf teaches strategies, not crashes.
+export const BOT_SCAFFOLD = `/**
+ * Your bot plays the run one month at a time.
+ *
+ * @param {number[]} prices - every monthly price so far; the last entry is this month's
+ * @param {number} shares - what you hold right now, fractional shares allowed
+ * @param {number} cash - what you have left to spend
+ * @returns {{buy: number}} - positive buys that many shares, negative sells them,
+ *   zero does nothing. Buying more than cash covers, or selling more than
+ *   you hold, stops the run.
+ *
+ * Helpers already in scope:
+ *   max_shares_can_buy(prices, shares, cash)
+ *   max_shares_can_sell(prices, shares, cash)
+ *
+ * Pick the player on the last line.
+ */
 
-function bot(prices, shares, cash) {
+// Flips a coin each month and trades a random size.
+function randomBot(prices, shares, cash) {
   if (Math.random() < 0.5) {
     return { buy: Math.random() * max_shares_can_buy(prices, shares, cash) };
   }
   return { buy: -Math.random() * max_shares_can_sell(prices, shares, cash) };
 }
+
+// Goes all in on the first month and never touches it again.
+function buyAndHoldBot(prices, shares, cash) {
+  return { buy: max_shares_can_buy(prices, shares, cash) };
+}
+
+// Spends $100 a month until the cash runs out.
+function dollarCostAverageBot(prices, shares, cash) {
+  const price = prices[prices.length - 1];
+  if (!(price > 0)) return { buy: 0 };
+  return { buy: Math.min(cash, 100) / price };
+}
+
+// Buys the dip, sells the rip: all in when this month sits 8% under the
+// average of the six before it, all out when it sits 8% over.
+function swingTradeBot(prices, shares, cash) {
+  if (prices.length < 2) return { buy: 0 };
+  const avg = average(prices.slice(-7, -1));
+  const price = prices[prices.length - 1];
+  if (!(avg > 0)) return { buy: 0 };
+  if (price <= avg * 0.92) return { buy: max_shares_can_buy(prices, shares, cash) };
+  if (price >= avg * 1.08) return { buy: -max_shares_can_sell(prices, shares, cash) };
+  return { buy: 0 };
+}
+
+// Rides the trend: all in after two rising months, all out after two falling.
+function momentumBot(prices, shares, cash) {
+  const n = prices.length;
+  if (n < 3) return { buy: 0 };
+  if (prices[n - 1] > prices[n - 2] && prices[n - 2] > prices[n - 3]) {
+    return { buy: max_shares_can_buy(prices, shares, cash) };
+  }
+  if (prices[n - 1] < prices[n - 2] && prices[n - 2] < prices[n - 3]) {
+    return { buy: -max_shares_can_sell(prices, shares, cash) };
+  }
+  return { buy: 0 };
+}
+
+// The classic crossover: in while the three month average sits above the
+// twelve month average, out while it sits below.
+function crossoverBot(prices, shares, cash) {
+  if (prices.length < 12) return { buy: 0 };
+  const fast = average(prices.slice(-3));
+  const slow = average(prices.slice(-12));
+  if (fast > slow) return { buy: max_shares_can_buy(prices, shares, cash) };
+  if (fast < slow) return { buy: -max_shares_can_sell(prices, shares, cash) };
+  return { buy: 0 };
+}
+
+// Remembers what it paid: buys in, dumps the lot 20% above the entry price
+// (take profit) or 10% below it (stop loss), then buys back in next month.
+let entry = 0;
+function bracketBot(prices, shares, cash) {
+  const price = prices[prices.length - 1];
+  if (!(price > 0)) return { buy: 0 };
+  if (shares === 0) {
+    entry = price;
+    return { buy: max_shares_can_buy(prices, shares, cash) };
+  }
+  if (price >= entry * 1.2 || price <= entry * 0.9) {
+    return { buy: -max_shares_can_sell(prices, shares, cash) };
+  }
+  return { buy: 0 };
+}
+
+// Sizes the position to the trend: the share of worth held in stock follows
+// where this month sits between the twelve month low and high, rebalancing
+// only when the target drifts more than 5% of worth away.
+function trendSizerBot(prices, shares, cash) {
+  const price = prices[prices.length - 1];
+  if (!(price > 0)) return { buy: 0 };
+  const window = prices.slice(-12);
+  const lo = Math.min(...window);
+  const hi = Math.max(...window);
+  const target = hi > lo ? (price - lo) / (hi - lo) : 0.5;
+  const worth = cash + shares * price;
+  const targetShares = (target * worth) / price;
+  if (Math.abs(targetShares - shares) * price < worth * 0.05) return { buy: 0 };
+  return { buy: targetShares - shares };
+}
+
+function average(list) {
+  return list.reduce((a, b) => a + b, 0) / list.length;
+}
+
+bot = randomBot;
 `;
 
 // Float slop only, the engine's own posture: a bot that asks for exactly
@@ -62,26 +156,38 @@ export function maxSharesCanSell(prices: number[], shares: number, cash: number)
 
 // Compile the source and hand back the bot with the helpers closed over. The
 // three ways this fails are told apart, because "your code does not parse" and
-// "you never defined bot" send the author to different lines.
+// "you never picked a bot" send the author to different lines.
+//
+// The wrapper is deliberately sloppy mode: the scaffold picks its player with
+// a bare `bot = randomBot`, which strict mode would refuse and sloppy mode
+// writes to globalThis. The global is swept on both sides of the call, so a
+// bot left over from an earlier compile can never answer for a source that
+// stopped choosing one. `function bot` and `const bot` stay local to the
+// wrapper and work unchanged.
 export function compileBot(source: string): { bot: BotFn } | { error: string } {
   let factory: (buyMax: typeof maxSharesCanBuy, sellMax: typeof maxSharesCanSell) => unknown;
   try {
     factory = new Function(
       "max_shares_can_buy",
       "max_shares_can_sell",
-      `"use strict";\n${source}\n;return typeof bot === "function" ? bot : null;`,
+      `${source}\n;return typeof bot === "function" ? bot : null;`,
     ) as typeof factory;
   } catch (e) {
     return { error: `the code does not parse: ${(e as Error).message}` };
   }
+  const g = globalThis as { bot?: unknown };
+  delete g.bot;
   let bot: unknown;
+  let threw: string | null = null;
   try {
     bot = factory(maxSharesCanBuy, maxSharesCanSell);
   } catch (e) {
-    return { error: `the code throws while loading: ${(e as Error).message}` };
+    threw = (e as Error)?.message ?? String(e);
   }
+  delete g.bot;
+  if (threw !== null) return { error: `the code throws while loading: ${threw}` };
   if (typeof bot !== "function") {
-    return { error: "define a function named bot(prices, shares, cash)" };
+    return { error: "point bot at a function: bot = randomBot, or define function bot(prices, shares, cash)" };
   }
   return { bot: bot as BotFn };
 }

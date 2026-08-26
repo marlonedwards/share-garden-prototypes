@@ -227,7 +227,8 @@ none at 390x844.
 
 **P.** Bot mode with the untouched scaffold runs to the end card with no
 input: at least one trade on the log and the card reading Bot: rather than
-You:.
+You:. Every other bot on the scaffold's shelf finishes a dead-company run
+without breaking a rule.
 
 **Q.** A bot that buys one share more than cash covers stops the run in its
 first month, with the broken rule on screen and the tape frozen; code that
@@ -237,11 +238,19 @@ does not parse never leaves the deal card.
 
 The deal card carries a choice of who plays. **You play** is the game as
 specced above. **A bot plays** opens an editor on the card, prefilled with a
-scaffold whose bot buys and sells at random, so the first Run bot always
-produces a full run. The source persists in localStorage `trigger-bot`.
+scaffold: a JSDoc header stating the contract, a shelf of example bots, from
+a coin flipper through buy and hold, dollar cost averaging, swing trading,
+momentum and a moving average crossover to a stateful bracket and a
+self-rebalancing trend sizer, and a last line that picks the player,
+`bot = randomBot`. The random default means the first Run bot always
+produces a full run, and every bot on the shelf finishes any run without
+breaking a rule. The source persists in localStorage `trigger-bot`; a
+stored copy of the retired first-cut scaffold gives way to the current one.
 
-- The bot is one function `bot(prices, shares, cash)`. `prices` is the list
-  of monthly closes the tape has reached so far, the market month being the
+- The player is whatever function `bot` names once the source has loaded:
+  keep the shelf and repoint the last line, or define `function bot(...)`
+  yourself. The bot takes `(prices, shares, cash)`: `prices` is the list of
+  monthly closes the tape has reached so far, the market month being the
   game's unit of time; `shares` and `cash` are the account as it stands. It
   is called once per month at that month's close, month 0 included.
 - It returns an action `{ buy: n }`: positive n buys n shares at this
@@ -257,8 +266,8 @@ produces a full run. The source persists in localStorage `trigger-bot`.
   intact. An early stop shows the account's worth where it froze; it never
   pretends to be an end card, because a half-played run has no honest final
   worth to hold against the baselines.
-- Code that does not parse, or that never defines `bot`, never leaves the
-  deal card: the error prints under the editor.
+- Code that does not parse, or that never points `bot` at a function, never
+  leaves the deal card: the error prints under the editor.
 - During a bot run the space bar is dead and the button gives way to a panel
   reading The bot is trading, same footprint so the layout holds. The end
   card reads Bot: rather than You:, and a bot run never writes

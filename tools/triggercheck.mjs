@@ -15,6 +15,7 @@
 //   J_spacebar            space toggles, and the button flips label and colour
 //   J_desktop_keycap      the button carries a space keycap wide, none on phone
 //   P_bot_scaffold_runs   the shipped scaffold plays a full run by itself
+//   P_bot_shelf_finishes  every example bot survives a dead-company run
 //   Q_bot_wrong_action_stops  an overspending bot freezes the tape mid run
 //   Q_bot_compile_error_stays code that does not parse never leaves the card
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
@@ -729,11 +730,38 @@ async function run(page, tag) {
         text: el.textContent,
       };
     });
-    const scaffolded = source.includes("max_shares_can_buy") && source.includes("function bot");
+    const scaffolded = source.includes("max_shares_can_buy") && source.includes("bot = randomBot");
     check("P_bot_scaffold_runs",
       scaffolded && end.trades >= 1 && /Bot: \$/.test(end.text) && Number.isFinite(end.you),
       `${end.trades} trades, bot ended at ${end.you.toFixed(2)}${scaffolded ? "" : ", editor missing the scaffold"}`);
     await page.screenshot({ path: `${OUT}trigger-bot-end-${tag}.png` });
+
+    // Every other bot on the shelf, pointed at by rewriting the picker line,
+    // must finish a run without tripping its own rules. Lehman is the run
+    // that stresses them: the price goes to zero under whatever they hold.
+    const shelf = [
+      "buyAndHoldBot", "dollarCostAverageBot", "swingTradeBot",
+      "momentumBot", "crossoverBot", "bracketBot", "trendSizerBot",
+    ];
+    const broke = [];
+    for (const name of shelf) {
+      const picked = source.replace("bot = randomBot", `bot = ${name}`);
+      if (picked === source) {
+        broke.push(`${name}: no picker line to rewrite`);
+        continue;
+      }
+      await openBot(page, "era=gfc&stock=LEH&seed=7&turbo=30", picked);
+      await page.waitForSelector("[data-end], [data-bot-error]", { timeout: 90000 });
+      const verdict = await page.evaluate(() => {
+        const err = document.querySelector("[data-bot-error]");
+        if (err) return { error: err.getAttribute("data-bot-error") };
+        const el = document.querySelector("[data-end]");
+        return { trades: Number(el.getAttribute("data-trade-count")) };
+      });
+      if ("error" in verdict) broke.push(`${name}: ${verdict.error}`);
+    }
+    check("P_bot_shelf_finishes", broke.length === 0,
+      broke.length ? broke.join("; ") : `all ${shelf.length} example bots finished the Lehman run`);
   }
 
   stage = "Q_bot_wrong_action_stops";

@@ -109,10 +109,16 @@ function writeBest(v: number): void {
 }
 
 // The bot survives a reload, because nobody wants to retype a strategy that
-// took ten runs to tune. The scaffold is what a first visit opens with.
+// took ten runs to tune. The scaffold is what a first visit opens with, and a
+// stored copy of the retired first-cut scaffold, recognised by its old header
+// line, gives way to the current shelf rather than pinning the past.
 function readBotSource(): string {
   try {
-    return localStorage.getItem(BOT_KEY) ?? BOT_SCAFFOLD;
+    const stored = localStorage.getItem(BOT_KEY);
+    if (stored === null || stored.startsWith("// Your bot plays the run one month at a time.")) {
+      return BOT_SCAFFOLD;
+    }
+    return stored;
   } catch {
     return BOT_SCAFFOLD;
   }
@@ -482,9 +488,10 @@ export default function Trigger() {
           {mode === "bot" && (
             <div style={{ textAlign: "left" }}>
               <p style={{ fontSize: 14, color: MUTED, marginTop: 14, lineHeight: 1.45 }}>
-                One function, called once a month with the prices so far, your
-                shares and your cash. It answers with an action. Break a rule
-                and the run stops.
+                A shelf of example bots; the last line picks the player. It is
+                called once a month with the prices so far, your shares and
+                your cash, and answers with an action. Break a rule and the
+                run stops.
               </p>
               <textarea
                 data-bot-code=""
@@ -493,7 +500,7 @@ export default function Trigger() {
                 spellCheck={false}
                 aria-label="bot code"
                 style={{
-                  marginTop: 10, width: "100%", height: 260, resize: "vertical",
+                  marginTop: 10, width: "100%", height: 300, resize: "vertical",
                   background: PANEL, color: TEXT, borderRadius: 12, padding: 12,
                   border: "1px solid rgba(215,222,232,0.18)",
                   fontSize: 13, fontFamily: UI_FONT, lineHeight: 1.5,
