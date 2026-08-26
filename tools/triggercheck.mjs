@@ -987,22 +987,40 @@ async function run(page, tag) {
     await page.click("[data-go-free]");
     await page.waitForSelector("[data-start]", { timeout: 15000 });
     await page.click("[data-start]");
-    await page.waitForSelector('[data-guide="overview"]', { timeout: 15000 });
+    await page.waitForSelector('[data-guide-card][data-step="0"]', { timeout: 15000 });
     const t0 = await page.getAttribute("[data-trigger]", "data-t");
     await wait(600);
     const t1 = await page.getAttribute("[data-trigger]", "data-t");
-    await page.screenshot({ path: `${OUT}trigger-guide-${tag}.png` });
+    // the tour: the guide key advances the anchored cards, and each card's
+    // position is collected to prove the box actually travels the screen
+    const cardTop = () => page.evaluate(
+      () => Math.round(document.querySelector("[data-guide-card]").getBoundingClientRect().top),
+    );
+    const tops = [await cardTop()];
+    // the first advance is a click, which parks focus on the Next button;
+    // every later advance is the guide key, which must still move exactly
+    // one step rather than being eaten or doubled by the focused button
     await page.click("[data-guide-next]");
-    await page.waitForSelector('[data-guide="buy"]', { timeout: 15000 });
-    await page.keyboard.press("Space");
-    await page.waitForSelector('[data-guide="sell"]', { timeout: 15000 });
+    await page.waitForSelector('[data-guide-card][data-step="1"]', { timeout: 15000 });
+    tops.push(await cardTop());
+    for (const step of [2, 3, 4]) {
+      await page.keyboard.press("Space");
+      await page.waitForSelector(`[data-guide-card][data-step="${step}"]`, { timeout: 15000 });
+      tops.push(await cardTop());
+      if (step === 3) await page.screenshot({ path: `${OUT}trigger-guide-${tag}.png` });
+    }
+    const outBefore = await page.getAttribute("[data-trigger]", "data-position");
+    await page.keyboard.press("Space");            // the prompted buy
+    await page.waitForSelector('[data-guide-card][data-step="5"]', { timeout: 15000 });
     const held = await page.getAttribute("[data-trigger]", "data-position");
-    await page.keyboard.press("Space");
+    await page.keyboard.press("Space");            // next, to the sell card
+    await page.waitForSelector('[data-guide-card][data-step="6"]', { timeout: 15000 });
+    await page.keyboard.press("Space");            // the prompted sell
     await wait(700);
     const after = await page.evaluate(() => {
       const el = document.querySelector("[data-trigger]");
       return {
-        guide: document.querySelector("[data-guide]") !== null,
+        guide: document.querySelector("[data-guide-card]") !== null,
         t: Number(el.getAttribute("data-t")),
         pos: el.getAttribute("data-position"),
         cash: Number(el.getAttribute("data-cash")),
@@ -1012,11 +1030,13 @@ async function run(page, tag) {
     await open(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
     await wait(400);
     const again = await page.evaluate(() => ({
-      guide: document.querySelector("[data-guide]") !== null,
+      guide: document.querySelector("[data-guide-card]") !== null,
       t: Number(document.querySelector("[data-trigger]").getAttribute("data-t")),
     }));
     const youParts = {
       paused: t0 === t1,
+      moved: new Set(tops).size >= 3,
+      wasOut: outBefore === "out",
       bought: held === "in",
       resumed: !after.guide && after.t > 0.01 && after.pos === "out" && near(after.cash, 1000, 0.01),
       once: !again.guide && again.t > 0.01,
@@ -1024,23 +1044,49 @@ async function run(page, tag) {
     const youBad = Object.keys(youParts).filter((k) => !youParts[k]);
     check("U_you_guide", youBad.length === 0,
       youBad.length
-        ? `broke ${youBad.join(",")} (t ${t0} to ${t1}, after t ${after.t} pos ${after.pos} cash ${after.cash})`
-        : `held at t ${t0} through the tour, buy then sell, clock ran from all cash, and never again`);
+        ? `broke ${youBad.join(",")} (t ${t0} to ${t1}, tops ${tops.join("/")}, after t ${after.t} pos ${after.pos} cash ${after.cash})`
+        : `held at t ${t0} through seven anchored cards at ${new Set(tops).size} heights, buy then sell, clock ran from all cash, and never again`);
 
-    // the bot primer: the first Run bot explains the inputs before any run
+    // the bot primer: inputs alone, then the bot appears, then a decision
+    // per scripted tick, the price row growing a chip and the head pointer
+    // riding it, and See this bot landing back on the card with the code
     await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
     await page.waitForSelector("[data-bot-guide]", { timeout: 15000 });
     const phaseUnder = await page.getAttribute("[data-trigger]", "data-phase");
+    const chips = [await page.$$eval("[data-primer-price]", (els) => els.length)];
+    // same focus trap here: click once, then drive the rest by the key
+    await page.click("[data-primer-next]");
+    await page.waitForSelector("[data-primer-bot]", { timeout: 15000 });
+    const outs = [];
+    for (let f = 2; f <= 4; f++) {
+      await page.keyboard.press("Space");
+      await page.waitForSelector(`[data-bot-guide][data-primer-step="${f}"]`, { timeout: 15000 });
+      outs.push(await page.getAttribute("[data-primer-out]", "data-primer-out"));
+      chips.push(await page.$$eval("[data-primer-price]", (els) => els.length));
+    }
+    const head = await page.$("[data-primer-head]");
     await page.screenshot({ path: `${OUT}trigger-bot-guide-${tag}.png` });
-    await page.click("[data-bot-guide-run]");
+    await page.click("[data-bot-see]");
+    await page.waitForSelector('[data-trigger][data-phase="deal"] [data-start]', { timeout: 15000 });
+    const primerGone = await page.$("[data-bot-guide]");
+    await page.click("[data-start]");
     await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
     await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
     await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
     const primerAgain = await page.$("[data-bot-guide]");
-    check("U_bot_guide", phaseUnder === "deal" && primerAgain === null,
-      phaseUnder === "deal"
-        ? "the primer held the deal card, ran on request, and never returned"
-        : `the run started under the primer (phase ${phaseUnder})`);
+    const botParts = {
+      held: phaseUnder === "deal",
+      grows: chips.join("/") === "1/1/2/3",
+      decisions: outs.join("/") === "10/0/-10",
+      headMark: head !== null,
+      lands: primerGone === null,
+      once: primerAgain === null,
+    };
+    const botBad = Object.keys(botParts).filter((k) => !botParts[k]);
+    check("U_bot_guide", botBad.length === 0,
+      botBad.length
+        ? `broke ${botBad.join(",")} (chips ${chips.join("/")}, outs ${outs.join("/")}, phase ${phaseUnder})`
+        : `the primer grew ${chips.join("/")} chips under a head pointer through decisions ${outs.join("/")}, See this bot landed on the card, and it never returned`);
   }
 }
 

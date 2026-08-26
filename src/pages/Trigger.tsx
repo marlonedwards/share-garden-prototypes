@@ -9,7 +9,7 @@
 // trade against the tape as it stands this frame, not against whatever React
 // rendered last. State is a mirror of the ref, pushed once per frame.
 
-import type { MutableRefObject, ReactNode } from "react";
+import type { CSSProperties, MutableRefObject, ReactNode } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -84,9 +84,60 @@ interface BotStop {
   month: string;
 }
 
-// The manual walkthrough's three steps: the tour of the surface, the
-// prompted buy, and the prompted sell that starts the clock.
-type GuideStep = "overview" | "buy" | "sell";
+// The one key that drives the walkthrough forward and fires its prompted
+// trades. The handler, the keycap on Next and the card copy all read from
+// here, so rebinding it is a one line change.
+const GUIDE_KEY = { code: "Space", key: " ", label: "space" };
+
+// The manual walkthrough, data first: each card names an anchor on the run
+// screen to sit beside and what the guide key does there, advance or the
+// prompted trade. Rearranging the tour is editing this list.
+interface GuideStep {
+  anchor: "chart" | "xaxis" | "yaxis" | "meter" | "button";
+  action: "next" | "buy" | "sell";
+  title?: string;
+  text?: string;
+}
+
+// The bot primer's scripted trace: three ticks of inputs and the action they
+// draw, with a buy, a do nothing and a sell all on show. Clean numbers and
+// no market attached, because the lesson is the shape of the function: the
+// price list grows by one each tick, and the holdings carry the last action.
+interface PrimerCycle {
+  prices: number[];
+  shares: number;
+  cash: number;
+  out: number;
+  reading: string;
+}
+
+const BOT_PRIMER_CYCLES: PrimerCycle[] = [
+  { prices: [100], shares: 0, cash: 1000, out: 10, reading: "buys 10 shares with all its cash" },
+  { prices: [100, 110], shares: 10, cash: 0, out: 0, reading: "does nothing" },
+  { prices: [100, 110, 120], shares: 10, cash: 0, out: -10, reading: "sells all 10 shares" },
+];
+
+const GUIDE_STEPS: GuideStep[] = [
+  { anchor: "chart", action: "next", title: "The tape is paused." },
+  { anchor: "xaxis", action: "next", text: "This is the time in the simulation." },
+  {
+    anchor: "yaxis", action: "next",
+    text: "This is the price of a single share of the company, which changes over time.",
+  },
+  { anchor: "meter", action: "next", text: "Grey is your cash, which doesn't change in value." },
+  {
+    anchor: "button", action: "buy", title: "One control.",
+    text: `Press ${GUIDE_KEY.label} to buy or sell. Press it now to turn all your cash into shares.`,
+  },
+  {
+    anchor: "meter", action: "next",
+    text: "Green are the shares you own. The total height is the value of all your shares, and it changes as the price of a single share grows or shrinks.",
+  },
+  {
+    anchor: "button", action: "sell",
+    text: `Press ${GUIDE_KEY.label} to sell all your shares, starting fresh with $1,000 in cash. Now is your time to prove yourself against the market.`,
+  },
+];
 
 // One market of the parallel batch: its own deal, tape, headlines, and its
 // own compiled bot, so a stateful strategy cannot bleed between markets.
@@ -230,6 +281,26 @@ function levelSource(player: string): string {
   return `${BOT_FILES[player] ?? ""}\nbot = ${player};`;
 }
 
+// The one listener for the guide key, capture phase, so a button that kept
+// focus from an earlier click can neither swallow the key as its own
+// activation nor double fire it, and the page never scrolls under it. The
+// key itself is configured in GUIDE_KEY and nowhere else.
+function useGuideKey(active: boolean, onFire: () => void): void {
+  const fireRef = useRef(onFire);
+  fireRef.current = onFire;
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== GUIDE_KEY.code && e.key !== GUIDE_KEY.key) return;
+      e.preventDefault();
+      e.stopPropagation();
+      fireRef.current();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [active]);
+}
+
 const LABEL_COPY: Record<string, string> = {
   signal: "told the truth",
   noise: "meant nothing",
@@ -298,13 +369,12 @@ export default function Trigger() {
   // the running bot's source, behind the word bot on the trading panel
   const botSourceRef = useRef("");
 
-  // the walkthroughs: the manual guide's step (the clock holds while it is
-  // non null), and the bot primer with the start it intercepted
-  const [guide, setGuide] = useState<GuideStep | null>(null);
-  const guideRef = useRef<GuideStep | null>(null);
+  // the walkthroughs: the manual guide's step index (the clock holds while
+  // it is non null), and the bot primer with the start it intercepted
+  const [guide, setGuide] = useState<number | null>(null);
+  const guideRef = useRef<number | null>(null);
   guideRef.current = guide;
   const [botGuide, setBotGuide] = useState(false);
-  const pendingLevelRef = useRef<Level | null>(null);
 
   // headline feed
   const nextRef = useRef(0);
@@ -356,10 +426,9 @@ export default function Trigger() {
   const start = useCallback((level: Level | null) => {
     const asBot = level === null ? freeMode === "bot" : level.player !== "you";
     if (asBot) {
-      // the first bot run anywhere gets the primer instead, which hands the
-      // very same start back once it has been read
+      // the first bot run anywhere gets the primer instead; it exits back
+      // to this same card, where Run bot now runs
       if (!seenGuide(GUIDE_BOT_KEY)) {
-        pendingLevelRef.current = level;
         setBotGuide(true);
         return;
       }
@@ -375,7 +444,7 @@ export default function Trigger() {
       if (editable) writeBotSource(botSource);
     } else if (!seenGuide(GUIDE_YOU_KEY)) {
       // the first manual run anywhere opens on the walkthrough, tape held
-      setGuide("overview");
+      setGuide(0);
     }
     setMode(asBot ? "bot" : "you");
     setLevelId(level?.id ?? null);
@@ -594,7 +663,8 @@ export default function Trigger() {
   // ------------------------------------------------------------ the trade
   const toggle = useCallback(() => {
     const g = guideRef.current;
-    if (g === "overview") return;             // reading first, trading second
+    // a card that only wants Next ignores the trade controls entirely
+    if (g !== null && GUIDE_STEPS[g].action === "next") return;
     const current = runRef.current;
     if (isOver(current)) return;
     const held = current.holdings[ticker] ?? 0;
@@ -602,11 +672,12 @@ export default function Trigger() {
     if (next === current) return;
     runRef.current = next;
     setRun(next);
-    if (g === "buy") {
-      setGuide("sell");
-    } else if (g === "sell") {
-      // the walkthrough ends where a real run begins: all cash, and a clean
-      // tape with no practice trades on it, only now with the clock running
+    if (g === null) return;
+    if (GUIDE_STEPS[g].action === "buy") {
+      setGuide(g + 1);
+    } else {
+      // the prompted sell: the walkthrough ends where a real run begins,
+      // all cash on a clean tape with no practice trades, clock running
       markGuide(GUIDE_YOU_KEY);
       setGuide(null);
       runRef.current = makeRun(deal, speed);
@@ -614,16 +685,18 @@ export default function Trigger() {
     }
   }, [ticker, deal, speed]);
 
-  useEffect(() => {
-    if (phase !== "run" || mode !== "you") return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space" && e.key !== " ") return;
-      e.preventDefault();
-      toggle();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase, mode, toggle]);
+  const advanceGuide = useCallback(() => {
+    setGuide((g) => (g === null ? null : Math.min(g + 1, GUIDE_STEPS.length - 1)));
+  }, []);
+
+  useGuideKey(phase === "run" && mode === "you", () => {
+    const g = guideRef.current;
+    if (g !== null && GUIDE_STEPS[g].action === "next") {
+      advanceGuide();
+      return;
+    }
+    toggle();
+  });
 
   // best delta against doing nothing, kept across runs; yours, not a bot's,
   // so a lucky script cannot set a record you then chase by hand
@@ -886,63 +959,18 @@ export default function Trigger() {
       </>
     );
 
-    // The bot primer, once ever: what a bot is handed and how fast it may
-    // act, read before the first Run bot anywhere does anything.
+    // The bot primer, once ever: the inputs fed through the bot as a stepped
+    // diagram, read before the first Run bot anywhere does anything. It ends
+    // back on this card, code in view, Run bot armed.
     const botPrimer = botGuide && (
-      <>
-        <div style={{ position: "fixed", inset: 0, zIndex: 65, background: "rgba(0,0,0,0.5)" }} />
-        <div
-          data-bot-guide=""
-          style={{
-            position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
-            width: "min(560px, calc(100vw - 32px))", zIndex: 70,
-            background: PANEL, border: "1px solid rgba(215,222,232,0.25)",
-            borderRadius: 16, padding: 20, textAlign: "left",
-            boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
-          }}
-        >
-          <div style={{ fontSize: 17, fontWeight: 700 }}>Before your first bot run</div>
-          <p style={{ fontSize: 14, color: TEXT, marginTop: 10, lineHeight: 1.5 }}>
-            Every tick of the tape, your bot is handed three things: every
-            price so far, the shares it holds, and the cash it has left.
-          </p>
-          <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
-            It answers with one action, buy this many shares, sell this many,
-            or nothing. It reacts the moment the price updates,
-            {" "}{TICKS_PER_MONTH} times a market month, exactly as fast as
-            the screen shows you.
-          </p>
-          <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
-            What happens in between is yours: any JavaScript, any strategy.
-          </p>
-          <div style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center" }}>
-            <button
-              data-bot-guide-run=""
-              onClick={() => {
-                markGuide(GUIDE_BOT_KEY);
-                setBotGuide(false);
-                start(pendingLevelRef.current);
-              }}
-              style={{
-                flex: 1, height: 52, borderRadius: 12, border: "none", background: UP,
-                color: "#0C0F14", fontSize: 17, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
-              }}
-            >
-              Run bot
-            </button>
-            <button
-              data-back=""
-              onClick={() => setBotGuide(false)}
-              style={{
-                background: "transparent", border: "none", color: MUTED,
-                fontSize: 14, fontFamily: UI_FONT, cursor: "pointer",
-              }}
-            >
-              back
-            </button>
-          </div>
-        </div>
-      </>
+      <BotPrimer
+        desktop={desktop}
+        onSee={() => {
+          markGuide(GUIDE_BOT_KEY);
+          setBotGuide(false);
+        }}
+        onClose={() => setBotGuide(false)}
+      />
     );
 
     return shell(
@@ -1390,65 +1418,19 @@ export default function Trigger() {
   const calcH = Math.ceil(bigBase * 1.15) + 4 + sparkRowH;
   const deadH = Math.ceil(under(13) * 1.4) + 8;
 
-  // The first-run walkthrough, over the paused tape: the surface, then the
-  // prompted buy, then the prompted sell that starts the clock. One card,
-  // fixed, so nothing in the run layout moves under it.
+  // The first-run walkthrough, over the paused tape: one small card per
+  // step, each placed beside the thing it names. The layout is static while
+  // the guide holds the clock, so the card can measure the screen once per
+  // step and sit exactly where it points.
   const guideCard = guide !== null && (
-    <div
-      data-guide={guide}
-      style={{
-        position: "fixed", left: pad, right: pad, bottom: phone ? 108 : 130,
-        zIndex: 50, display: "flex", justifyContent: "center",
-      }}
-    >
-      <div style={{
-        maxWidth: 560, width: "100%", background: PANEL,
-        border: "1px solid rgba(215,222,232,0.25)", borderRadius: 14,
-        padding: 16, textAlign: "left", boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
-      }}>
-        {guide === "overview" && (
-          <>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>The tape is paused.</div>
-            <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
-              The chart is time across and price up. The strip on the right is
-              your money on one dollar scale: green slabs are your shares, and
-              their height follows the price; grey ticks are your cash, which
-              only moves when you trade.
-            </p>
-            <button
-              data-guide-next=""
-              onClick={() => setGuide("buy")}
-              style={{
-                marginTop: 12, height: 44, padding: "0 22px", borderRadius: 10,
-                border: "none", background: UP, color: "#0C0F14",
-                fontSize: 15, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
-              }}
-            >
-              Next
-            </button>
-          </>
-        )}
-        {guide === "buy" && (
-          <>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>One control.</div>
-            <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
-              Space, or the green button, is the whole game. Press it now: Buy
-              turns all your cash into shares at the price on screen.
-            </p>
-          </>
-        )}
-        {guide === "sell" && (
-          <>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>Your cash is shares now.</div>
-            <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
-              Their value follows the price, up and down. Press space again:
-              Sell turns them back into cash, and the clock starts with you
-              all in cash.
-            </p>
-          </>
-        )}
-      </div>
-    </div>
+    <GuideCard
+      step={GUIDE_STEPS[guide]}
+      index={guide}
+      total={GUIDE_STEPS.length}
+      desktop={desktop}
+      pad={pad}
+      onNext={advanceGuide}
+    />
   );
 
   return shell(
@@ -1490,7 +1472,7 @@ export default function Trigger() {
       </div>
 
       <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "stretch", flex: "1 1 auto", minHeight: 0 }}>
-        <div style={{ background: PANEL, borderRadius: 12, overflow: "hidden" }}>
+        <div data-chart-panel="" style={{ background: PANEL, borderRadius: 12, overflow: "hidden" }}>
           <Chart
             series={series}
             months={months}
@@ -1502,7 +1484,7 @@ export default function Trigger() {
             background={PANEL}
           />
         </div>
-        <div style={{ background: PANEL, borderRadius: 12, overflow: "hidden", width: meterW }}>
+        <div data-meter-panel="" style={{ background: PANEL, borderRadius: 12, overflow: "hidden", width: meterW }}>
           <Meter
             shares={shares}
             price={livePrice}
@@ -1653,6 +1635,364 @@ function Spark(
           strokeLinejoin="round" strokeLinecap="round" />
       </svg>
     </div>
+  );
+}
+
+// One walkthrough card, placed beside its anchor: the chart, its x axis, its
+// y axis near the starting price, the meter, or the action button. Fixed and
+// measured from the live layout, which is static while the guide holds the
+// clock. Next advances on click or on the guide key; the prompted trades
+// have no Next, because the same key is the trade there.
+function GuideCard(
+  { step, index, total, desktop, pad, onNext }:
+  { step: GuideStep; index: number; total: number; desktop: boolean; pad: number; onNext: () => void },
+) {
+  const [style, setStyle] = useState<CSSProperties | null>(null);
+
+  useLayoutEffect(() => {
+    const place = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const w = Math.min(320, vw - pad * 2);
+      const rect = (sel: string) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
+      const chart = rect("[data-chart-panel]");
+      const meter = rect("[data-meter-panel]");
+      const button = rect("[data-action]");
+      const clampX = (x: number) => Math.max(pad, Math.min(x, vw - w - pad));
+      let s: CSSProperties = { left: clampX(vw / 2 - w / 2), top: vh * 0.3 };
+      if (step.anchor === "chart" && chart !== null) {
+        s = { left: clampX(chart.left + chart.width / 2 - w / 2), top: chart.top + chart.height * 0.3 };
+      }
+      if (step.anchor === "xaxis" && chart !== null) {
+        // fully under the panel, so the year labels it names stay readable
+        s = { left: clampX(chart.left + chart.width / 2 - w / 2), top: chart.bottom + 8 };
+      }
+      if (step.anchor === "yaxis" && chart !== null) {
+        s = { left: clampX(chart.left + 16), top: chart.top + chart.height * 0.42 };
+      }
+      if (step.anchor === "meter" && meter !== null) {
+        s = { left: clampX(meter.left - w - 12), top: meter.top + meter.height * 0.32 };
+      }
+      if (step.anchor === "button" && button !== null) {
+        s = { left: clampX(button.left + button.width / 2 - w / 2), bottom: vh - button.top + 12 };
+      }
+      setStyle({ ...s, width: w });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [step, pad]);
+
+  if (style === null) return null;
+  return (
+    <div
+      data-guide-card=""
+      data-step={index}
+      data-anchor={step.anchor}
+      style={{ position: "fixed", zIndex: 50, ...style }}
+    >
+      <div style={{
+        background: PANEL, border: "1px solid rgba(215,222,232,0.3)", borderRadius: 12,
+        padding: 14, textAlign: "left", boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
+      }}>
+        {step.title !== undefined && (
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{step.title}</div>
+        )}
+        {step.text !== undefined && (
+          <p style={{
+            fontSize: 14, color: TEXT, lineHeight: 1.5,
+            margin: step.title !== undefined ? "6px 0 0" : 0,
+          }}>
+            {step.text}
+          </p>
+        )}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 10, marginTop: 10,
+        }}>
+          <span style={{ fontSize: 12, color: MUTED }}>{index + 1} of {total}</span>
+          {step.action === "next" && (
+            <button
+              data-guide-next=""
+              onClick={onNext}
+              style={{
+                height: 38, padding: "0 16px", borderRadius: 10, border: "none",
+                background: UP, color: "#0C0F14", fontSize: 14, fontWeight: 600,
+                fontFamily: UI_FONT, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 8,
+              }}
+            >
+              Next {desktop && <Key label={GUIDE_KEY.label} />}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The bot primer, drawn rather than written: the three inputs as small
+// panels, the prices an explicit array whose head wears the pointer, shares
+// and cash echoing the meter's own slabs and ticks, arrows curving into a
+// chip that is the bot, and the decision as a badge on its far side. The
+// guide key steps the scripted ticks of BOT_PRIMER_CYCLES; it exits with
+// See this bot, back to the card that holds the code.
+function BotPrimer(
+  { onSee, onClose, desktop }:
+  { onSee: () => void; onClose: () => void; desktop: boolean },
+) {
+  const last = BOT_PRIMER_CYCLES.length + 1;
+  const [frame, setFrame] = useState(0);
+  const cycle = Math.max(0, frame - 2);
+  const c = BOT_PRIMER_CYCLES[Math.min(cycle, BOT_PRIMER_CYCLES.length - 1)];
+  const showBot = frame >= 1;
+  const showOut = frame >= 2;
+  const done = frame >= last;
+
+  useGuideKey(true, () => setFrame((f) => Math.min(f + 1, last)));
+
+  // the diagram's fixed geometry: input panels left, the chip centre, the
+  // decision right, and the arrow layer drawn from the same numbers so the
+  // pieces cannot drift apart; narrow screens pan the diagram instead of
+  // shrinking its type
+  const DW = 520;
+  const DH = 256;
+  const PANEL_W = 200;
+  const ROWS = [
+    { y: 0, h: 92, cy: 46 },
+    { y: 104, h: 70, cy: 139 },
+    { y: 186, h: 70, cy: 221 },
+  ];
+  const CHIP = { x: 300, y: 107, s: 64 };
+  const chipCy = CHIP.y + CHIP.s / 2;
+  const BADGE = { x: 404, y: 104, w: 116 };
+
+  const panel = (
+    key: string, row: { y: number; h: number }, label: string,
+    body: ReactNode, annotation: string,
+  ) => (
+    <div
+      key={key}
+      style={{
+        position: "absolute", left: 0, top: row.y, width: PANEL_W, height: row.h,
+        background: "rgba(215,222,232,0.05)", border: "1px solid rgba(215,222,232,0.16)",
+        borderRadius: 10, padding: "6px 10px",
+      }}
+    >
+      <div style={{ fontSize: 12, color: MUTED }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5 }}>{body}</div>
+      {frame === 0 && (
+        <div style={{ fontSize: 12, color: MUTED, marginTop: 5, lineHeight: 1.25 }}>{annotation}</div>
+      )}
+    </div>
+  );
+
+  const pricesBody = (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 4, paddingBottom: 18 }}>
+      <span style={{ fontSize: 13, color: MUTED }}>[</span>
+      {c.prices.map((p, i) => {
+        const head = i === c.prices.length - 1;
+        return (
+          <span key={i} style={{ position: "relative", display: "inline-flex" }}>
+            <span
+              data-primer-price=""
+              style={{
+                padding: "3px 7px", borderRadius: 7, fontSize: 13,
+                fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+                border: head ? `1px solid ${UP}` : "1px solid rgba(215,222,232,0.28)",
+                color: head ? UP : TEXT,
+              }}
+            >
+              ${p}
+            </span>
+            {head && (
+              // anchored so the arrow's own centre sits under the chip's
+              // centre, the caption trailing off to the right
+              <span
+                data-primer-head=""
+                style={{
+                  position: "absolute", top: "100%", left: "50%",
+                  transform: "translateX(-6px)", marginTop: 2,
+                  fontSize: 12, color: UP, whiteSpace: "nowrap",
+                }}
+              >
+                {"\u25b2"} current price
+              </span>
+            )}
+          </span>
+        );
+      })}
+      <span style={{ fontSize: 13, color: MUTED }}>]</span>
+    </div>
+  );
+
+  const outColor = c.out > 0 ? UP : c.out < 0 ? DOWN : MUTED;
+  const blurb = frame === 0
+    ? "These are the three things your bot will be handed."
+    : frame === 1
+      ? "This is your bot. It sees these inputs and makes a decision every time there is a new price."
+      : frame === 2
+        ? "Its first decision. Press Next to watch the bot at work."
+        : done
+          ? `In the game this runs ${TICKS_PER_MONTH} times a market month, the moment the price updates. The middle of the bot is any JavaScript.`
+          : "";
+
+  return (
+    <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 65, background: "rgba(0,0,0,0.5)" }} />
+      <div
+        data-bot-guide=""
+        data-primer-step={frame}
+        style={{
+          position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+          width: "min(600px, calc(100vw - 32px))", zIndex: 70,
+          background: PANEL, border: "1px solid rgba(215,222,232,0.25)",
+          borderRadius: 16, padding: 20, textAlign: "left",
+          boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div style={{ fontSize: 17, fontWeight: 700 }}>Before your first bot run</div>
+
+        <div style={{ overflowX: "auto", marginTop: 16 }}>
+          <div style={{ position: "relative", width: DW, height: DH }}>
+            {showBot && (
+              <svg
+                aria-hidden="true"
+                width={DW}
+                height={DH}
+                viewBox={`0 0 ${DW} ${DH}`}
+                style={{ position: "absolute", inset: 0 }}
+              >
+                <defs>
+                  <marker
+                    id="primer-arrow" viewBox="0 0 8 8" refX="7" refY="4"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse"
+                  >
+                    <path d="M0 0 L8 4 L0 8 Z" fill="rgba(215,222,232,0.55)" />
+                  </marker>
+                </defs>
+                <g stroke="rgba(215,222,232,0.4)" strokeWidth="1.5" fill="none">
+                  <path d={`M${PANEL_W + 2} ${ROWS[0].cy} C 254 ${ROWS[0].cy}, 254 ${chipCy - 8}, ${CHIP.x - 6} ${chipCy - 8}`} markerEnd="url(#primer-arrow)" />
+                  <path d={`M${PANEL_W + 2} ${ROWS[1].cy} L ${CHIP.x - 6} ${ROWS[1].cy}`} markerEnd="url(#primer-arrow)" />
+                  <path d={`M${PANEL_W + 2} ${ROWS[2].cy} C 254 ${ROWS[2].cy}, 254 ${chipCy + 8}, ${CHIP.x - 6} ${chipCy + 8}`} markerEnd="url(#primer-arrow)" />
+                  <path d={`M${CHIP.x + CHIP.s + 4} ${chipCy} L ${BADGE.x - 6} ${chipCy}`} markerEnd="url(#primer-arrow)" />
+                </g>
+              </svg>
+            )}
+
+            {panel("prices", ROWS[0], "prices", pricesBody, "every price so far")}
+            {panel(
+              "shares", ROWS[1], "shares",
+              <span style={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{c.shares}</span>,
+              "only changes if you buy or sell",
+            )}
+            {panel(
+              "cash", ROWS[2], "cash in wallet",
+              <span style={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{money(c.cash)}</span>,
+              "what you buy shares with and sell them for",
+            )}
+
+            {showBot && (
+              <div data-primer-bot="" style={{ position: "absolute", left: CHIP.x, top: CHIP.y, width: CHIP.s, textAlign: "center" }}>
+                <svg width={CHIP.s} height={CHIP.s} viewBox="0 0 64 64" aria-hidden="true">
+                  <g fill="rgba(215,222,232,0.45)">
+                    {[20, 32, 44].map((p) => (
+                      <g key={p}>
+                        <rect x={p - 2} y={4} width={4} height={8} rx={1} />
+                        <rect x={p - 2} y={52} width={4} height={8} rx={1} />
+                        <rect x={4} y={p - 2} width={8} height={4} rx={1} />
+                        <rect x={52} y={p - 2} width={8} height={4} rx={1} />
+                      </g>
+                    ))}
+                  </g>
+                  <rect x={12} y={12} width={40} height={40} rx={9} fill={PANEL} stroke="rgba(215,222,232,0.6)" strokeWidth={1.5} />
+                  <rect x={24} y={24} width={16} height={16} rx={4} fill="none" stroke={UP} strokeWidth={1.5} />
+                </svg>
+                <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>bot</div>
+              </div>
+            )}
+
+            {showBot && (
+              <div
+                data-primer-out={showOut ? c.out : ""}
+                style={{
+                  position: "absolute", left: BADGE.x, top: BADGE.y, width: BADGE.w,
+                  minHeight: 70, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 3,
+                  borderRadius: 12, textAlign: "center",
+                  border: showOut ? `1px solid ${outColor}` : "1px dashed rgba(215,222,232,0.3)",
+                  color: showOut ? outColor : MUTED,
+                }}
+              >
+                {showOut ? (
+                  <>
+                    <svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true">
+                      {c.out > 0 && <path d="M11 1 L20 12 L14 12 L14 17 L8 17 L8 12 L2 12 Z" fill={UP} />}
+                      {c.out < 0 && <path d="M11 17 L2 6 L8 6 L8 1 L14 1 L14 6 L20 6 Z" fill={DOWN} />}
+                      {c.out === 0 && <rect x="4" y="7" width="14" height="4" rx="2" fill={MUTED} />}
+                    </svg>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>
+                      {c.out > 0 ? `buy ${c.out}` : c.out < 0 ? `sell ${-c.out}` : "hold"}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 400, color: MUTED }}>{`{ buy: ${c.out} }`}</span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>?</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {blurb !== "" && (
+          <p style={{ fontSize: 14, color: TEXT, margin: "14px 0 0", lineHeight: 1.5 }}>{blurb}</p>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 14 }}>
+          <span style={{ fontSize: 12, color: MUTED }}>
+            {showOut ? `tick ${cycle + 1} of ${BOT_PRIMER_CYCLES.length}` : ""}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              data-back=""
+              onClick={onClose}
+              style={{
+                background: "transparent", border: "none", color: MUTED,
+                fontSize: 14, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              back
+            </button>
+            {done ? (
+              <button
+                data-bot-see=""
+                onClick={onSee}
+                style={{
+                  height: 44, padding: "0 24px", borderRadius: 12, border: "none",
+                  background: UP, color: "#0C0F14", fontSize: 16, fontWeight: 600,
+                  fontFamily: UI_FONT, cursor: "pointer",
+                }}
+              >
+                See this bot
+              </button>
+            ) : (
+              <button
+                data-primer-next=""
+                onClick={() => setFrame((f) => Math.min(f + 1, last))}
+                style={{
+                  height: 38, padding: "0 16px", borderRadius: 10, border: "none",
+                  background: UP, color: "#0C0F14", fontSize: 14, fontWeight: 600,
+                  fontFamily: UI_FONT, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}
+              >
+                Next {desktop && <Key label={GUIDE_KEY.label} />}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 

@@ -397,20 +397,29 @@ free play, in any order, tracked in localStorage `trigger-guide-you` and
 `trigger-guide-bot`.
 
 - **The manual walkthrough.** The first Play (the human start button, so
-  named) enters the run screen with the tape held. A fixed card walks the
-  surface: the chart is time across and price up; the meter's green slabs
-  are shares whose height follows the price, the grey ticks cash that only
-  moves on a trade. Next prompts the buy: space or the button, all cash
-  into shares. A second card says the cash is shares now and their value
-  follows the price, and prompts the sell: all shares back to cash, and the
-  clock starts. The practice trades never reach the record: the run
-  restarts on a clean tape, all cash, the moment the walkthrough ends.
-- **The bot primer.** The first Run bot anywhere opens a card over the deal
-  screen instead of running: the bot is handed every price so far, its
-  shares and its cash; it answers with one action and reacts the moment the
-  price updates, TICKS_PER_MONTH times a market month, as fast as the
-  screen; the logic in between is any JavaScript. Run bot on the card
-  starts the intercepted run; back closes it without marking it seen.
+  named) holds the tape and deals seven small cards, each sitting beside
+  the thing it names: the pause notice on the chart, the x axis (the time
+  in the simulation), the y axis (the price of one share, which changes
+  over time), the meter's grey cash, the prompted buy on the button, the
+  meter's green shares whose total height follows the price of one, and
+  the prompted sell, which starts the clock fresh at $1,000. Every card
+  advances on the guide key, one constant in the code shown as a keycap on
+  Next; on the two prompted trades the same key is the trade, and the card
+  has no Next. The practice trades never reach the record: the run restarts
+  on a clean tape as the walkthrough ends.
+- **The bot primer.** The first Run bot anywhere opens a stepped diagram
+  over the deal card instead of running. First the inputs alone, annotated:
+  `prices [ $100 ]` as an explicit array with the head marked current
+  price, a pointer that rides the newest element as the array grows;
+  shares, which only change on a trade; cash in wallet, what shares are
+  bought with and sold for. The guide key then draws the bot the inputs
+  feed into by arrow, then its first decision, then one frame per remaining
+  scripted tick from the BOT_PRIMER_CYCLES table, the holdings carrying the
+  last action and the decisions covering a buy, a do nothing and a sell.
+  The last frame names the pace, TICKS_PER_MONTH times a market month the
+  moment the price updates, and exits with **See this bot**, back to the
+  card that holds the code and Run bot; back closes without marking it
+  seen.
 - The shelf's bots carry comments meant to be read: each file says what the
   strategy believes, how the window arithmetic works, and where it tends to
   win and lose, because the code on the level card is the curriculum.
