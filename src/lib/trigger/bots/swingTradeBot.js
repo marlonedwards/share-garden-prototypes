@@ -1,8 +1,8 @@
-// Buys the dip, sells the rip: all in when this month sits 8% under the
-// average of the six before it, all out when it sits 8% over.
+// Buys the dip, sells the rip: all in when the price sits 8% under its six
+// month average, all out when it sits 8% over.
 function swingTradeBot(prices, shares, cash) {
-  if (prices.length < 2) return { buy: 0 };
-  const window = prices.slice(-7, -1);
+  const window = prices.slice(-6 * ticks_per_month - 1, -1);
+  if (window.length === 0) return { buy: 0 };
   const avg = window.reduce((a, b) => a + b, 0) / window.length;
   const price = prices[prices.length - 1];
   if (!(avg > 0)) return { buy: 0 };

@@ -21,7 +21,7 @@ import type { Diagnostic } from "@codemirror/lint";
 import { lintGutter, linter } from "@codemirror/lint";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
-import { maxSharesCanBuy, maxSharesCanSell } from "../../lib/trigger/bot";
+import { TICKS_PER_MONTH, maxSharesCanBuy, maxSharesCanSell } from "../../lib/trigger/bot";
 
 const PANEL = "#1F2733";
 const MUTED = "#8794A6";
@@ -30,12 +30,13 @@ interface BotCodeHost extends HTMLDivElement {
   cmView?: EditorView;
 }
 
-// What the completion popup knows: the helpers under their in-scope names,
+// What the completion popup knows: everything the compiler puts in scope,
 // and Math for the usual arithmetic. Deliberately not globalThis, which
 // would offer the whole window as if it were part of the game.
 const SCOPE = {
   max_shares_can_buy: maxSharesCanBuy,
   max_shares_can_sell: maxSharesCanSell,
+  ticks_per_month: TICKS_PER_MONTH,
   Math,
 };
 

@@ -1,9 +1,10 @@
 // Headless harness for the bot shelf. Every bot in src/lib/trigger/bots is
 // compiled by the real compiler and played through the real action law
-// (src/lib/trigger/bot.ts) against thousands of random tapes: geometric
-// walks with shock months, flat tapes, penny prices, unaffordable prices and
-// companies that die mid run. A shelf bot that ever breaks a rule is a
-// shipped crash, so any error here is a failure, not a report.
+// (src/lib/trigger/bot.ts), tick by tick at the human's granularity, against
+// thousands of random tapes: geometric walks with shock months, flat tapes,
+// penny prices, unaffordable prices and companies that die mid run. A shelf
+// bot that ever breaks a rule is a shipped crash, so any error here is a
+// failure, not a report.
 //
 //   file_names          every bot file declares the function it is named for
 //   scaffold_assembles  the assembled scaffold compiles and picks PLAYER
@@ -19,8 +20,9 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import type { RunState } from "../src/lib/tape/engine";
+import { priceAt } from "../src/lib/tape/engine";
 import type { BotFn } from "../src/lib/trigger/bot";
-import { botAct, compileBot } from "../src/lib/trigger/bot";
+import { TICKS_PER_MONTH, botAct, compileBot } from "../src/lib/trigger/bot";
 import { PLAYER, assembleScaffold, shelfNames } from "../src/lib/trigger/bots/assemble";
 
 declare const process: { argv: string[]; exit(code: number): never };
@@ -101,18 +103,24 @@ function fuzzRun(series: number[]): RunState {
   };
 }
 
-// One run, exactly as the page drives it: the bot acts on every close except
-// the last, and the account must stay finite and non-negative throughout.
+// One run, exactly as the page drives it: the tape ticks TICKS_PER_MONTH
+// times a month, the bot sees the smoothstepped tick price the screen would
+// show and acts on every tick before the final month, and the account must
+// stay finite and non-negative throughout. The prices array grows in place
+// and is passed by reference, the same contract the page keeps.
 function playTape(bot: BotFn, series: number[]): { error: string } | { trades: number } {
   let run = fuzzRun(series);
-  const last = series.length - 1;
-  for (let month = 0; month < last; month++) {
-    const acted = botAct(run, "FUZZ", bot, month);
-    if ("error" in acted) return { error: `month ${month}: ${acted.error}` };
+  const maxTick = Math.ceil((series.length - 1) * TICKS_PER_MONTH) - 1;
+  const prices: number[] = [];
+  for (let tick = 0; tick <= maxTick; tick++) {
+    const at = tick / TICKS_PER_MONTH;
+    prices.push(priceAt(run, "FUZZ", at));
+    const acted = botAct(run, "FUZZ", bot, prices, at);
+    if ("error" in acted) return { error: `tick ${tick}: ${acted.error}` };
     run = acted.run;
     const shares = run.holdings.FUZZ;
     if (!Number.isFinite(run.cash) || !Number.isFinite(shares) || run.cash < 0 || shares < 0) {
-      return { error: `month ${month}: account went bad, cash ${run.cash}, shares ${shares}` };
+      return { error: `tick ${tick}: account went bad, cash ${run.cash}, shares ${shares}` };
     }
   }
   return { trades: run.trades.length };

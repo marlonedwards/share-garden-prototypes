@@ -4,19 +4,27 @@
 // per file, assembled by bots/index.ts.
 //
 // The source is compiled once per run with new Function, with the two helpers
-// in scope under the snake_case names the scaffold advertises. The bot is
-// called once per market month, the game's unit of time, with the monthly
-// closes so far, and answers with one action: { buy: n }, positive to buy n
-// shares, negative to sell n. Fractional shares are allowed here, unlike the
-// space bar, because a bot held to whole shares would spend its whole line
-// count on rounding.
+// and ticks_per_month in scope under the snake_case names the scaffold
+// advertises. The bot plays at the human's granularity: the tape ticks
+// TICKS_PER_MONTH times a market month, and on every tick the bot is shown
+// the same smoothstepped price the screen shows and trades at it, exactly as
+// a finger on the space bar would. It answers with one action: { buy: n },
+// positive to buy n shares, negative to sell n. Fractional shares are
+// allowed here, unlike the space bar, because a bot held to whole shares
+// would spend its whole line count on rounding.
 //
 // A wrong action stops the run rather than being corrected. The bot is the
 // player, and a player the game silently fixes is not being judged.
 
 import type { RunState, Ticker, Trade } from "../tape/engine";
-import { worthAt } from "../tape/engine";
+import { monthAt, priceAt, worthAt } from "../tape/engine";
 import { price as fmtPrice } from "./format";
+
+// How often a bot may act, in market time. Eight ticks a month at the game's
+// 1.6 months per second is a decision every ~78ms of real time, the order of
+// a human reflex on the space bar: the bot gets the player's granularity,
+// not a superpower and not a monthly handicap.
+export const TICKS_PER_MONTH = 8;
 
 export type BotFn = (prices: number[], shares: number, cash: number) => unknown;
 
@@ -49,11 +57,14 @@ export function maxSharesCanSell(prices: number[], shares: number, cash: number)
 // stopped choosing one. `function bot` and `const bot` stay local to the
 // wrapper and work unchanged.
 export function compileBot(source: string): { bot: BotFn } | { error: string } {
-  let factory: (buyMax: typeof maxSharesCanBuy, sellMax: typeof maxSharesCanSell) => unknown;
+  let factory: (
+    buyMax: typeof maxSharesCanBuy, sellMax: typeof maxSharesCanSell, ticks: number,
+  ) => unknown;
   try {
     factory = new Function(
       "max_shares_can_buy",
       "max_shares_can_sell",
+      "ticks_per_month",
       `${source}\n;return typeof bot === "function" ? bot : null;`,
     ) as typeof factory;
   } catch (e) {
@@ -64,7 +75,7 @@ export function compileBot(source: string): { bot: BotFn } | { error: string } {
   let bot: unknown;
   let threw: string | null = null;
   try {
-    bot = factory(maxSharesCanBuy, maxSharesCanSell);
+    bot = factory(maxSharesCanBuy, maxSharesCanSell, TICKS_PER_MONTH);
   } catch (e) {
     threw = (e as Error)?.message ?? String(e);
   }
@@ -90,13 +101,16 @@ function fmtShares(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
 
-// One month of the bot's run: ask it for an action against the closes up to
-// `month` and apply that action at that month's close. An error is a verdict,
-// not an exception: the caller stops the run and puts the sentence on screen.
+// One tick of the bot's run: ask it for an action against `prices`, the tick
+// prices sampled so far with the current price last, and apply that action at
+// the tape position `t`. The caller owns the prices array and passes it by
+// reference on every tick: a bot that mutates it only lies to its own later
+// calls, because the execution price is read from the engine here, never from
+// the array. An error is a verdict, not an exception: the caller stops the
+// run and puts the sentence on screen.
 export function botAct(
-  run: RunState, ticker: Ticker, bot: BotFn, month: number,
+  run: RunState, ticker: Ticker, bot: BotFn, prices: number[], t: number,
 ): { run: RunState } | { error: string } {
-  const prices = run.prices[ticker].slice(0, month + 1);
   const shares = run.holdings[ticker] ?? 0;
   const cash = run.cash;
 
@@ -112,7 +126,7 @@ export function botAct(
   }
   if (Math.abs(n) < HOLD) return { run };
 
-  const price = prices[month];
+  const price = priceAt(run, ticker, t);
   if (n > 0) {
     if (!(price > 0)) {
       return { error: `the bot bought ${fmtShares(n)} shares of a stock priced at zero` };
@@ -124,21 +138,21 @@ export function botAct(
           + `${fmtPrice(cash)} cash; that covers at most ${fmtShares(max)}`,
       };
     }
-    return { run: applyTrade(run, ticker, "buy", Math.min(n, max), price, month) };
+    return { run: applyTrade(run, ticker, "buy", Math.min(n, max), price, t) };
   }
 
   const want = -n;
   if (want > shares + SLOP * Math.max(1, shares)) {
     return { error: `the bot sold ${fmtShares(want)} shares while holding ${fmtShares(shares)}` };
   }
-  return { run: applyTrade(run, ticker, "sell", Math.min(want, shares), price, month) };
+  return { run: applyTrade(run, ticker, "sell", Math.min(want, shares), price, t) };
 }
 
 // The engine's buy() and sell() speak whole shares, so the fractional trade is
 // applied here, with the same bookkeeping: cash and holdings move together and
 // the trade lands in the log the chart and the end card already read.
 function applyTrade(
-  run: RunState, ticker: Ticker, kind: "buy" | "sell", shares: number, price: number, month: number,
+  run: RunState, ticker: Ticker, kind: "buy" | "sell", shares: number, price: number, at: number,
 ): RunState {
   const moved = shares * price;
   const cash = Math.max(0, kind === "buy" ? run.cash - moved : run.cash + moved);
@@ -150,10 +164,10 @@ function applyTrade(
   const next: RunState = { ...run, cash, holdings };
   const trade: Trade = {
     kind, ticker, shares, price,
-    at: month,
-    month: run.months[month],
+    at,
+    month: monthAt(run, at),
     cash,
-    worth: worthAt(next, month),
+    worth: worthAt(next, at),
   };
   return { ...next, trades: [...run.trades, trade] };
 }

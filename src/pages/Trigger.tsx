@@ -29,7 +29,7 @@ import type { HeadlineSample, PlacedHeadline } from "../lib/tape/headlines";
 import { sampleHeadlines } from "../lib/tape/headlines";
 import { UI_FONT } from "../lib/type";
 import type { BotFn } from "../lib/trigger/bot";
-import { botAct, compileBot } from "../lib/trigger/bot";
+import { TICKS_PER_MONTH, botAct, compileBot } from "../lib/trigger/bot";
 import { BOT_SCAFFOLD } from "../lib/trigger/bots";
 import type { Deal } from "../lib/trigger/deal";
 import {
@@ -112,12 +112,13 @@ function writeBest(v: number): void {
 
 // The bot survives a reload, because nobody wants to retype a strategy that
 // took ten runs to tune. The scaffold is what a first visit opens with, and a
-// stored copy of the retired first-cut scaffold, recognised by its old header
-// line, gives way to the current shelf rather than pinning the past.
+// stored copy of a retired scaffold, recognised by the monthly-cadence header
+// sentence the tick contract replaced, gives way to the current shelf rather
+// than pinning the past.
 function readBotSource(): string {
   try {
     const stored = localStorage.getItem(BOT_KEY);
-    if (stored === null || stored.startsWith("// Your bot plays the run one month at a time.")) {
+    if (stored === null || stored.includes("Your bot plays the run one month at a time.")) {
       return BOT_SCAFFOLD;
     }
     return stored;
@@ -175,7 +176,9 @@ export default function Trigger() {
   const [compileError, setCompileError] = useState<string | null>(null);
   const [botStop, setBotStop] = useState<BotStop | null>(null);
   const botRef = useRef<BotFn | null>(null);
-  const botMonthRef = useRef(-1);
+  // the last tick the bot has acted on, and the tick prices it has been shown
+  const botTickRef = useRef(-1);
+  const botPricesRef = useRef<number[]>([]);
 
   // headline feed
   const nextRef = useRef(0);
@@ -198,7 +201,8 @@ export default function Trigger() {
     expiryRef.current = 0;
     historyRef.current = [START_CASH];
     historyAtRef.current = 0;
-    botMonthRef.current = -1;
+    botTickRef.current = -1;
+    botPricesRef.current = [];
     setSession({ deal: next, sample: nextSample });
     setRun(runRef.current);
     setShown(null);
@@ -231,7 +235,8 @@ export default function Trigger() {
     expiryRef.current = 0;
     historyRef.current = [START_CASH];
     historyAtRef.current = 0;
-    botMonthRef.current = -1;
+    botTickRef.current = -1;
+    botPricesRef.current = [];
     setRun(runRef.current);
     setShown(null);
     setHistory([START_CASH]);
@@ -276,22 +281,27 @@ export default function Trigger() {
       }
       const t = runRef.current.t;
 
-      // The bot trades on month boundaries: once per close the tape has
-      // reached, in order, however many a fast frame crossed. The last close
-      // is skipped because a trade there cannot change the outcome, and a
-      // finished run deserves an end card rather than a late verdict.
+      // The bot trades on tick boundaries: once per tick the tape has
+      // reached, in order, however many a fast frame crossed, each at the
+      // smoothstepped price the screen shows there, which is the human's own
+      // granularity. Ticks at or past the final month are skipped because a
+      // trade there cannot change the outcome, and a finished run deserves
+      // an end card rather than a late verdict.
       if (mode === "bot" && botRef.current) {
-        const reach = Math.min(Math.floor(t), lastIndex(runRef.current) - 1);
-        while (botMonthRef.current < reach) {
-          const month = botMonthRef.current + 1;
-          const acted = botAct(runRef.current, ticker, botRef.current, month);
+        const maxTick = Math.ceil(lastIndex(runRef.current) * TICKS_PER_MONTH) - 1;
+        const reach = Math.min(Math.floor(t * TICKS_PER_MONTH), maxTick);
+        while (botTickRef.current < reach) {
+          const tick = botTickRef.current + 1;
+          const at = tick / TICKS_PER_MONTH;
+          botPricesRef.current.push(priceAt(runRef.current, ticker, at));
+          const acted = botAct(runRef.current, ticker, botRef.current, botPricesRef.current, at);
           if ("error" in acted) {
-            setBotStop({ message: acted.error, month: runRef.current.months[month] });
+            setBotStop({ message: acted.error, month: monthAt(runRef.current, at) });
             setPhase("error");
             cancelAnimationFrame(raf);
             return;
           }
-          botMonthRef.current = month;
+          botTickRef.current = tick;
           if (acted.run !== runRef.current) {
             runRef.current = acted.run;
             setRun(acted.run);
@@ -491,9 +501,9 @@ export default function Trigger() {
             <div style={{ textAlign: "left" }}>
               <p style={{ fontSize: 14, color: MUTED, marginTop: 14, lineHeight: 1.45 }}>
                 A shelf of example bots; the last line picks the player. It is
-                called once a month with the prices so far, your shares and
-                your cash, and answers with an action. Break a rule and the
-                run stops.
+                called on every tick of the tape, seeing the same prices you
+                would, and answers with an action. Break a rule and the run
+                stops.
               </p>
               <CodeEditor
                 value={botSource}

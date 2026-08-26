@@ -253,10 +253,16 @@ stored copy of the retired first-cut scaffold gives way to the current one.
 
 - The player is whatever function `bot` names once the source has loaded:
   keep the shelf and repoint the last line, or define `function bot(...)`
-  yourself. The bot takes `(prices, shares, cash)`: `prices` is the list of
-  monthly closes the tape has reached so far, the market month being the
-  game's unit of time; `shares` and `cash` are the account as it stands. It
-  is called once per month at that month's close, month 0 included.
+  yourself. The bot takes `(prices, shares, cash)`: `prices` is every tick
+  price the tape has shown so far, current price last; `shares` and `cash`
+  are the account as it stands.
+- The bot plays at the human's granularity, deliberately: the tape ticks
+  `TICKS_PER_MONTH` (8) times a market month, about the cadence of a reflex
+  on the space bar at game speed, and on every tick the bot sees the same
+  smoothstepped price the screen shows and trades at it. Tick 0 included;
+  ticks in the final month are skipped, where no trade can change the
+  outcome. `ticks_per_month` is in scope so a strategy can still think in
+  months.
 - It returns an action `{ buy: n }`: positive n buys n shares at this
   month's close, negative n sells n shares, zero does nothing. Shares are
   fractional in bot mode; the whole-share law belongs to the space bar.
@@ -280,12 +286,12 @@ stored copy of the retired first-cut scaffold gives way to the current one.
   registration, and both the Playwright shelf walk and the fuzz harness
   discover new files on their own.
 - `tools/botSim.ts` (npx tsx, like tapeSim) compiles every bot with the real
-  compiler and plays it through the real action law over a thousand seeded
-  random tapes each: shock months, flat tapes, penny prices, unaffordable
-  starts, and companies that die mid run. Math.random is replaced by the
-  tape's seeded stream while a bot plays, so any failure reproduces from the
-  printed tape number, randomBot included. A shelf bot that breaks a rule is
-  a shipped crash, so any error is a red gate.
+  compiler and plays it through the real action law, tick by tick, over a
+  thousand seeded random tapes each: shock months, flat tapes, penny prices,
+  unaffordable starts, and companies that die mid run. Math.random is
+  replaced by the tape's seeded stream while a bot plays, so any failure
+  reproduces from the printed tape number, randomBot included. A shelf bot
+  that breaks a rule is a shipped crash, so any error is a red gate.
 - The editor is CodeMirror 6: syntax highlighting, completion that knows the
   two helpers, and a live parse check in the gutter that reads the parser's
   own error nodes and so never executes the buffer. Code sits in a monospace
