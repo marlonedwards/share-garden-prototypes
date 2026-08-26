@@ -27,10 +27,10 @@ build on Aug 20.
   (section 11).
 - SPEED = 1.6 months per second. Covid runs about 45 seconds, GFC about 67.
   No pause button; the run is short on purpose. Tab-hide pauses.
-- A `skip to end` chip sits by the era name on the run screen: pressed, the
-  tape runs at SKIP_SPEED (10) times pace, fast but still animated, one way,
-  for that run only. The batch of section 11 arrives already at that speed
-  and hides the chip.
+- A skip to end control sits by the era name on the run screen, drawn as
+  the remote's fast forward: two arrows into a bar, aria label `skip to
+  end`. Pressed, the tape runs at SKIP_SPEED (10) times pace, fast but
+  still animated, one way, for that run only.
 - The player is always fully in or fully out. **Buy** converts all cash to
   whole shares at the live price. **Sell** liquidates everything. There is
   nothing else to do, which is the point: the only skill expressible is when.
@@ -166,10 +166,10 @@ buy-and-hold either.
 | Sidebar rows | `5. Swing  +$212`, dollars only once played; `Free play` under the rule |
 | Level card | level 5 of 10 |
 | Level end buttons | human level: Next level, Replay level; bot level: Run 10 markets, Next level; Level select after the last |
-| Skip chip | skip to end |
-| Batch run header | market 3 of 10, the crash |
+| Skip control | the remote's fast forward, two arrows into a bar |
+| Sim row | company, era, live delta, the chart, its latest headline |
 | Batch summary | One bot, 10 markets; rows `Apple, the crash, 2007  +$212`; It beat doing nothing in 3 of 10 markets. |
-| Batch summary buttons | Next level, Run 10 more |
+| Batch summary buttons | View markets, Next level, Run 10 more |
 | Bot panel | The bot is trading, the word bot clickable |
 | Run screen, bot mode | The bot is trading |
 | End you, bot mode | Bot: $1,184 |
@@ -257,8 +257,9 @@ does not parse never leaves the deal card.
 unplayed level's card, the sidebar toggle opens the level select with all
 ten levels and Free play under the rule, a bot level's card shows its real
 source read only, the run ends on a Bot: card leading with Run 10 markets,
-the batch chains ten summarised markets, and Next level lands on the
-following level's card.
+ten markets run in parallel over one bot panel, the summary counts them and
+View markets shows each slice, and Next level lands on the following
+level's card.
 
 **S.** Skip to end collapses a real-time run to about a tenth of its natural
 length, end card included.
@@ -361,12 +362,20 @@ averaging 5. Swing 6. Momentum 7. Crossover 8. Brackets 9. Trend sizing
   the level select doubles as the scoreboard of algorithms. An unplayed
   level simply has no dollars yet.
 - After a bot level's watched run, the end card leads with **Run 10
-  markets**: the same compiled bot chained through SIM_COUNT fresh random
-  deals at skip speed, no cards in between, the run header reading
-  `market 3 of 10`. The summary lists every market with its delta over
-  doing nothing, counts one fact (`It beat doing nothing in 3 of 10
-  markets.`), and offers Next level and Run 10 more. The batch writes no
-  level score; the scoreboard belongs to watched runs.
+  markets**: SIM_COUNT fresh random deals run in parallel at skip speed,
+  stacked as shrunken market rows, each with its company and era, its live
+  delta against holding so far, its chart with trade dots, and its latest
+  headline; The bot is trading appears once beneath the stack, word still
+  clickable. Every market has its own compiled bot, so a stateful strategy
+  cannot bleed between markets; a market whose bot breaks a rule stops
+  alone, reads broke a rule, and sits out the count.
+- When the slowest market ends, the summary lists every accumulated market
+  with its delta over doing nothing, counts one fact (`It beat doing
+  nothing in 3 of 10 markets.`), and offers **View markets**, **Next
+  level**, and **Run 10 more**, which keeps adding to the same tally. View
+  markets shows every finished run as its own slice, scrolling once there
+  are more than fit on screen. The batch writes no level score; the
+  scoreboard belongs to watched runs.
 - During any bot run the word bot in The bot is trading shows and hides the
   running source, read only, in a fixed overlay that cannot move the chart
   row or the dollar ruler.

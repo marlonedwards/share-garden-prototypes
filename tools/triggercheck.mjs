@@ -19,7 +19,7 @@
 //   Q_bot_wrong_action_stops  an overspending bot freezes the tape mid run
 //   Q_bot_compile_error_stays code that does not parse never leaves the card
 //   R_level_flow          the ladder: sidebar, read-only code, run, the ten
-//                         market batch and its summary, then next level
+//                         markets in parallel, the review, then next level
 //   S_skip_to_end         skip to end collapses a real-time run to seconds
 //   T_bot_code_toggle     the word bot shows and hides the running source
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
@@ -851,7 +851,7 @@ async function run(page, tag) {
   // its real source read only and closes the drawer, the run ends on a Bot:
   // card, and Next level lands on the following level's card.
   {
-    await page.goto(`${BASE}?era=covid&stock=AAPL&seed=3&turbo=30`, { waitUntil: "load" });
+    await page.goto(`${BASE}?era=covid&stock=AAPL&seed=3&turbo=6`, { waitUntil: "load" });
     await page.reload({ waitUntil: "load" });
     await page.waitForSelector("[data-go-levels]", { timeout: 15000 });
     await page.click("[data-go-levels]");
@@ -875,15 +875,37 @@ async function run(page, tag) {
     await page.click("[data-start]");
     await toEnd(page);
     const endText = await page.evaluate(() => document.querySelector("[data-end]").textContent);
-    // the watched run leads into the batch: ten fresh markets at skip speed,
-    // chained with no cards between, landing on the summary
+    // the watched run leads into the batch: ten markets side by side at skip
+    // speed. At walk turbo the whole stack can finish in under a second, so
+    // it is read at frame speed from inside the page rather than over CDP.
     await page.click("[data-sim-batch]");
+    const stack = await page.evaluate(() => new Promise((done) => {
+      const t0 = performance.now();
+      const look = () => {
+        const rows = document.querySelectorAll("[data-sim-market]").length;
+        if (rows > 0) {
+          return done({ rows, panels: document.querySelectorAll("[data-bot-live]").length });
+        }
+        if (performance.now() - t0 > 15000) return done({ rows: 0, panels: 0 });
+        requestAnimationFrame(look);
+      };
+      look();
+    }));
+    await page.screenshot({ path: `${OUT}trigger-sims-${tag}.png` });
     await page.waitForSelector("[data-sim-summary]", { timeout: 60000 });
     const sum = await page.evaluate(() => ({
       rows: document.querySelectorAll("[data-sim-row]").length,
       beat: document.querySelector("[data-sim-beat]")?.textContent ?? "",
+      text: document.querySelector("[data-sim-summary]").textContent,
     }));
     await page.screenshot({ path: `${OUT}trigger-sim-summary-${tag}.png` });
+    // the review: every finished market as its own slice, then back
+    await page.click("[data-view-markets]");
+    await page.waitForSelector("[data-markets] [data-sim-market]", { timeout: 15000 });
+    const review = await page.evaluate(() => document.querySelectorAll("[data-markets] [data-sim-market]").length);
+    await page.screenshot({ path: `${OUT}trigger-markets-${tag}.png` });
+    await page.click("[data-back]");
+    await page.waitForSelector("[data-sim-summary]", { timeout: 15000 });
     await page.click("[data-next-level]");
     await page.waitForSelector('[data-trigger][data-phase="deal"][data-level="4"] [data-start]', { timeout: 15000 });
     const parts = {
@@ -893,13 +915,15 @@ async function run(page, tag) {
       readOnly: card.editable === "false",
       drawerClosed: card.drawerClosed,
       botCard: /Bot: \$/.test(endText) && /Run 10 markets/.test(endText) && /Next level/.test(endText),
-      batch: sum.rows === 10 && / of 10 markets/.test(sum.beat),
+      stack: stack.rows === 10 && stack.panels === 1,
+      batch: sum.rows === 10 && / of 10 markets/.test(sum.beat) && /View markets/.test(sum.text) && /Run 10 more/.test(sum.text),
+      review: review === 10,
     };
     const bad = Object.keys(parts).filter((k) => !parts[k]);
     check("R_level_flow", bad.length === 0,
       bad.length
-        ? `broke ${bad.join(",")} (${side.rows} side rows, ${sum.rows} sim rows, editable ${card.editable})`
-        : `sidebar listed ${side.rows} levels and Free play, level 3 ran read-only buyAndHoldBot, batched ${sum.rows} markets, Next level landed on level 4`);
+        ? `broke ${bad.join(",")} (${stack.rows} stacked, ${stack.panels} panels, ${sum.rows} summary rows, ${review} reviewed)`
+        : `sidebar listed ${side.rows} levels, level 3 ran read-only buyAndHoldBot, ${stack.rows} markets in parallel over one bot panel, ${review} reviewed, Next level landed on level 4`);
   }
 
   stage = "S_skip_to_end";

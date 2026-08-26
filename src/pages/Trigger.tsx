@@ -22,8 +22,8 @@ import Meter from "../components/trigger/Meter";
 import { HEADLINE_POOL } from "../data/headlinePool";
 import type { EraId, RunState } from "../lib/tape/engine";
 import {
-  advance, baselines, buy, canBuy, isDead, isOver, lastIndex,
-  monthAt, monthIndexOf, newRun, priceAt, runIndexOf, sell, worthAt, worthOf,
+  advance, baselines, buy, canBuy, isDead, isOver, lastIndex, monthAt,
+  monthIndexOf, newRun, priceAt, runIndexOf, sell, wholeShares, worthAt, worthOf,
 } from "../lib/tape/engine";
 import type { HeadlineSample, PlacedHeadline } from "../lib/tape/headlines";
 import { sampleHeadlines } from "../lib/tape/headlines";
@@ -64,7 +64,7 @@ const SIM_COUNT = 10;
 // month it is reporting on.
 const DWELL = [1900, 1200, 800];
 
-type Phase = "deal" | "run" | "end" | "error" | "summary";
+type Phase = "deal" | "run" | "end" | "error" | "sims" | "summary" | "markets";
 
 // Who is on the trigger: you with the space bar, or a bot you wrote.
 type Mode = "you" | "bot";
@@ -84,13 +84,26 @@ interface BotStop {
   month: string;
 }
 
-// One batch simulation's outcome: where the bot played and what it earned
-// over doing nothing there.
+// One market of the parallel batch: its own deal, tape, headlines, and its
+// own compiled bot, so a stateful strategy cannot bleed between markets.
+interface Sim {
+  deal: Deal;
+  run: RunState;
+  sample: HeadlineSample;
+  bot: BotFn;
+  tick: number;          // the last bot tick taken on this tape
+  prices: number[];      // the tick prices this market's bot has been shown
+  error: string | null;  // set when this market's bot broke a rule
+}
+
+// One batch market's outcome: where the bot played and what it earned over
+// doing nothing there, or the rule it broke.
 interface SimResult {
   era: EraId;
   ticker: string;
   month: string;         // the run's first month
   delta: number;
+  error: string | null;
 }
 
 function makeRun(deal: Deal, speed: number): RunState {
@@ -248,16 +261,16 @@ export default function Trigger() {
   const [fast, setFast] = useState(false);
   const fastRef = useRef(1);
 
-  // the level batch: the runs left to chain and what each one earned, plus
-  // which market is on screen and the finished list for the summary card
-  const batchRef = useRef<{ total: number; results: SimResult[] } | null>(null);
-  const [simNow, setSimNow] = useState<number | null>(null);
+  // the parallel batch: the markets in flight (a ref the sims clock owns and
+  // a snapshot the stack renders from), every finished market kept for the
+  // review screen, and the accumulated results
+  const simsRef = useRef<Sim[]>([]);
+  const [simsView, setSimsView] = useState<Sim[]>([]);
+  const [markets, setMarkets] = useState<Sim[]>([]);
   const [simResults, setSimResults] = useState<SimResult[]>([]);
 
-  // the running bot's source, shown when the word bot on the run screen is
-  // clicked; a fixed overlay so the run layout never moves
+  // the running bot's source, behind the word bot on the trading panel
   const botSourceRef = useRef("");
-  const [showBotCode, setShowBotCode] = useState(false);
 
   // headline feed
   const nextRef = useRef(0);
@@ -296,10 +309,8 @@ export default function Trigger() {
 
   const begin = useCallback((next: Deal) => {
     resetRun(next);
-    batchRef.current = null;
     fastRef.current = 1;
     setFast(false);
-    setSimNow(null);
     setBotStop(null);
     setPhase("deal");
   }, [resetRun]);
@@ -324,29 +335,43 @@ export default function Trigger() {
     }
     setMode(asBot ? "bot" : "you");
     setLevelId(level?.id ?? null);
-    batchRef.current = null;
     fastRef.current = 1;
     setFast(false);
-    setSimNow(null);
-    setShowBotCode(false);
     resetRun(deal);
     setCompileError(null);
     setBotStop(null);
     setPhase("run");
   }, [freeMode, botSource, deal, resetRun]);
 
-  // The batch: the same compiled bot, SIM_COUNT fresh random markets, chained
-  // by the clock at skip speed, summarised when the last one ends.
-  const startBatch = useCallback(() => {
-    batchRef.current = { total: SIM_COUNT, results: [] };
-    setSimResults([]);
-    setSimNow(1);
-    fastRef.current = SKIP_SPEED;
-    setFast(true);
-    setShowBotCode(false);
-    resetRun(dealRandom());
-    setPhase("run");
-  }, [resetRun]);
+  // The batch: SIM_COUNT markets dealt at random and run side by side at
+  // skip speed, each with its own freshly compiled bot so a stateful
+  // strategy cannot bleed between markets. Fresh from an end card the tally
+  // starts over; Run 10 more keeps adding to it.
+  const startBatch = useCallback((fresh: boolean) => {
+    const source = botSourceRef.current;
+    const sims: Sim[] = [];
+    for (let i = 0; i < SIM_COUNT; i++) {
+      const compiled = compileBot(source);
+      if ("error" in compiled) return;      // it compiled once to get here
+      const d = dealRandom();
+      sims.push({
+        deal: d,
+        run: makeRun(d, SPEED * turbo),
+        sample: makeSample(d),
+        bot: compiled.bot,
+        tick: -1,
+        prices: [],
+        error: null,
+      });
+    }
+    simsRef.current = sims;
+    setSimsView([...sims]);
+    if (fresh) {
+      setMarkets([]);
+      setSimResults([]);
+    }
+    setPhase("sims");
+  }, [turbo]);
 
   // A pinned link is allowed to change under the page: editing the query, or
   // following a shared url from another run, deals the run it names rather
@@ -436,41 +461,84 @@ export default function Trigger() {
         setShown(item);
       }
 
-      // A finished run either lands on the end card, or, inside a batch,
-      // logs its market and chains straight into the next one with no card
-      // in between: the phase never leaves "run" until the batch is done.
-      if (isOver(runRef.current)) {
-        const batch = batchRef.current;
-        if (batch === null) {
-          setPhase("end");
-        } else {
-          const end = lastIndex(runRef.current);
-          batch.results.push({
-            era: runRef.current.era,
-            ticker,
-            month: runRef.current.months[0],
-            delta: worthAt(runRef.current, end) - baselines(runRef.current, ticker).holding,
-          });
-          if (batch.results.length >= batch.total) {
-            batchRef.current = null;
-            setSimResults([...batch.results]);
-            setSimNow(null);
-            setPhase("summary");
-          } else {
-            setSimNow(batch.results.length + 1);
-            resetRun(dealRandom());
-            cancelAnimationFrame(raf);
-            return;
-          }
-        }
-      }
+      if (isOver(runRef.current)) setPhase("end");
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", wake);
     };
-  }, [phase, sample, turbo, mode, ticker, resetRun]);
+  }, [phase, sample, turbo, mode, ticker]);
+
+  // ---------------------------------------------------------- the sims clock
+  // One clock, ten tapes: every frame advances every unfinished market at
+  // skip speed and lets that market's own bot act, so the stack moves
+  // together. When the slowest market ends, the batch joins the review list
+  // and the accumulated results become the summary.
+  useEffect(() => {
+    if (phase !== "sims") return;
+    let raf = 0;
+    let last = performance.now();
+    const wake = () => { last = performance.now(); };
+    document.addEventListener("visibilitychange", wake);
+
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      const dt = Math.min(0.25, (now - last) / 1000);
+      last = now;
+      if (document.hidden) return;
+
+      let live = false;
+      for (const sim of simsRef.current) {
+        if (sim.error !== null || isOver(sim.run)) continue;
+        sim.run = advance(sim.run, dt * SKIP_SPEED);
+        const simTicker = sim.deal.ticker;
+        const maxTick = Math.ceil(lastIndex(sim.run) * TICKS_PER_MONTH) - 1;
+        const reach = Math.min(Math.floor(sim.run.t * TICKS_PER_MONTH), maxTick);
+        while (sim.tick < reach) {
+          const tick = sim.tick + 1;
+          const at = tick / TICKS_PER_MONTH;
+          sim.prices.push(priceAt(sim.run, simTicker, at));
+          const acted = botAct(sim.run, simTicker, sim.bot, sim.prices, at);
+          if ("error" in acted) {
+            sim.error = acted.error;
+            break;
+          }
+          sim.tick = tick;
+          sim.run = acted.run;
+        }
+        if (sim.error === null && !isOver(sim.run)) live = true;
+      }
+      setSimsView([...simsRef.current]);
+
+      if (!live) {
+        const finished = simsRef.current;
+        simsRef.current = [];
+        setMarkets((prev) => [...prev, ...finished]);
+        setSimResults((prev) => [
+          ...prev,
+          ...finished.map((sim) => {
+            const end = lastIndex(sim.run);
+            return {
+              era: sim.run.era,
+              ticker: sim.deal.ticker,
+              month: sim.run.months[0],
+              delta: sim.error === null
+                ? worthAt(sim.run, end) - baselines(sim.run, sim.deal.ticker).holding
+                : 0,
+              error: sim.error,
+            };
+          }),
+        ]);
+        setPhase("summary");
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", wake);
+    };
+  }, [phase]);
 
   // ------------------------------------------------------------ the trade
   const toggle = useCallback(() => {
@@ -547,6 +615,12 @@ export default function Trigger() {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const row = useBox(rowRef, phase);
   const rowW = row.w;
+  // the batch stack and the market review both need real pixels for their
+  // shrunken charts
+  const simsBoxRef = useRef<HTMLDivElement | null>(null);
+  const simsBox = useBox(simsBoxRef, phase);
+  const marketsBoxRef = useRef<HTMLDivElement | null>(null);
+  const marketsBox = useBox(marketsBoxRef, phase);
 
   // ------------------------------------------------------------- the facts
   const shares = run.holdings[ticker] ?? 0;
@@ -943,13 +1017,83 @@ export default function Trigger() {
     );
   }
 
+  // -------------------------------------------------------------- the batch
+  // Ten shrunken markets in one column, live and in parallel: who and where,
+  // the running delta against just holding, the chart with its trade dots,
+  // and the latest headline. The bot panel appears once, under the stack.
+  if (phase === "sims") {
+    const gaps = 6 * Math.max(0, simsView.length - 1);
+    const rowH = Math.max(40, Math.floor((simsBox.h - gaps) / Math.max(1, simsView.length)));
+    return shell(
+      <div style={{
+        height: vp.h, display: "flex", flexDirection: "column", padding: pad, gap: 10,
+        maxWidth: 1080, margin: "0 auto",
+        paddingBottom: `calc(${phone ? 24 : pad}px + env(safe-area-inset-bottom, 0px))`,
+      }}>
+        <div
+          ref={simsBoxRef}
+          data-sims=""
+          style={{ display: "flex", flexDirection: "column", gap: 6, flex: "1 1 auto", minHeight: 0, overflow: "hidden" }}
+        >
+          {simsView.map((sim, i) => (
+            <SimRow key={i} sim={sim} width={Math.max(120, simsBox.w)} height={rowH} phone={phone} />
+          ))}
+        </div>
+        <BotTrading fontSize={phone ? 16 : 18} phone={phone} pad={pad} source={botSourceRef.current} />
+      </div>,
+      false,
+    );
+  }
+
+  // ---------------------------------------------------------- market review
+  // Every finished batch market, one slice each, scrolling off the screen
+  // once there are more than fit.
+  if (phase === "markets") {
+    const rowH = phone ? 68 : 84;
+    return shell(
+      <div style={{
+        height: vp.h, display: "flex", flexDirection: "column", padding: pad, gap: 10,
+        maxWidth: 1080, margin: "0 auto",
+        paddingBottom: `calc(${phone ? 24 : pad}px + env(safe-area-inset-bottom, 0px))`,
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: phone ? 16 : 19, fontWeight: 600 }}>
+            {markets.length} {markets.length === 1 ? "market" : "markets"}
+          </span>
+          <button
+            data-back=""
+            onClick={() => setPhase("summary")}
+            style={{
+              background: "transparent", border: "none", color: MUTED,
+              fontSize: 14, fontFamily: UI_FONT, cursor: "pointer",
+            }}
+          >
+            back
+          </button>
+        </div>
+        <div
+          ref={marketsBoxRef}
+          data-markets=""
+          style={{ display: "flex", flexDirection: "column", gap: 8, flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}
+        >
+          {markets.map((sim, i) => (
+            <div key={i} style={{ flex: "0 0 auto" }}>
+              <SimRow sim={sim} width={Math.max(120, marketsBox.w - 12)} height={rowH} phone={phone} />
+            </div>
+          ))}
+        </div>
+      </div>,
+      false,
+    );
+  }
+
   // ------------------------------------------------------------ batch summary
   // The batch's verdictless verdict: where the bot played, what each run
   // earned over doing nothing, and one counted fact. The reader does the rest.
   if (phase === "summary") {
     const lvl = levelId !== null ? levelById(levelId) : null;
     const nextLvl = lvl !== null ? levelById(lvl.id + 1) : null;
-    const beat = simResults.filter((r) => r.delta > 0).length;
+    const beat = simResults.filter((r) => r.error === null && r.delta > 0).length;
     const toNext = () => {
       begin(dealRandom());
       if (lvl === null) return;
@@ -987,32 +1131,47 @@ export default function Trigger() {
                 }}
               >
                 <span>{companyName(r.ticker)}, {ERA_NAME[r.era]}, {yearOf(r.month)}</span>
-                <span style={{ color: r.delta >= 0 ? UP : DOWN, fontVariantNumeric: "tabular-nums" }}>
-                  {signedMoney(r.delta)}
-                </span>
+                {r.error === null ? (
+                  <span style={{ color: r.delta >= 0 ? UP : DOWN, fontVariantNumeric: "tabular-nums" }}>
+                    {signedMoney(r.delta)}
+                  </span>
+                ) : (
+                  <span style={{ color: DOWN }}>broke a rule</span>
+                )}
               </div>
             ))}
           </div>
           <div data-sim-beat="" style={{ fontSize: 15, color: TEXT, marginTop: 16 }}>
             It beat doing nothing in {beat} of {simResults.length} markets.
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+          <div style={{ display: "flex", flexDirection: phone ? "column" : "row", gap: 10, marginTop: 22 }}>
+            <button
+              data-view-markets=""
+              onClick={() => setPhase("markets")}
+              style={{
+                flex: 1, height: 56, borderRadius: 14, border: `1px solid rgba(215,222,232,0.28)`,
+                background: "transparent", color: TEXT, fontSize: 17, fontWeight: 600,
+                fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              View markets
+            </button>
             <button
               {...(lvl !== null && nextLvl !== null ? { "data-next-level": "" } : {})}
               onClick={toNext}
               style={{
                 flex: 1, height: 56, borderRadius: 14, border: "none", background: UP,
-                color: "#0C0F14", fontSize: 18, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
+                color: "#0C0F14", fontSize: 17, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
               }}
             >
               {lvl !== null ? (nextLvl !== null ? "Next level" : "Level select") : "Play again"}
             </button>
             <button
               data-sim-batch=""
-              onClick={startBatch}
+              onClick={() => startBatch(false)}
               style={{
                 flex: 1, height: 56, borderRadius: 14, border: `1px solid rgba(215,222,232,0.28)`,
-                background: "transparent", color: TEXT, fontSize: 18, fontWeight: 600,
+                background: "transparent", color: TEXT, fontSize: 17, fontWeight: 600,
                 fontFamily: UI_FONT, cursor: "pointer",
               }}
             >
@@ -1059,7 +1218,7 @@ export default function Trigger() {
         primaryLabel={lvl === null ? "Play again" : botLevel ? `Run ${SIM_COUNT} markets` : nextLabel}
         nextLevel={lvl !== null && !botLevel && nextLvl !== null}
         simBatch={botLevel}
-        onPrimary={lvl === null ? () => begin(dealRandom()) : botLevel ? startBatch : toNext}
+        onPrimary={lvl === null ? () => begin(dealRandom()) : botLevel ? () => startBatch(true) : toNext}
         secondaryLabel={lvl === null ? "Same stock" : botLevel ? nextLabel : "Replay level"}
         secondaryNext={botLevel && nextLvl !== null}
         onSecondary={
@@ -1121,22 +1280,24 @@ export default function Trigger() {
           {longMonth(monthAt(run))}
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span data-market={simNow ?? ""} style={{ fontSize: under(phone ? 14 : 16), color: MUTED }}>
-            {simNow !== null ? `market ${simNow} of ${SIM_COUNT}, ` : ""}{ERA_NAME[deal.era]}
-          </span>
-          {/* one way per run; the batch arrives already at speed, so the
-              button only shows while the tape is at its natural pace */}
+          <span style={{ fontSize: under(phone ? 14 : 16), color: MUTED }}>{ERA_NAME[deal.era]}</span>
+          {/* one way per run, and drawn as the remote's fast forward */}
           {!fast && (
             <button
               data-skip=""
+              aria-label="skip to end"
               onClick={() => { fastRef.current = SKIP_SPEED; setFast(true); }}
               style={{
-                fontSize: 12, padding: "4px 10px", borderRadius: 8,
+                display: "flex", alignItems: "center", padding: "6px 9px", borderRadius: 8,
                 border: "1px solid rgba(215,222,232,0.28)", background: "transparent",
-                color: MUTED, fontFamily: UI_FONT, cursor: "pointer",
+                color: MUTED, cursor: "pointer",
               }}
             >
-              skip to end
+              <svg width="20" height="11" viewBox="0 0 20 11" aria-hidden="true">
+                <path d="M0 0 L7.5 5.5 L0 11 Z" fill="currentColor" />
+                <path d="M8.5 0 L16 5.5 L8.5 11 Z" fill="currentColor" />
+                <rect x="17.6" y="0" width="2.4" height="11" fill="currentColor" />
+              </svg>
             </button>
           )}
         </span>
@@ -1210,55 +1371,7 @@ export default function Trigger() {
           {dead ? "The company went to zero." : ""}
         </div>
         {mode === "bot" ? (
-          <>
-            {/* the trigger belongs to the bot for this run: same footprint as
-                the button so the layout above it holds. The word bot shows and
-                hides the running source, in a fixed overlay so the chart row
-                and with it the dollar ruler cannot move. */}
-            <div
-              data-bot-live=""
-              style={{
-                width: "100%", height: phone ? 64 : 72, borderRadius: 16,
-                border: "1px solid rgba(215,222,232,0.18)", background: PANEL,
-                color: MUTED, fontSize: buttonSize, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <span>The&nbsp;</span>
-              <button
-                data-bot-word=""
-                aria-expanded={showBotCode}
-                onClick={() => setShowBotCode((v) => !v)}
-                style={{
-                  background: "transparent", border: "none", padding: 0,
-                  color: TEXT, fontSize: buttonSize, fontWeight: 600,
-                  fontFamily: UI_FONT, cursor: "pointer",
-                  textDecoration: "underline", textDecorationStyle: "dotted",
-                  textUnderlineOffset: 4,
-                }}
-              >
-                bot
-              </button>
-              <span>&nbsp;is trading</span>
-            </div>
-            {showBotCode && (
-              <div
-                data-bot-code-view=""
-                style={{
-                  position: "fixed", left: pad, bottom: phone ? 108 : 130, zIndex: 50,
-                  width: `min(520px, calc(100vw - ${pad * 2}px))`,
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
-                }}
-              >
-                <CodeEditor
-                  value={botSourceRef.current}
-                  onChange={() => {}}
-                  height={Math.min(phone ? 250 : 340, 20 + botSourceRef.current.trimEnd().split("\n").length * 19.5)}
-                  readOnly
-                />
-              </div>
-            )}
-          </>
+          <BotTrading fontSize={buttonSize} phone={phone} pad={pad} source={botSourceRef.current} />
         ) : (
           <button
             data-action=""
@@ -1352,6 +1465,134 @@ function Spark(
         <path d={d} fill="none" stroke={rose ? UP : DOWN} strokeWidth={1.6}
           strokeLinejoin="round" strokeLinecap="round" />
       </svg>
+    </div>
+  );
+}
+
+// The bot's standing panel: same footprint as the action button so the layout
+// above it never moves. The word bot shows and hides the running source, read
+// only, in a fixed overlay so nothing in the layout can shift.
+function BotTrading(
+  { fontSize, phone, pad, source }:
+  { fontSize: number; phone: boolean; pad: number; source: string },
+) {
+  const [show, setShow] = useState(false);
+  return (
+    <>
+      <div
+        data-bot-live=""
+        style={{
+          width: "100%", height: phone ? 64 : 72, borderRadius: 16, flex: "0 0 auto",
+          border: "1px solid rgba(215,222,232,0.18)", background: PANEL,
+          color: MUTED, fontSize, fontWeight: 600,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        <span>The&nbsp;</span>
+        <button
+          data-bot-word=""
+          aria-expanded={show}
+          onClick={() => setShow((v) => !v)}
+          style={{
+            background: "transparent", border: "none", padding: 0,
+            color: TEXT, fontSize, fontWeight: 600,
+            fontFamily: UI_FONT, cursor: "pointer",
+            textDecoration: "underline", textDecorationStyle: "dotted",
+            textUnderlineOffset: 4,
+          }}
+        >
+          bot
+        </button>
+        <span>&nbsp;is trading</span>
+      </div>
+      {show && (
+        <div
+          data-bot-code-view=""
+          style={{
+            position: "fixed", left: pad, bottom: phone ? 108 : 130, zIndex: 50,
+            width: `min(520px, calc(100vw - ${pad * 2}px))`,
+            boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
+          }}
+        >
+          <CodeEditor
+            value={source}
+            onChange={() => {}}
+            height={Math.min(phone ? 250 : 340, 20 + source.trimEnd().split("\n").length * 19.5)}
+            readOnly
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+// One market of the batch: the run screen shrunk to a strip. Who and where,
+// the live delta against just holding so far, the growing chart with its
+// trade dots, and the latest headline the tape has reached.
+function SimRow(
+  { sim, width, height, phone }:
+  { sim: Sim; width: number; height: number; phone: boolean },
+) {
+  const ticker = sim.deal.ticker;
+  const run = sim.run;
+  const price = priceAt(run, ticker);
+  // the holding baseline as it stands now, not at the end: the same whole
+  // share rule the engine's baseline uses, priced at this instant
+  const p = run.prices[ticker];
+  const held = wholeShares(run.startCash, p[0]);
+  const holdNow = run.startCash - held * p[0] + held * price;
+  const delta = worthOf(run) - holdNow;
+  const infoW = phone ? 92 : 150;
+  const newsW = phone ? 0 : 210;
+  const chartW = Math.max(40, width - infoW - newsW - (phone ? 8 : 16));
+  const trades: ChartTrade[] = run.trades.map((tr) => ({ at: tr.at, price: tr.price, side: tr.kind }));
+  let news = "";
+  for (const item of sim.sample.items) {
+    if (runIndexOf(run, item.monthIndex) > run.t) break;
+    news = item.text;
+  }
+  return (
+    <div data-sim-market="" style={{ display: "flex", gap: 8, alignItems: "stretch", height, minHeight: 0 }}>
+      <div style={{
+        width: infoW, flex: "0 0 auto", display: "flex", flexDirection: "column",
+        justifyContent: "center", gap: 2, textAlign: "left", minWidth: 0,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {companyName(ticker)}
+        </div>
+        <div style={{ fontSize: 12, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {ERA_NAME[run.era]}
+        </div>
+        <div style={{
+          fontSize: 12, fontVariantNumeric: "tabular-nums",
+          color: sim.error !== null ? DOWN : delta >= 0 ? UP : DOWN,
+        }}>
+          {sim.error !== null ? "broke a rule" : signedMoney(delta)}
+        </div>
+      </div>
+      <div style={{ flex: "1 1 auto", background: PANEL, borderRadius: 8, overflow: "hidden", minWidth: 0 }}>
+        <Chart
+          series={p}
+          months={run.months}
+          t={run.t}
+          livePrice={price}
+          width={chartW}
+          height={height}
+          trades={trades}
+          chip={false}
+          background={PANEL}
+        />
+      </div>
+      {!phone && (
+        <div style={{ width: newsW, flex: "0 0 auto", display: "flex", alignItems: "center", minWidth: 0 }}>
+          <span style={{
+            fontSize: 12, color: MUTED, lineHeight: 1.35, textAlign: "left",
+            display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+          }}>
+            {news}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
