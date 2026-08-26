@@ -147,7 +147,7 @@ buy-and-hold either.
 | --- | --- |
 | Landing card | Trigger |
 | Landing description | Time the market, if you can. |
-| Deal card button | Start |
+| Deal card button, human | Play |
 | Deal card best line | best so far: +$212 over doing nothing |
 | Button out | Buy |
 | Button in | Sell |
@@ -267,6 +267,11 @@ length, end card included.
 **T.** The word bot in The bot is trading shows the running source read only
 and hides it again.
 
+**U.** With fresh walkthrough flags, the first Play holds the tape through
+the tour, the prompted buy and the prompted sell, then runs from all cash
+with a clean trade log, and never fires again; the first Run bot reads the
+primer on the deal card before anything runs, and never again.
+
 ## 10. Bot mode
 
 The deal card carries a choice of who plays. **You play** is the game as
@@ -384,3 +389,28 @@ averaging 5. Swing 6. Momentum 7. Crossover 8. Brackets 9. Trend sizing
 - The end card of a human level offers Next level and Replay level, with
   Level select in place of Next level after level 10. Free play keeps
   Play again and Same stock.
+
+## 12. First run walkthroughs
+
+Two walkthroughs, each firing exactly once across the whole game, levels or
+free play, in any order, tracked in localStorage `trigger-guide-you` and
+`trigger-guide-bot`.
+
+- **The manual walkthrough.** The first Play (the human start button, so
+  named) enters the run screen with the tape held. A fixed card walks the
+  surface: the chart is time across and price up; the meter's green slabs
+  are shares whose height follows the price, the grey ticks cash that only
+  moves on a trade. Next prompts the buy: space or the button, all cash
+  into shares. A second card says the cash is shares now and their value
+  follows the price, and prompts the sell: all shares back to cash, and the
+  clock starts. The practice trades never reach the record: the run
+  restarts on a clean tape, all cash, the moment the walkthrough ends.
+- **The bot primer.** The first Run bot anywhere opens a card over the deal
+  screen instead of running: the bot is handed every price so far, its
+  shares and its cash; it answers with one action and reacts the moment the
+  price updates, TICKS_PER_MONTH times a market month, as fast as the
+  screen; the logic in between is any JavaScript. Run bot on the card
+  starts the intercepted run; back closes it without marking it seen.
+- The shelf's bots carry comments meant to be read: each file says what the
+  strategy believes, how the window arithmetic works, and where it tends to
+  win and lose, because the code on the level card is the curriculum.

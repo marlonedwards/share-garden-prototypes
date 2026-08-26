@@ -84,6 +84,10 @@ interface BotStop {
   month: string;
 }
 
+// The manual walkthrough's three steps: the tour of the surface, the
+// prompted buy, and the prompted sell that starts the clock.
+type GuideStep = "overview" | "buy" | "sell";
+
 // One market of the parallel batch: its own deal, tape, headlines, and its
 // own compiled bot, so a stateful strategy cannot bleed between markets.
 interface Sim {
@@ -170,6 +174,28 @@ function writeBotSource(source: string): void {
 }
 
 const LEVELS_KEY = "trigger-levels";
+// The two once-ever walkthroughs: one for the first manual run, one for the
+// first bot run, wherever either happens first, levels or free play.
+const GUIDE_YOU_KEY = "trigger-guide-you";
+const GUIDE_BOT_KEY = "trigger-guide-bot";
+
+// A locked down browser reads as "seen", because a guide that cannot record
+// itself would otherwise fire on every single run.
+function seenGuide(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return true;
+  }
+}
+
+function markGuide(key: string): void {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    // nothing to do; the guide will show again
+  }
+}
 
 // Per level, the best delta over doing nothing this browser has seen. The
 // level list doubles as the scoreboard: which players have run, and how each
@@ -272,6 +298,14 @@ export default function Trigger() {
   // the running bot's source, behind the word bot on the trading panel
   const botSourceRef = useRef("");
 
+  // the walkthroughs: the manual guide's step (the clock holds while it is
+  // non null), and the bot primer with the start it intercepted
+  const [guide, setGuide] = useState<GuideStep | null>(null);
+  const guideRef = useRef<GuideStep | null>(null);
+  guideRef.current = guide;
+  const [botGuide, setBotGuide] = useState(false);
+  const pendingLevelRef = useRef<Level | null>(null);
+
   // headline feed
   const nextRef = useRef(0);
   const queueRef = useRef<PlacedHeadline[]>([]);
@@ -322,6 +356,13 @@ export default function Trigger() {
   const start = useCallback((level: Level | null) => {
     const asBot = level === null ? freeMode === "bot" : level.player !== "you";
     if (asBot) {
+      // the first bot run anywhere gets the primer instead, which hands the
+      // very same start back once it has been read
+      if (!seenGuide(GUIDE_BOT_KEY)) {
+        pendingLevelRef.current = level;
+        setBotGuide(true);
+        return;
+      }
       const editable = level === null || level.player === "editor";
       const source = editable ? botSource : levelSource(level.player);
       const compiled = compileBot(source);
@@ -332,6 +373,9 @@ export default function Trigger() {
       botRef.current = compiled.bot;
       botSourceRef.current = source;
       if (editable) writeBotSource(botSource);
+    } else if (!seenGuide(GUIDE_YOU_KEY)) {
+      // the first manual run anywhere opens on the walkthrough, tape held
+      setGuide("overview");
     }
     setMode(asBot ? "bot" : "you");
     setLevelId(level?.id ?? null);
@@ -407,6 +451,7 @@ export default function Trigger() {
       const dt = Math.min(0.25, (now - last) / 1000);
       last = now;
       if (document.hidden) return;              // the tape pauses with the tab
+      if (guideRef.current !== null) return;    // the walkthrough holds the clock
 
       const current = runRef.current;
       if (!isOver(current)) {
@@ -548,6 +593,8 @@ export default function Trigger() {
 
   // ------------------------------------------------------------ the trade
   const toggle = useCallback(() => {
+    const g = guideRef.current;
+    if (g === "overview") return;             // reading first, trading second
     const current = runRef.current;
     if (isOver(current)) return;
     const held = current.holdings[ticker] ?? 0;
@@ -555,7 +602,17 @@ export default function Trigger() {
     if (next === current) return;
     runRef.current = next;
     setRun(next);
-  }, [ticker]);
+    if (g === "buy") {
+      setGuide("sell");
+    } else if (g === "sell") {
+      // the walkthrough ends where a real run begins: all cash, and a clean
+      // tape with no practice trades on it, only now with the clock running
+      markGuide(GUIDE_YOU_KEY);
+      setGuide(null);
+      runRef.current = makeRun(deal, speed);
+      setRun(runRef.current);
+    }
+  }, [ticker, deal, speed]);
 
   useEffect(() => {
     if (phase !== "run" || mode !== "you") return;
@@ -829,9 +886,69 @@ export default function Trigger() {
       </>
     );
 
+    // The bot primer, once ever: what a bot is handed and how fast it may
+    // act, read before the first Run bot anywhere does anything.
+    const botPrimer = botGuide && (
+      <>
+        <div style={{ position: "fixed", inset: 0, zIndex: 65, background: "rgba(0,0,0,0.5)" }} />
+        <div
+          data-bot-guide=""
+          style={{
+            position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+            width: "min(560px, calc(100vw - 32px))", zIndex: 70,
+            background: PANEL, border: "1px solid rgba(215,222,232,0.25)",
+            borderRadius: 16, padding: 20, textAlign: "left",
+            boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+          }}
+        >
+          <div style={{ fontSize: 17, fontWeight: 700 }}>Before your first bot run</div>
+          <p style={{ fontSize: 14, color: TEXT, marginTop: 10, lineHeight: 1.5 }}>
+            Every tick of the tape, your bot is handed three things: every
+            price so far, the shares it holds, and the cash it has left.
+          </p>
+          <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
+            It answers with one action, buy this many shares, sell this many,
+            or nothing. It reacts the moment the price updates,
+            {" "}{TICKS_PER_MONTH} times a market month, exactly as fast as
+            the screen shows you.
+          </p>
+          <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
+            What happens in between is yours: any JavaScript, any strategy.
+          </p>
+          <div style={{ display: "flex", gap: 10, marginTop: 16, alignItems: "center" }}>
+            <button
+              data-bot-guide-run=""
+              onClick={() => {
+                markGuide(GUIDE_BOT_KEY);
+                setBotGuide(false);
+                start(pendingLevelRef.current);
+              }}
+              style={{
+                flex: 1, height: 52, borderRadius: 12, border: "none", background: UP,
+                color: "#0C0F14", fontSize: 17, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              Run bot
+            </button>
+            <button
+              data-back=""
+              onClick={() => setBotGuide(false)}
+              style={{
+                background: "transparent", border: "none", color: MUTED,
+                fontSize: 14, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              back
+            </button>
+          </div>
+        </div>
+      </>
+    );
+
     return shell(
       <>
         {sidebar}
+        {botPrimer}
         <div style={{
           minHeight: vp.h, display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
@@ -913,7 +1030,7 @@ export default function Trigger() {
                 ))}
               </div>
               {freeMode === "bot" && editorBlock}
-              {startButton(freeMode === "bot" ? "Run bot" : "Start", null, freeMode === "bot" ? 16 : 26)}
+              {startButton(freeMode === "bot" ? "Run bot" : "Play", null, freeMode === "bot" ? 16 : 26)}
               {best !== null && (
                 <div data-best="" style={{ fontSize: 13, color: MUTED, marginTop: 14 }}>
                   best so far: {signedMoney(best)} over doing nothing
@@ -949,7 +1066,7 @@ export default function Trigger() {
               <div style={{ fontSize: 15, color: MUTED, marginTop: 14 }}>
                 {lvl.player === "you" ? "You start" : "It starts"} with {money(START_CASH)} in cash.
               </div>
-              {startButton(lvl.player === "you" ? "Start" : "Run bot", lvl, 16)}
+              {startButton(lvl.player === "you" ? "Play" : "Run bot", lvl, 16)}
               {levelLog[lvl.id] !== undefined && (
                 <div data-best="" style={{ fontSize: 13, color: MUTED, marginTop: 14 }}>
                   best on this level: {signedMoney(levelLog[lvl.id])} over doing nothing
@@ -1273,7 +1390,70 @@ export default function Trigger() {
   const calcH = Math.ceil(bigBase * 1.15) + 4 + sparkRowH;
   const deadH = Math.ceil(under(13) * 1.4) + 8;
 
+  // The first-run walkthrough, over the paused tape: the surface, then the
+  // prompted buy, then the prompted sell that starts the clock. One card,
+  // fixed, so nothing in the run layout moves under it.
+  const guideCard = guide !== null && (
+    <div
+      data-guide={guide}
+      style={{
+        position: "fixed", left: pad, right: pad, bottom: phone ? 108 : 130,
+        zIndex: 50, display: "flex", justifyContent: "center",
+      }}
+    >
+      <div style={{
+        maxWidth: 560, width: "100%", background: PANEL,
+        border: "1px solid rgba(215,222,232,0.25)", borderRadius: 14,
+        padding: 16, textAlign: "left", boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
+      }}>
+        {guide === "overview" && (
+          <>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>The tape is paused.</div>
+            <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
+              The chart is time across and price up. The strip on the right is
+              your money on one dollar scale: green slabs are your shares, and
+              their height follows the price; grey ticks are your cash, which
+              only moves when you trade.
+            </p>
+            <button
+              data-guide-next=""
+              onClick={() => setGuide("buy")}
+              style={{
+                marginTop: 12, height: 44, padding: "0 22px", borderRadius: 10,
+                border: "none", background: UP, color: "#0C0F14",
+                fontSize: 15, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              Next
+            </button>
+          </>
+        )}
+        {guide === "buy" && (
+          <>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>One control.</div>
+            <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
+              Space, or the green button, is the whole game. Press it now: Buy
+              turns all your cash into shares at the price on screen.
+            </p>
+          </>
+        )}
+        {guide === "sell" && (
+          <>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Your cash is shares now.</div>
+            <p style={{ fontSize: 14, color: TEXT, marginTop: 8, lineHeight: 1.5 }}>
+              Their value follows the price, up and down. Press space again:
+              Sell turns them back into cash, and the clock starts with you
+              all in cash.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   return shell(
+    <>
+    {guideCard}
     <div style={{
       height: vp.h, display: "flex", flexDirection: "column", padding: pad, gap: phone ? 10 : 14,
       maxWidth: 1080, margin: "0 auto",
@@ -1399,7 +1579,8 @@ export default function Trigger() {
           </button>
         )}
       </div>
-    </div>,
+    </div>
+    </>,
     false,
   );
 }

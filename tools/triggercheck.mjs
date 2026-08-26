@@ -22,6 +22,9 @@
 //                         markets in parallel, the review, then next level
 //   S_skip_to_end         skip to end collapses a real-time run to seconds
 //   T_bot_code_toggle     the word bot shows and hides the running source
+//   U_you_guide           the first manual run pauses for the walkthrough,
+//                         buy then sell starts the clock, and only once
+//   U_bot_guide           the first Run bot reads the primer first, once
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
 //   L_replay_without_scrolling  Play again is on screen the moment a run ends
 //   M_calculator_is_largest  nothing on the run screen outsizes the calculator
@@ -965,6 +968,80 @@ async function run(page, tag) {
         ? "the word bot opened the running source and closed it again"
         : "the code view failed to close");
   }
+
+  stage = "U_first_run_guides";
+  // ---------------------------------------------------------------------- U
+  // The two once-ever walkthroughs, with their flags wiped so this browser
+  // becomes a first-time player again.
+  {
+    await page.evaluate(() => {
+      localStorage.removeItem("trigger-guide-you");
+      localStorage.removeItem("trigger-guide-bot");
+    });
+
+    // the manual guide: Play opens on a held tape, the tour, the prompted
+    // buy, the prompted sell, and then the clock runs from all cash
+    await page.goto(`${BASE}?era=gfc&stock=AAPL&seed=7&turbo=6`, { waitUntil: "load" });
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+    await page.click("[data-go-free]");
+    await page.waitForSelector("[data-start]", { timeout: 15000 });
+    await page.click("[data-start]");
+    await page.waitForSelector('[data-guide="overview"]', { timeout: 15000 });
+    const t0 = await page.getAttribute("[data-trigger]", "data-t");
+    await wait(600);
+    const t1 = await page.getAttribute("[data-trigger]", "data-t");
+    await page.screenshot({ path: `${OUT}trigger-guide-${tag}.png` });
+    await page.click("[data-guide-next]");
+    await page.waitForSelector('[data-guide="buy"]', { timeout: 15000 });
+    await page.keyboard.press("Space");
+    await page.waitForSelector('[data-guide="sell"]', { timeout: 15000 });
+    const held = await page.getAttribute("[data-trigger]", "data-position");
+    await page.keyboard.press("Space");
+    await wait(700);
+    const after = await page.evaluate(() => {
+      const el = document.querySelector("[data-trigger]");
+      return {
+        guide: document.querySelector("[data-guide]") !== null,
+        t: Number(el.getAttribute("data-t")),
+        pos: el.getAttribute("data-position"),
+        cash: Number(el.getAttribute("data-cash")),
+      };
+    });
+    // and only once: the next manual run starts unpaused, no guide
+    await open(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
+    await wait(400);
+    const again = await page.evaluate(() => ({
+      guide: document.querySelector("[data-guide]") !== null,
+      t: Number(document.querySelector("[data-trigger]").getAttribute("data-t")),
+    }));
+    const youParts = {
+      paused: t0 === t1,
+      bought: held === "in",
+      resumed: !after.guide && after.t > 0.01 && after.pos === "out" && near(after.cash, 1000, 0.01),
+      once: !again.guide && again.t > 0.01,
+    };
+    const youBad = Object.keys(youParts).filter((k) => !youParts[k]);
+    check("U_you_guide", youBad.length === 0,
+      youBad.length
+        ? `broke ${youBad.join(",")} (t ${t0} to ${t1}, after t ${after.t} pos ${after.pos} cash ${after.cash})`
+        : `held at t ${t0} through the tour, buy then sell, clock ran from all cash, and never again`);
+
+    // the bot primer: the first Run bot explains the inputs before any run
+    await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
+    await page.waitForSelector("[data-bot-guide]", { timeout: 15000 });
+    const phaseUnder = await page.getAttribute("[data-trigger]", "data-phase");
+    await page.screenshot({ path: `${OUT}trigger-bot-guide-${tag}.png` });
+    await page.click("[data-bot-guide-run]");
+    await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
+    await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
+    await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
+    const primerAgain = await page.$("[data-bot-guide]");
+    check("U_bot_guide", phaseUnder === "deal" && primerAgain === null,
+      phaseUnder === "deal"
+        ? "the primer held the deal card, ran on request, and never returned"
+        : `the run started under the primer (phase ${phaseUnder})`);
+  }
 }
 
 // One browser per viewport. The tape pauses with the tab, correctly, so a page
@@ -979,6 +1056,12 @@ for (const [tag, w, h] of [["wide", 1440, 950], ["phone", 390, 844]]) {
   // say so plainly if it will not come.
   await page.bringToFront();
   await page.goto(BASE);
+  // every check below plays as a returning player: the two once-ever
+  // walkthroughs are marked seen up front, and U exercises them explicitly
+  await page.evaluate(() => {
+    localStorage.setItem("trigger-guide-you", "1");
+    localStorage.setItem("trigger-guide-bot", "1");
+  });
   for (let i = 0; i < 20 && await page.evaluate(() => document.hidden); i++) {
     await page.bringToFront();
     await wait(100);
