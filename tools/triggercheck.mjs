@@ -13,6 +13,18 @@
 //   H_years_and_axis      year labels at both sizes, the y axis never shrinks
 //   I_leh_seller_wins     selling Lehman before September 2008 beats holding
 //   J_spacebar            space toggles, and the button flips label and colour
+//   J_desktop_keycap      the button carries a space keycap wide, none on phone
+//   P_bot_scaffold_runs   the shipped scaffold plays a full run by itself
+//   P_bot_shelf_finishes  every example bot survives a dead-company run
+//   Q_bot_wrong_action_stops  an overspending bot freezes the tape mid run
+//   Q_bot_compile_error_stays code that does not parse never leaves the card
+//   R_level_flow          the ladder: sidebar, read-only code, run, the ten
+//                         markets in parallel, the review, then next level
+//   S_skip_to_end         skip to end collapses a real-time run to seconds
+//   T_bot_code_toggle     the word bot shows and hides the running source
+//   U_you_guide           the first manual run pauses for the walkthrough,
+//                         buy then sell starts the clock, and only once
+//   U_bot_guide           the first Run bot reads the primer first, once
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
 //   L_replay_without_scrolling  Play again is on screen the moment a run ends
 //   M_calculator_is_largest  nothing on the run screen outsizes the calculator
@@ -30,7 +42,7 @@
 // Usage: node tools/triggercheck.mjs
 
 import { chromium } from "playwright";
-import { mkdirSync } from "fs";
+import { mkdirSync, readdirSync } from "fs";
 
 const BASE = "http://localhost:4318/#/trigger";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -59,7 +71,9 @@ const TYPE_AUDIT = () => {
     const texty = own.length > 0 || el.tagName.toLowerCase() === "text";
     const label = (own || el.tagName.toLowerCase()).slice(0, 36);
     const fam = style.fontFamily || "";
-    if (banned.test(fam)) bad.push(`font ${fam.slice(0, 30)} on "${label}"`);
+    // the bot editor is the one scoped monospace exception, the same shape
+    // as the serif exception for newspaper clippings below
+    if (banned.test(fam) && !el.closest("[data-bot-code]")) bad.push(`font ${fam.slice(0, 30)} on "${label}"`);
     if (/georgia|times/i.test(fam) && !el.closest("[data-newsclip]")) bad.push(`serif on "${label}"`);
     if (texty && parseFloat(style.fontSize) < 12) bad.push(`${style.fontSize} on "${label}"`);
     if (style.textTransform === "uppercase") bad.push(`caps on "${label}"`);
@@ -131,7 +145,9 @@ async function readAll(page) {
       })(),
       button: (() => {
         const b = document.querySelector("[data-action]");
-        return b ? { label: b.textContent, bg: getComputedStyle(b).backgroundColor, pos: b.getAttribute("data-position") } : null;
+        // the label span, not the whole button: the desktop keycap sits
+        // beside the label and is not part of it
+        return b ? { label: (b.querySelector("[data-label]") ?? b).textContent, bg: getComputedStyle(b).backgroundColor, pos: b.getAttribute("data-position") } : null;
       })(),
     };
   });
@@ -164,20 +180,61 @@ async function pourTrace(page, ms = 700) {
   }), ms);
 }
 
-// Deal a pinned run and start it. Changing only the query inside the hash is a
-// same document navigation, so the reload is what forces a fresh deal; both
-// navigations are waited out explicitly, because firing the reload into a
-// still committing goto destroys the execution context under the next check.
+// Deal a pinned run and start it, through the entry flow: the deal card now
+// opens on the free-play-or-levels choice, and every human-mode check plays
+// free play. Changing only the query inside the hash is a same document
+// navigation, so the reload is what forces a fresh deal; both navigations
+// are waited out explicitly, because firing the reload into a still
+// committing goto destroys the execution context under the next check.
 async function open(page, query) {
   let last;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       await page.goto(`${BASE}?${query}`, { waitUntil: "load" });
       await page.reload({ waitUntil: "load" });
+      await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+      await page.click("[data-go-free]");
       await page.waitForSelector("[data-start]", { timeout: 15000 });
       await page.click("[data-start]");
       await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
       return;
+    } catch (e) {
+      last = e;
+      await wait(300);
+    }
+  }
+  throw last;
+}
+
+// Deal a pinned run in bot mode. The editor prefills from localStorage, so
+// the walk overwrites it whenever it brings its own bot, and hands the source
+// back either way. The editor is CodeMirror, which virtualises long
+// documents, so the buffer is read and written through the EditorView the
+// component exposes on the container rather than scraped from the DOM. It
+// does not wait for a run phase: a bot that breaks a rule in its first month
+// may go straight to the stopped card, so the caller says what it waits for.
+async function openBot(page, query, code) {
+  let last;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await page.goto(`${BASE}?${query}`, { waitUntil: "load" });
+      await page.reload({ waitUntil: "load" });
+      await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+      await page.click("[data-go-free]");
+      await page.waitForSelector('[data-mode="bot"]', { timeout: 15000 });
+      await page.click('[data-mode="bot"]');
+      await page.waitForSelector("[data-bot-code] .cm-content", { timeout: 15000 });
+      if (code !== undefined) {
+        await page.evaluate((c) => {
+          const view = document.querySelector("[data-bot-code]").cmView;
+          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: c } });
+        }, code);
+      }
+      const source = await page.evaluate(
+        () => document.querySelector("[data-bot-code]").cmView.state.doc.toString(),
+      );
+      await page.click("[data-start]");
+      return source;
     } catch (e) {
       last = e;
       await wait(300);
@@ -596,6 +653,20 @@ async function run(page, tag) {
       && before.pos !== after.pos
       && [before.label, after.label].sort().join("/") === "Buy/Sell";
     check("J_spacebar", ok, `${before.label} ${before.bg} to ${after.label} ${after.bg}`);
+
+    // and the button says so where a keyboard is likely: a space keycap on
+    // the wide viewport, and a clean button on the phone
+    const hint = await page.evaluate(() => {
+      const el = document.querySelector("[data-action] [data-key-hint]");
+      if (!el) return null;
+      return { text: el.textContent, size: parseFloat(getComputedStyle(el).fontSize) };
+    });
+    const wantHint = tag === "wide";
+    check("J_desktop_keycap",
+      wantHint ? hint !== null && hint.text === "space" && hint.size >= 12 : hint === null,
+      wantHint
+        ? (hint ? `keycap "${hint.text}" at ${hint.size}px on the button` : "no keycap on the desktop viewport")
+        : (hint ? `keycap "${hint.text}" leaked onto the phone button` : "no keycap on phone, as specced"));
   }
 
   stage = "I_leh_seller_wins";
@@ -666,6 +737,357 @@ async function run(page, tag) {
   await page.screenshot({ path: `${OUT}trigger-end-${tag}-bottom.png` });
   check("L_reveal_scrolls_to_end", listEnd.lastVisible,
     `reveal list scrolled ${listEnd.at}px to its last headline`);
+
+  stage = "P_bot_scaffold_runs";
+  // ---------------------------------------------------------------------- P
+  // The shipped scaffold, untouched. It trades at random, so the promises are
+  // only these: the editor really opens with the scaffold, the run finishes
+  // with no input, at least one trade lands, and the card credits the bot.
+  {
+    const source = await openBot(page, "era=covid&stock=AAPL&seed=3&turbo=30");
+    await toEnd(page);
+    const end = await page.evaluate(() => {
+      const el = document.querySelector("[data-end]");
+      return {
+        trades: Number(el.getAttribute("data-trade-count")),
+        you: Number(el.getAttribute("data-you")),
+        text: el.textContent,
+      };
+    });
+    const scaffolded = source.includes("max_shares_can_buy") && source.includes("bot = randomBot");
+    check("P_bot_scaffold_runs",
+      scaffolded && end.trades >= 1 && /Bot: \$/.test(end.text) && Number.isFinite(end.you),
+      `${end.trades} trades, bot ended at ${end.you.toFixed(2)}${scaffolded ? "" : ", editor missing the scaffold"}`);
+    await page.screenshot({ path: `${OUT}trigger-bot-end-${tag}.png` });
+
+    // Every other bot on the shelf, pointed at by rewriting the picker line,
+    // must finish a run without tripping its own rules. Lehman is the run
+    // that stresses them: the price goes to zero under whatever they hold.
+    // The shelf is read from the bots directory itself, so a bot added there
+    // is walked here without touching this file.
+    const shelf = readdirSync(new URL("../src/lib/trigger/bots/", import.meta.url))
+      .filter((f) => f.endsWith(".js") && !f.startsWith("_") && f !== "randomBot.js")
+      .map((f) => f.replace(/\.js$/, ""));
+    const broke = [];
+    for (const name of shelf) {
+      const picked = source.replace("bot = randomBot", `bot = ${name}`);
+      if (picked === source) {
+        broke.push(`${name}: no picker line to rewrite`);
+        continue;
+      }
+      await openBot(page, "era=gfc&stock=LEH&seed=7&turbo=30", picked);
+      await page.waitForSelector("[data-end], [data-bot-error]", { timeout: 90000 });
+      const verdict = await page.evaluate(() => {
+        const err = document.querySelector("[data-bot-error]");
+        if (err) return { error: err.getAttribute("data-bot-error") };
+        const el = document.querySelector("[data-end]");
+        return { trades: Number(el.getAttribute("data-trade-count")) };
+      });
+      if ("error" in verdict) broke.push(`${name}: ${verdict.error}`);
+    }
+    check("P_bot_shelf_finishes", broke.length === 0,
+      broke.length ? broke.join("; ") : `all ${shelf.length} example bots finished the Lehman run`);
+  }
+
+  stage = "Q_bot_wrong_action_stops";
+  // ---------------------------------------------------------------------- Q
+  // One share more than the cash covers, asked in the first month. The run
+  // must stop with the broken rule on screen and the tape frozen where it
+  // broke: data-t must not move once the stopped card is up.
+  {
+    const bad = "function bot(prices, shares, cash) {\n  return { buy: max_shares_can_buy(prices, shares, cash) + 1 };\n}";
+    await openBot(page, "era=covid&stock=AAPL&seed=3&turbo=6", bad);
+    await page.waitForSelector("[data-bot-error]", { timeout: 15000 });
+    const stop = await page.evaluate(() => {
+      const el = document.querySelector("[data-bot-error]");
+      const root = document.querySelector("[data-trigger]");
+      return {
+        message: el.getAttribute("data-bot-error"),
+        phase: root.getAttribute("data-phase"),
+        t: root.getAttribute("data-t"),
+        text: el.textContent,
+      };
+    });
+    await wait(400);
+    const later = await page.getAttribute("[data-trigger]", "data-t");
+    check("Q_bot_wrong_action_stops",
+      stop.phase === "error" && /bought/.test(stop.message) && /covers at most/.test(stop.message)
+        && later === stop.t && /The bot broke a rule/.test(stop.text) && /Edit bot/.test(stop.text),
+      `stopped at t ${stop.t} with "${stop.message}"`);
+    await page.screenshot({ path: `${OUT}trigger-bot-stop-${tag}.png` });
+    const typeOnStop = await page.evaluate(TYPE_AUDIT);
+    check("K_type_on_stopped_card", typeOnStop.length === 0,
+      typeOnStop.length ? typeOnStop.slice(0, 4).join("; ") : "no banned type on the stopped card");
+
+    // and code that does not parse never leaves the deal card
+    await openBot(page, "era=covid&stock=AAPL&seed=3&turbo=6", "function bot(");
+    await page.waitForSelector("[data-bot-compile-error]", { timeout: 15000 });
+    const card = await page.evaluate(() => ({
+      phase: document.querySelector("[data-trigger]").getAttribute("data-phase"),
+      error: document.querySelector("[data-bot-compile-error]").textContent,
+    }));
+    check("Q_bot_compile_error_stays",
+      card.phase === "deal" && /does not parse/.test(card.error),
+      `still on the deal card: "${card.error.slice(0, 70)}"`);
+
+    // the editor as a first visit opens it, scaffold and all, audited and
+    // shot: the stored source is cleared first because the walk has been
+    // feeding the editor deliberately broken bots
+    await page.evaluate(() => localStorage.removeItem("trigger-bot"));
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+    await page.click("[data-go-free]");
+    await page.waitForSelector('[data-mode="bot"]', { timeout: 15000 });
+    await page.click('[data-mode="bot"]');
+    await page.waitForSelector("[data-bot-code]", { timeout: 15000 });
+    await page.screenshot({ path: `${OUT}trigger-bot-editor-${tag}.png` });
+    const typeInEditor = await page.evaluate(TYPE_AUDIT);
+    check("K_type_in_editor", typeInEditor.length === 0,
+      typeInEditor.length ? typeInEditor.slice(0, 4).join("; ") : "no banned type around the editor");
+  }
+
+  stage = "R_level_flow";
+  // ---------------------------------------------------------------------- R
+  // The ladder, walked end to end: the entry screen's Levels lands on the
+  // next unplayed level's card, the sidebar toggle opens the level select
+  // with every level and Free play under the rule, picking a bot level shows
+  // its real source read only and closes the drawer, the run ends on a Bot:
+  // card, and Next level lands on the following level's card.
+  {
+    await page.goto(`${BASE}?era=covid&stock=AAPL&seed=3&turbo=6`, { waitUntil: "load" });
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("[data-go-levels]", { timeout: 15000 });
+    await page.click("[data-go-levels]");
+    // a fresh browser has no level log, so Levels opens level 1, the human one
+    await page.waitForSelector('[data-trigger][data-level="1"] [data-start]', { timeout: 15000 });
+    await page.click("[data-sidebar-toggle]");
+    await page.waitForSelector("[data-sidebar]", { timeout: 15000 });
+    const side = await page.evaluate(() => ({
+      rows: document.querySelectorAll("[data-sidebar] [data-level-row]").length,
+      free: document.querySelector("[data-sidebar] [data-free-row]") !== null,
+    }));
+    await page.screenshot({ path: `${OUT}trigger-sidebar-${tag}.png` });
+    await page.click('[data-sidebar] [data-level-row][data-level-id="3"]');
+    await page.waitForSelector('[data-trigger][data-level="3"] [data-bot-code] .cm-content', { timeout: 15000 });
+    const card = await page.evaluate(() => ({
+      code: document.querySelector("[data-bot-code]").cmView.state.doc.toString(),
+      editable: document.querySelector("[data-bot-code] .cm-content").getAttribute("contenteditable"),
+      drawerClosed: document.querySelector("[data-sidebar]") === null,
+    }));
+    await page.screenshot({ path: `${OUT}trigger-level-card-${tag}.png` });
+    await page.click("[data-start]");
+    await toEnd(page);
+    const endText = await page.evaluate(() => document.querySelector("[data-end]").textContent);
+    // the watched run leads into the batch: ten markets side by side at skip
+    // speed. At walk turbo the whole stack can finish in under a second, so
+    // it is read at frame speed from inside the page rather than over CDP.
+    await page.click("[data-sim-batch]");
+    const stack = await page.evaluate(() => new Promise((done) => {
+      const t0 = performance.now();
+      const look = () => {
+        const rows = document.querySelectorAll("[data-sim-market]").length;
+        if (rows > 0) {
+          return done({ rows, panels: document.querySelectorAll("[data-bot-live]").length });
+        }
+        if (performance.now() - t0 > 15000) return done({ rows: 0, panels: 0 });
+        requestAnimationFrame(look);
+      };
+      look();
+    }));
+    await page.screenshot({ path: `${OUT}trigger-sims-${tag}.png` });
+    await page.waitForSelector("[data-sim-summary]", { timeout: 60000 });
+    const sum = await page.evaluate(() => ({
+      rows: document.querySelectorAll("[data-sim-row]").length,
+      beat: document.querySelector("[data-sim-beat]")?.textContent ?? "",
+      text: document.querySelector("[data-sim-summary]").textContent,
+      markets: Array.from(document.querySelectorAll("[data-sim-row] > span:first-child")).map((el) => el.textContent),
+    }));
+    await page.screenshot({ path: `${OUT}trigger-sim-summary-${tag}.png` });
+    // the review: every finished market as its own slice, then back
+    await page.click("[data-view-markets]");
+    await page.waitForSelector("[data-markets] [data-sim-market]", { timeout: 15000 });
+    const review = await page.evaluate(() => document.querySelectorAll("[data-markets] [data-sim-market]").length);
+    await page.screenshot({ path: `${OUT}trigger-markets-${tag}.png` });
+    await page.click("[data-back]");
+    await page.waitForSelector("[data-sim-summary]", { timeout: 15000 });
+    await page.click("[data-next-level]");
+    await page.waitForSelector('[data-trigger][data-phase="deal"][data-level="4"] [data-start]', { timeout: 15000 });
+    const parts = {
+      rows: side.rows === 10,
+      free: side.free,
+      code: card.code.includes("function buyAndHoldBot"),
+      readOnly: card.editable === "false",
+      drawerClosed: card.drawerClosed,
+      botCard: /Bot: \$/.test(endText) && /Run 10 markets/.test(endText) && /Next level/.test(endText),
+      stack: stack.rows === 10 && stack.panels === 1,
+      batch: sum.rows === 10 && / of 10 markets/.test(sum.beat) && /View markets/.test(sum.text) && /Run 10 more/.test(sum.text),
+      distinct: new Set(sum.markets).size === sum.markets.length,
+      review: review === 10,
+    };
+    const bad = Object.keys(parts).filter((k) => !parts[k]);
+    check("R_level_flow", bad.length === 0,
+      bad.length
+        ? `broke ${bad.join(",")} (${stack.rows} stacked, ${stack.panels} panels, ${sum.rows} summary rows, ${review} reviewed)`
+        : `sidebar listed ${side.rows} levels, level 3 ran read-only buyAndHoldBot, ${stack.rows} markets in parallel over one bot panel, ${review} reviewed, Next level landed on level 4`);
+  }
+
+  stage = "S_skip_to_end";
+  // ---------------------------------------------------------------------- S
+  // Skip to end on a real-time run, no turbo: a roughly forty second tape
+  // must reach its end card in a tenth of that once the button is pressed.
+  {
+    await open(page, "era=covid&stock=AAPL&seed=3");
+    await wait(300);
+    const t0 = Date.now();
+    await page.click("[data-skip]");
+    await toEnd(page, 25000);
+    const secs = (Date.now() - t0) / 1000;
+    check("S_skip_to_end", secs < 15,
+      `the end card in ${secs.toFixed(1)}s of a roughly forty second run`);
+  }
+
+  stage = "T_bot_code_toggle";
+  // ---------------------------------------------------------------------- T
+  // The word bot in "The bot is trading" shows the running source read only
+  // and hides it again, without touching the run underneath.
+  {
+    await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=1");
+    await page.waitForSelector("[data-bot-live] [data-bot-word]", { timeout: 15000 });
+    await page.click("[data-bot-word]");
+    await page.waitForSelector("[data-bot-code-view] .cm-content", { timeout: 15000 });
+    const source = await page.evaluate(
+      () => document.querySelector("[data-bot-code-view] [data-bot-code]").cmView.state.doc.toString(),
+    );
+    await page.screenshot({ path: `${OUT}trigger-bot-code-view-${tag}.png` });
+    await page.click("[data-bot-word]");
+    await wait(200);
+    const gone = await page.$("[data-bot-code-view]");
+    check("T_bot_code_toggle",
+      source.includes("bot = randomBot") && gone === null,
+      gone === null
+        ? "the word bot opened the running source and closed it again"
+        : "the code view failed to close");
+  }
+
+  stage = "U_first_run_guides";
+  // ---------------------------------------------------------------------- U
+  // The two once-ever walkthroughs, with their flags wiped so this browser
+  // becomes a first-time player again.
+  {
+    await page.evaluate(() => {
+      localStorage.removeItem("trigger-guide-you");
+      localStorage.removeItem("trigger-guide-bot");
+    });
+
+    // the manual guide: Play opens on a held tape, the tour, the prompted
+    // buy, the prompted sell, and then the clock runs from all cash
+    await page.goto(`${BASE}?era=gfc&stock=AAPL&seed=7&turbo=6`, { waitUntil: "load" });
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+    await page.click("[data-go-free]");
+    await page.waitForSelector("[data-start]", { timeout: 15000 });
+    await page.click("[data-start]");
+    await page.waitForSelector('[data-guide-card][data-step="0"]', { timeout: 15000 });
+    const t0 = await page.getAttribute("[data-trigger]", "data-t");
+    await wait(600);
+    const t1 = await page.getAttribute("[data-trigger]", "data-t");
+    // the tour: the guide key advances the anchored cards, and each card's
+    // position is collected to prove the box actually travels the screen
+    const cardTop = () => page.evaluate(
+      () => Math.round(document.querySelector("[data-guide-card]").getBoundingClientRect().top),
+    );
+    const tops = [await cardTop()];
+    // the first advance is a click, which parks focus on the Next button;
+    // every later advance is the guide key, which must still move exactly
+    // one step rather than being eaten or doubled by the focused button
+    await page.click("[data-guide-next]");
+    await page.waitForSelector('[data-guide-card][data-step="1"]', { timeout: 15000 });
+    tops.push(await cardTop());
+    for (const step of [2, 3, 4]) {
+      await page.keyboard.press("Space");
+      await page.waitForSelector(`[data-guide-card][data-step="${step}"]`, { timeout: 15000 });
+      tops.push(await cardTop());
+      if (step === 3) await page.screenshot({ path: `${OUT}trigger-guide-${tag}.png` });
+    }
+    const outBefore = await page.getAttribute("[data-trigger]", "data-position");
+    await page.keyboard.press("Space");            // the prompted buy
+    await page.waitForSelector('[data-guide-card][data-step="5"]', { timeout: 15000 });
+    const held = await page.getAttribute("[data-trigger]", "data-position");
+    await page.keyboard.press("Space");            // next, to the sell card
+    await page.waitForSelector('[data-guide-card][data-step="6"]', { timeout: 15000 });
+    await page.keyboard.press("Space");            // the prompted sell
+    await wait(700);
+    const after = await page.evaluate(() => {
+      const el = document.querySelector("[data-trigger]");
+      return {
+        guide: document.querySelector("[data-guide-card]") !== null,
+        t: Number(el.getAttribute("data-t")),
+        pos: el.getAttribute("data-position"),
+        cash: Number(el.getAttribute("data-cash")),
+      };
+    });
+    // and only once: the next manual run starts unpaused, no guide
+    await open(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
+    await wait(400);
+    const again = await page.evaluate(() => ({
+      guide: document.querySelector("[data-guide-card]") !== null,
+      t: Number(document.querySelector("[data-trigger]").getAttribute("data-t")),
+    }));
+    const youParts = {
+      paused: t0 === t1,
+      moved: new Set(tops).size >= 3,
+      wasOut: outBefore === "out",
+      bought: held === "in",
+      resumed: !after.guide && after.t > 0.01 && after.pos === "out" && near(after.cash, 1000, 0.01),
+      once: !again.guide && again.t > 0.01,
+    };
+    const youBad = Object.keys(youParts).filter((k) => !youParts[k]);
+    check("U_you_guide", youBad.length === 0,
+      youBad.length
+        ? `broke ${youBad.join(",")} (t ${t0} to ${t1}, tops ${tops.join("/")}, after t ${after.t} pos ${after.pos} cash ${after.cash})`
+        : `held at t ${t0} through seven anchored cards at ${new Set(tops).size} heights, buy then sell, clock ran from all cash, and never again`);
+
+    // the bot primer: inputs alone, then the bot appears, then a decision
+    // per scripted tick, the price row growing a chip and the head pointer
+    // riding it, and See this bot landing back on the card with the code
+    await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
+    await page.waitForSelector("[data-bot-guide]", { timeout: 15000 });
+    const phaseUnder = await page.getAttribute("[data-trigger]", "data-phase");
+    const chips = [await page.$$eval("[data-primer-price]", (els) => els.length)];
+    // same focus trap here: click once, then drive the rest by the key
+    await page.click("[data-primer-next]");
+    await page.waitForSelector("[data-primer-bot]", { timeout: 15000 });
+    const outs = [];
+    for (let f = 2; f <= 4; f++) {
+      await page.keyboard.press("Space");
+      await page.waitForSelector(`[data-bot-guide][data-primer-step="${f}"]`, { timeout: 15000 });
+      outs.push(await page.getAttribute("[data-primer-out]", "data-primer-out"));
+      chips.push(await page.$$eval("[data-primer-price]", (els) => els.length));
+    }
+    const head = await page.$("[data-primer-head]");
+    await page.screenshot({ path: `${OUT}trigger-bot-guide-${tag}.png` });
+    await page.click("[data-bot-see]");
+    await page.waitForSelector('[data-trigger][data-phase="deal"] [data-start]', { timeout: 15000 });
+    const primerGone = await page.$("[data-bot-guide]");
+    await page.click("[data-start]");
+    await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
+    await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=6");
+    await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
+    const primerAgain = await page.$("[data-bot-guide]");
+    const botParts = {
+      held: phaseUnder === "deal",
+      grows: chips.join("/") === "1/1/2/3",
+      decisions: outs.join("/") === "10/0/-10",
+      headMark: head !== null,
+      lands: primerGone === null,
+      once: primerAgain === null,
+    };
+    const botBad = Object.keys(botParts).filter((k) => !botParts[k]);
+    check("U_bot_guide", botBad.length === 0,
+      botBad.length
+        ? `broke ${botBad.join(",")} (chips ${chips.join("/")}, outs ${outs.join("/")}, phase ${phaseUnder})`
+        : `the primer grew ${chips.join("/")} chips under a head pointer through decisions ${outs.join("/")}, See this bot landed on the card, and it never returned`);
+  }
 }
 
 // One browser per viewport. The tape pauses with the tab, correctly, so a page
@@ -680,6 +1102,12 @@ for (const [tag, w, h] of [["wide", 1440, 950], ["phone", 390, 844]]) {
   // say so plainly if it will not come.
   await page.bringToFront();
   await page.goto(BASE);
+  // every check below plays as a returning player: the two once-ever
+  // walkthroughs are marked seen up front, and U exercises them explicitly
+  await page.evaluate(() => {
+    localStorage.setItem("trigger-guide-you", "1");
+    localStorage.setItem("trigger-guide-bot", "1");
+  });
   for (let i = 0; i < 20 && await page.evaluate(() => document.hidden); i++) {
     await page.bringToFront();
     await wait(100);
