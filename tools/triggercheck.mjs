@@ -18,7 +18,10 @@
 //   P_bot_shelf_finishes  every example bot survives a dead-company run
 //   Q_bot_wrong_action_stops  an overspending bot freezes the tape mid run
 //   Q_bot_compile_error_stays code that does not parse never leaves the card
-//   R_level_flow          the ladder: list, read-only code, run, next level
+//   R_level_flow          the ladder: sidebar, read-only code, run, the ten
+//                         market batch and its summary, then next level
+//   S_skip_to_end         skip to end collapses a real-time run to seconds
+//   T_bot_code_toggle     the word bot shows and hides the running source
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
 //   L_replay_without_scrolling  Play again is on screen the moment a run ends
 //   M_calculator_is_largest  nothing on the run screen outsizes the calculator
@@ -842,40 +845,99 @@ async function run(page, tag) {
 
   stage = "R_level_flow";
   // ---------------------------------------------------------------------- R
-  // The ladder, walked end to end: the entry screen offers levels, the list
-  // has every level, a bot level shows its real source read only, runs to a
-  // Bot: end card, and Next level lands on the following level's card.
+  // The ladder, walked end to end: the entry screen's Levels lands on the
+  // next unplayed level's card, the sidebar toggle opens the level select
+  // with every level and Free play under the rule, picking a bot level shows
+  // its real source read only and closes the drawer, the run ends on a Bot:
+  // card, and Next level lands on the following level's card.
   {
     await page.goto(`${BASE}?era=covid&stock=AAPL&seed=3&turbo=30`, { waitUntil: "load" });
     await page.reload({ waitUntil: "load" });
     await page.waitForSelector("[data-go-levels]", { timeout: 15000 });
     await page.click("[data-go-levels]");
-    await page.waitForSelector('[data-level-row][data-level-id="3"]', { timeout: 15000 });
-    const rows = await page.$$eval("[data-level-row]", (els) => els.length);
-    await page.click('[data-level-row][data-level-id="3"]');
+    // a fresh browser has no level log, so Levels opens level 1, the human one
+    await page.waitForSelector('[data-trigger][data-level="1"] [data-start]', { timeout: 15000 });
+    await page.click("[data-sidebar-toggle]");
+    await page.waitForSelector("[data-sidebar]", { timeout: 15000 });
+    const side = await page.evaluate(() => ({
+      rows: document.querySelectorAll("[data-sidebar] [data-level-row]").length,
+      free: document.querySelector("[data-sidebar] [data-free-row]") !== null,
+    }));
+    await page.screenshot({ path: `${OUT}trigger-sidebar-${tag}.png` });
+    await page.click('[data-sidebar] [data-level-row][data-level-id="3"]');
     await page.waitForSelector('[data-trigger][data-level="3"] [data-bot-code] .cm-content', { timeout: 15000 });
     const card = await page.evaluate(() => ({
       code: document.querySelector("[data-bot-code]").cmView.state.doc.toString(),
       editable: document.querySelector("[data-bot-code] .cm-content").getAttribute("contenteditable"),
+      drawerClosed: document.querySelector("[data-sidebar]") === null,
     }));
     await page.screenshot({ path: `${OUT}trigger-level-card-${tag}.png` });
     await page.click("[data-start]");
     await toEnd(page);
     const endText = await page.evaluate(() => document.querySelector("[data-end]").textContent);
-    await page.waitForSelector("[data-next-level]", { timeout: 5000 });
+    // the watched run leads into the batch: ten fresh markets at skip speed,
+    // chained with no cards between, landing on the summary
+    await page.click("[data-sim-batch]");
+    await page.waitForSelector("[data-sim-summary]", { timeout: 60000 });
+    const sum = await page.evaluate(() => ({
+      rows: document.querySelectorAll("[data-sim-row]").length,
+      beat: document.querySelector("[data-sim-beat]")?.textContent ?? "",
+    }));
+    await page.screenshot({ path: `${OUT}trigger-sim-summary-${tag}.png` });
     await page.click("[data-next-level]");
     await page.waitForSelector('[data-trigger][data-phase="deal"][data-level="4"] [data-start]', { timeout: 15000 });
     const parts = {
-      rows: rows === 10,
+      rows: side.rows === 10,
+      free: side.free,
       code: card.code.includes("function buyAndHoldBot"),
       readOnly: card.editable === "false",
-      botCard: /Bot: \$/.test(endText) && /Next level/.test(endText) && /Replay level/.test(endText),
+      drawerClosed: card.drawerClosed,
+      botCard: /Bot: \$/.test(endText) && /Run 10 markets/.test(endText) && /Next level/.test(endText),
+      batch: sum.rows === 10 && / of 10 markets/.test(sum.beat),
     };
     const bad = Object.keys(parts).filter((k) => !parts[k]);
     check("R_level_flow", bad.length === 0,
       bad.length
-        ? `broke ${bad.join(",")} (${rows} rows, editable ${card.editable})`
-        : `${rows} levels listed, level 3 showed read-only buyAndHoldBot, ran to a Bot: card, Next level landed on level 4`);
+        ? `broke ${bad.join(",")} (${side.rows} side rows, ${sum.rows} sim rows, editable ${card.editable})`
+        : `sidebar listed ${side.rows} levels and Free play, level 3 ran read-only buyAndHoldBot, batched ${sum.rows} markets, Next level landed on level 4`);
+  }
+
+  stage = "S_skip_to_end";
+  // ---------------------------------------------------------------------- S
+  // Skip to end on a real-time run, no turbo: a roughly forty second tape
+  // must reach its end card in a tenth of that once the button is pressed.
+  {
+    await open(page, "era=covid&stock=AAPL&seed=3");
+    await wait(300);
+    const t0 = Date.now();
+    await page.click("[data-skip]");
+    await toEnd(page, 25000);
+    const secs = (Date.now() - t0) / 1000;
+    check("S_skip_to_end", secs < 15,
+      `the end card in ${secs.toFixed(1)}s of a roughly forty second run`);
+  }
+
+  stage = "T_bot_code_toggle";
+  // ---------------------------------------------------------------------- T
+  // The word bot in "The bot is trading" shows the running source read only
+  // and hides it again, without touching the run underneath.
+  {
+    await openBot(page, "era=gfc&stock=AAPL&seed=7&turbo=1");
+    await page.waitForSelector("[data-bot-live] [data-bot-word]", { timeout: 15000 });
+    await page.click("[data-bot-word]");
+    await page.waitForSelector("[data-bot-code-view] .cm-content", { timeout: 15000 });
+    const source = await page.evaluate(
+      () => document.querySelector("[data-bot-code-view] [data-bot-code]").cmView.state.doc.toString(),
+    );
+    await page.screenshot({ path: `${OUT}trigger-bot-code-view-${tag}.png` });
+    await page.click("[data-bot-word]");
+    await wait(200);
+    const gone = await page.$("[data-bot-code-view]");
+    check("T_bot_code_toggle",
+      source.includes("bot = randomBot") && gone === null,
+      gone === null
+        ? "the word bot opened the running source and closed it again"
+        : "the code view failed to close");
   }
 }
 

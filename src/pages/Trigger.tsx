@@ -20,7 +20,7 @@ import Feed from "../components/trigger/Feed";
 import type { FeedItem } from "../components/trigger/Feed";
 import Meter from "../components/trigger/Meter";
 import { HEADLINE_POOL } from "../data/headlinePool";
-import type { RunState } from "../lib/tape/engine";
+import type { EraId, RunState } from "../lib/tape/engine";
 import {
   advance, baselines, buy, canBuy, isDead, isOver, lastIndex,
   monthAt, monthIndexOf, newRun, priceAt, runIndexOf, sell, worthAt, worthOf,
@@ -36,7 +36,7 @@ import type { Level } from "../lib/trigger/levels";
 import { LEVELS, levelById } from "../lib/trigger/levels";
 import {
   ERA_MOOD, ERA_NAME, SPEED, START_CASH, companyName, dealFromParams,
-  dealRandom, longMonth, randomSeed,
+  dealRandom, longMonth, randomSeed, yearOf,
 } from "../lib/trigger/deal";
 import {
   bestDecision, decisionsOf, monthsInMarket, spansOf, worstDecision,
@@ -53,18 +53,25 @@ const DOWN = "#E5484D";
 
 const BEST_KEY = "trigger-best";
 const BOT_KEY = "trigger-bot";
+// Skip to end: the tape at ten times game speed, fast but still animated.
+// Tunable; a hundred reads as a cut rather than a sprint.
+const SKIP_SPEED = 10;
+// The level batch: how many further markets a level's bot is run across
+// after its watched run, each dealt at random from (company, era window).
+const SIM_COUNT = 10;
 // A headline sits for about two seconds, and gives way faster when the tape
 // has already reached the next one, so the feed never falls far behind the
 // month it is reporting on.
 const DWELL = [1900, 1200, 800];
 
-type Phase = "deal" | "run" | "end" | "error";
+type Phase = "deal" | "run" | "end" | "error" | "summary";
 
 // Who is on the trigger: you with the space bar, or a bot you wrote.
 type Mode = "you" | "bot";
 
-// The deal-phase screens: the top choice, then free play or the level ladder.
-type Menu = "top" | "free" | "levels" | "level";
+// The deal-phase screens: the top choice, then free play or a level's card.
+// Level selection lives in the collapsible sidebar, not a screen of its own.
+type Menu = "top" | "free" | "level";
 
 interface Session {
   deal: Deal;
@@ -75,6 +82,15 @@ interface Session {
 interface BotStop {
   message: string;
   month: string;
+}
+
+// One batch simulation's outcome: where the bot played and what it earned
+// over doing nothing there.
+interface SimResult {
+  era: EraId;
+  ticker: string;
+  month: string;         // the run's first month
+  delta: number;
 }
 
 function makeRun(deal: Deal, speed: number): RunState {
@@ -214,6 +230,7 @@ export default function Trigger() {
   const [menu, setMenu] = useState<Menu>("top");
   const [levelId, setLevelId] = useState<number | null>(null);
   const [levelLog, setLevelLog] = useState<Record<number, number>>(() => readLevelLog());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // the bot: who plays this run (mode), the free-play tab choice, the source
   // in the editor, the compiled function, and the rule it broke if it stopped
@@ -227,6 +244,21 @@ export default function Trigger() {
   const botTickRef = useRef(-1);
   const botPricesRef = useRef<number[]>([]);
 
+  // skip to end: a dt multiplier the clock reads every frame, one way per run
+  const [fast, setFast] = useState(false);
+  const fastRef = useRef(1);
+
+  // the level batch: the runs left to chain and what each one earned, plus
+  // which market is on screen and the finished list for the summary card
+  const batchRef = useRef<{ total: number; results: SimResult[] } | null>(null);
+  const [simNow, setSimNow] = useState<number | null>(null);
+  const [simResults, setSimResults] = useState<SimResult[]>([]);
+
+  // the running bot's source, shown when the word bot on the run screen is
+  // clicked; a fixed overlay so the run layout never moves
+  const botSourceRef = useRef("");
+  const [showBotCode, setShowBotCode] = useState(false);
+
   // headline feed
   const nextRef = useRef(0);
   const queueRef = useRef<PlacedHeadline[]>([]);
@@ -239,8 +271,10 @@ export default function Trigger() {
   const historyAtRef = useRef(0);
   const [history, setHistory] = useState<number[]>([START_CASH]);
 
-  const begin = useCallback((next: Deal) => {
-    const nextSample = makeSample(next);
+  // One deal onto a clean tape: every ref the clock reads, the session, and
+  // the pinned url move together. begin() and start() both go through here,
+  // and so does the batch when it chains one simulation into the next.
+  const resetRun = useCallback((next: Deal) => {
     runRef.current = makeRun(next, SPEED * turbo);
     nextRef.current = 0;
     queueRef.current = [];
@@ -250,17 +284,25 @@ export default function Trigger() {
     historyAtRef.current = 0;
     botTickRef.current = -1;
     botPricesRef.current = [];
-    setSession({ deal: next, sample: nextSample });
+    setSession({ deal: next, sample: makeSample(next) });
     setRun(runRef.current);
     setShown(null);
     setHistory([START_CASH]);
-    setBotStop(null);
-    setPhase("deal");
     setParams(
       { era: next.era, stock: next.ticker, seed: String(next.seed), ...(turbo > 1 ? { turbo: String(turbo) } : {}) },
       { replace: true },
     );
   }, [setParams, turbo]);
+
+  const begin = useCallback((next: Deal) => {
+    resetRun(next);
+    batchRef.current = null;
+    fastRef.current = 1;
+    setFast(false);
+    setSimNow(null);
+    setBotStop(null);
+    setPhase("deal");
+  }, [resetRun]);
 
   // Leaving the deal card always starts from a clean tape. The deal card can
   // be returned to, by editing the bot after a stopped run, so the run built
@@ -270,32 +312,41 @@ export default function Trigger() {
     const asBot = level === null ? freeMode === "bot" : level.player !== "you";
     if (asBot) {
       const editable = level === null || level.player === "editor";
-      const compiled = compileBot(editable ? botSource : levelSource(level.player));
+      const source = editable ? botSource : levelSource(level.player);
+      const compiled = compileBot(source);
       if ("error" in compiled) {
         setCompileError(compiled.error);
         return;
       }
       botRef.current = compiled.bot;
+      botSourceRef.current = source;
       if (editable) writeBotSource(botSource);
     }
     setMode(asBot ? "bot" : "you");
     setLevelId(level?.id ?? null);
-    runRef.current = makeRun(deal, speed);
-    nextRef.current = 0;
-    queueRef.current = [];
-    shownRef.current = null;
-    expiryRef.current = 0;
-    historyRef.current = [START_CASH];
-    historyAtRef.current = 0;
-    botTickRef.current = -1;
-    botPricesRef.current = [];
-    setRun(runRef.current);
-    setShown(null);
-    setHistory([START_CASH]);
+    batchRef.current = null;
+    fastRef.current = 1;
+    setFast(false);
+    setSimNow(null);
+    setShowBotCode(false);
+    resetRun(deal);
     setCompileError(null);
     setBotStop(null);
     setPhase("run");
-  }, [freeMode, botSource, deal, speed]);
+  }, [freeMode, botSource, deal, resetRun]);
+
+  // The batch: the same compiled bot, SIM_COUNT fresh random markets, chained
+  // by the clock at skip speed, summarised when the last one ends.
+  const startBatch = useCallback(() => {
+    batchRef.current = { total: SIM_COUNT, results: [] };
+    setSimResults([]);
+    setSimNow(1);
+    fastRef.current = SKIP_SPEED;
+    setFast(true);
+    setShowBotCode(false);
+    resetRun(dealRandom());
+    setPhase("run");
+  }, [resetRun]);
 
   // A pinned link is allowed to change under the page: editing the query, or
   // following a shared url from another run, deals the run it names rather
@@ -328,7 +379,9 @@ export default function Trigger() {
 
       const current = runRef.current;
       if (!isOver(current)) {
-        runRef.current = advance(current, dt);
+        // skip to end scales the seconds, not the engine: the tape still
+        // draws every frame, it just burns market months faster
+        runRef.current = advance(current, dt * fastRef.current);
         setRun(runRef.current);
       }
       const t = runRef.current.t;
@@ -377,20 +430,47 @@ export default function Trigger() {
       }
       if (now >= expiryRef.current && queueRef.current.length > 0) {
         const item = queueRef.current.shift() as PlacedHeadline;
-        const dwell = DWELL[Math.min(DWELL.length - 1, queueRef.current.length)] / turbo;
+        const dwell = DWELL[Math.min(DWELL.length - 1, queueRef.current.length)] / (turbo * fastRef.current);
         shownRef.current = item;
         expiryRef.current = now + dwell;
         setShown(item);
       }
 
-      if (isOver(runRef.current)) setPhase("end");
+      // A finished run either lands on the end card, or, inside a batch,
+      // logs its market and chains straight into the next one with no card
+      // in between: the phase never leaves "run" until the batch is done.
+      if (isOver(runRef.current)) {
+        const batch = batchRef.current;
+        if (batch === null) {
+          setPhase("end");
+        } else {
+          const end = lastIndex(runRef.current);
+          batch.results.push({
+            era: runRef.current.era,
+            ticker,
+            month: runRef.current.months[0],
+            delta: worthAt(runRef.current, end) - baselines(runRef.current, ticker).holding,
+          });
+          if (batch.results.length >= batch.total) {
+            batchRef.current = null;
+            setSimResults([...batch.results]);
+            setSimNow(null);
+            setPhase("summary");
+          } else {
+            setSimNow(batch.results.length + 1);
+            resetRun(dealRandom());
+            cancelAnimationFrame(raf);
+            return;
+          }
+        }
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", wake);
     };
-  }, [phase, sample, turbo, mode, ticker]);
+  }, [phase, sample, turbo, mode, ticker, resetRun]);
 
   // ------------------------------------------------------------ the trade
   const toggle = useCallback(() => {
@@ -533,7 +613,7 @@ export default function Trigger() {
     const back = (to: Menu) => (
       <button
         data-back=""
-        onClick={() => setMenu(to)}
+        onClick={() => { setMenu(to); setSidebarOpen(false); }}
         style={{
           marginTop: 18, background: "transparent", border: "none",
           color: MUTED, fontSize: 14, fontFamily: UI_FONT, cursor: "pointer",
@@ -578,11 +658,104 @@ export default function Trigger() {
       </div>
     );
 
+    // The collapsible sidebar, once a branch is chosen: every level with its
+    // played state and dollars, a rule, and Free play under it. It is the
+    // level selection; there is no separate screen for it.
+    const goTo = (id: number | null) => {
+      if (id === null) {
+        setLevelId(null);
+        setMenu("free");
+      } else {
+        setLevelId(id);
+        setMenu("level");
+      }
+      setSidebarOpen(false);
+    };
+
+    const sideRow = (
+      key: string, label: string, active: boolean, score: number | undefined,
+      attrs: Record<string, string>, onClick: () => void,
+    ) => (
+      <button
+        key={key}
+        {...attrs}
+        aria-current={active}
+        onClick={onClick}
+        style={{
+          display: "flex", justifyContent: "space-between", alignItems: "baseline",
+          gap: 8, width: "100%", padding: "9px 10px", borderRadius: 8, border: "none",
+          background: active ? "rgba(215,222,232,0.10)" : "transparent",
+          color: TEXT, fontSize: 14, fontWeight: 600, fontFamily: UI_FONT,
+          cursor: "pointer", textAlign: "left",
+        }}
+      >
+        <span style={{ flex: "1 1 auto" }}>{label}</span>
+        {score !== undefined && (
+          <span style={{
+            flex: "0 0 auto", fontSize: 12, fontWeight: 400, whiteSpace: "nowrap",
+            fontVariantNumeric: "tabular-nums", color: score >= 0 ? UP : DOWN,
+          }}>
+            {signedMoney(score)}
+          </span>
+        )}
+      </button>
+    );
+
+    const sidebar = menu !== "top" && (
+      <>
+        <button
+          data-sidebar-toggle=""
+          aria-label="level select"
+          aria-expanded={sidebarOpen}
+          onClick={() => setSidebarOpen((o) => !o)}
+          style={{
+            position: "fixed", top: 12, left: 12, zIndex: 60,
+            width: 36, height: 36, borderRadius: 10,
+            border: "1px solid rgba(215,222,232,0.22)",
+            background: PANEL, color: TEXT, fontSize: 16,
+            fontFamily: UI_FONT, cursor: "pointer",
+          }}
+        >
+          {sidebarOpen ? "×" : "☰"}
+        </button>
+        {sidebarOpen && (
+          <>
+            <div
+              data-sidebar-backdrop=""
+              onClick={() => setSidebarOpen(false)}
+              style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,0.45)" }}
+            />
+            <div
+              data-sidebar=""
+              style={{
+                position: "fixed", top: 0, bottom: 0, left: 0, width: 300, zIndex: 50,
+                background: PANEL, borderRight: "1px solid rgba(215,222,232,0.14)",
+                padding: "58px 12px 16px", overflowY: "auto", textAlign: "left",
+              }}
+            >
+              {LEVELS.map((l) => sideRow(
+                `lvl${l.id}`,
+                `${l.id}. ${l.title}`,
+                menu === "level" && levelId === l.id,
+                levelLog[l.id],
+                { "data-level-row": "", "data-level-id": String(l.id) },
+                () => goTo(l.id),
+              ))}
+              <div style={{ height: 1, background: "rgba(215,222,232,0.18)", margin: "12px 2px" }} />
+              {sideRow("free", "Free play", menu === "free", undefined, { "data-free-row": "" }, () => goTo(null))}
+            </div>
+          </>
+        )}
+      </>
+    );
+
     return shell(
-      <div style={{
-        minHeight: vp.h, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
-      }}>
+      <>
+        {sidebar}
+        <div style={{
+          minHeight: vp.h, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
+        }}>
         <div style={{ maxWidth: wide ? 640 : 460, width: "100%" }}>
           <div style={{ fontSize: 15, color: MUTED }}>{ERA_NAME[deal.era]}</div>
           <h1 style={{
@@ -606,7 +779,7 @@ export default function Trigger() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 26 }}>
                 <button
                   data-go-levels=""
-                  onClick={() => setMenu("levels")}
+                  onClick={() => { setLevelId(nextId); setMenu("level"); }}
                   style={{
                     width: "100%", height: 60, borderRadius: 16, border: "none",
                     background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
@@ -670,54 +843,6 @@ export default function Trigger() {
             </>
           )}
 
-          {menu === "levels" && (
-            <>
-              <p data-pitch="" style={{ fontSize: 16, color: TEXT, marginTop: 14, lineHeight: 1.45 }}>
-                Real algorithms over real data, simplest first.
-              </p>
-              <button
-                data-start-level=""
-                onClick={() => { setLevelId(nextId); setMenu("level"); }}
-                style={{
-                  marginTop: 22, width: "100%", height: 60, borderRadius: 16, border: "none",
-                  background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
-                  fontFamily: UI_FONT, cursor: "pointer",
-                }}
-              >
-                Start level {nextId}
-              </button>
-              <div data-level-list="" style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 16 }}>
-                {LEVELS.map((l) => {
-                  const score = levelLog[l.id];
-                  return (
-                    <button
-                      key={l.id}
-                      data-level-row=""
-                      data-level-id={l.id}
-                      onClick={() => { setLevelId(l.id); setMenu("level"); }}
-                      style={{
-                        display: "flex", justifyContent: "space-between", alignItems: "baseline",
-                        gap: 10, padding: "10px 14px", borderRadius: 10,
-                        border: "1px solid rgba(215,222,232,0.16)", background: "transparent",
-                        color: TEXT, fontSize: 15, fontWeight: 600, fontFamily: UI_FONT,
-                        cursor: "pointer", textAlign: "left",
-                      }}
-                    >
-                      <span>{l.id}. {l.title}</span>
-                      <span style={{
-                        fontSize: 13, fontWeight: 400, fontVariantNumeric: "tabular-nums",
-                        color: score === undefined ? MUTED : score >= 0 ? UP : DOWN,
-                      }}>
-                        {score === undefined ? "not played" : `${signedMoney(score)} vs holding`}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              {back("top")}
-            </>
-          )}
-
           {menu === "level" && lvl !== null && (
             <>
               <div style={{ fontSize: 14, color: MUTED, marginTop: 18 }}>
@@ -750,11 +875,12 @@ export default function Trigger() {
                   best on this level: {signedMoney(levelLog[lvl.id])} over doing nothing
                 </div>
               )}
-              {back("levels")}
+              {back("top")}
             </>
           )}
+          </div>
         </div>
-      </div>,
+      </>,
       true,
     );
   }
@@ -817,12 +943,109 @@ export default function Trigger() {
     );
   }
 
+  // ------------------------------------------------------------ batch summary
+  // The batch's verdictless verdict: where the bot played, what each run
+  // earned over doing nothing, and one counted fact. The reader does the rest.
+  if (phase === "summary") {
+    const lvl = levelId !== null ? levelById(levelId) : null;
+    const nextLvl = lvl !== null ? levelById(lvl.id + 1) : null;
+    const beat = simResults.filter((r) => r.delta > 0).length;
+    const toNext = () => {
+      begin(dealRandom());
+      if (lvl === null) return;
+      if (nextLvl !== null) {
+        setLevelId(nextLvl.id);
+        setMenu("level");
+      } else {
+        setMenu("level");
+        setSidebarOpen(true);
+      }
+    };
+    return shell(
+      <div style={{
+        minHeight: vp.h, display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
+      }}>
+        <div data-sim-summary="" style={{ maxWidth: 560, width: "100%" }}>
+          <div style={{ fontSize: 15, color: MUTED }}>
+            {lvl !== null ? `level ${lvl.id}, ${lvl.title}` : "the batch"}
+          </div>
+          <h1 style={{
+            fontSize: phone ? 30 : 40, fontWeight: 700, margin: "8px 0 0",
+            letterSpacing: "-0.02em", lineHeight: 1.1,
+          }}>
+            One bot, {simResults.length} markets
+          </h1>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 18, textAlign: "left" }}>
+            {simResults.map((r, i) => (
+              <div
+                key={i}
+                data-sim-row=""
+                style={{
+                  display: "flex", justifyContent: "space-between", gap: 10,
+                  borderTop: "1px solid rgba(215,222,232,0.10)", paddingTop: 6, fontSize: 14,
+                }}
+              >
+                <span>{companyName(r.ticker)}, {ERA_NAME[r.era]}, {yearOf(r.month)}</span>
+                <span style={{ color: r.delta >= 0 ? UP : DOWN, fontVariantNumeric: "tabular-nums" }}>
+                  {signedMoney(r.delta)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div data-sim-beat="" style={{ fontSize: 15, color: TEXT, marginTop: 16 }}>
+            It beat doing nothing in {beat} of {simResults.length} markets.
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+            <button
+              {...(lvl !== null && nextLvl !== null ? { "data-next-level": "" } : {})}
+              onClick={toNext}
+              style={{
+                flex: 1, height: 56, borderRadius: 14, border: "none", background: UP,
+                color: "#0C0F14", fontSize: 18, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              {lvl !== null ? (nextLvl !== null ? "Next level" : "Level select") : "Play again"}
+            </button>
+            <button
+              data-sim-batch=""
+              onClick={startBatch}
+              style={{
+                flex: 1, height: 56, borderRadius: 14, border: `1px solid rgba(215,222,232,0.28)`,
+                background: "transparent", color: TEXT, fontSize: 18, fontWeight: 600,
+                fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              Run {SIM_COUNT} more
+            </button>
+          </div>
+        </div>
+      </div>,
+      true,
+    );
+  }
+
   // -------------------------------------------------------------- end card
-  // In a level the buttons walk the ladder: onward to the next level's card,
-  // or the same level again on a fresh deal. Free play keeps its pair.
+  // In a level the buttons walk the ladder. A bot level leads with the batch,
+  // the human level leads with the next level, and free play keeps its pair.
   if (phase === "end") {
     const lvl = levelId !== null ? levelById(levelId) : null;
     const nextLvl = lvl !== null ? levelById(lvl.id + 1) : null;
+    const botLevel = lvl !== null && lvl.player !== "you";
+    const toNext = () => {
+      begin(dealRandom());
+      if (lvl === null) return;
+      if (nextLvl !== null) {
+        setLevelId(nextLvl.id);
+        setMenu("level");
+      } else {
+        // the top of the ladder: back to its own card with the sidebar
+        // open, which is the level select
+        setMenu("level");
+        setSidebarOpen(true);
+      }
+    };
+    const nextLabel = nextLvl !== null ? "Next level" : "Level select";
     return shell(
       <EndCard
         run={run}
@@ -833,28 +1056,19 @@ export default function Trigger() {
         phone={phone}
         pad={pad}
         vpH={vp.h}
-        primaryLabel={lvl !== null ? (nextLvl !== null ? "Next level" : "Level select") : "Play again"}
-        nextLevel={lvl !== null && nextLvl !== null}
-        onPrimary={() => {
-          begin(dealRandom());
-          if (lvl === null) return;
-          if (nextLvl !== null) {
-            setLevelId(nextLvl.id);
-            setMenu("level");
-          } else {
-            setLevelId(null);
-            setMenu("levels");
-          }
-        }}
-        secondaryLabel={lvl !== null ? "Replay level" : "Same stock"}
-        onSecondary={() => {
-          if (lvl !== null) {
-            begin(dealRandom());
-            setMenu("level");
-          } else {
-            begin({ ...deal, seed: randomSeed() });
-          }
-        }}
+        primaryLabel={lvl === null ? "Play again" : botLevel ? `Run ${SIM_COUNT} markets` : nextLabel}
+        nextLevel={lvl !== null && !botLevel && nextLvl !== null}
+        simBatch={botLevel}
+        onPrimary={lvl === null ? () => begin(dealRandom()) : botLevel ? startBatch : toNext}
+        secondaryLabel={lvl === null ? "Same stock" : botLevel ? nextLabel : "Replay level"}
+        secondaryNext={botLevel && nextLvl !== null}
+        onSecondary={
+          lvl === null
+            ? () => begin({ ...deal, seed: randomSeed() })
+            : botLevel
+              ? toNext
+              : () => { begin(dealRandom()); setMenu("level"); }
+        }
       />,
       false,
     );
@@ -902,11 +1116,30 @@ export default function Trigger() {
       // phone's home indicator
       paddingBottom: `calc(${phone ? 24 : pad}px + env(safe-area-inset-bottom, 0px))`,
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: under(phone ? 16 : 19), fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
           {longMonth(monthAt(run))}
         </span>
-        <span style={{ fontSize: under(phone ? 14 : 16), color: MUTED }}>{ERA_NAME[deal.era]}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span data-market={simNow ?? ""} style={{ fontSize: under(phone ? 14 : 16), color: MUTED }}>
+            {simNow !== null ? `market ${simNow} of ${SIM_COUNT}, ` : ""}{ERA_NAME[deal.era]}
+          </span>
+          {/* one way per run; the batch arrives already at speed, so the
+              button only shows while the tape is at its natural pace */}
+          {!fast && (
+            <button
+              data-skip=""
+              onClick={() => { fastRef.current = SKIP_SPEED; setFast(true); }}
+              style={{
+                fontSize: 12, padding: "4px 10px", borderRadius: 8,
+                border: "1px solid rgba(215,222,232,0.28)", background: "transparent",
+                color: MUTED, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              skip to end
+            </button>
+          )}
+        </span>
       </div>
 
       <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "stretch", flex: "1 1 auto", minHeight: 0 }}>
@@ -977,19 +1210,55 @@ export default function Trigger() {
           {dead ? "The company went to zero." : ""}
         </div>
         {mode === "bot" ? (
-          // the trigger belongs to the bot for this run: same footprint as the
-          // button so the layout above it holds, but nothing here to press
-          <div
-            data-bot-live=""
-            style={{
-              width: "100%", height: phone ? 64 : 72, borderRadius: 16,
-              border: "1px solid rgba(215,222,232,0.18)", background: PANEL,
-              color: MUTED, fontSize: buttonSize, fontWeight: 600,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            The bot is trading
-          </div>
+          <>
+            {/* the trigger belongs to the bot for this run: same footprint as
+                the button so the layout above it holds. The word bot shows and
+                hides the running source, in a fixed overlay so the chart row
+                and with it the dollar ruler cannot move. */}
+            <div
+              data-bot-live=""
+              style={{
+                width: "100%", height: phone ? 64 : 72, borderRadius: 16,
+                border: "1px solid rgba(215,222,232,0.18)", background: PANEL,
+                color: MUTED, fontSize: buttonSize, fontWeight: 600,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <span>The&nbsp;</span>
+              <button
+                data-bot-word=""
+                aria-expanded={showBotCode}
+                onClick={() => setShowBotCode((v) => !v)}
+                style={{
+                  background: "transparent", border: "none", padding: 0,
+                  color: TEXT, fontSize: buttonSize, fontWeight: 600,
+                  fontFamily: UI_FONT, cursor: "pointer",
+                  textDecoration: "underline", textDecorationStyle: "dotted",
+                  textUnderlineOffset: 4,
+                }}
+              >
+                bot
+              </button>
+              <span>&nbsp;is trading</span>
+            </div>
+            {showBotCode && (
+              <div
+                data-bot-code-view=""
+                style={{
+                  position: "fixed", left: pad, bottom: phone ? 108 : 130, zIndex: 50,
+                  width: `min(520px, calc(100vw - ${pad * 2}px))`,
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
+                }}
+              >
+                <CodeEditor
+                  value={botSourceRef.current}
+                  onChange={() => {}}
+                  height={Math.min(phone ? 250 : 340, 20 + botSourceRef.current.trimEnd().split("\n").length * 19.5)}
+                  readOnly
+                />
+              </div>
+            )}
+          </>
         ) : (
           <button
             data-action=""
@@ -1098,16 +1367,18 @@ interface EndProps {
   phone: boolean;
   pad: number;
   vpH: number;
-  primaryLabel: string;      // Play again in free play, Next level on the ladder
-  secondaryLabel: string;    // Same stock in free play, Replay level on the ladder
+  primaryLabel: string;      // Play again, Run 10 markets, or Next level
+  secondaryLabel: string;    // Same stock, Next level, or Replay level
   nextLevel: boolean;        // marks the primary as the walk's data-next-level
+  simBatch: boolean;         // marks the primary as the walk's data-sim-batch
+  secondaryNext: boolean;    // marks the secondary as data-next-level instead
   onPrimary: () => void;
   onSecondary: () => void;
 }
 
 function EndCard({
   run, ticker, deal, sample, player, phone, pad, vpH,
-  primaryLabel, secondaryLabel, nextLevel, onPrimary, onSecondary,
+  primaryLabel, secondaryLabel, nextLevel, simBatch, secondaryNext, onPrimary, onSecondary,
 }: EndProps) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const rowW = useBox(rowRef, "end").w;
@@ -1252,6 +1523,7 @@ function EndCard({
         <button
           data-again=""
           {...(nextLevel ? { "data-next-level": "" } : {})}
+          {...(simBatch ? { "data-sim-batch": "" } : {})}
           onClick={onPrimary}
           style={{
             flex: 1, height: 56, borderRadius: 14, border: "none", background: UP,
@@ -1262,6 +1534,7 @@ function EndCard({
         </button>
         <button
           data-same=""
+          {...(secondaryNext ? { "data-next-level": "" } : {})}
           onClick={onSecondary}
           style={{
             flex: 1, height: 56, borderRadius: 14, border: `1px solid rgba(215,222,232,0.28)`,
