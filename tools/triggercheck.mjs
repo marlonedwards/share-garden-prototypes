@@ -35,7 +35,7 @@
 // Usage: node tools/triggercheck.mjs
 
 import { chromium } from "playwright";
-import { mkdirSync } from "fs";
+import { mkdirSync, readdirSync } from "fs";
 
 const BASE = "http://localhost:4318/#/trigger";
 const OUT = new URL("./shots/", import.meta.url).pathname;
@@ -64,7 +64,9 @@ const TYPE_AUDIT = () => {
     const texty = own.length > 0 || el.tagName.toLowerCase() === "text";
     const label = (own || el.tagName.toLowerCase()).slice(0, 36);
     const fam = style.fontFamily || "";
-    if (banned.test(fam)) bad.push(`font ${fam.slice(0, 30)} on "${label}"`);
+    // the bot editor is the one scoped monospace exception, the same shape
+    // as the serif exception for newspaper clippings below
+    if (banned.test(fam) && !el.closest("[data-bot-code]")) bad.push(`font ${fam.slice(0, 30)} on "${label}"`);
     if (/georgia|times/i.test(fam) && !el.closest("[data-newsclip]")) bad.push(`serif on "${label}"`);
     if (texty && parseFloat(style.fontSize) < 12) bad.push(`${style.fontSize} on "${label}"`);
     if (style.textTransform === "uppercase") bad.push(`caps on "${label}"`);
@@ -195,9 +197,11 @@ async function open(page, query) {
 
 // Deal a pinned run in bot mode. The editor prefills from localStorage, so
 // the walk overwrites it whenever it brings its own bot, and hands the source
-// back either way. It does not wait for a run phase: a bot that breaks a rule
-// in its first month may go straight to the stopped card, so the caller says
-// what it is waiting for.
+// back either way. The editor is CodeMirror, which virtualises long
+// documents, so the buffer is read and written through the EditorView the
+// component exposes on the container rather than scraped from the DOM. It
+// does not wait for a run phase: a bot that breaks a rule in its first month
+// may go straight to the stopped card, so the caller says what it waits for.
 async function openBot(page, query, code) {
   let last;
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -206,9 +210,16 @@ async function openBot(page, query, code) {
       await page.reload({ waitUntil: "load" });
       await page.waitForSelector("[data-start]", { timeout: 15000 });
       await page.click('[data-mode="bot"]');
-      await page.waitForSelector("[data-bot-code]", { timeout: 15000 });
-      if (code !== undefined) await page.fill("[data-bot-code]", code);
-      const source = await page.inputValue("[data-bot-code]");
+      await page.waitForSelector("[data-bot-code] .cm-content", { timeout: 15000 });
+      if (code !== undefined) {
+        await page.evaluate((c) => {
+          const view = document.querySelector("[data-bot-code]").cmView;
+          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: c } });
+        }, code);
+      }
+      const source = await page.evaluate(
+        () => document.querySelector("[data-bot-code]").cmView.state.doc.toString(),
+      );
       await page.click("[data-start]");
       return source;
     } catch (e) {
@@ -739,10 +750,11 @@ async function run(page, tag) {
     // Every other bot on the shelf, pointed at by rewriting the picker line,
     // must finish a run without tripping its own rules. Lehman is the run
     // that stresses them: the price goes to zero under whatever they hold.
-    const shelf = [
-      "buyAndHoldBot", "dollarCostAverageBot", "swingTradeBot",
-      "momentumBot", "crossoverBot", "bracketBot", "trendSizerBot",
-    ];
+    // The shelf is read from the bots directory itself, so a bot added there
+    // is walked here without touching this file.
+    const shelf = readdirSync(new URL("../src/lib/trigger/bots/", import.meta.url))
+      .filter((f) => f.endsWith(".js") && !f.startsWith("_") && f !== "randomBot.js")
+      .map((f) => f.replace(/\.js$/, ""));
     const broke = [];
     for (const name of shelf) {
       const picked = source.replace("bot = randomBot", `bot = ${name}`);

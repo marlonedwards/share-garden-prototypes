@@ -15,6 +15,7 @@ import { useSearchParams } from "react-router-dom";
 
 import Chart from "../components/trigger/Chart";
 import type { ChartTrade } from "../components/trigger/Chart";
+import CodeEditor from "../components/trigger/CodeEditor";
 import Feed from "../components/trigger/Feed";
 import type { FeedItem } from "../components/trigger/Feed";
 import Meter from "../components/trigger/Meter";
@@ -28,7 +29,8 @@ import type { HeadlineSample, PlacedHeadline } from "../lib/tape/headlines";
 import { sampleHeadlines } from "../lib/tape/headlines";
 import { UI_FONT } from "../lib/type";
 import type { BotFn } from "../lib/trigger/bot";
-import { BOT_SCAFFOLD, botAct, compileBot } from "../lib/trigger/bot";
+import { botAct, compileBot } from "../lib/trigger/bot";
+import { BOT_SCAFFOLD } from "../lib/trigger/bots";
 import type { Deal } from "../lib/trigger/deal";
 import {
   ERA_MOOD, ERA_NAME, SPEED, START_CASH, companyName, dealFromParams,
@@ -493,19 +495,10 @@ export default function Trigger() {
                 your cash, and answers with an action. Break a rule and the
                 run stops.
               </p>
-              <textarea
-                data-bot-code=""
+              <CodeEditor
                 value={botSource}
-                onChange={(e) => { setBotSource(e.target.value); setCompileError(null); }}
-                spellCheck={false}
-                aria-label="bot code"
-                style={{
-                  marginTop: 10, width: "100%", height: 300, resize: "vertical",
-                  background: PANEL, color: TEXT, borderRadius: 12, padding: 12,
-                  border: "1px solid rgba(215,222,232,0.18)",
-                  fontSize: 13, fontFamily: UI_FONT, lineHeight: 1.5,
-                  whiteSpace: "pre", overflowX: "auto",
-                }}
+                onChange={(next) => { setBotSource(next); setCompileError(null); }}
+                height={300}
               />
               {compileError !== null && (
                 <div data-bot-compile-error="" style={{ fontSize: 13, color: DOWN, marginTop: 8, lineHeight: 1.4 }}>

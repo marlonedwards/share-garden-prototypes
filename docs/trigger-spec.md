@@ -182,7 +182,11 @@ src/pages/Trigger.tsx              shell, deal card, end card
 src/components/trigger/Chart.tsx   the growing line chart with trade dots
 src/components/trigger/Meter.tsx   the flat-unit strip
 src/components/trigger/Feed.tsx    the one-at-a-time headline card
-src/lib/trigger/bot.ts             the scaffold, the compiler, the action law
+src/components/trigger/CodeEditor.tsx  CodeMirror around the bot source
+src/lib/trigger/bot.ts             the compiler and the action law
+src/lib/trigger/bots/              one bot per file, filename = function name
+src/lib/trigger/bots/assemble.ts   pure assembly: header + shelf + picker
+tools/botSim.ts                    fuzz harness, every bot on random tapes
 tools/triggercheck.mjs             Playwright walk, both viewports
 ```
 
@@ -268,6 +272,26 @@ stored copy of the retired first-cut scaffold gives way to the current one.
   worth to hold against the baselines.
 - Code that does not parse, or that never points `bot` at a function, never
   leaves the deal card: the error prints under the editor.
+- On disk every bot is one file in `src/lib/trigger/bots/`, named after its
+  function, with the contract header in `_header.js`. The shipped scaffold
+  is assembled at build time from those files plus exactly one more fact,
+  PLAYER in `bots/assemble.ts`, the bot the generated last line points at.
+  Adding a bot is adding one file: SHELF_ORDER is presentation, not
+  registration, and both the Playwright shelf walk and the fuzz harness
+  discover new files on their own.
+- `tools/botSim.ts` (npx tsx, like tapeSim) compiles every bot with the real
+  compiler and plays it through the real action law over a thousand seeded
+  random tapes each: shock months, flat tapes, penny prices, unaffordable
+  starts, and companies that die mid run. Math.random is replaced by the
+  tape's seeded stream while a bot plays, so any failure reproduces from the
+  printed tape number, randomBot included. A shelf bot that breaks a rule is
+  a shipped crash, so any error is a red gate.
+- The editor is CodeMirror 6: syntax highlighting, completion that knows the
+  two helpers, and a live parse check in the gutter that reads the parser's
+  own error nodes and so never executes the buffer. Code sits in a monospace
+  face, the one scoped exception to the suite's no-mono law, exactly as the
+  newspaper clippings sit in a serif; the walk's type audit scopes its ban
+  around `[data-bot-code]`.
 - During a bot run the space bar is dead and the button gives way to a panel
   reading The bot is trading, same footprint so the layout holds. The end
   card reads Bot: rather than You:, and a bot run never writes
