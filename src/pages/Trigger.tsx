@@ -27,6 +27,8 @@ import {
 import type { HeadlineSample, PlacedHeadline } from "../lib/tape/headlines";
 import { sampleHeadlines } from "../lib/tape/headlines";
 import { UI_FONT } from "../lib/type";
+import type { BotFn } from "../lib/trigger/bot";
+import { BOT_SCAFFOLD, botAct, compileBot } from "../lib/trigger/bot";
 import type { Deal } from "../lib/trigger/deal";
 import {
   ERA_MOOD, ERA_NAME, SPEED, START_CASH, companyName, dealFromParams,
@@ -46,16 +48,26 @@ const UP = "#4ADE80";
 const DOWN = "#E5484D";
 
 const BEST_KEY = "trigger-best";
+const BOT_KEY = "trigger-bot";
 // A headline sits for about two seconds, and gives way faster when the tape
 // has already reached the next one, so the feed never falls far behind the
 // month it is reporting on.
 const DWELL = [1900, 1200, 800];
 
-type Phase = "deal" | "run" | "end";
+type Phase = "deal" | "run" | "end" | "error";
+
+// Who is on the trigger: you with the space bar, or a bot you wrote.
+type Mode = "you" | "bot";
 
 interface Session {
   deal: Deal;
   sample: HeadlineSample;
+}
+
+// Where the bot's run stopped and why, on screen verbatim.
+interface BotStop {
+  message: string;
+  month: string;
 }
 
 function makeRun(deal: Deal, speed: number): RunState {
@@ -96,6 +108,24 @@ function writeBest(v: number): void {
   }
 }
 
+// The bot survives a reload, because nobody wants to retype a strategy that
+// took ten runs to tune. The scaffold is what a first visit opens with.
+function readBotSource(): string {
+  try {
+    return localStorage.getItem(BOT_KEY) ?? BOT_SCAFFOLD;
+  } catch {
+    return BOT_SCAFFOLD;
+  }
+}
+
+function writeBotSource(source: string): void {
+  try {
+    localStorage.setItem(BOT_KEY, source);
+  } catch {
+    // same posture as the best score: lost, not fatal
+  }
+}
+
 const LABEL_COPY: Record<string, string> = {
   signal: "told the truth",
   noise: "meant nothing",
@@ -130,6 +160,15 @@ export default function Trigger() {
   const [phase, setPhase] = useState<Phase>("deal");
   const [best, setBest] = useState<number | null>(() => readBest());
 
+  // the bot: who plays, the source in the editor, the compiled function, the
+  // last month it has acted on, and the rule it broke if the run stopped
+  const [mode, setMode] = useState<Mode>("you");
+  const [botSource, setBotSource] = useState<string>(() => readBotSource());
+  const [compileError, setCompileError] = useState<string | null>(null);
+  const [botStop, setBotStop] = useState<BotStop | null>(null);
+  const botRef = useRef<BotFn | null>(null);
+  const botMonthRef = useRef(-1);
+
   // headline feed
   const nextRef = useRef(0);
   const queueRef = useRef<PlacedHeadline[]>([]);
@@ -151,16 +190,47 @@ export default function Trigger() {
     expiryRef.current = 0;
     historyRef.current = [START_CASH];
     historyAtRef.current = 0;
+    botMonthRef.current = -1;
     setSession({ deal: next, sample: nextSample });
     setRun(runRef.current);
     setShown(null);
     setHistory([START_CASH]);
+    setBotStop(null);
     setPhase("deal");
     setParams(
       { era: next.era, stock: next.ticker, seed: String(next.seed), ...(turbo > 1 ? { turbo: String(turbo) } : {}) },
       { replace: true },
     );
   }, [setParams, turbo]);
+
+  // Leaving the deal card always starts from a clean tape. The deal card can
+  // be returned to, by editing the bot after a stopped run, so the run built
+  // at mount or by begin() may already be half played by the time Start fires.
+  const start = useCallback(() => {
+    if (mode === "bot") {
+      const compiled = compileBot(botSource);
+      if ("error" in compiled) {
+        setCompileError(compiled.error);
+        return;
+      }
+      botRef.current = compiled.bot;
+      writeBotSource(botSource);
+    }
+    runRef.current = makeRun(deal, speed);
+    nextRef.current = 0;
+    queueRef.current = [];
+    shownRef.current = null;
+    expiryRef.current = 0;
+    historyRef.current = [START_CASH];
+    historyAtRef.current = 0;
+    botMonthRef.current = -1;
+    setRun(runRef.current);
+    setShown(null);
+    setHistory([START_CASH]);
+    setCompileError(null);
+    setBotStop(null);
+    setPhase("run");
+  }, [mode, botSource, deal, speed]);
 
   // A pinned link is allowed to change under the page: editing the query, or
   // following a shared url from another run, deals the run it names rather
@@ -198,6 +268,29 @@ export default function Trigger() {
       }
       const t = runRef.current.t;
 
+      // The bot trades on month boundaries: once per close the tape has
+      // reached, in order, however many a fast frame crossed. The last close
+      // is skipped because a trade there cannot change the outcome, and a
+      // finished run deserves an end card rather than a late verdict.
+      if (mode === "bot" && botRef.current) {
+        const reach = Math.min(Math.floor(t), lastIndex(runRef.current) - 1);
+        while (botMonthRef.current < reach) {
+          const month = botMonthRef.current + 1;
+          const acted = botAct(runRef.current, ticker, botRef.current, month);
+          if ("error" in acted) {
+            setBotStop({ message: acted.error, month: runRef.current.months[month] });
+            setPhase("error");
+            cancelAnimationFrame(raf);
+            return;
+          }
+          botMonthRef.current = month;
+          if (acted.run !== runRef.current) {
+            runRef.current = acted.run;
+            setRun(acted.run);
+          }
+        }
+      }
+
       // worth samples for the corner spark, one every half month
       if (t - historyAtRef.current >= 0.5) {
         historyAtRef.current = t;
@@ -227,7 +320,7 @@ export default function Trigger() {
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", wake);
     };
-  }, [phase, sample, turbo]);
+  }, [phase, sample, turbo, mode, ticker]);
 
   // ------------------------------------------------------------ the trade
   const toggle = useCallback(() => {
@@ -241,7 +334,7 @@ export default function Trigger() {
   }, [ticker]);
 
   useEffect(() => {
-    if (phase !== "run") return;
+    if (phase !== "run" || mode !== "you") return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space" && e.key !== " ") return;
       e.preventDefault();
@@ -249,11 +342,12 @@ export default function Trigger() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, toggle]);
+  }, [phase, mode, toggle]);
 
-  // best delta against doing nothing, kept across runs
+  // best delta against doing nothing, kept across runs; yours, not a bot's,
+  // so a lucky script cannot set a record you then chase by hand
   useEffect(() => {
-    if (phase !== "end") return;
+    if (phase !== "end" || mode !== "you") return;
     const end = lastIndex(runRef.current);
     const delta = worthAt(runRef.current, end) - baselines(runRef.current, ticker).holding;
     const prior = readBest();
@@ -261,7 +355,7 @@ export default function Trigger() {
       writeBest(delta);
       setBest(delta);
     }
-  }, [phase, ticker]);
+  }, [phase, mode, ticker]);
 
   // ----------------------------------------------------------- the viewport
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
@@ -271,6 +365,20 @@ export default function Trigger() {
     return () => window.removeEventListener("resize", on);
   }, []);
   const phone = vp.w < 700;
+
+  // The keycap hint only earns its place where a keyboard is likely: a wide
+  // viewport driven by a mouse. A touch screen keeps the clean button, and a
+  // laptop that narrows into the phone layout gives it up with the width.
+  const [finePointer, setFinePointer] = useState(
+    () => window.matchMedia("(hover: hover) and (pointer: fine)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const on = () => setFinePointer(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const desktop = !phone && finePointer;
 
   const rowRef = useRef<HTMLDivElement | null>(null);
   const row = useBox(rowRef, phase);
@@ -331,7 +439,7 @@ export default function Trigger() {
         minHeight: vp.h, display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
       }}>
-        <div style={{ maxWidth: 460, width: "100%" }}>
+        <div style={{ maxWidth: mode === "bot" ? 640 : 460, width: "100%" }}>
           <div style={{ fontSize: 15, color: MUTED }}>{ERA_NAME[deal.era]}</div>
           <h1 style={{
             fontSize: phone ? 34 : 46, fontWeight: 700, margin: "8px 0 0",
@@ -351,22 +459,129 @@ export default function Trigger() {
           <div style={{ fontSize: 15, color: MUTED, marginTop: 18 }}>
             You start with {money(START_CASH)} in cash.
           </div>
+          {/* who plays: the space bar or a function you write */}
+          <div data-mode-row="" style={{ display: "flex", gap: 8, marginTop: 22 }}>
+            {(["you", "bot"] as Mode[]).map((m) => (
+              <button
+                key={m}
+                data-mode={m}
+                aria-pressed={mode === m}
+                onClick={() => { setMode(m); setCompileError(null); }}
+                style={{
+                  flex: 1, height: 44, borderRadius: 12, cursor: "pointer",
+                  border: mode === m ? `1px solid rgba(215,222,232,0.45)` : "1px solid rgba(215,222,232,0.16)",
+                  background: mode === m ? PANEL : "transparent",
+                  color: mode === m ? TEXT : MUTED,
+                  fontSize: 15, fontWeight: 600, fontFamily: UI_FONT,
+                }}
+              >
+                {m === "you" ? "You play" : "A bot plays"}
+              </button>
+            ))}
+          </div>
+          {mode === "bot" && (
+            <div style={{ textAlign: "left" }}>
+              <p style={{ fontSize: 14, color: MUTED, marginTop: 14, lineHeight: 1.45 }}>
+                One function, called once a month with the prices so far, your
+                shares and your cash. It answers with an action. Break a rule
+                and the run stops.
+              </p>
+              <textarea
+                data-bot-code=""
+                value={botSource}
+                onChange={(e) => { setBotSource(e.target.value); setCompileError(null); }}
+                spellCheck={false}
+                aria-label="bot code"
+                style={{
+                  marginTop: 10, width: "100%", height: 260, resize: "vertical",
+                  background: PANEL, color: TEXT, borderRadius: 12, padding: 12,
+                  border: "1px solid rgba(215,222,232,0.18)",
+                  fontSize: 13, fontFamily: UI_FONT, lineHeight: 1.5,
+                  whiteSpace: "pre", overflowX: "auto",
+                }}
+              />
+              {compileError !== null && (
+                <div data-bot-compile-error="" style={{ fontSize: 13, color: DOWN, marginTop: 8, lineHeight: 1.4 }}>
+                  {compileError}
+                </div>
+              )}
+            </div>
+          )}
           <button
             data-start=""
-            onClick={() => { setPhase("run"); }}
+            onClick={start}
             style={{
-              marginTop: 26, width: "100%", height: 60, borderRadius: 16, border: "none",
+              marginTop: mode === "bot" ? 16 : 26, width: "100%", height: 60,
+              borderRadius: 16, border: "none",
               background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
               fontFamily: UI_FONT, cursor: "pointer",
             }}
           >
-            Start
+            {mode === "bot" ? "Run bot" : "Start"}
           </button>
           {best !== null && (
             <div data-best="" style={{ fontSize: 13, color: MUTED, marginTop: 14 }}>
               best so far: {signedMoney(best)} over doing nothing
             </div>
           )}
+        </div>
+      </div>,
+      true,
+    );
+  }
+
+  // ------------------------------------------------------------ stopped bot
+  // A wrong action froze the tape. This card is the verdict, not an end card:
+  // an early stop has no honest final worth to compare against the baselines,
+  // so it shows where the run stood and sends the author back to the editor.
+  if (phase === "error" && botStop !== null) {
+    return shell(
+      <div style={{
+        minHeight: vp.h, display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
+      }}>
+        <div data-bot-error={botStop.message} style={{ maxWidth: 560, width: "100%" }}>
+          <div style={{ fontSize: 15, color: MUTED }}>
+            {companyName(ticker)}, {ERA_NAME[deal.era]}
+          </div>
+          <h1 style={{
+            fontSize: phone ? 30 : 40, fontWeight: 700, margin: "8px 0 0",
+            letterSpacing: "-0.02em", lineHeight: 1.1,
+          }}>
+            The bot broke a rule
+          </h1>
+          <div style={{ fontSize: 18, marginTop: 10, fontVariantNumeric: "tabular-nums" }}>
+            {longMonth(botStop.month)}
+          </div>
+          <p data-bot-error-message="" style={{ fontSize: 16, color: DOWN, marginTop: 14, lineHeight: 1.5 }}>
+            {botStop.message}.
+          </p>
+          <div style={{ fontSize: 15, color: MUTED, marginTop: 10, fontVariantNumeric: "tabular-nums" }}>
+            The run stopped with the account worth {money(worthOf(run))}.
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 26 }}>
+            <button
+              data-edit-bot=""
+              onClick={() => setPhase("deal")}
+              style={{
+                flex: 1, height: 56, borderRadius: 14, border: "none", background: UP,
+                color: "#0C0F14", fontSize: 18, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              Edit bot
+            </button>
+            <button
+              data-again=""
+              onClick={() => begin(dealRandom())}
+              style={{
+                flex: 1, height: 56, borderRadius: 14, border: `1px solid rgba(215,222,232,0.28)`,
+                background: "transparent", color: TEXT, fontSize: 18, fontWeight: 600,
+                fontFamily: UI_FONT, cursor: "pointer",
+              }}
+            >
+              Play again
+            </button>
+          </div>
         </div>
       </div>,
       true,
@@ -381,6 +596,7 @@ export default function Trigger() {
         ticker={ticker}
         deal={deal}
         sample={sample}
+        player={mode === "bot" ? "Bot" : "You"}
         phone={phone}
         pad={pad}
         vpH={vp.h}
@@ -392,7 +608,10 @@ export default function Trigger() {
   }
 
   // --------------------------------------------------------------- the run
-  const calcLine = `${shares} ${shares === 1 ? "share" : "shares"} x ${fmtPrice(livePrice)} = ${money(value)}`;
+  // The space bar trades whole shares; a bot trades floats, and its share
+  // count keeps two decimals rather than pretending to be round.
+  const sharesLabel = Number.isInteger(shares) ? String(shares) : shares.toFixed(2);
+  const calcLine = `${sharesLabel} ${shares === 1 ? "share" : "shares"} x ${fmtPrice(livePrice)} = ${money(value)}`;
   const cashLine = `cash ${money(run.cash)}`;
   const bigLine = inMarket ? calcLine : cashLine;
 
@@ -504,22 +723,40 @@ export default function Trigger() {
         <div style={{ height: deadH, fontSize: under(13), color: MUTED, paddingBottom: 8, textAlign: "center" }}>
           {dead ? "The company went to zero." : ""}
         </div>
-        <button
-          data-action=""
-          data-position={inMarket ? "in" : "out"}
-          onClick={toggle}
-          disabled={!inMarket && !canBuy(run, ticker)}
-          style={{
-            width: "100%", height: phone ? 64 : 72, borderRadius: 16, border: "none",
-            background: inMarket ? DOWN : UP,
-            color: inMarket ? "#FFFFFF" : "#0C0F14",
-            opacity: !inMarket && !canBuy(run, ticker) ? 0.45 : 1,
-            fontSize: buttonSize, fontWeight: 600, fontFamily: UI_FONT,
-            cursor: "pointer",
-          }}
-        >
-          {inMarket ? "Sell" : "Buy"}
-        </button>
+        {mode === "bot" ? (
+          // the trigger belongs to the bot for this run: same footprint as the
+          // button so the layout above it holds, but nothing here to press
+          <div
+            data-bot-live=""
+            style={{
+              width: "100%", height: phone ? 64 : 72, borderRadius: 16,
+              border: "1px solid rgba(215,222,232,0.18)", background: PANEL,
+              color: MUTED, fontSize: buttonSize, fontWeight: 600,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            The bot is trading
+          </div>
+        ) : (
+          <button
+            data-action=""
+            data-position={inMarket ? "in" : "out"}
+            onClick={toggle}
+            disabled={!inMarket && !canBuy(run, ticker)}
+            style={{
+              width: "100%", height: phone ? 64 : 72, borderRadius: 16, border: "none",
+              background: inMarket ? DOWN : UP,
+              color: inMarket ? "#FFFFFF" : "#0C0F14",
+              opacity: !inMarket && !canBuy(run, ticker) ? 0.45 : 1,
+              fontSize: buttonSize, fontWeight: 600, fontFamily: UI_FONT,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+            }}
+          >
+            <span data-label="">{inMarket ? "Sell" : "Buy"}</span>
+            {desktop && <Key label="space" />}
+          </button>
+        )}
       </div>
     </div>,
     false,
@@ -546,6 +783,27 @@ function useBox(ref: MutableRefObject<HTMLDivElement | null>, dep: unknown) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, dep]);
   return box;
+}
+
+// A keycap on the button, the command-bar hotkey convention: the key drawn
+// as a small cap beside the action it fires. Colors ride on currentColor so
+// one chip serves both the green Buy face and the red Sell face. Hidden from
+// the accessibility tree; a screen reader should hear Buy, not Buy space.
+function Key({ label }: { label: string }) {
+  return (
+    <span
+      data-key-hint=""
+      aria-hidden="true"
+      style={{
+        fontSize: 13, fontWeight: 600, lineHeight: 1,
+        padding: "3px 8px 4px", borderRadius: 6,
+        border: "1px solid currentColor", borderBottomWidth: 2,
+        opacity: 0.65,
+      }}
+    >
+      {label}
+    </span>
+  );
 }
 
 // The net worth line, in the corner, labeled, and never bigger than this.
@@ -583,6 +841,7 @@ interface EndProps {
   ticker: string;
   deal: Deal;
   sample: HeadlineSample;
+  player: "You" | "Bot";     // whose hand was on the trigger this run
   phone: boolean;
   pad: number;
   vpH: number;
@@ -590,7 +849,7 @@ interface EndProps {
   onSame: () => void;
 }
 
-function EndCard({ run, ticker, deal, sample, phone, pad, vpH, onAgain, onSame }: EndProps) {
+function EndCard({ run, ticker, deal, sample, player, phone, pad, vpH, onAgain, onSame }: EndProps) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const rowW = useBox(rowRef, "end").w;
   const end = lastIndex(run);
@@ -641,7 +900,7 @@ function EndCard({ run, ticker, deal, sample, phone, pad, vpH, onAgain, onSame }
           fontSize: phone ? 38 : 52, fontWeight: 700, letterSpacing: "-0.02em",
           fontVariantNumeric: "tabular-nums", marginTop: 4,
         }}>
-          You: {money(you)}
+          {player}: {money(you)}
         </div>
         {dead && (
           <div style={{ fontSize: 15, color: MUTED, marginTop: 4 }}>The company went to zero.</div>

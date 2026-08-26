@@ -13,6 +13,10 @@
 //   H_years_and_axis      year labels at both sizes, the y axis never shrinks
 //   I_leh_seller_wins     selling Lehman before September 2008 beats holding
 //   J_spacebar            space toggles, and the button flips label and colour
+//   J_desktop_keycap      the button carries a space keycap wide, none on phone
+//   P_bot_scaffold_runs   the shipped scaffold plays a full run by itself
+//   Q_bot_wrong_action_stops  an overspending bot freezes the tape mid run
+//   Q_bot_compile_error_stays code that does not parse never leaves the card
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
 //   L_replay_without_scrolling  Play again is on screen the moment a run ends
 //   M_calculator_is_largest  nothing on the run screen outsizes the calculator
@@ -131,7 +135,9 @@ async function readAll(page) {
       })(),
       button: (() => {
         const b = document.querySelector("[data-action]");
-        return b ? { label: b.textContent, bg: getComputedStyle(b).backgroundColor, pos: b.getAttribute("data-position") } : null;
+        // the label span, not the whole button: the desktop keycap sits
+        // beside the label and is not part of it
+        return b ? { label: (b.querySelector("[data-label]") ?? b).textContent, bg: getComputedStyle(b).backgroundColor, pos: b.getAttribute("data-position") } : null;
       })(),
     };
   });
@@ -178,6 +184,32 @@ async function open(page, query) {
       await page.click("[data-start]");
       await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
       return;
+    } catch (e) {
+      last = e;
+      await wait(300);
+    }
+  }
+  throw last;
+}
+
+// Deal a pinned run in bot mode. The editor prefills from localStorage, so
+// the walk overwrites it whenever it brings its own bot, and hands the source
+// back either way. It does not wait for a run phase: a bot that breaks a rule
+// in its first month may go straight to the stopped card, so the caller says
+// what it is waiting for.
+async function openBot(page, query, code) {
+  let last;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await page.goto(`${BASE}?${query}`, { waitUntil: "load" });
+      await page.reload({ waitUntil: "load" });
+      await page.waitForSelector("[data-start]", { timeout: 15000 });
+      await page.click('[data-mode="bot"]');
+      await page.waitForSelector("[data-bot-code]", { timeout: 15000 });
+      if (code !== undefined) await page.fill("[data-bot-code]", code);
+      const source = await page.inputValue("[data-bot-code]");
+      await page.click("[data-start]");
+      return source;
     } catch (e) {
       last = e;
       await wait(300);
@@ -596,6 +628,20 @@ async function run(page, tag) {
       && before.pos !== after.pos
       && [before.label, after.label].sort().join("/") === "Buy/Sell";
     check("J_spacebar", ok, `${before.label} ${before.bg} to ${after.label} ${after.bg}`);
+
+    // and the button says so where a keyboard is likely: a space keycap on
+    // the wide viewport, and a clean button on the phone
+    const hint = await page.evaluate(() => {
+      const el = document.querySelector("[data-action] [data-key-hint]");
+      if (!el) return null;
+      return { text: el.textContent, size: parseFloat(getComputedStyle(el).fontSize) };
+    });
+    const wantHint = tag === "wide";
+    check("J_desktop_keycap",
+      wantHint ? hint !== null && hint.text === "space" && hint.size >= 12 : hint === null,
+      wantHint
+        ? (hint ? `keycap "${hint.text}" at ${hint.size}px on the button` : "no keycap on the desktop viewport")
+        : (hint ? `keycap "${hint.text}" leaked onto the phone button` : "no keycap on phone, as specced"));
   }
 
   stage = "I_leh_seller_wins";
@@ -666,6 +712,84 @@ async function run(page, tag) {
   await page.screenshot({ path: `${OUT}trigger-end-${tag}-bottom.png` });
   check("L_reveal_scrolls_to_end", listEnd.lastVisible,
     `reveal list scrolled ${listEnd.at}px to its last headline`);
+
+  stage = "P_bot_scaffold_runs";
+  // ---------------------------------------------------------------------- P
+  // The shipped scaffold, untouched. It trades at random, so the promises are
+  // only these: the editor really opens with the scaffold, the run finishes
+  // with no input, at least one trade lands, and the card credits the bot.
+  {
+    const source = await openBot(page, "era=covid&stock=AAPL&seed=3&turbo=30");
+    await toEnd(page);
+    const end = await page.evaluate(() => {
+      const el = document.querySelector("[data-end]");
+      return {
+        trades: Number(el.getAttribute("data-trade-count")),
+        you: Number(el.getAttribute("data-you")),
+        text: el.textContent,
+      };
+    });
+    const scaffolded = source.includes("max_shares_can_buy") && source.includes("function bot");
+    check("P_bot_scaffold_runs",
+      scaffolded && end.trades >= 1 && /Bot: \$/.test(end.text) && Number.isFinite(end.you),
+      `${end.trades} trades, bot ended at ${end.you.toFixed(2)}${scaffolded ? "" : ", editor missing the scaffold"}`);
+    await page.screenshot({ path: `${OUT}trigger-bot-end-${tag}.png` });
+  }
+
+  stage = "Q_bot_wrong_action_stops";
+  // ---------------------------------------------------------------------- Q
+  // One share more than the cash covers, asked in the first month. The run
+  // must stop with the broken rule on screen and the tape frozen where it
+  // broke: data-t must not move once the stopped card is up.
+  {
+    const bad = "function bot(prices, shares, cash) {\n  return { buy: max_shares_can_buy(prices, shares, cash) + 1 };\n}";
+    await openBot(page, "era=covid&stock=AAPL&seed=3&turbo=6", bad);
+    await page.waitForSelector("[data-bot-error]", { timeout: 15000 });
+    const stop = await page.evaluate(() => {
+      const el = document.querySelector("[data-bot-error]");
+      const root = document.querySelector("[data-trigger]");
+      return {
+        message: el.getAttribute("data-bot-error"),
+        phase: root.getAttribute("data-phase"),
+        t: root.getAttribute("data-t"),
+        text: el.textContent,
+      };
+    });
+    await wait(400);
+    const later = await page.getAttribute("[data-trigger]", "data-t");
+    check("Q_bot_wrong_action_stops",
+      stop.phase === "error" && /bought/.test(stop.message) && /covers at most/.test(stop.message)
+        && later === stop.t && /The bot broke a rule/.test(stop.text) && /Edit bot/.test(stop.text),
+      `stopped at t ${stop.t} with "${stop.message}"`);
+    await page.screenshot({ path: `${OUT}trigger-bot-stop-${tag}.png` });
+    const typeOnStop = await page.evaluate(TYPE_AUDIT);
+    check("K_type_on_stopped_card", typeOnStop.length === 0,
+      typeOnStop.length ? typeOnStop.slice(0, 4).join("; ") : "no banned type on the stopped card");
+
+    // and code that does not parse never leaves the deal card
+    await openBot(page, "era=covid&stock=AAPL&seed=3&turbo=6", "function bot(");
+    await page.waitForSelector("[data-bot-compile-error]", { timeout: 15000 });
+    const card = await page.evaluate(() => ({
+      phase: document.querySelector("[data-trigger]").getAttribute("data-phase"),
+      error: document.querySelector("[data-bot-compile-error]").textContent,
+    }));
+    check("Q_bot_compile_error_stays",
+      card.phase === "deal" && /does not parse/.test(card.error),
+      `still on the deal card: "${card.error.slice(0, 70)}"`);
+
+    // the editor as a first visit opens it, scaffold and all, audited and
+    // shot: the stored source is cleared first because the walk has been
+    // feeding the editor deliberately broken bots
+    await page.evaluate(() => localStorage.removeItem("trigger-bot"));
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("[data-start]", { timeout: 15000 });
+    await page.click('[data-mode="bot"]');
+    await page.waitForSelector("[data-bot-code]", { timeout: 15000 });
+    await page.screenshot({ path: `${OUT}trigger-bot-editor-${tag}.png` });
+    const typeInEditor = await page.evaluate(TYPE_AUDIT);
+    check("K_type_in_editor", typeInEditor.length === 0,
+      typeInEditor.length ? typeInEditor.slice(0, 4).join("; ") : "no banned type around the editor");
+  }
 }
 
 // One browser per viewport. The tape pauses with the tab, correctly, so a page

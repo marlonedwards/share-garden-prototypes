@@ -21,7 +21,9 @@ build on Aug 20.
 - A run deals one era and one stock from that era, random each time.
   `?era=&stock=&seed=` pins all three for walks and sharing.
 - Start with $1,000 cash, all in cash, tape paused on a dealt card: company
-  name, the year it is, one sentence of era mood. One button: Start.
+  name, the year it is, one sentence of era mood. One button: Start. The
+  card also carries the choice of who plays, you or a bot you write;
+  section 10.
 - SPEED = 1.6 months per second. Covid runs about 45 seconds, GFC about 67.
   No pause button; the run is short on purpose. Tab-hide pauses.
 - The player is always fully in or fully out. **Buy** converts all cash to
@@ -71,7 +73,10 @@ primary design and desktop widens it.
   the share line dimmed at zero. This line is the biggest text on screen.
 - **The button** is one full-width action that reads Buy when out and Sell
   when in, green when out, red when in. Space bar triggers it on desktop.
-  There is deliberately no confirm step.
+  There is deliberately no confirm step. Where a keyboard is likely, wide
+  viewport with hover and a fine pointer, the button carries a small `space`
+  keycap beside its label, the command-bar hotkey convention; touch
+  viewports never show it.
 - **Buys and sells mark the chart**: a small dot at the price where each
   trade happened, so the end state carries your history. The end card reuses
   the marked chart.
@@ -141,6 +146,7 @@ buy-and-hold either.
 | Deal card best line | best so far: +$212 over doing nothing |
 | Button out | Buy |
 | Button in | Sell |
+| Button keycap, desktop only | space |
 | Calculator in | 12 shares x $84.12 = $1,009 |
 | Calculator out | cash $1,000 |
 | End you | You: $1,184 |
@@ -149,6 +155,12 @@ buy-and-hold either.
 | Reveal labels | told the truth / meant nothing / pointed the wrong way |
 | Dead company end | The company went to zero. |
 | Buttons | Play again, Same stock |
+| Mode tabs | You play / A bot plays |
+| Deal card button, bot mode | Run bot |
+| Run screen, bot mode | The bot is trading |
+| End you, bot mode | Bot: $1,184 |
+| Stopped bot title | The bot broke a rule |
+| Stopped bot buttons | Edit bot, Play again |
 
 Sentence case, one phrase, no em dashes, nothing under 12px, no uppercase
 labels. Era names reuse the wave names already in the suite: the 2020s, the
@@ -170,6 +182,7 @@ src/pages/Trigger.tsx              shell, deal card, end card
 src/components/trigger/Chart.tsx   the growing line chart with trade dots
 src/components/trigger/Meter.tsx   the flat-unit strip
 src/components/trigger/Feed.tsx    the one-at-a-time headline card
+src/lib/trigger/bot.ts             the scaffold, the compiler, the action law
 tools/triggercheck.mjs             Playwright walk, both viewports
 ```
 
@@ -209,4 +222,44 @@ scales down mid-run.
 holding baseline on the end card.
 
 **J.** Space bar toggles the position on desktop; the button label and color
-flip with the state.
+flip with the state. The button carries a `space` keycap at 1440x950 and
+none at 390x844.
+
+**P.** Bot mode with the untouched scaffold runs to the end card with no
+input: at least one trade on the log and the card reading Bot: rather than
+You:.
+
+**Q.** A bot that buys one share more than cash covers stops the run in its
+first month, with the broken rule on screen and the tape frozen; code that
+does not parse never leaves the deal card.
+
+## 10. Bot mode
+
+The deal card carries a choice of who plays. **You play** is the game as
+specced above. **A bot plays** opens an editor on the card, prefilled with a
+scaffold whose bot buys and sells at random, so the first Run bot always
+produces a full run. The source persists in localStorage `trigger-bot`.
+
+- The bot is one function `bot(prices, shares, cash)`. `prices` is the list
+  of monthly closes the tape has reached so far, the market month being the
+  game's unit of time; `shares` and `cash` are the account as it stands. It
+  is called once per month at that month's close, month 0 included.
+- It returns an action `{ buy: n }`: positive n buys n shares at this
+  month's close, negative n sells n shares, zero does nothing. Shares are
+  fractional in bot mode; the whole-share law belongs to the space bar.
+- Two helpers are in scope under these names:
+  `max_shares_can_buy(prices, shares, cash)` and
+  `max_shares_can_sell(prices, shares, cash)`.
+- A wrong action stops the run: buying more than cash covers, selling more
+  than held, buying a company priced at zero, returning anything that is not
+  `{ buy: number }`, or throwing. The card that follows names the month and
+  the rule broken, and Edit bot returns to the editor with the source
+  intact. An early stop shows the account's worth where it froze; it never
+  pretends to be an end card, because a half-played run has no honest final
+  worth to hold against the baselines.
+- Code that does not parse, or that never defines `bot`, never leaves the
+  deal card: the error prints under the editor.
+- During a bot run the space bar is dead and the button gives way to a panel
+  reading The bot is trading, same footprint so the layout holds. The end
+  card reads Bot: rather than You:, and a bot run never writes
+  `trigger-best`: that record is yours.
