@@ -18,6 +18,7 @@
 //   P_bot_shelf_finishes  every example bot survives a dead-company run
 //   Q_bot_wrong_action_stops  an overspending bot freezes the tape mid run
 //   Q_bot_compile_error_stays code that does not parse never leaves the card
+//   R_level_flow          the ladder: list, read-only code, run, next level
 //   O_scale_survives_trade   a buy and a sell leave the dollar ruler untouched
 //   L_replay_without_scrolling  Play again is on screen the moment a run ends
 //   M_calculator_is_largest  nothing on the run screen outsizes the calculator
@@ -173,16 +174,20 @@ async function pourTrace(page, ms = 700) {
   }), ms);
 }
 
-// Deal a pinned run and start it. Changing only the query inside the hash is a
-// same document navigation, so the reload is what forces a fresh deal; both
-// navigations are waited out explicitly, because firing the reload into a
-// still committing goto destroys the execution context under the next check.
+// Deal a pinned run and start it, through the entry flow: the deal card now
+// opens on the free-play-or-levels choice, and every human-mode check plays
+// free play. Changing only the query inside the hash is a same document
+// navigation, so the reload is what forces a fresh deal; both navigations
+// are waited out explicitly, because firing the reload into a still
+// committing goto destroys the execution context under the next check.
 async function open(page, query) {
   let last;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       await page.goto(`${BASE}?${query}`, { waitUntil: "load" });
       await page.reload({ waitUntil: "load" });
+      await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+      await page.click("[data-go-free]");
       await page.waitForSelector("[data-start]", { timeout: 15000 });
       await page.click("[data-start]");
       await page.waitForSelector('[data-trigger][data-phase="run"]', { timeout: 15000 });
@@ -208,7 +213,9 @@ async function openBot(page, query, code) {
     try {
       await page.goto(`${BASE}?${query}`, { waitUntil: "load" });
       await page.reload({ waitUntil: "load" });
-      await page.waitForSelector("[data-start]", { timeout: 15000 });
+      await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+      await page.click("[data-go-free]");
+      await page.waitForSelector('[data-mode="bot"]', { timeout: 15000 });
       await page.click('[data-mode="bot"]');
       await page.waitForSelector("[data-bot-code] .cm-content", { timeout: 15000 });
       if (code !== undefined) {
@@ -822,13 +829,53 @@ async function run(page, tag) {
     // feeding the editor deliberately broken bots
     await page.evaluate(() => localStorage.removeItem("trigger-bot"));
     await page.reload({ waitUntil: "load" });
-    await page.waitForSelector("[data-start]", { timeout: 15000 });
+    await page.waitForSelector("[data-go-free]", { timeout: 15000 });
+    await page.click("[data-go-free]");
+    await page.waitForSelector('[data-mode="bot"]', { timeout: 15000 });
     await page.click('[data-mode="bot"]');
     await page.waitForSelector("[data-bot-code]", { timeout: 15000 });
     await page.screenshot({ path: `${OUT}trigger-bot-editor-${tag}.png` });
     const typeInEditor = await page.evaluate(TYPE_AUDIT);
     check("K_type_in_editor", typeInEditor.length === 0,
       typeInEditor.length ? typeInEditor.slice(0, 4).join("; ") : "no banned type around the editor");
+  }
+
+  stage = "R_level_flow";
+  // ---------------------------------------------------------------------- R
+  // The ladder, walked end to end: the entry screen offers levels, the list
+  // has every level, a bot level shows its real source read only, runs to a
+  // Bot: end card, and Next level lands on the following level's card.
+  {
+    await page.goto(`${BASE}?era=covid&stock=AAPL&seed=3&turbo=30`, { waitUntil: "load" });
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("[data-go-levels]", { timeout: 15000 });
+    await page.click("[data-go-levels]");
+    await page.waitForSelector('[data-level-row][data-level-id="3"]', { timeout: 15000 });
+    const rows = await page.$$eval("[data-level-row]", (els) => els.length);
+    await page.click('[data-level-row][data-level-id="3"]');
+    await page.waitForSelector('[data-trigger][data-level="3"] [data-bot-code] .cm-content', { timeout: 15000 });
+    const card = await page.evaluate(() => ({
+      code: document.querySelector("[data-bot-code]").cmView.state.doc.toString(),
+      editable: document.querySelector("[data-bot-code] .cm-content").getAttribute("contenteditable"),
+    }));
+    await page.screenshot({ path: `${OUT}trigger-level-card-${tag}.png` });
+    await page.click("[data-start]");
+    await toEnd(page);
+    const endText = await page.evaluate(() => document.querySelector("[data-end]").textContent);
+    await page.waitForSelector("[data-next-level]", { timeout: 5000 });
+    await page.click("[data-next-level]");
+    await page.waitForSelector('[data-trigger][data-phase="deal"][data-level="4"] [data-start]', { timeout: 15000 });
+    const parts = {
+      rows: rows === 10,
+      code: card.code.includes("function buyAndHoldBot"),
+      readOnly: card.editable === "false",
+      botCard: /Bot: \$/.test(endText) && /Next level/.test(endText) && /Replay level/.test(endText),
+    };
+    const bad = Object.keys(parts).filter((k) => !parts[k]);
+    check("R_level_flow", bad.length === 0,
+      bad.length
+        ? `broke ${bad.join(",")} (${rows} rows, editable ${card.editable})`
+        : `${rows} levels listed, level 3 showed read-only buyAndHoldBot, ran to a Bot: card, Next level landed on level 4`);
   }
 }
 

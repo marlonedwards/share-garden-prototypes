@@ -14,4 +14,6 @@ for (const [path, source] of Object.entries(raw)) {
 
 export const BOT_SCAFFOLD = assembleScaffold(files);
 export const SHELF = shelfNames(files);
+// each bot's own source by name, for the level cards that show one bot alone
+export const BOT_FILES: Record<string, string> = files;
 export { PLAYER };

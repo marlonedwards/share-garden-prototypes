@@ -21,9 +21,10 @@ build on Aug 20.
 - A run deals one era and one stock from that era, random each time.
   `?era=&stock=&seed=` pins all three for walks and sharing.
 - Start with $1,000 cash, all in cash, tape paused on a dealt card: company
-  name, the year it is, one sentence of era mood. One button: Start. The
-  card also carries the choice of who plays, you or a bot you write;
-  section 10.
+  name, the year it is, one sentence of era mood. The card opens on a
+  choice: **Free play** or **Levels**. Free play asks who plays, you or a
+  bot you write (section 10); Levels is the ladder of real algorithms
+  (section 11).
 - SPEED = 1.6 months per second. Covid runs about 45 seconds, GFC about 67.
   No pause button; the run is short on purpose. Tab-hide pauses.
 - The player is always fully in or fully out. **Buy** converts all cash to
@@ -155,8 +156,12 @@ buy-and-hold either.
 | Reveal labels | told the truth / meant nothing / pointed the wrong way |
 | Dead company end | The company went to zero. |
 | Buttons | Play again, Same stock |
+| Entry buttons | Levels / Free play |
 | Mode tabs | You play / A bot plays |
 | Deal card button, bot mode | Run bot |
+| Levels screen | Start level 3, then the list, rows like `5. Swing  +$212 vs holding` or `not played` |
+| Level card | level 5 of 10 |
+| Level end buttons | Next level, Replay level; Level select after the last |
 | Run screen, bot mode | The bot is trading |
 | End you, bot mode | Bot: $1,184 |
 | Stopped bot title | The bot broke a rule |
@@ -186,6 +191,7 @@ src/components/trigger/CodeEditor.tsx  CodeMirror around the bot source
 src/lib/trigger/bot.ts             the compiler and the action law
 src/lib/trigger/bots/              one bot per file, filename = function name
 src/lib/trigger/bots/assemble.ts   pure assembly: header + shelf + picker
+src/lib/trigger/levels.ts          the level ladder, pure data
 tools/botSim.ts                    fuzz harness, every bot on random tapes
 tools/triggercheck.mjs             Playwright walk, both viewports
 ```
@@ -237,6 +243,10 @@ without breaking a rule.
 **Q.** A bot that buys one share more than cash covers stops the run in its
 first month, with the broken rule on screen and the tape frozen; code that
 does not parse never leaves the deal card.
+
+**R.** The ladder walks: the entry screen offers Levels, the list shows all
+ten, a bot level's card shows its real source read only, the run ends on a
+Bot: card, and Next level lands on the following level's card.
 
 ## 10. Bot mode
 
@@ -302,3 +312,32 @@ stored copy of the retired first-cut scaffold gives way to the current one.
   reading The bot is trading, same footprint so the layout holds. The end
   card reads Bot: rather than You:, and a bot run never writes
   `trigger-best`: that record is yours.
+
+## 11. Levels
+
+Real algorithms over real data, in rising order of complexity, and no story:
+each level names its player, shows the code when the player is a bot, and
+the end card's numbers are the only commentary the game makes. The player
+draws the conclusions. `src/lib/trigger/levels.ts` is the ladder as pure
+data, and tools/botSim.ts checks every bot player it names exists on the
+shelf.
+
+1. You trade (the space bar) 2. Random 3. Buy and hold 4. Dollar cost
+averaging 5. Swing 6. Momentum 7. Crossover 8. Brackets 9. Trend sizing
+10. Your own bot (the writable editor as a level).
+
+- The levels screen offers **Start level N**, the first level with no score
+  yet, and the full list. Nothing is locked: the order is the complexity
+  ramp, the player's path through it is their own.
+- A level card shows `level N of 10`, the title, one mechanical sentence
+  about the player, and, for shelf bots, the bot's own file read only in
+  the editor with its picker line, exactly the source that runs.
+- Every level run is a fresh random deal, the same pool free play draws
+  from: the same algorithm meets different markets on different plays,
+  which is the point.
+- The best delta over doing nothing per level persists in localStorage
+  `trigger-levels` and prints on the list rows (`+$212 vs holding`, or
+  `not played`), so the list doubles as the scoreboard of algorithms.
+- The end card of a level swaps its buttons: Next level and Replay level,
+  with Level select in place of Next level after level 10. Free play keeps
+  Play again and Same stock.

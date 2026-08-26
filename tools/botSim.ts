@@ -24,6 +24,7 @@ import { priceAt } from "../src/lib/tape/engine";
 import type { BotFn } from "../src/lib/trigger/bot";
 import { TICKS_PER_MONTH, botAct, compileBot } from "../src/lib/trigger/bot";
 import { PLAYER, assembleScaffold, shelfNames } from "../src/lib/trigger/bots/assemble";
+import { LEVELS } from "../src/lib/trigger/levels";
 
 declare const process: { argv: string[]; exit(code: number): never };
 
@@ -142,6 +143,14 @@ const broken = names
   .filter((x): x is { n: string; res: { error: string } } => "error" in x.res);
 check("solo_compiles", broken.length === 0,
   broken.length ? broken.map((x) => `${x.n}: ${x.res.error}`).join("; ") : `all ${names.length} compile alone`);
+
+// every level player is the space bar, the editor, or a bot on the shelf,
+// so the ladder can never name a file that does not exist
+const ghosts = LEVELS.filter((l) => l.player !== "you" && l.player !== "editor" && !names.includes(l.player));
+check("level_players", ghosts.length === 0,
+  ghosts.length
+    ? `levels naming missing bots: ${ghosts.map((l) => `${l.id} ${l.player}`).join(", ")}`
+    : `${LEVELS.length} levels, every bot player on the shelf`);
 
 const realRandom = Math.random;
 for (const name of names) {

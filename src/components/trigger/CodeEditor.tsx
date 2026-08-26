@@ -17,6 +17,7 @@
 import { useEffect, useRef } from "react";
 import { javascript, javascriptLanguage, scopeCompletionSource } from "@codemirror/lang-javascript";
 import { syntaxTree } from "@codemirror/language";
+import { EditorState } from "@codemirror/state";
 import type { Diagnostic } from "@codemirror/lint";
 import { lintGutter, linter } from "@codemirror/lint";
 import { oneDark } from "@codemirror/theme-one-dark";
@@ -71,8 +72,8 @@ const palette = EditorView.theme({
 }, { dark: true });
 
 export default function CodeEditor(
-  { value, onChange, height }:
-  { value: string; onChange: (next: string) => void; height: number },
+  { value, onChange, height, readOnly = false }:
+  { value: string; onChange: (next: string) => void; height: number; readOnly?: boolean },
 ) {
   const hostRef = useRef<BotCodeHost | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -99,6 +100,8 @@ export default function CodeEditor(
           if (u.docChanged) changeRef.current(u.state.doc.toString());
         }),
         EditorView.contentAttributes.of({ "aria-label": "bot code" }),
+        // a level card shows a shelf bot as it is: readable, not editable
+        ...(readOnly ? [EditorState.readOnly.of(true), EditorView.editable.of(false)] : []),
       ],
     });
     host.cmView = view;

@@ -30,8 +30,10 @@ import { sampleHeadlines } from "../lib/tape/headlines";
 import { UI_FONT } from "../lib/type";
 import type { BotFn } from "../lib/trigger/bot";
 import { TICKS_PER_MONTH, botAct, compileBot } from "../lib/trigger/bot";
-import { BOT_SCAFFOLD } from "../lib/trigger/bots";
+import { BOT_FILES, BOT_SCAFFOLD } from "../lib/trigger/bots";
 import type { Deal } from "../lib/trigger/deal";
+import type { Level } from "../lib/trigger/levels";
+import { LEVELS, levelById } from "../lib/trigger/levels";
 import {
   ERA_MOOD, ERA_NAME, SPEED, START_CASH, companyName, dealFromParams,
   dealRandom, longMonth, randomSeed,
@@ -60,6 +62,9 @@ type Phase = "deal" | "run" | "end" | "error";
 
 // Who is on the trigger: you with the space bar, or a bot you wrote.
 type Mode = "you" | "bot";
+
+// The deal-phase screens: the top choice, then free play or the level ladder.
+type Menu = "top" | "free" | "levels" | "level";
 
 interface Session {
   deal: Deal;
@@ -135,6 +140,41 @@ function writeBotSource(source: string): void {
   }
 }
 
+const LEVELS_KEY = "trigger-levels";
+
+// Per level, the best delta over doing nothing this browser has seen. The
+// level list doubles as the scoreboard: which players have run, and how each
+// one did, with no other commentary.
+function readLevelLog(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(LEVELS_KEY);
+    if (raw === null) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<number, number> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      const id = Number(k);
+      if (Number.isInteger(id) && typeof v === "number" && Number.isFinite(v)) out[id] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writeLevelLog(log: Record<number, number>): void {
+  try {
+    localStorage.setItem(LEVELS_KEY, JSON.stringify(log));
+  } catch {
+    // lost, not fatal
+  }
+}
+
+// A level's runnable and displayable source: the bot's own file plus the
+// picker line, exactly what free play's scaffold would run for that bot.
+function levelSource(player: string): string {
+  return `${BOT_FILES[player] ?? ""}\nbot = ${player};`;
+}
+
 const LABEL_COPY: Record<string, string> = {
   signal: "told the truth",
   noise: "meant nothing",
@@ -169,9 +209,16 @@ export default function Trigger() {
   const [phase, setPhase] = useState<Phase>("deal");
   const [best, setBest] = useState<number | null>(() => readBest());
 
-  // the bot: who plays, the source in the editor, the compiled function, the
-  // last month it has acted on, and the rule it broke if the run stopped
+  // the entry flow: which deal-phase screen is up, which level is open, and
+  // the per-level scoreboard
+  const [menu, setMenu] = useState<Menu>("top");
+  const [levelId, setLevelId] = useState<number | null>(null);
+  const [levelLog, setLevelLog] = useState<Record<number, number>>(() => readLevelLog());
+
+  // the bot: who plays this run (mode), the free-play tab choice, the source
+  // in the editor, the compiled function, and the rule it broke if it stopped
   const [mode, setMode] = useState<Mode>("you");
+  const [freeMode, setFreeMode] = useState<Mode>("you");
   const [botSource, setBotSource] = useState<string>(() => readBotSource());
   const [compileError, setCompileError] = useState<string | null>(null);
   const [botStop, setBotStop] = useState<BotStop | null>(null);
@@ -218,16 +265,21 @@ export default function Trigger() {
   // Leaving the deal card always starts from a clean tape. The deal card can
   // be returned to, by editing the bot after a stopped run, so the run built
   // at mount or by begin() may already be half played by the time Start fires.
-  const start = useCallback(() => {
-    if (mode === "bot") {
-      const compiled = compileBot(botSource);
+  // A level names its player; free play (level null) takes it from the tabs.
+  const start = useCallback((level: Level | null) => {
+    const asBot = level === null ? freeMode === "bot" : level.player !== "you";
+    if (asBot) {
+      const editable = level === null || level.player === "editor";
+      const compiled = compileBot(editable ? botSource : levelSource(level.player));
       if ("error" in compiled) {
         setCompileError(compiled.error);
         return;
       }
       botRef.current = compiled.bot;
-      writeBotSource(botSource);
+      if (editable) writeBotSource(botSource);
     }
+    setMode(asBot ? "bot" : "you");
+    setLevelId(level?.id ?? null);
     runRef.current = makeRun(deal, speed);
     nextRef.current = 0;
     queueRef.current = [];
@@ -243,7 +295,7 @@ export default function Trigger() {
     setCompileError(null);
     setBotStop(null);
     setPhase("run");
-  }, [mode, botSource, deal, speed]);
+  }, [freeMode, botSource, deal, speed]);
 
   // A pinned link is allowed to change under the page: editing the query, or
   // following a shared url from another run, deals the run it names rather
@@ -375,6 +427,20 @@ export default function Trigger() {
     }
   }, [phase, mode, ticker]);
 
+  // a finished level goes on the scoreboard: best delta over doing nothing
+  useEffect(() => {
+    if (phase !== "end" || levelId === null) return;
+    const end = lastIndex(runRef.current);
+    const delta = worthAt(runRef.current, end) - baselines(runRef.current, ticker).holding;
+    setLevelLog((prev) => {
+      const held = prev[levelId];
+      if (held !== undefined && held >= delta) return prev;
+      const next = { ...prev, [levelId]: delta };
+      writeLevelLog(next);
+      return next;
+    });
+  }, [phase, levelId, ticker]);
+
   // ----------------------------------------------------------- the viewport
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   useEffect(() => {
@@ -428,6 +494,8 @@ export default function Trigger() {
     <div
       data-trigger="root"
       data-phase={phase}
+      data-menu={menu}
+      data-level={levelId ?? ""}
       data-era={deal.era}
       data-stock={ticker}
       data-seed={deal.seed}
@@ -451,13 +519,71 @@ export default function Trigger() {
   );
 
   // ------------------------------------------------------------- deal card
+  // Four screens share one dealt header. The flow: the card opens on free
+  // play or levels; free play asks who plays, you or a bot; levels offer
+  // Start (the next unplayed level) or the list. A level names its player,
+  // shows its code when the player is a bot, and the end card's numbers are
+  // the only commentary the ladder ever makes.
   if (phase === "deal") {
+    const lvl = levelId !== null ? levelById(levelId) : null;
+    const nextId = LEVELS.find((l) => levelLog[l.id] === undefined)?.id ?? 1;
+    const wide = (menu === "free" && freeMode === "bot")
+      || (menu === "level" && lvl !== null && lvl.player !== "you");
+
+    const back = (to: Menu) => (
+      <button
+        data-back=""
+        onClick={() => setMenu(to)}
+        style={{
+          marginTop: 18, background: "transparent", border: "none",
+          color: MUTED, fontSize: 14, fontFamily: UI_FONT, cursor: "pointer",
+        }}
+      >
+        back
+      </button>
+    );
+
+    const startButton = (label: string, level: Level | null, mt: number) => (
+      <button
+        data-start=""
+        onClick={() => start(level)}
+        style={{
+          marginTop: mt, width: "100%", height: 60, borderRadius: 16, border: "none",
+          background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
+          fontFamily: UI_FONT, cursor: "pointer",
+        }}
+      >
+        {label}
+      </button>
+    );
+
+    const editorBlock = (
+      <div style={{ textAlign: "left" }}>
+        <p style={{ fontSize: 14, color: MUTED, marginTop: 14, lineHeight: 1.45 }}>
+          A shelf of example bots; the last line picks the player. It is
+          called on every tick of the tape, seeing the same prices you
+          would, and answers with an action. Break a rule and the run
+          stops.
+        </p>
+        <CodeEditor
+          value={botSource}
+          onChange={(next) => { setBotSource(next); setCompileError(null); }}
+          height={300}
+        />
+        {compileError !== null && (
+          <div data-bot-compile-error="" style={{ fontSize: 13, color: DOWN, marginTop: 8, lineHeight: 1.4 }}>
+            {compileError}
+          </div>
+        )}
+      </div>
+    );
+
     return shell(
       <div style={{
         minHeight: vp.h, display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", padding: pad, textAlign: "center",
       }}>
-        <div style={{ maxWidth: mode === "bot" ? 640 : 460, width: "100%" }}>
+        <div style={{ maxWidth: wide ? 640 : 460, width: "100%" }}>
           <div style={{ fontSize: 15, color: MUTED }}>{ERA_NAME[deal.era]}</div>
           <h1 style={{
             fontSize: phone ? 34 : 46, fontWeight: 700, margin: "8px 0 0",
@@ -471,68 +597,161 @@ export default function Trigger() {
           <p style={{ fontSize: 15, color: MUTED, marginTop: 14, lineHeight: 1.45 }}>
             {ERA_MOOD[deal.era]}
           </p>
-          <p data-pitch="" style={{ fontSize: 16, color: TEXT, marginTop: 14, lineHeight: 1.45 }}>
-            One stock, one minute. Beat the person who did nothing.
-          </p>
-          <div style={{ fontSize: 15, color: MUTED, marginTop: 18 }}>
-            You start with {money(START_CASH)} in cash.
-          </div>
-          {/* who plays: the space bar or a function you write */}
-          <div data-mode-row="" style={{ display: "flex", gap: 8, marginTop: 22 }}>
-            {(["you", "bot"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                data-mode={m}
-                aria-pressed={mode === m}
-                onClick={() => { setMode(m); setCompileError(null); }}
-                style={{
-                  flex: 1, height: 44, borderRadius: 12, cursor: "pointer",
-                  border: mode === m ? `1px solid rgba(215,222,232,0.45)` : "1px solid rgba(215,222,232,0.16)",
-                  background: mode === m ? PANEL : "transparent",
-                  color: mode === m ? TEXT : MUTED,
-                  fontSize: 15, fontWeight: 600, fontFamily: UI_FONT,
-                }}
-              >
-                {m === "you" ? "You play" : "A bot plays"}
-              </button>
-            ))}
-          </div>
-          {mode === "bot" && (
-            <div style={{ textAlign: "left" }}>
-              <p style={{ fontSize: 14, color: MUTED, marginTop: 14, lineHeight: 1.45 }}>
-                A shelf of example bots; the last line picks the player. It is
-                called on every tick of the tape, seeing the same prices you
-                would, and answers with an action. Break a rule and the run
-                stops.
+
+          {menu === "top" && (
+            <>
+              <p data-pitch="" style={{ fontSize: 16, color: TEXT, marginTop: 14, lineHeight: 1.45 }}>
+                One stock, one minute. Beat the person who did nothing.
               </p>
-              <CodeEditor
-                value={botSource}
-                onChange={(next) => { setBotSource(next); setCompileError(null); }}
-                height={300}
-              />
-              {compileError !== null && (
-                <div data-bot-compile-error="" style={{ fontSize: 13, color: DOWN, marginTop: 8, lineHeight: 1.4 }}>
-                  {compileError}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 26 }}>
+                <button
+                  data-go-levels=""
+                  onClick={() => setMenu("levels")}
+                  style={{
+                    width: "100%", height: 60, borderRadius: 16, border: "none",
+                    background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
+                    fontFamily: UI_FONT, cursor: "pointer",
+                  }}
+                >
+                  Levels
+                </button>
+                <button
+                  data-go-free=""
+                  onClick={() => { setMenu("free"); setLevelId(null); }}
+                  style={{
+                    width: "100%", height: 60, borderRadius: 16,
+                    border: "1px solid rgba(215,222,232,0.28)",
+                    background: "transparent", color: TEXT, fontSize: 20, fontWeight: 600,
+                    fontFamily: UI_FONT, cursor: "pointer",
+                  }}
+                >
+                  Free play
+                </button>
+              </div>
+            </>
+          )}
+
+          {menu === "free" && (
+            <>
+              <p data-pitch="" style={{ fontSize: 16, color: TEXT, marginTop: 14, lineHeight: 1.45 }}>
+                One stock, one minute. Beat the person who did nothing.
+              </p>
+              <div style={{ fontSize: 15, color: MUTED, marginTop: 18 }}>
+                You start with {money(START_CASH)} in cash.
+              </div>
+              {/* who plays: the space bar or a function you write */}
+              <div data-mode-row="" style={{ display: "flex", gap: 8, marginTop: 22 }}>
+                {(["you", "bot"] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    data-mode={m}
+                    aria-pressed={freeMode === m}
+                    onClick={() => { setFreeMode(m); setCompileError(null); }}
+                    style={{
+                      flex: 1, height: 44, borderRadius: 12, cursor: "pointer",
+                      border: freeMode === m ? `1px solid rgba(215,222,232,0.45)` : "1px solid rgba(215,222,232,0.16)",
+                      background: freeMode === m ? PANEL : "transparent",
+                      color: freeMode === m ? TEXT : MUTED,
+                      fontSize: 15, fontWeight: 600, fontFamily: UI_FONT,
+                    }}
+                  >
+                    {m === "you" ? "You play" : "A bot plays"}
+                  </button>
+                ))}
+              </div>
+              {freeMode === "bot" && editorBlock}
+              {startButton(freeMode === "bot" ? "Run bot" : "Start", null, freeMode === "bot" ? 16 : 26)}
+              {best !== null && (
+                <div data-best="" style={{ fontSize: 13, color: MUTED, marginTop: 14 }}>
+                  best so far: {signedMoney(best)} over doing nothing
                 </div>
               )}
-            </div>
+              {back("top")}
+            </>
           )}
-          <button
-            data-start=""
-            onClick={start}
-            style={{
-              marginTop: mode === "bot" ? 16 : 26, width: "100%", height: 60,
-              borderRadius: 16, border: "none",
-              background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
-              fontFamily: UI_FONT, cursor: "pointer",
-            }}
-          >
-            {mode === "bot" ? "Run bot" : "Start"}
-          </button>
-          {best !== null && (
-            <div data-best="" style={{ fontSize: 13, color: MUTED, marginTop: 14 }}>
-              best so far: {signedMoney(best)} over doing nothing
-            </div>
+
+          {menu === "levels" && (
+            <>
+              <p data-pitch="" style={{ fontSize: 16, color: TEXT, marginTop: 14, lineHeight: 1.45 }}>
+                Real algorithms over real data, simplest first.
+              </p>
+              <button
+                data-start-level=""
+                onClick={() => { setLevelId(nextId); setMenu("level"); }}
+                style={{
+                  marginTop: 22, width: "100%", height: 60, borderRadius: 16, border: "none",
+                  background: UP, color: "#0C0F14", fontSize: 20, fontWeight: 600,
+                  fontFamily: UI_FONT, cursor: "pointer",
+                }}
+              >
+                Start level {nextId}
+              </button>
+              <div data-level-list="" style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 16 }}>
+                {LEVELS.map((l) => {
+                  const score = levelLog[l.id];
+                  return (
+                    <button
+                      key={l.id}
+                      data-level-row=""
+                      data-level-id={l.id}
+                      onClick={() => { setLevelId(l.id); setMenu("level"); }}
+                      style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                        gap: 10, padding: "10px 14px", borderRadius: 10,
+                        border: "1px solid rgba(215,222,232,0.16)", background: "transparent",
+                        color: TEXT, fontSize: 15, fontWeight: 600, fontFamily: UI_FONT,
+                        cursor: "pointer", textAlign: "left",
+                      }}
+                    >
+                      <span>{l.id}. {l.title}</span>
+                      <span style={{
+                        fontSize: 13, fontWeight: 400, fontVariantNumeric: "tabular-nums",
+                        color: score === undefined ? MUTED : score >= 0 ? UP : DOWN,
+                      }}>
+                        {score === undefined ? "not played" : `${signedMoney(score)} vs holding`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {back("top")}
+            </>
+          )}
+
+          {menu === "level" && lvl !== null && (
+            <>
+              <div style={{ fontSize: 14, color: MUTED, marginTop: 18 }}>
+                level {lvl.id} of {LEVELS.length}
+              </div>
+              <div style={{ fontSize: phone ? 22 : 26, fontWeight: 700, marginTop: 4 }}>
+                {lvl.title}
+              </div>
+              <p style={{ fontSize: 15, color: TEXT, marginTop: 8, lineHeight: 1.45 }}>
+                {lvl.line}
+              </p>
+              {lvl.player !== "you" && lvl.player !== "editor" && (
+                <div style={{ textAlign: "left" }}>
+                  {/* sized to the bot: a six line bot gets a six line panel */}
+                  <CodeEditor
+                    value={levelSource(lvl.player)}
+                    onChange={() => {}}
+                    height={Math.min(300, 20 + levelSource(lvl.player).trimEnd().split("\n").length * 19.5)}
+                    readOnly
+                  />
+                </div>
+              )}
+              {lvl.player === "editor" && editorBlock}
+              <div style={{ fontSize: 15, color: MUTED, marginTop: 14 }}>
+                {lvl.player === "you" ? "You start" : "It starts"} with {money(START_CASH)} in cash.
+              </div>
+              {startButton(lvl.player === "you" ? "Start" : "Run bot", lvl, 16)}
+              {levelLog[lvl.id] !== undefined && (
+                <div data-best="" style={{ fontSize: 13, color: MUTED, marginTop: 14 }}>
+                  best on this level: {signedMoney(levelLog[lvl.id])} over doing nothing
+                </div>
+              )}
+              {back("levels")}
+            </>
           )}
         </div>
       </div>,
@@ -599,7 +818,11 @@ export default function Trigger() {
   }
 
   // -------------------------------------------------------------- end card
+  // In a level the buttons walk the ladder: onward to the next level's card,
+  // or the same level again on a fresh deal. Free play keeps its pair.
   if (phase === "end") {
+    const lvl = levelId !== null ? levelById(levelId) : null;
+    const nextLvl = lvl !== null ? levelById(lvl.id + 1) : null;
     return shell(
       <EndCard
         run={run}
@@ -610,8 +833,28 @@ export default function Trigger() {
         phone={phone}
         pad={pad}
         vpH={vp.h}
-        onAgain={() => begin(dealRandom())}
-        onSame={() => begin({ ...deal, seed: randomSeed() })}
+        primaryLabel={lvl !== null ? (nextLvl !== null ? "Next level" : "Level select") : "Play again"}
+        nextLevel={lvl !== null && nextLvl !== null}
+        onPrimary={() => {
+          begin(dealRandom());
+          if (lvl === null) return;
+          if (nextLvl !== null) {
+            setLevelId(nextLvl.id);
+            setMenu("level");
+          } else {
+            setLevelId(null);
+            setMenu("levels");
+          }
+        }}
+        secondaryLabel={lvl !== null ? "Replay level" : "Same stock"}
+        onSecondary={() => {
+          if (lvl !== null) {
+            begin(dealRandom());
+            setMenu("level");
+          } else {
+            begin({ ...deal, seed: randomSeed() });
+          }
+        }}
       />,
       false,
     );
@@ -855,11 +1098,17 @@ interface EndProps {
   phone: boolean;
   pad: number;
   vpH: number;
-  onAgain: () => void;
-  onSame: () => void;
+  primaryLabel: string;      // Play again in free play, Next level on the ladder
+  secondaryLabel: string;    // Same stock in free play, Replay level on the ladder
+  nextLevel: boolean;        // marks the primary as the walk's data-next-level
+  onPrimary: () => void;
+  onSecondary: () => void;
 }
 
-function EndCard({ run, ticker, deal, sample, player, phone, pad, vpH, onAgain, onSame }: EndProps) {
+function EndCard({
+  run, ticker, deal, sample, player, phone, pad, vpH,
+  primaryLabel, secondaryLabel, nextLevel, onPrimary, onSecondary,
+}: EndProps) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const rowW = useBox(rowRef, "end").w;
   const end = lastIndex(run);
@@ -1002,24 +1251,25 @@ function EndCard({ run, ticker, deal, sample, player, phone, pad, vpH, onAgain, 
       <div style={{ display: "flex", gap: 10, flex: "0 0 auto" }}>
         <button
           data-again=""
-          onClick={onAgain}
+          {...(nextLevel ? { "data-next-level": "" } : {})}
+          onClick={onPrimary}
           style={{
             flex: 1, height: 56, borderRadius: 14, border: "none", background: UP,
             color: "#0C0F14", fontSize: 18, fontWeight: 600, fontFamily: UI_FONT, cursor: "pointer",
           }}
         >
-          Play again
+          {primaryLabel}
         </button>
         <button
           data-same=""
-          onClick={onSame}
+          onClick={onSecondary}
           style={{
             flex: 1, height: 56, borderRadius: 14, border: `1px solid rgba(215,222,232,0.28)`,
             background: "transparent", color: TEXT, fontSize: 18, fontWeight: 600,
             fontFamily: UI_FONT, cursor: "pointer",
           }}
         >
-          Same stock
+          {secondaryLabel}
         </button>
       </div>
     </div>
