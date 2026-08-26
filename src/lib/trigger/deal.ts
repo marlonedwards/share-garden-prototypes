@@ -129,6 +129,46 @@ export function dealRandom(rnd: () => number = Math.random): Deal {
   return { era, ticker, seed: randomSeed(), startMonth: firstAffordableMonth(era, ticker) as string };
 }
 
+// A deal's (company, timespan) identity. The start month is fixed by
+// affordability per era and ticker, so the pair is the whole slice.
+export function dealKey(d: { era: EraId; ticker: Ticker }): string {
+  return `${d.era}:${d.ticker}`;
+}
+
+// Every pair the pool can deal, across every dealable era.
+function allPairs(): { era: EraId; ticker: Ticker }[] {
+  const out: { era: EraId; ticker: Ticker }[] = [];
+  for (const era of dealableEras()) {
+    for (const ticker of eraPool(era)) out.push({ era, ticker });
+  }
+  return out;
+}
+
+// A random deal that avoids already dealt (company, timespan) pairs, dead
+// companies still at an eighth of the weight. The batch uses this so ten
+// markets are ten different markets; when every pair is taken the exclusion
+// resets rather than refusing to deal.
+export function dealRandomExcluding(taken: ReadonlySet<string>, rnd: () => number = Math.random): Deal {
+  let pool = allPairs().filter((c) => !taken.has(dealKey(c)));
+  if (pool.length === 0) pool = allPairs();
+  const total = pool.reduce((sum, c) => sum + weightOf(c.ticker), 0);
+  let roll = rnd() * total;
+  let pick = pool[pool.length - 1];
+  for (const c of pool) {
+    roll -= weightOf(c.ticker);
+    if (roll <= 0) {
+      pick = c;
+      break;
+    }
+  }
+  return {
+    era: pick.era,
+    ticker: pick.ticker,
+    seed: randomSeed(),
+    startMonth: firstAffordableMonth(pick.era, pick.ticker) as string,
+  };
+}
+
 // A deal built from the url, falling back a piece at a time so a half written
 // link still plays rather than erroring.
 export function dealFromParams(

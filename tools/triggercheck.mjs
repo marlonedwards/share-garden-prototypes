@@ -897,6 +897,7 @@ async function run(page, tag) {
       rows: document.querySelectorAll("[data-sim-row]").length,
       beat: document.querySelector("[data-sim-beat]")?.textContent ?? "",
       text: document.querySelector("[data-sim-summary]").textContent,
+      markets: Array.from(document.querySelectorAll("[data-sim-row] > span:first-child")).map((el) => el.textContent),
     }));
     await page.screenshot({ path: `${OUT}trigger-sim-summary-${tag}.png` });
     // the review: every finished market as its own slice, then back
@@ -917,6 +918,7 @@ async function run(page, tag) {
       botCard: /Bot: \$/.test(endText) && /Run 10 markets/.test(endText) && /Next level/.test(endText),
       stack: stack.rows === 10 && stack.panels === 1,
       batch: sum.rows === 10 && / of 10 markets/.test(sum.beat) && /View markets/.test(sum.text) && /Run 10 more/.test(sum.text),
+      distinct: new Set(sum.markets).size === sum.markets.length,
       review: review === 10,
     };
     const bad = Object.keys(parts).filter((k) => !parts[k]);

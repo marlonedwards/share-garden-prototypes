@@ -36,7 +36,7 @@ import type { Level } from "../lib/trigger/levels";
 import { LEVELS, levelById } from "../lib/trigger/levels";
 import {
   ERA_MOOD, ERA_NAME, SPEED, START_CASH, companyName, dealFromParams,
-  dealRandom, longMonth, randomSeed, yearOf,
+  dealKey, dealRandom, dealRandomExcluding, longMonth, randomSeed, yearOf,
 } from "../lib/trigger/deal";
 import {
   bestDecision, decisionsOf, monthsInMarket, spansOf, worstDecision,
@@ -346,14 +346,20 @@ export default function Trigger() {
   // The batch: SIM_COUNT markets dealt at random and run side by side at
   // skip speed, each with its own freshly compiled bot so a stateful
   // strategy cannot bleed between markets. Fresh from an end card the tally
-  // starts over; Run 10 more keeps adding to it.
+  // starts over; Run 10 more keeps adding to it. No (company, timespan)
+  // pair is dealt twice, within a batch or across the tally, until the pool
+  // itself runs out.
   const startBatch = useCallback((fresh: boolean) => {
     const source = botSourceRef.current;
     const sims: Sim[] = [];
+    const taken = fresh
+      ? new Set<string>()
+      : new Set(markets.map((m) => dealKey({ era: m.run.era, ticker: m.deal.ticker })));
     for (let i = 0; i < SIM_COUNT; i++) {
       const compiled = compileBot(source);
       if ("error" in compiled) return;      // it compiled once to get here
-      const d = dealRandom();
+      const d = dealRandomExcluding(taken);
+      taken.add(dealKey(d));
       sims.push({
         deal: d,
         run: makeRun(d, SPEED * turbo),
@@ -371,7 +377,7 @@ export default function Trigger() {
       setSimResults([]);
     }
     setPhase("sims");
-  }, [turbo]);
+  }, [turbo, markets]);
 
   // A pinned link is allowed to change under the page: editing the query, or
   // following a shared url from another run, deals the run it names rather

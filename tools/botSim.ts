@@ -24,6 +24,7 @@ import { priceAt } from "../src/lib/tape/engine";
 import type { BotFn } from "../src/lib/trigger/bot";
 import { TICKS_PER_MONTH, botAct, compileBot } from "../src/lib/trigger/bot";
 import { PLAYER, assembleScaffold, shelfNames } from "../src/lib/trigger/bots/assemble";
+import { dealKey, dealRandomExcluding } from "../src/lib/trigger/deal";
 import { LEVELS } from "../src/lib/trigger/levels";
 
 declare const process: { argv: string[]; exit(code: number): never };
@@ -151,6 +152,23 @@ check("level_players", ghosts.length === 0,
   ghosts.length
     ? `levels naming missing bots: ${ghosts.map((l) => `${l.id} ${l.player}`).join(", ")}`
     : `${LEVELS.length} levels, every bot player on the shelf`);
+
+// the batch dealer never repeats a (company, timespan) pair inside one
+// exclusion set: two hundred batches of ten, all distinct
+{
+  let clash: string | null = null;
+  for (let round = 0; round < 200 && clash === null; round++) {
+    const taken = new Set<string>();
+    for (let i = 0; i < 10; i++) {
+      const d = dealRandomExcluding(taken);
+      const key = dealKey(d);
+      if (taken.has(key)) clash = `round ${round} repeated ${key}`;
+      taken.add(key);
+    }
+  }
+  check("unique_deals", clash === null,
+    clash ?? "200 batches of 10, no (company, timespan) dealt twice");
+}
 
 const realRandom = Math.random;
 for (const name of names) {

@@ -368,7 +368,9 @@ averaging 5. Swing 6. Momentum 7. Crossover 8. Brackets 9. Trend sizing
   headline; The bot is trading appears once beneath the stack, word still
   clickable. Every market has its own compiled bot, so a stateful strategy
   cannot bleed between markets; a market whose bot breaks a rule stops
-  alone, reads broke a rule, and sits out the count.
+  alone, reads broke a rule, and sits out the count. No (company, timespan)
+  pair is dealt twice, within a batch or across the tally, until the pool
+  itself runs out.
 - When the slowest market ends, the summary lists every accumulated market
   with its delta over doing nothing, counts one fact (`It beat doing
   nothing in 3 of 10 markets.`), and offers **View markets**, **Next
