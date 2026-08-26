@@ -1768,8 +1768,7 @@ function BotPrimer(
   const BADGE = { x: 404, y: 104, w: 116 };
 
   const panel = (
-    key: string, row: { y: number; h: number }, label: string,
-    body: ReactNode, annotation: string,
+    key: string, row: { y: number; h: number }, label: string, body: ReactNode,
   ) => (
     <div
       key={key}
@@ -1781,11 +1780,16 @@ function BotPrimer(
     >
       <div style={{ fontSize: 12, color: MUTED }}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5 }}>{body}</div>
-      {frame === 0 && (
-        <div style={{ fontSize: 12, color: MUTED, marginTop: 5, lineHeight: 1.25 }}>{annotation}</div>
-      )}
     </div>
   );
+
+  // frame 0's annotations sit to the right of the boxes, in the lane the
+  // arrows will use once the bot appears
+  const ANNOTATIONS = [
+    "every price so far",
+    "only changes if you buy or sell",
+    "what you buy shares with and sell them for",
+  ];
 
   const pricesBody = (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 4, paddingBottom: 18 }}>
@@ -1880,17 +1884,28 @@ function BotPrimer(
               </svg>
             )}
 
-            {panel("prices", ROWS[0], "prices", pricesBody, "every price so far")}
+            {panel("prices", ROWS[0], "prices", pricesBody)}
             {panel(
               "shares", ROWS[1], "shares",
               <span style={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{c.shares}</span>,
-              "only changes if you buy or sell",
             )}
             {panel(
               "cash", ROWS[2], "cash in wallet",
               <span style={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{money(c.cash)}</span>,
-              "what you buy shares with and sell them for",
             )}
+            {frame === 0 && ROWS.map((row, i) => (
+              <div
+                key={`note${i}`}
+                style={{
+                  position: "absolute", left: PANEL_W + 16, top: row.y,
+                  width: DW - PANEL_W - 16, height: row.h,
+                  display: "flex", alignItems: "center",
+                  fontSize: 13, color: MUTED, lineHeight: 1.35, textAlign: "left",
+                }}
+              >
+                {ANNOTATIONS[i]}
+              </div>
+            ))}
 
             {showBot && (
               <div data-primer-bot="" style={{ position: "absolute", left: CHIP.x, top: CHIP.y, width: CHIP.s, textAlign: "center" }}>
