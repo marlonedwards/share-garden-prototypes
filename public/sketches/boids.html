@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Crowd Market</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; background: #f6f5f2; color: #1c1c1e;
+    font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 22px 20px 40px; }
+  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 10px; }
+  h1 { font-size: 21px; font-weight: 700; margin: 0; }
+  .spacer { flex: 1; }
+  .readout { font-size: 15px; color: #6d685f; }
+  .readout b { color: #1c1c1e; font-weight: 700; font-size: 17px; }
+  .feed { color: #6d685f; font-size: 14px; min-height: 21px; margin-bottom: 8px; }
+  canvas { display: block; width: 100%; height: auto; background: #fbfaf8; border: 1px solid #e4e1da; border-radius: 14px; cursor: crosshair; }
+  .bar {
+    display: flex; align-items: center; gap: 10px; margin-top: 10px; min-height: 44px;
+    background: #fff; border: 1px solid #e4e1da; border-radius: 12px; padding: 8px 14px;
+  }
+  .bar .where { font-weight: 700; }
+  .bar .cost { color: #6d685f; }
+  button {
+    font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 8px;
+    border: 1px solid #cfcabf; background: #fff; color: #1c1c1e; cursor: pointer;
+  }
+  button:hover:enabled { border-color: #9a938a; }
+  button:disabled { color: #b5b0a6; cursor: default; }
+  .tray {
+    margin-top: 12px; background: #fff; border: 1px solid #e4e1da; border-radius: 14px;
+    padding: 14px; display: flex; align-items: flex-start; gap: 26px; flex-wrap: wrap;
+  }
+  .tray .label { color: #6d685f; font-size: 14px; }
+  .tray .big { font-weight: 700; font-size: 18px; }
+  #bills { display: flex; align-items: flex-end; gap: 5px; height: 74px; }
+  .pile { display: flex; flex-direction: column-reverse; gap: 1px; }
+  .bill { width: 34px; height: 7px; background: #7fae8b; border: 1px solid #6b9a77; border-radius: 2px; }
+  .bill.ghost { background: transparent; border: 1px dashed #6b9a77; }
+  #bricksTray { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+  .brickrow { display: flex; align-items: center; gap: 8px; }
+  .chip { width: 22px; height: 12px; border: 1.5px solid #1c1c1e; border-radius: 2px; background: #fff; }
+  .h0 { background: repeating-linear-gradient(45deg, #fff, #fff 3px, #1c1c1e 3px, #1c1c1e 4px); }
+  .h1 { background: radial-gradient(#1c1c1e 1px, #fff 1.5px); background-size: 5px 5px; }
+  .h2 { background: repeating-linear-gradient(0deg, #fff, #fff 3px, #1c1c1e 3px, #1c1c1e 4px); }
+  .h3 { background: repeating-linear-gradient(45deg, #fff, #fff 3px, #1c1c1e 3px, #1c1c1e 4px), repeating-linear-gradient(-45deg, #fff, #fff 3px, #1c1c1e 3px, #1c1c1e 4px); background-blend-mode: multiply; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Watch the shop, not the crowd.</h1>
+    <div class="spacer"></div>
+    <div class="readout">Worth <b id="worth">$0</b></div>
+  </header>
+  <div class="feed" id="feed">Click anywhere to walk.</div>
+  <canvas id="c" width="960" height="540"></canvas>
+  <div class="bar" id="ctx">
+    <span class="where" id="ctxWhere">On the street</span>
+    <span class="cost" id="ctxCost"></span>
+    <span class="spacer" style="flex:1"></span>
+    <button id="takeBtn" disabled>Take a brick</button>
+    <button id="handBtn" disabled>Hand a brick</button>
+  </div>
+  <div class="tray">
+    <div>
+      <div class="label">Your cash</div>
+      <div class="big" id="cashnum">$0</div>
+    </div>
+    <div id="bills"></div>
+    <div>
+      <div class="label">Your bricks</div>
+      <div id="bricksTray"></div>
+    </div>
+    <div>
+      <div class="label">They sell for</div>
+      <div class="big" id="sellnum">$0</div>
+      <div id="ghost" style="display:flex;align-items:flex-end;gap:5px;height:58px;margin-top:4px"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var cv = document.getElementById("c"), cx = cv.getContext("2d");
+  var W = 960, H = 540;
+  var cash = 100;
+  var t0 = performance.now();
+
+  // Activity is what the shop really does. The crowd is drawn by it but
+  // herds and overshoots, and the price IS the local crowd. The Forge's
+  // buzz never touches its activity: that is the bubble, honest.
+  var plots = [
+    { name: "The Mill",   x: 190, y: 150, hatch: 0, act: function () { return 0.5; } },
+    { name: "The Bakery", x: 760, y: 160, hatch: 1, act: function (s) { return 0.3 + 0.6 * Math.min(1, s / 120); } },
+    { name: "The Press",  x: 210, y: 415, hatch: 2, act: function (s) { return Math.max(0.08, 0.55 - 0.47 * Math.min(1, s / 80)); } },
+    { name: "The Forge",  x: 730, y: 410, hatch: 3, act: function () { return 0.45; } }
+  ];
+  plots.forEach(function (p) {
+    p.mine = 0; p.bricks = 8; p.price = 8; p.crowd = 0; p.beats = []; p.beatClock = 0; p.herd = 0;
+  });
+
+  function seconds() { return (performance.now() - t0) / 1000; }
+
+  var boids = [];
+  for (var i = 0; i < 70; i++) {
+    boids.push({
+      x: Math.random() * W, y: Math.random() * H,
+      tgt: Math.floor(Math.random() * 4),
+      ox: (Math.random() - .5) * 120, oy: (Math.random() - .5) * 90,
+      retarget: Math.random() * 4
+    });
+  }
+
+  var player = { x: 480, y: 300, dx: 480, dy: 300 };
+  var feedEl = document.getElementById("feed");
+  function feed(msg) { feedEl.textContent = msg; }
+
+  cv.addEventListener("click", function (e) {
+    var r = cv.getBoundingClientRect();
+    player.dx = (e.clientX - r.left) / r.width * W;
+    player.dy = (e.clientY - r.top) / r.height * H;
+  });
+
+  function nearestPlot(x, y, rad) {
+    var best = null, bd = rad;
+    plots.forEach(function (p) {
+      var d = Math.hypot(p.x - x, p.y - y);
+      if (d < bd) { bd = d; best = p; }
+    });
+    return best;
+  }
+
+  function score(p, s) {
+    return 6 * p.act(s) + Math.min(3, 0.07 * p.crowd) + p.herd;
+  }
+
+  var buzzed = false, spooked = false;
+  function timeline(s) {
+    if (!buzzed && s > 30) {
+      buzzed = true;
+      plots[3].herd = 14;
+      boids.forEach(function (b) { if (Math.random() < 0.6) b.retarget = Math.random(); });
+      feed("Word is spreading about the Forge.");
+    }
+    if (!spooked && s > 65) {
+      spooked = true;
+      plots[3].herd = -6;
+      boids.forEach(function (b) { if (b.tgt === 3) b.retarget = 0; });
+      feed("The Forge story falls apart.");
+      setTimeout(function () { plots[3].herd = 0; }, 20000);
+    }
+  }
+
+  var takeBtn = document.getElementById("takeBtn"), handBtn = document.getElementById("handBtn");
+  takeBtn.addEventListener("click", function () {
+    var p = nearestPlot(player.x, player.y, 80);
+    if (!p) return;
+    var cost = Math.round(p.price);
+    if (p.bricks > 0 && cash >= cost) {
+      cash -= cost; p.bricks--; p.mine++;
+      feed("You took a " + p.name.replace("The ", "") + " brick for $" + cost + ".");
+      renderTray();
+    }
+  });
+  handBtn.addEventListener("click", function () {
+    var p = nearestPlot(player.x, player.y, 80);
+    if (!p || p.mine === 0) return;
+    var buyer = boids.some(function (b) { return Math.hypot(b.x - player.x, b.y - player.y) < 90; });
+    if (!buyer) return;
+    var got = Math.round(p.price);
+    cash += got; p.mine--; p.bricks++;
+    feed("Someone took your " + p.name.replace("The ", "") + " brick for $" + got + ".");
+    renderTray();
+  });
+
+  var last = performance.now();
+  function step(now) {
+    var dt = Math.min(50, now - last) / 1000; last = now;
+    var s = seconds();
+    timeline(s);
+
+    plots.forEach(function (p) {
+      var n = 0;
+      boids.forEach(function (b) { if (Math.hypot(b.x - p.x, b.y - p.y) < 95) n++; });
+      p.crowd = n;
+      var raw = 1 + 0.8 * n;
+      p.price += (raw - p.price) * Math.min(1, dt * 1.6);
+      p.beatClock += dt * p.act(s);
+      if (p.beatClock > 0.9) { p.beatClock = 0; p.beats.push(0); }
+      p.beats = p.beats.map(function (a) { return a + dt; }).filter(function (a) { return a < 1.4; });
+    });
+
+    boids.forEach(function (b) {
+      b.retarget -= dt;
+      if (b.retarget <= 0) {
+        b.retarget = 2 + Math.random() * 4;
+        var ws = plots.map(function (p) { return Math.exp(score(p, s) / 2); });
+        var tot = ws.reduce(function (a, c) { return a + c; }, 0), r = Math.random() * tot, acc = 0, pick = 0;
+        for (var wi = 0; wi < ws.length; wi++) { acc += ws[wi]; if (r <= acc) { pick = wi; break; } }
+        b.tgt = pick;
+        b.ox = (Math.random() - .5) * 130; b.oy = (Math.random() - .5) * 100;
+      }
+      var p = plots[b.tgt];
+      var tx = p.x + b.ox, ty = p.y + b.oy;
+      var d = Math.hypot(tx - b.x, ty - b.y);
+      if (d > 4) { b.x += (tx - b.x) / d * 42 * dt; b.y += (ty - b.y) / d * 42 * dt; }
+    });
+
+    var pd = Math.hypot(player.dx - player.x, player.dy - player.y);
+    if (pd > 3) { player.x += (player.dx - player.x) / pd * 95 * dt; player.y += (player.dy - player.y) / pd * 95 * dt; }
+
+    draw(s);
+    renderCtx();
+    requestAnimationFrame(step);
+  }
+
+  function hatchFill(i, x, y, w, h) {
+    cx.save();
+    cx.beginPath(); cx.rect(x, y, w, h); cx.clip();
+    cx.strokeStyle = "#1c1c1e"; cx.lineWidth = 1;
+    if (i === 0 || i === 3) for (var k = -h; k < w + h; k += 4) { cx.beginPath(); cx.moveTo(x + k, y + h); cx.lineTo(x + k + h, y); cx.stroke(); }
+    if (i === 3) for (var k2 = 0; k2 < w + h; k2 += 4) { cx.beginPath(); cx.moveTo(x + k2 - h, y); cx.lineTo(x + k2, y + h); cx.stroke(); }
+    if (i === 1) for (var yy = y + 2; yy < y + h; yy += 4) for (var xx = x + 2; xx < x + w; xx += 4) { cx.fillStyle = "#1c1c1e"; cx.fillRect(xx, yy, 1.4, 1.4); }
+    if (i === 2) for (var y3 = y + 2; y3 < y + h; y3 += 4) { cx.beginPath(); cx.moveTo(x, y3); cx.lineTo(x + w, y3); cx.stroke(); }
+    cx.restore();
+  }
+
+  function draw(s) {
+    cx.clearRect(0, 0, W, H);
+    plots.forEach(function (p) {
+      // building
+      cx.strokeStyle = "#1c1c1e"; cx.lineWidth = 2; cx.fillStyle = "#fff";
+      cx.fillRect(p.x - 24, p.y - 20, 48, 36); cx.strokeRect(p.x - 24, p.y - 20, 48, 36);
+      cx.beginPath(); cx.moveTo(p.x - 28, p.y - 20); cx.lineTo(p.x, p.y - 38); cx.lineTo(p.x + 28, p.y - 20); cx.closePath(); cx.stroke();
+      cx.strokeRect(p.x - 6, p.y + 2, 12, 14);
+      // production beats rising from the roof: the shop's real activity
+      p.beats.forEach(function (a) {
+        cx.globalAlpha = Math.max(0, 1 - a / 1.4);
+        cx.beginPath(); cx.arc(p.x, p.y - 44 - a * 22, 3.5, 0, 7); cx.stroke();
+        cx.globalAlpha = 1;
+      });
+      // brick pile (what is left to take)
+      for (var i = 0; i < p.bricks; i++) {
+        var bx = p.x + 34 + (i % 2) * 17, by = p.y + 8 - Math.floor(i / 2) * 9;
+        cx.fillStyle = "#fff"; cx.fillRect(bx, by, 15, 7); cx.strokeStyle = "#1c1c1e"; cx.lineWidth = 1.5; cx.strokeRect(bx, by, 15, 7);
+        hatchFill(p.hatch, bx + 1, by + 1, 13, 5);
+      }
+      // price stand: the going rate as a pile of bills
+      var stand = { x: p.x - 62, y: p.y + 16 };
+      cx.strokeStyle = "#1c1c1e"; cx.lineWidth = 2;
+      cx.beginPath(); cx.moveTo(stand.x - 12, stand.y); cx.lineTo(stand.x + 12, stand.y); cx.stroke();
+      cx.beginPath(); cx.moveTo(stand.x, stand.y); cx.lineTo(stand.x, stand.y + 10); cx.stroke();
+      var nb = Math.max(1, Math.round(p.price / 2));
+      for (var j = 0; j < Math.min(nb, 14); j++) {
+        cx.fillStyle = "#7fae8b"; cx.strokeStyle = "#6b9a77"; cx.lineWidth = 1;
+        cx.fillRect(stand.x - 9, stand.y - 5 - j * 4, 18, 3); cx.strokeRect(stand.x - 9, stand.y - 5 - j * 4, 18, 3);
+      }
+      cx.fillStyle = "#1c1c1e"; cx.font = "700 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      cx.textAlign = "center";
+      cx.fillText("$" + Math.round(p.price), stand.x, stand.y - 10 - Math.min(nb, 14) * 4);
+      cx.font = "400 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      cx.fillText(p.name, p.x, p.y + 32);
+    });
+    // boids
+    boids.forEach(function (b) {
+      cx.strokeStyle = "#1c1c1e"; cx.lineWidth = 1.6;
+      cx.beginPath(); cx.arc(b.x, b.y - 6, 3, 0, 7); cx.stroke();
+      cx.beginPath(); cx.moveTo(b.x, b.y - 3); cx.lineTo(b.x, b.y + 5); cx.stroke();
+    });
+    // player
+    cx.strokeStyle = "#d9662c"; cx.lineWidth = 2.4;
+    cx.beginPath(); cx.arc(player.x, player.y - 8, 4, 0, 7); cx.stroke();
+    cx.beginPath(); cx.moveTo(player.x, player.y - 4); cx.lineTo(player.x, player.y + 7); cx.stroke();
+    document.getElementById("worth").textContent = "$" + worth();
+  }
+
+  function worth() {
+    var w = cash;
+    plots.forEach(function (p) { w += p.mine * Math.round(p.price); });
+    return Math.round(w);
+  }
+
+  function renderCtx() {
+    var p = nearestPlot(player.x, player.y, 80);
+    var whereEl = document.getElementById("ctxWhere"), costEl = document.getElementById("ctxCost");
+    if (!p) {
+      whereEl.textContent = "On the street";
+      costEl.textContent = "";
+      takeBtn.disabled = true; handBtn.disabled = true;
+      handBtn.textContent = "Hand a brick";
+      return;
+    }
+    var cost = Math.round(p.price);
+    whereEl.textContent = "At " + p.name.toLowerCase().replace("the ", "the ");
+    costEl.textContent = "A brick trades at $" + cost + ". Crowd of " + p.crowd + ".";
+    takeBtn.disabled = !(p.bricks > 0 && cash >= cost);
+    var buyer = boids.some(function (b) { return Math.hypot(b.x - player.x, b.y - player.y) < 90; });
+    handBtn.disabled = !(p.mine > 0 && buyer);
+    handBtn.textContent = (p.mine > 0 && !buyer) ? "No buyers here" : "Hand a brick";
+  }
+
+  function renderTray() {
+    document.getElementById("cashnum").textContent = "$" + cash;
+    var bills = document.getElementById("bills");
+    bills.innerHTML = "";
+    var tens = Math.floor(cash / 10);
+    for (var p2 = 0; p2 < Math.ceil(tens / 10); p2++) {
+      var pile = document.createElement("div"); pile.className = "pile";
+      var n = Math.min(10, tens - p2 * 10);
+      for (var j = 0; j < n; j++) pile.appendChild(Object.assign(document.createElement("div"), { className: "bill" }));
+      bills.appendChild(pile);
+    }
+    var tray = document.getElementById("bricksTray");
+    tray.innerHTML = "";
+    var sellTotal = 0;
+    plots.forEach(function (p) {
+      sellTotal += p.mine * Math.round(p.price);
+      if (!p.mine) return;
+      var row = document.createElement("div"); row.className = "brickrow";
+      row.innerHTML = '<span class="chip h' + p.hatch + '"></span>' + p.mine + " from " + p.name.toLowerCase();
+      tray.appendChild(row);
+    });
+    if (!tray.children.length) tray.innerHTML = '<span style="color:#6d685f">None yet</span>';
+    document.getElementById("sellnum").textContent = "$" + sellTotal;
+    var ghost = document.getElementById("ghost");
+    ghost.innerHTML = "";
+    var gtens = Math.floor(sellTotal / 10);
+    for (var g = 0; g < Math.ceil(gtens / 10); g++) {
+      var gp = document.createElement("div"); gp.className = "pile";
+      var gn = Math.min(10, gtens - g * 10);
+      for (var k = 0; k < gn; k++) gp.appendChild(Object.assign(document.createElement("div"), { className: "bill ghost" }));
+      ghost.appendChild(gp);
+    }
+  }
+
+  setInterval(renderTray, 1500);
+  renderTray();
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Fleet</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; background: #f6f5f2; color: #1c1c1e;
+    font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 20px 40px; }
+  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+  h1 { font-size: 21px; font-weight: 700; margin: 0; }
+  .spacer { flex: 1; }
+  .readout { font-size: 15px; color: #6d685f; }
+  .readout b { color: #1c1c1e; font-weight: 700; font-size: 17px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .card {
+    flex: 1 1 300px; background: #fff; border: 1px solid #e4e1da;
+    border-radius: 14px; padding: 14px; min-width: 280px;
+  }
+  .card.dead { opacity: .75; }
+  svg.scene { display: block; width: 100%; height: auto; border-radius: 9px; }
+  .name { font-weight: 700; margin: 10px 0 1px; }
+  .status { color: #6d685f; font-size: 14px; min-height: 21px; }
+  .flags { display: flex; gap: 5px; margin: 8px 0 10px; }
+  .flag { width: 16px; height: 12px; background: #e8e5de; border-radius: 2px; }
+  .flag.mine { background: #d9662c; }
+  .trade { display: flex; align-items: center; gap: 8px; }
+  .price { font-weight: 700; font-size: 16px; min-width: 44px; }
+  button {
+    font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 8px;
+    border: 1px solid #cfcabf; background: #fff; color: #1c1c1e; cursor: pointer;
+  }
+  button:hover:enabled { border-color: #9a938a; }
+  button:disabled { color: #b5b0a6; cursor: default; }
+  .tray {
+    margin-top: 16px; background: #fff; border: 1px solid #e4e1da; border-radius: 14px;
+    padding: 14px; display: flex; align-items: flex-end; gap: 16px;
+  }
+  .tray .label { color: #6d685f; font-size: 14px; }
+  .tray .cashnum { font-weight: 700; font-size: 18px; }
+  #bills { display: flex; align-items: flex-end; gap: 5px; height: 88px; flex: 1; }
+  .pile { display: flex; flex-direction: column-reverse; gap: 1px; }
+  .bill { width: 34px; height: 7px; background: #7fae8b; border: 1px solid #6b9a77; border-radius: 2px; }
+  .float {
+    position: absolute; font-weight: 700; color: #2e7d44; pointer-events: none;
+    animation: rise 1.4s ease-out forwards; font-size: 15px;
+  }
+  @keyframes rise { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-34px); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Buy shares of fishing boats.</h1>
+    <div class="spacer"></div>
+    <div class="readout">Worth <b id="worth">$0</b></div>
+  </header>
+  <div class="row" id="boats"></div>
+  <div class="tray">
+    <div>
+      <div class="label">Your cash</div>
+      <div class="cashnum" id="cashnum">$0</div>
+    </div>
+    <div id="bills"></div>
+  </div>
+</div>
+<script>
+(function () {
+  var cash = 100;
+
+  // Each boat: 8 shares, a catch model, a sink chance. Price follows the
+  // trailing catch, so every price move has a cause the player just watched.
+  var boats = [
+    { name: "Early Bird", hull: "#4a6fa5", mine: 0, trips: 0, hist: [],
+      sinkP: 0, netR: 12,
+      catchFn: function () { return (Math.random() < .5 ? 16 : 24); } },
+    { name: "Big Net", hull: "#5d8a66", mine: 0, trips: 0, hist: [],
+      sinkP: 0, netR: 9,
+      catchFn: function () { var base = 8 + 8 * Math.min(5, Math.floor(this.trips / 2)); return base; } },
+    { name: "Lucky Cat", hull: "#a55d5d", mine: 0, trips: 0, hist: [],
+      sinkP: 0.05, netR: 12,
+      catchFn: function () { var r = Math.random(); return r < .25 ? 0 : (r < .75 ? 8 : 64); } }
+  ];
+
+  var PERIOD = 9000, SEA_X = 150;
+
+  boats.forEach(function (b, i) {
+    b.offset = i * 3000;
+    b.sunk = false;
+    b.status = "At the dock";
+    b.lastPhase = -1;
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      '<svg class="scene" viewBox="0 0 320 150">' +
+        '<rect x="0" y="0" width="320" height="150" fill="#edf3f7"/>' +
+        '<rect x="0" y="95" width="320" height="55" fill="#cfe2ec"/>' +
+        '<path d="M0 96 q20 -5 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#b8d3e1" fill="none" stroke-width="2"/>' +
+        '<rect x="4" y="78" width="46" height="18" fill="#cbbfa4"/>' +
+        '<g class="boat">' +
+          '<path class="hullp" d="M-26 8 L26 8 L18 20 L-18 20 Z" fill="' + b.hull + '"/>' +
+          '<rect x="-10" y="-6" width="20" height="14" rx="2" fill="#f4f1ea" stroke="#c9c2b2"/>' +
+          '<line x1="12" y1="8" x2="12" y2="-18" stroke="#7a7466" stroke-width="2"/>' +
+          '<circle class="net" cx="34" cy="14" r="' + b.netR + '" fill="none" stroke="#7a7466" stroke-width="1.5" stroke-dasharray="3 3" opacity="0"/>' +
+        '</g>' +
+        '<g class="splash" opacity="0"><circle cx="0" cy="0" r="4" fill="#9fc3d6"/><circle cx="10" cy="-4" r="2.5" fill="#9fc3d6"/><circle cx="-9" cy="-3" r="2.5" fill="#9fc3d6"/></g>' +
+      '</svg>' +
+      '<div class="name">' + b.name + "</div>" +
+      '<div class="status"></div>' +
+      '<div class="flags">' + '<div class="flag"></div>'.repeat(8) + "</div>" +
+      '<div class="trade"><span class="price"></span>' +
+        '<button class="buy">Buy</button><button class="sell">Sell</button>' +
+        '<span class="status own" style="margin-left:auto"></span></div>';
+    document.getElementById("boats").appendChild(card);
+    b.el = card;
+    b.boatG = card.querySelector(".boat");
+    b.netEl = card.querySelector(".net");
+    b.splash = card.querySelector(".splash");
+    card.querySelector(".buy").addEventListener("click", function () {
+      var p = price(b);
+      if (!b.sunk && b.mine < 8 && cash >= p) { cash -= p; b.mine++; render(); }
+    });
+    card.querySelector(".sell").addEventListener("click", function () {
+      var p = price(b);
+      if (b.mine > 0) { cash += p; b.mine--; floatTag("+$" + p, b.el); render(); }
+    });
+  });
+
+  function price(b) {
+    if (b.sunk) return 0;
+    if (!b.hist.length) return 20;
+    var last = b.hist.slice(-3);
+    var avg = last.reduce(function (a, c) { return a + c; }, 0) / last.length;
+    return Math.max(2, Math.round(avg * 1.25));
+  }
+
+  function floatTag(text, near) {
+    var f = document.createElement("div");
+    f.className = "float"; f.textContent = text;
+    var r = near.getBoundingClientRect();
+    f.style.left = (r.left + r.width / 2 + window.scrollX) + "px";
+    f.style.top = (r.top + 40 + window.scrollY) + "px";
+    document.body.appendChild(f);
+    setTimeout(function () { f.remove(); }, 1400);
+  }
+
+  function landCatch(b) {
+    var c = b.catchFn();
+    b.trips++;
+    b.hist.push(c);
+    if (b.name === "Big Net" && b.trips % 2 === 0 && b.netR < 22) {
+      b.netR += 2.5;
+      b.netEl.setAttribute("r", b.netR);
+      b.status = "Bought a bigger net";
+    }
+    var per = Math.round(c / 8);
+    b.status = c === 0 ? "Came back empty" : "Catch $" + c + ", $" + per + " a share";
+    if (b.mine > 0 && per > 0) {
+      cash += per * b.mine;
+      floatTag("+$" + (per * b.mine), b.el);
+    }
+    if (b.sinkP && Math.random() < b.sinkP) sink(b);
+  }
+
+  function sink(b) {
+    b.sunk = true;
+    b.status = "Sank in a storm";
+    b.el.classList.add("dead");
+  }
+
+  function tick(now) {
+    boats.forEach(function (b) {
+      if (b.sunk) {
+        b.boatG.setAttribute("transform", "translate(40 " + Math.min(150, 84 + (now - (b.sankAt || (b.sankAt = now))) / 30) + ") rotate(24)");
+        return;
+      }
+      var t = ((now + b.offset) % PERIOD) / PERIOD;
+      var phase = t < .15 ? 0 : t < .6 ? 1 : t < .75 ? 2 : 3;
+      var x = 40, bob = Math.sin(now / 300 + b.offset) * 2;
+      if (phase === 0) x = 40 + (t / .15) * SEA_X;
+      else if (phase === 1) x = 40 + SEA_X;
+      else if (phase === 2) x = 40 + SEA_X - ((t - .6) / .15) * SEA_X;
+      else x = 40;
+      b.boatG.setAttribute("transform", "translate(" + x + " " + (80 + bob) + ")");
+      b.netEl.setAttribute("opacity", phase === 1 ? "1" : "0");
+      b.splash.setAttribute("transform", "translate(" + (x + 34) + " 102)");
+      b.splash.setAttribute("opacity", phase === 1 ? "0.9" : "0");
+      if (phase !== b.lastPhase) {
+        if (phase === 0) b.status = "Heading out";
+        if (phase === 1) b.status = "Fishing";
+        if (phase === 2) b.status = "Coming home";
+        if (phase === 3) landCatch(b);
+        b.lastPhase = phase;
+        render();
+      }
+    });
+    requestAnimationFrame(tick);
+  }
+
+  function render() {
+    var worth = cash;
+    boats.forEach(function (b) {
+      var p = price(b);
+      worth += p * b.mine;
+      b.el.querySelector(".status").textContent = b.status;
+      b.el.querySelector(".price").textContent = "$" + p;
+      b.el.querySelector(".own").textContent = b.mine ? "You own " + b.mine + " of 8" : "8 shares";
+      var flags = b.el.querySelectorAll(".flag");
+      for (var i = 0; i < 8; i++) flags[i].className = "flag" + (i < b.mine ? " mine" : "");
+      b.el.querySelector(".buy").disabled = b.sunk || b.mine >= 8 || cash < p;
+      b.el.querySelector(".sell").disabled = b.mine === 0;
+    });
+    document.getElementById("cashnum").textContent = "$" + cash;
+    document.getElementById("worth").textContent = "$" + worth;
+    var bills = document.getElementById("bills");
+    bills.innerHTML = "";
+    var tens = Math.floor(cash / 10);
+    for (var p2 = 0; p2 < Math.ceil(tens / 10); p2++) {
+      var pile = document.createElement("div");
+      pile.className = "pile";
+      var n = Math.min(10, tens - p2 * 10);
+      for (var j = 0; j < n; j++) pile.appendChild(Object.assign(document.createElement("div"), { className: "bill" }));
+      bills.appendChild(pile);
+    }
+  }
+
+  render();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

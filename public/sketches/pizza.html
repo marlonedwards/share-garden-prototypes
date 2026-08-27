@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pizza Street</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; background: #f6f5f2; color: #1c1c1e;
+    font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 20px 40px; }
+  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+  h1 { font-size: 21px; font-weight: 700; margin: 0; }
+  .spacer { flex: 1; }
+  .readout { font-size: 15px; color: #6d685f; }
+  .readout b { color: #1c1c1e; font-weight: 700; font-size: 17px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .card {
+    flex: 1 1 300px; background: #fff; border: 1px solid #e4e1da;
+    border-radius: 14px; padding: 14px; min-width: 280px;
+  }
+  .card.dead { opacity: .75; }
+  svg.scene { display: block; width: 100%; height: auto; border-radius: 9px; }
+  .name { font-weight: 700; margin: 10px 0 1px; }
+  .status { color: #6d685f; font-size: 14px; min-height: 21px; }
+  .trade { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .price { font-weight: 700; font-size: 16px; min-width: 44px; }
+  button {
+    font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 8px;
+    border: 1px solid #cfcabf; background: #fff; color: #1c1c1e; cursor: pointer;
+  }
+  button:hover:enabled { border-color: #9a938a; }
+  button:disabled { color: #b5b0a6; cursor: default; }
+  .own { margin-left: auto; color: #6d685f; font-size: 14px; }
+  .tray {
+    margin-top: 16px; background: #fff; border: 1px solid #e4e1da; border-radius: 14px;
+    padding: 14px; display: flex; align-items: flex-end; gap: 16px;
+  }
+  .tray .label { color: #6d685f; font-size: 14px; }
+  .tray .cashnum { font-weight: 700; font-size: 18px; }
+  #bills { display: flex; align-items: flex-end; gap: 5px; height: 88px; flex: 1; }
+  .pile { display: flex; flex-direction: column-reverse; gap: 1px; }
+  .bill { width: 34px; height: 7px; background: #7fae8b; border: 1px solid #6b9a77; border-radius: 2px; }
+  .float {
+    position: absolute; font-weight: 700; color: #2e7d44; pointer-events: none;
+    animation: rise 1.4s ease-out forwards; font-size: 15px;
+  }
+  @keyframes rise { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-34px); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Own slices of pizza shops.</h1>
+    <div class="spacer"></div>
+    <div class="readout">Worth <b id="worth">$0</b></div>
+  </header>
+  <div class="row" id="shops"></div>
+  <div class="tray">
+    <div>
+      <div class="label">Your cash</div>
+      <div class="cashnum" id="cashnum">$0</div>
+    </div>
+    <div id="bills"></div>
+  </div>
+</div>
+<script>
+(function () {
+  var cash = 100;
+  var SLICE = 8;
+
+  // rate = customers per second. Price follows the rate the player can see
+  // as walking dots. Every 12 seconds the register splits across 8 slices.
+  var shops = [
+    { name: "Nona's", awn: "#b04a3a", rate: 0.28, drift: +0.006, ovens: 1, mine: 0, register: 0 },
+    { name: "Slice House", awn: "#3a6ab0", rate: 0.42, drift: 0, ovens: 2, mine: 0, register: 0 },
+    { name: "Cold Oven", awn: "#7a7466", rate: 0.34, drift: -0.005, ovens: 1, mine: 0, register: 0 }
+  ];
+
+  shops.forEach(function (s) {
+    s.closed = false;
+    s.status = "Open";
+    s.nextCust = 1000 / s.rate;
+    s.queue = [];
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      '<svg class="scene" viewBox="0 0 320 150">' +
+        '<rect x="0" y="0" width="320" height="150" fill="#f0ede7"/>' +
+        '<rect x="30" y="24" width="260" height="102" fill="#faf8f4" stroke="#ddd8ce"/>' +
+        '<rect class="awning" x="30" y="24" width="260" height="16" fill="' + s.awn + '"/>' +
+        '<rect x="196" y="62" width="52" height="64" fill="#e7e2d8" stroke="#ccc6b8"/>' +
+        '<g class="pie" transform="translate(108 84)"></g>' +
+        '<g class="ovens"></g>' +
+        '<rect x="166" y="86" width="24" height="40" fill="#8a8478"/>' +
+        '<rect x="0" y="126" width="320" height="24" fill="#e3dfd6"/>' +
+        '<g class="walkers"></g>' +
+        '<g class="plywood" opacity="0">' +
+          '<rect x="30" y="40" width="260" height="86" fill="#cbb98f"/>' +
+          '<line x1="30" y1="40" x2="290" y2="126" stroke="#b3a075" stroke-width="6"/>' +
+          '<line x1="290" y1="40" x2="30" y2="126" stroke="#b3a075" stroke-width="6"/>' +
+        '</g>' +
+      '</svg>' +
+      '<div class="name">' + s.name + "</div>" +
+      '<div class="status"></div>' +
+      '<div class="trade"><span class="price"></span>' +
+        '<button class="buy">Buy</button><button class="sell">Sell</button>' +
+        '<span class="own"></span></div>';
+    document.getElementById("shops").appendChild(card);
+    s.el = card;
+    s.pieG = card.querySelector(".pie");
+    s.ovenG = card.querySelector(".ovens");
+    s.walkG = card.querySelector(".walkers");
+    card.querySelector(".buy").addEventListener("click", function () {
+      var p = price(s);
+      if (!s.closed && s.mine < SLICE && cash >= p) { cash -= p; s.mine++; render(); }
+    });
+    card.querySelector(".sell").addEventListener("click", function () {
+      var p = price(s);
+      if (s.mine > 0) { cash += p; s.mine--; floatTag("+$" + p, s.el); render(); }
+    });
+  });
+
+  function price(s) {
+    if (s.closed) return 0;
+    return Math.max(1, Math.round(s.rate * 60));
+  }
+
+  function drawPie(s) {
+    var out = "";
+    for (var i = 0; i < SLICE; i++) {
+      var a0 = (i / SLICE) * Math.PI * 2 - Math.PI / 2;
+      var a1 = ((i + 1) / SLICE) * Math.PI * 2 - Math.PI / 2;
+      var r = 34;
+      var x0 = Math.cos(a0) * r, y0 = Math.sin(a0) * r;
+      var x1 = Math.cos(a1) * r, y1 = Math.sin(a1) * r;
+      var mineSlice = i < s.mine;
+      out += '<path d="M0 0 L' + x0.toFixed(1) + " " + y0.toFixed(1) +
+        " A" + r + " " + r + " 0 0 1 " + x1.toFixed(1) + " " + y1.toFixed(1) + ' Z" fill="' +
+        (mineSlice ? "#d9662c" : "#f0d9a8") + '" stroke="#b3894f" stroke-width="1.5"/>';
+    }
+    s.pieG.innerHTML = out + '<circle r="37" fill="none" stroke="#b3894f" stroke-width="2"/>';
+  }
+
+  function drawOvens(s) {
+    var out = "";
+    for (var i = 0; i < s.ovens; i++) {
+      var x = 202 + (i % 2) * 24, y = 70 + Math.floor(i / 2) * 26;
+      out += '<rect x="' + x + '" y="' + y + '" width="20" height="20" rx="3" fill="#8a8478"/>' +
+             '<circle cx="' + (x + 10) + '" cy="' + (y + 10) + '" r="5" fill="#e8b46a"/>';
+    }
+    s.ovenG.innerHTML = out;
+  }
+
+  function floatTag(text, near) {
+    var f = document.createElement("div");
+    f.className = "float"; f.textContent = text;
+    var r = near.getBoundingClientRect();
+    f.style.left = (r.left + r.width / 2 + window.scrollX) + "px";
+    f.style.top = (r.top + 40 + window.scrollY) + "px";
+    document.body.appendChild(f);
+    setTimeout(function () { f.remove(); }, 1400);
+  }
+
+  var last = performance.now();
+  var splitTimer = 0;
+  function tick(now) {
+    var dt = now - last; last = now;
+    splitTimer += dt;
+    shops.forEach(function (s) {
+      if (s.closed) return;
+      s.rate = Math.max(0, s.rate + s.drift * dt / 1000);
+      if (s.name === "Nona's" && s.ovens === 1 && s.rate > 0.45) { s.ovens = 2; s.status = "Put in another oven"; drawOvens(s); }
+      if (s.name === "Nona's" && s.ovens === 2 && s.rate > 0.62) { s.ovens = 3; s.status = "Put in another oven"; drawOvens(s); }
+      if (s.rate <= 0.02) { close(s); return; }
+      s.nextCust -= dt;
+      if (s.nextCust <= 0 && s.queue.length < 11) {
+        s.nextCust = 1000 / s.rate;
+        s.queue.push({ x: -10 });
+      }
+      // the line forms at the door, so a busy shop is visibly longer
+      s.enterClock = (s.enterClock || 0) + dt;
+      var front = s.queue[0];
+      if (front && s.enterClock >= 2800 / s.ovens && front.x >= 174) {
+        s.enterClock = 0;
+        s.queue.shift();
+        s.register += 8;
+        s.status = "Register $" + s.register;
+      }
+      var out = "";
+      s.queue.forEach(function (w, i) {
+        var target = 176 - i * 13;
+        if (w.x < target) w.x = Math.min(target, w.x + dt * 0.07);
+        out += '<circle cx="' + w.x.toFixed(1) + '" cy="136" r="5" fill="#6d685f"/>';
+      });
+      s.walkG.innerHTML = out;
+    });
+    if (splitTimer >= 12000) {
+      splitTimer = 0;
+      shops.forEach(function (s) {
+        if (s.closed || s.register < SLICE) return;
+        var per = Math.floor(s.register / SLICE);
+        s.register -= per * SLICE;
+        s.status = "Register split, $" + per + " a slice";
+        if (s.mine > 0) { cash += per * s.mine; floatTag("+$" + (per * s.mine), s.el); }
+      });
+      render();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function close(s) {
+    s.closed = true;
+    s.status = "Closed for good";
+    s.el.classList.add("dead");
+    s.el.querySelector(".plywood").setAttribute("opacity", "1");
+    s.walkG.innerHTML = "";
+    render();
+  }
+
+  function render() {
+    var worth = cash;
+    shops.forEach(function (s) {
+      var p = price(s);
+      worth += p * s.mine;
+      s.el.querySelector(".status").textContent = s.status;
+      s.el.querySelector(".price").textContent = "$" + p;
+      s.el.querySelector(".own").textContent = s.mine ? "You own " + s.mine + " of 8" : "8 slices";
+      s.el.querySelector(".buy").disabled = s.closed || s.mine >= SLICE || cash < p;
+      s.el.querySelector(".sell").disabled = s.mine === 0;
+      drawPie(s);
+    });
+    document.getElementById("cashnum").textContent = "$" + cash;
+    document.getElementById("worth").textContent = "$" + worth;
+    var bills = document.getElementById("bills");
+    bills.innerHTML = "";
+    var tens = Math.floor(cash / 10);
+    for (var p2 = 0; p2 < Math.ceil(tens / 10); p2++) {
+      var pile = document.createElement("div");
+      pile.className = "pile";
+      var n = Math.min(10, tens - p2 * 10);
+      for (var j = 0; j < n; j++) pile.appendChild(Object.assign(document.createElement("div"), { className: "bill" }));
+      bills.appendChild(pile);
+    }
+  }
+
+  shops.forEach(function (s) { drawOvens(s); });
+  render();
+  setInterval(render, 2000);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
