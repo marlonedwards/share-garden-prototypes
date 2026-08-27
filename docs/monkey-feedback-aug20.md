@@ -24,6 +24,22 @@ summary. The spec that follows it is `docs/monkey-spec.md`.
 > the three levels starting with just cash and one stock to trade. Level 2
 > has 3 stocks. Level 3 has 10 stocks.
 
+Two follow-up messages (recovered August 25; the doc originally cut off
+before these, and Monkey Trade v1 and v2 were built without them):
+
+> The summary at the end of each level is where the learning will happen.
+> Showing that they did better or worse than random is key. Perhaps it
+> could be fun to incorporate a Random Monkey character whom you place
+> against. So at the end of every round, it says "you did X better or
+> worse than Random Monkey."
+>
+> AI might also be able to offer feedback based on the sequence of their
+> trades. Maybe three bullet point comments so it's easy to consume.
+
+What Jared asked for was ONE Random Monkey resolved in the end summary,
+not a troop of dart throwers as the play surface. The learning lives in
+the end-of-level summary.
+
 ## Meeting notes, verbatim from Marlon
 
 - we'll build off of the Floor game
