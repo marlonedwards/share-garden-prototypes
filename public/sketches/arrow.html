@@ -71,7 +71,7 @@
 <body>
 <div class="wrap">
   <h1>Arrow</h1>
-  <p class="sub">Pro Trader: the learning goals in nine beats. Tap through.</p>
+  <p class="sub">What each part of the game does. Tap through.</p>
 
   <div class="phone" id="phone"></div>
 
@@ -120,8 +120,8 @@
 
   var steps = [
     {
-      goal: "Pro Trader",
-      note: "You manage other people's money. The client and the deadline give the target its weight.",
+      goal: "Start of a level",
+      note: "You get a client's portfolio and a money goal with a deadline. This level: turn Dev's $9,900 into $12,000 by June 2022.",
       app: '<div class="appname">Arrow · Pro Trader</div>' +
         '<div class="big">Client 1: Dev</div>' +
         '<div class="muted">Bought the GameStop squeeze. His account is yours to run now.</div>' +
@@ -133,8 +133,8 @@
         '<button class="abtn">Open his portfolio</button>',
     },
     {
-      goal: "The portfolio is the chart",
-      note: "The home graph is the whole account, not one stock: one line for how Dev is doing, the pie for why.",
+      goal: "The portfolio screen",
+      note: "The main chart is the whole portfolio's value. The pie shows what he owns. Right now 58 percent is in one stock.",
       app: '<div class="appname">Dev\'s portfolio</div>' +
         '<div class="big">$9,900</div><div class="muted up">+$34 today · Market open</div>' +
         spark([9840, 9862, 9851, 9878, 9912, 9900], "#4ade80") +
@@ -145,8 +145,8 @@
         '<span class="dot" style="background:#4ade80"></span><b>Cash</b> $1,120</div>',
     },
     {
-      goal: "A normal day, a nudge on top",
-      note: "The push lands over a normal screen: the portfolio, the movers, and the nudge all visible at once. One tap starts the chase; the fill is the day's high.",
+      goal: "During the market day",
+      note: "The market is open and prices move live. A notification and the top movers list tempt you to trade. Here you buy $500 of AMC at its high of the day.",
       app: '<div class="appname">Markets · Tuesday</div>' +
         '<div class="big">$9,940</div><div class="muted up">+0.4% today</div>' +
         spark([9900, 9895, 9915, 9908, 9932, 9940], "#4ade80") +
@@ -158,8 +158,8 @@
         '<div class="muted" style="margin-top:8px">You tap AMC. You buy $500 at $14.20, the day\'s top.</div>',
     },
     {
-      goal: "The ladder sells itself",
-      note: "Robinhood's real options design: strikes, small prices, big green maybes. Reached from the stock page, never offered.",
+      goal: "Options",
+      note: "After some trades the game offers options, shown the way Robinhood really shows them. You spend $180 on a call betting GameStop rises by Friday.",
       app: '<div class="appname">GameStop $190 · options · Friday</div>' +
         '<div class="notif"><b>Options unlocked for this account.</b></div>' +
         '<div class="card"><div class="row"><span>$200 call</span><span class="sp"></span><span>$4.10</span></div>' +
@@ -168,11 +168,11 @@
         '<div class="row muted"><span>Max profit <span class="up">Unlimited</span> · Max loss $180</span></div></div>' +
         '<div class="card"><div class="row"><span>$220 call</span><span class="sp"></span><span>$0.90</span></div>' +
         '<div class="row muted"><span>Max profit <span class="up">Unlimited</span> · Max loss $90</span></div></div>' +
-        '<div class="muted" style="margin-top:8px">Unlimited is doing the selling. You buy the $210 for $180.</div>',
+        '<div class="muted" style="margin-top:8px">You buy the $210 call for $180.</div>',
     },
     {
-      goal: "Decay, paid in your own dollars",
-      note: "Four days of watching the option bleed teaches decay without the word. The chase fades the same week.",
+      goal: "The option loses",
+      note: "The option loses value every day and expires worthless on Friday. The $180 is gone. The AMC buy is down $81 the same week.",
       app: '<div class="appname">Your option</div>' +
         '<div class="big down">$0</div><div class="muted">GameStop $210 call, expired</div>' +
         spark([180, 165, 95, 60, 40, 0], "#ef5350") +
@@ -183,8 +183,8 @@
         '<div class="muted" style="margin-top:8px">AMC drifted back to $11.90. The chase is down $81.</div>',
     },
     {
-      goal: "The close is breathing room, not a pause",
-      note: "Prices freeze at 4:00 but the clock keeps rolling. Queued orders fill at the open. Live, no pausing, and calm still gets its moment.",
+      goal: "After the close",
+      note: "Prices stop at 4:00. You calmly rebalance: sell most of the GameStop and spread the money out. The orders fill at the next open.",
       app: '<div class="appname">After hours · 4:02</div>' +
         '<div class="big">Rebalance for open</div>' +
         '<div class="card"><div class="row"><span class="down">Sell 20 GameStop</span><span class="sp"></span><span>$3,640</span></div>' +
@@ -195,8 +195,8 @@
         '<button class="abtn">Queue for open</button>',
     },
     {
-      goal: "Holding costs a second a day",
-      note: "Untouched days fly. The 2022 fall arrives, the movers list begs, and doing nothing is a choice the game honors.",
+      goal: "Time passes",
+      note: "Days you do not trade go by in about a second each. The market falls 12 percent in 2022 and you hold through it.",
       app: '<div class="appname">Fast forward</div>' +
         '<div class="big">14 months pass</div>' +
         '<div class="days">' + new Array(60).fill(0).map(function (_, i) {
@@ -208,8 +208,8 @@
         '<div class="muted" style="margin-top:6px">You hold. Each quiet day takes one second.</div>',
     },
     {
-      goal: "The proof, not a lecture",
-      note: "Counterfactuals in your own dollars, a percentile against simulated traders, three true sentences. Nothing else is said.",
+      goal: "End of the level",
+      note: "You hit the goal. The card compares you to not trading at all: rebalancing once and holding would have made $761 more. That $761 is what your trades cost.",
       app: '<div class="appname">June 2022, deadline</div>' +
         '<div class="big up">$12,410</div><div class="muted">Tuition covered. Client kept.</div>' +
         '<div class="card"><div class="row"><span>You</span><span class="sp"></span><b>$12,410</b></div>' +
@@ -222,8 +222,8 @@
         '<div class="bullet">The one rebalance at the close made the goal: $3,820 of it.</div>',
     },
     {
-      goal: "No sermon, next client",
-      note: "The thesis is never said on screen. The score stands, and the next account arrives.",
+      goal: "Next level",
+      note: "No lesson text. You just get the next client. Each client teaches a different mistake; this one has sat in cash for nine years.",
       app: '<div class="appname">Arrow · Pro Trader</div>' +
         '<div class="big">Client 2: Priya</div>' +
         '<div class="muted">Retired. Nine years all cash, losing to prices.</div>' +
@@ -231,7 +231,7 @@
         '<div class="row muted"><span>January 2013</span></div></div>' +
         '<div class="card"><div class="row"><span>Target</span><span class="sp"></span><b>$60,000</b></div>' +
         '<div class="row muted"><span>by 2018</span></div></div>' +
-        '<div class="goalchip">All cash is also a bet.</div>' +
+        '<div class="goalchip">Cash loses to prices over time.</div>' +
         '<button class="abtn">Open her portfolio</button>',
     },
   ];
@@ -251,7 +251,7 @@
     steps.forEach(function (_, idx) {
       document.getElementById("s" + idx).className = "screen" + (idx === i ? " on" : "");
     });
-    caption.querySelector("b").textContent = "Learning goal: " + steps[i].goal;
+    caption.querySelector("b").textContent = steps[i].goal;
     caption.querySelector("span").textContent = steps[i].note;
     dots.textContent = (i + 1) + " of " + steps.length;
     document.getElementById("back").disabled = i === 0;
