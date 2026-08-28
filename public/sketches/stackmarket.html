@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StackMarket, one life</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    overflow: hidden; color: #f0eee9; transition: background 2s;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .chip { background: #17191d; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+  #logo { position: absolute; left: 24px; top: 18px; font-size: 20px; font-weight: 800; padding: 9px 16px; }
+  #logo span { color: #4ade80; }
+  #agechip { position: absolute; left: 24px; top: 74px; padding: 8px 16px; }
+  #agechip .a { font-size: 26px; font-weight: 800; }
+  #agechip .y { font-size: 12.5px; color: #9aa2ac; }
+  #topstat { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); display: flex; gap: 26px; padding: 10px 24px; }
+  #topstat .l { font-size: 12.5px; color: #9aa2ac; }
+  #topstat .v { font-size: 22px; font-weight: 800; }
+  #stage { position: absolute; right: 24px; top: 18px; padding: 10px 16px; font-size: 13.5px; }
+  #stage b { color: #f5c518; }
+  #stacks { position: absolute; left: 10px; right: 330px; top: 120px; bottom: 205px; display: flex; align-items: flex-end; justify-content: space-evenly; }
+  .stackcol { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+  .tag { background: #17191d; border-radius: 9px; padding: 3px 9px; text-align: center; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+  .coins { display: flex; flex-direction: column-reverse; align-items: center; min-height: 10px; }
+  .coin { width: 68px; height: 19px; border-radius: 50% / 42%; margin-top: -8px; border: 1px solid rgba(0,0,0,.35); box-shadow: inset 0 3px 0 rgba(255,255,255,.35), 0 2px 2px rgba(0,0,0,.25); }
+  .coin.top { display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; color: rgba(0,0,0,.55); }
+  .coin.need { outline: 2.5px solid #ffffff; outline-offset: -1px; }
+  .coin.gone { outline: 2.5px solid #ffb14e; outline-offset: -1px; }
+  .sharewrap { display: flex; flex-direction: column-reverse; align-items: center; border: 1px solid rgba(255,255,255,.30); border-radius: 7px; padding: 2px 3px 1px; margin-top: 3px; }
+  .sharewrap.gone { border-color: #ffb14e; border-width: 2px; }
+  .coin.ghost { background: transparent !important; border: 1.5px dashed rgba(255,255,255,.45); box-shadow: none; color: #9aa2ac; font-size: 10px; font-weight: 600; }
+  .statrow { display: flex; gap: 6px; margin: 6px 0 2px; }
+  .stat1 { flex: 1; background: #23262c; border-radius: 8px; padding: 5px 8px; font-size: 11.5px; color: #9aa2ac; }
+  .stat1 b { display: block; font-size: 13px; color: #f0eee9; }
+  .blurval { filter: blur(5px); }
+  .stat1 b[data-learn] { cursor: pointer; }
+  .plate { margin-top: 6px; background: #17191d; border-radius: 8px; padding: 3px 10px; font-size: 12px; font-weight: 700; position: relative; }
+  .plate .new {
+    position: absolute; top: -10px; right: -14px; background: #f5c518; color: #3a2c00;
+    font-size: 10px; font-weight: 800; border-radius: 999px; padding: 1px 7px; transform: rotate(8deg);
+  }
+  .stackcol.sel .plate { outline: 2px solid #4ade80; }
+  #panel { position: absolute; right: 20px; top: 74px; width: 292px; padding: 14px 16px; }
+  #panel h2 { margin: 0; font-size: 18px; font-weight: 800; }
+  #panel .px { font-size: 22px; font-weight: 800; }
+  #panel .sub2 { color: #9aa2ac; font-size: 12.5px; margin-bottom: 4px; }
+  #panel svg { display: block; width: 100%; height: 96px; margin: 4px 0 6px; }
+  #own { display: flex; gap: 14px; font-size: 12.5px; color: #9aa2ac; margin: 4px 0 6px; }
+  #own b { display: block; font-size: 14.5px; color: #f0eee9; }
+  #qty { width: 100%; margin: 2px 0 6px; }
+  #qtyline { font-size: 12.5px; color: #9aa2ac; margin-bottom: 6px; }
+  #qtyline b { color: #f0eee9; }
+  #tbtns { display: flex; gap: 8px; }
+  #tbtns button { font: inherit; font-size: 14.5px; font-weight: 800; flex: 1; padding: 9px 0; border-radius: 10px; border: none; cursor: pointer; }
+  #buy { background: #2fbf5f; color: #06210f; }
+  #sellb { background: #e8483f; color: #2b0805; }
+  #tbtns button:disabled { opacity: .35; cursor: default; }
+  #note {
+    position: absolute; left: 22px; bottom: 26px; width: 200px; padding: 13px;
+    background: #f0dc82; color: #4a3d17; border-radius: 3px;
+    transform: rotate(-5deg); box-shadow: 0 4px 10px rgba(0,0,0,.3);
+    font-size: 14px; font-weight: 600; line-height: 1.35;
+  }
+  #owns { position: absolute; left: 250px; bottom: 30px; display: flex; gap: 8px; }
+  #owns .tokn { background: #17191d; border-radius: 8px; padding: 5px 11px; font-size: 12.5px; color: #f5c518; font-weight: 700; }
+  #toast {
+    position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%);
+    background: #17191d; border-radius: 10px; padding: 8px 18px; font-size: 14px;
+    opacity: 0; transition: opacity .3s; max-width: 60vw; text-align: center; z-index: 6;
+  }
+  .flycoin { position: fixed; z-index: 7; transition: all .55s cubic-bezier(.3,.7,.4,1); pointer-events: none; }
+  #event {
+    position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+    width: 390px; background: #f7f0dd; color: #26221a; border-radius: 8px;
+    padding: 18px 20px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.5); display: none; z-index: 5;
+  }
+  #event .k { font-size: 12.5px; font-weight: 800; letter-spacing: .4px; color: #8a5a20; }
+  #event h2 { margin: 6px 0 4px; font-size: 20px; }
+  #event p { margin: 0 0 12px; font-size: 14px; color: #5a5342; }
+  #event .btns { display: flex; gap: 8px; flex-direction: column; }
+  #event button { font: inherit; font-size: 14.5px; font-weight: 700; padding: 10px 0; border-radius: 8px; border: none; cursor: pointer; }
+  #event button.pri { background: #2e7d44; color: #fff; }
+  #event button.sec { background: #efe7d2; color: #26221a; border: 1.5px solid #b3ab97; }
+  #event button:disabled { opacity: .4; cursor: default; }
+  #score { display: none; position: absolute; inset: 0; background: rgba(20,16,10,.72); z-index: 8; }
+  #score .card {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 470px; max-height: 88vh; overflow: auto; background: #f7f0dd; color: #26221a;
+    border-radius: 10px; padding: 22px 24px;
+  }
+  #score h2 { margin: 0 0 2px; font-size: 24px; }
+  #score .big { font-size: 30px; font-weight: 800; margin-bottom: 10px; }
+  #score .line { font-size: 14px; padding: 7px 0; border-top: 1px solid #ddd3ba; }
+  #score button { font: inherit; font-size: 15px; font-weight: 800; width: 100%; padding: 11px 0; margin-top: 14px; border-radius: 9px; border: none; background: #2e7d44; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div id="logo" class="chip"><span>Stack</span>Market</div>
+  <div id="agechip" class="chip"><span class="a" id="age">Age 18</span> <span class="y" id="year">2026</span> <span class="y" id="gen"></span></div>
+  <div id="topstat" class="chip">
+    <div><div class="l">Everything you have</div><div class="v" id="pv">$1,000</div></div>
+    <div><div class="l">Saved each payday</div><div class="v" id="sal" style="color:#4ade80">$640</div></div>
+  </div>
+  <div id="stage" class="chip">Level <b id="lvln">1</b> · <span id="lvlname">Broke and brave</span></div>
+  <div id="stacks"></div>
+  <div id="panel" class="chip"></div>
+  <div id="note">Next: <span id="goal">build a cash cushion</span></div>
+  <div id="notes" class="chip" style="position:absolute;left:22px;bottom:130px;padding:7px 13px;font-size:13px;cursor:pointer;display:none">Your notes</div>
+  <div id="owns"></div>
+  <div id="toast"></div>
+  <div id="ff" class="chip" style="position:absolute;right:24px;bottom:130px;padding:8px 14px;font-size:13px;cursor:pointer;user-select:none">Hold: fast forward</div>
+  <div id="event"><div class="k" id="ek"></div><h2 id="eh"></h2><p id="ep"></p><div class="btns" id="eb"></div></div>
+  <div id="score"><div class="card" id="scorecard"></div></div>
+<script>
+(function () {
+  var fast = /fast/.test(location.search);
+  var TICK_MS = 120;
+  var TICKS_PER_YEAR = fast ? 3 : 85;
+
+  // unlockAge: when the asset appears on the desk. hype: the neighbor's line.
+  var assets = [
+    { tk: "CASH", name: "Cash", color: "#3fae6b", px: 100, sh: 10, cash: true, unlockAge: 18 },
+    { tk: "AAPL", name: "Apple", color: "#d9d9de", px: 45, sh: 0, vol: 0.20, unlockAge: 18, pe: 18, grow: "9% a year", debtHigh: false, gnum: 0.09 },
+    { tk: "MSFT", name: "Microsoft", color: "#2f7de1", px: 80, sh: 0, vol: 0.17, unlockAge: 18, pe: 22, grow: "11% a year", debtHigh: false, gnum: 0.11 },
+    { tk: "FUND", name: "The Everything Fund", color: "linear-gradient(100deg,#e23b3b,#f5a11c,#f2c11d,#8ec91e,#2f7de1,#9b40d8)", px: 50, sh: 0, vol: 0.09, fund: true, unlockAge: 22 },
+    { tk: "TSLA", name: "Tesla", color: "#e23b3b", px: 22, sh: 0, vol: 0.45, unlockAge: 26, pe: 92, grow: "40% a year", debtHigh: true, gnum: 0.4,
+      hype: "My neighbor swears Tesla only goes up. He would not stop talking at the fence." },
+    { tk: "NVDA", name: "NVIDIA", color: "#8ec91e", px: 14, sh: 0, vol: 0.38, unlockAge: 30, pe: 60, grow: "35% a year", debtHigh: false, gnum: 0.35,
+      hype: "The neighbor says everyone at his office is buying NVIDIA. Everyone." },
+    { tk: "AMZN", name: "Amazon", color: "#f5a11c", px: 60, sh: 0, vol: 0.28, unlockAge: 34, pe: 45, grow: "20% a year", debtHigh: true, gnum: 0.2,
+      hype: "The neighbor says Amazon is about to change everything. Again." },
+    { tk: "NFLX", name: "Netflix", color: "#d8202f", px: 90, sh: 0, vol: 0.34, unlockAge: 38, pe: 38, grow: "18% a year", debtHigh: true, gnum: 0.18,
+      hype: "The neighbor canceled cable and says Netflix is the future of everything." },
+    { tk: "META", name: "Meta", color: "#9b40d8", px: 110, sh: 0, vol: 0.32, unlockAge: 44, pe: 28, grow: "15% a year", debtHigh: false, gnum: 0.15,
+      hype: "The neighbor's kid built him an account. Now he says Meta cannot lose." },
+    { tk: "GOOG", name: "Google", color: "#f2c11d", px: 70, sh: 0, vol: 0.22, unlockAge: 48, pe: 24, grow: "14% a year", debtHigh: false, gnum: 0.14,
+      hype: "The neighbor asked it a question and now says Google knows everything." },
+  ];
+  var HOME = { tk: "HOME", name: "Your house", color: "#b07b4f", px: 500, sh: 0, home: true };
+  assets.forEach(function (s) { s.hist = [s.px]; s.newUntil = 0; s.marks = []; s.histStartYear = 2026; s.basisCost = 0; s.basisSh = 0; });
+
+  var inherited = 0, generation = 1;
+  try {
+    var legacy = JSON.parse(localStorage.getItem("stackmarket-legacy") || "null");
+    if (legacy && legacy.gen) { generation = legacy.gen; inherited = legacy.amount; }
+  } catch (e) {}
+
+  var age = 18, tick = 0, year = 2026, salary = 2000, paused = false, over = false;
+  var hasCar = false, hasHome = false, paidTuition = null, debt = 0, retiredAt = null;
+  var autoInvest = null, autoTotal = 0;
+  var mortgage = 0;
+  var tips = [];   // {tk, px, invested}
+  var stats = { emergencies: 0, cashCovered: 0, forcedSell: 0, panicSold: false, concMax: 0, investedSum: 0, investedN: 0 };
+  var selTk = "AAPL", qty = 1;
+  var knowledge = { pe: false, grow: false, debt: false };
+  var optionBet = null, optionResult = null;
+
+  function money(n) { return "$" + Math.round(n).toLocaleString("en-US"); }
+  function byTk(tk) { return tk === "HOME" ? HOME : assets.filter(function (s) { return s.tk === tk; })[0]; }
+  function unlocked() { return assets.filter(function (s) { return age >= s.unlockAge; }).concat(hasHome ? [HOME] : []); }
+  function cashRow() { return assets[0]; }
+  function cashDollars() { return cashRow().sh * 100; }
+  function worth() {
+    return assets.reduce(function (a, s) { return a + s.sh * s.px; }, 0) + (hasHome ? HOME.sh * HOME.px : 0) - debt - mortgage;
+  }
+  function liquidWorth() {
+    return assets.reduce(function (a, s) { return a + s.sh * s.px; }, 0) - debt;
+  }
+  function spendCash(amount) {
+    var have = cashDollars();
+    var pay = Math.min(have, amount);
+    cashRow().sh = Math.max(0, Math.round((cashRow().sh - pay / 100) * 100) / 100);
+    if (pay < amount) debt += amount - pay;
+  }
+  function addCash(amount) {
+    var d = Math.min(debt, amount);
+    debt -= d; amount -= d;
+    cashRow().sh = Math.round((cashRow().sh + amount / 100) * 100) / 100;
+  }
+  function sellToRaise(amount) {
+    var order = assets.slice(1).sort(function (a, b) { return b.sh * b.px - a.sh * a.px; });
+    for (var i = 0; i < order.length && cashDollars() < amount; i++) {
+      var s = order[i];
+      while (s.sh >= 1 && cashDollars() < amount) {
+        if (s.basisSh > 0) { s.basisCost *= Math.max(0, 1 - 1 / s.basisSh); s.basisSh = Math.max(0, s.basisSh - 1); }
+        s.sh = Math.round((s.sh - 1) * 100) / 100;
+        addCash(s.px);
+        stats.forcedSell++;
+      }
+    }
+  }
+
+  // ---- coin flight: a coin visually swaps between a stack and the cash pile
+  function flyCoin(fromTk, toTk, color) {
+    var from = document.querySelector('[data-tk="' + fromTk + '"] .coins');
+    var to = document.querySelector('[data-tk="' + toTk + '"] .coins');
+    if (!from || !to) return;
+    var a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    var c = document.createElement("div");
+    c.className = "coin flycoin";
+    c.style.background = color;
+    c.style.left = (a.left + a.width / 2 - 34) + "px";
+    c.style.top = (a.top + 10) + "px";
+    document.body.appendChild(c);
+    requestAnimationFrame(function () {
+      c.style.left = (b.left + b.width / 2 - 34) + "px";
+      c.style.top = (b.top - 6) + "px";
+    });
+    setTimeout(function () { c.remove(); }, 600);
+  }
+
+  var yearFactors = {};
+  function rollYear() {
+    var crash = (age === 52) || Math.random() < 0.10;
+    assets.slice(1).forEach(function (s) {
+      var r;
+      if (crash) {
+        var sev = (0.15 + Math.random() * 0.25) * (s.fund ? 0.6 : 1) * (s.debtHigh ? 1.5 : 1) * ((s.pe || 25) > 50 ? 1.25 : 1);
+        r = -Math.min(0.75, sev);
+      } else {
+        var mu = s.fund ? 0.07 : 0.03 + (s.gnum || 0.1) * 0.35 - Math.max(0, (s.pe || 25) - 25) * 0.0015;
+        r = mu + (Math.random() + Math.random() + Math.random() - 1.5) * s.vol;
+      }
+      yearFactors[s.tk] = Math.pow(1 + r, 1 / TICKS_PER_YEAR);
+    });
+    yearFactors.HOME = Math.pow(1.04, 1 / TICKS_PER_YEAR);
+    return crash;
+  }
+
+  function ev(kind, title, body, buttons) {
+    paused = true;
+    document.getElementById("ek").textContent = kind;
+    document.getElementById("eh").textContent = title;
+    document.getElementById("ep").textContent = body;
+    var eb = document.getElementById("eb");
+    eb.innerHTML = "";
+    buttons.forEach(function (b) {
+      var el = document.createElement("button");
+      el.className = b.pri ? "pri" : "sec";
+      el.textContent = b.label;
+      if (b.disabled) el.disabled = true;
+      el.addEventListener("click", function () {
+        document.getElementById("event").style.display = "none";
+        b.fn();
+        paused = false;
+        selectRefresh();
+      });
+      eb.appendChild(el);
+    });
+    document.getElementById("event").style.display = "block";
+  }
+
+  function emergency(cost, what) {
+    stats.emergencies++;
+    var covered = cashDollars() >= cost;
+    if (covered) stats.cashCovered++;
+    ev("EMERGENCY", what + ": " + money(cost),
+      covered ? "You have the cash. This is what the cushion was for."
+        : "Not enough cash. Something gets sold today, at today's price, good day or not.",
+      [
+        { label: "Pay from cash", pri: true, disabled: !covered, fn: function () { spendCash(cost); } },
+        { label: "Sell stocks to pay it", fn: function () { sellToRaise(cost); spendCash(cost); } },
+      ]);
+  }
+
+  function neighborTip(s) {
+    ev("OVER THE FENCE", "The neighbor has a stock tip.", s.hype + " (" + s.name + " is on your desk now.)",
+      [
+        { label: "Take a look", pri: true, fn: function () { selTk = s.tk; tips.push({ tk: s.tk, px: s.px, invested: 0 }); } },
+        { label: "Nod politely", fn: function () { tips.push({ tk: s.tk, px: s.px, invested: 0 }); } },
+      ]);
+  }
+
+  var lifeEvents = {
+    19: function () { emergency(400, "Your laptop dies"); },
+    22: function () {
+      ev("FIRST REAL JOB", "The job offers the Everything Fund.", "A little of every company in one coin. It can auto-invest a fifth of each payday before you ever see it.",
+        [
+          { label: "Auto-invest every payday", pri: true, fn: function () { autoInvest = true; } },
+          { label: "I will do it myself", fn: function () { autoInvest = false; } },
+        ]);
+    },
+    23: function () {
+      ev("THE SHOP", "A car: $3,000", "The better job across town needs it. Salary goes up $2,000 a year.",
+        [
+          { label: "Buy the car", pri: true, fn: function () { if (cashDollars() < 3000) sellToRaise(3000); spendCash(3000); hasCar = true; } },
+          { label: "Keep the bus pass", fn: function () {} },
+        ]);
+    },
+    27: function () { emergency(1500, "A medical bill"); },
+    33: function () {
+      ev("THE SHOP", "A house: $100,000. You put $20,000 down.", "The bank carries the other $80,000 and you owe it for years. The house grows about 4% a year, and living costs drop. Rent stays rent.",
+        [
+          { label: "Sign the mortgage", pri: true, disabled: liquidWorth() < 20000, fn: function () { if (cashDollars() < 20000) sellToRaise(20000); spendCash(20000); hasHome = true; HOME.sh = 40; HOME.px = 2500; mortgage = 80000; } },
+          { label: "Keep renting", fn: function () {} },
+        ]);
+    },
+    38: function () { optionsMoment(); },
+    41: function () { emergency(2500, "The roof gives out"); },
+    55: function () { emergency(3500, "A knee operation"); },
+    47: function () {
+      ev("FAMILY", "Tuition: $15,000", "The kid got in.",
+        [
+          { label: "Pay it", pri: true, disabled: liquidWorth() < 15000, fn: function () { if (cashDollars() < 15000) sellToRaise(15000); spendCash(15000); paidTuition = true; } },
+          { label: "They take loans", fn: function () { paidTuition = false; } },
+        ]);
+    },
+    60: function () {
+      if (worth() >= 60000)
+        ev("A CHOICE", "Retire early?", "You have " + money(worth()) + ". Enough to stop at 60.",
+          [
+            { label: "Retire now", pri: true, fn: function () { retiredAt = 60; endRun(); } },
+            { label: "Five more years", fn: function () {} },
+          ]);
+    },
+  };
+
+  var CLASS_COST = 250;
+  var LEARN = {
+    pe: ["Price against profit",
+      "This number is what you pay for every $1 the company earns in a year. Under $25 is calm. Over $50 means you are paying for a story.",
+      "Big number means everyone wants it. You want what everyone wants, right?"],
+    grow: ["Growing",
+      "How fast the company's sales grow each year. Fast growth can earn a high price. Fast growth plus a wild price is how bubbles look.",
+      "Growing means going up. It's math."],
+    debt: ["Debt",
+      "What the company owes. High debt is fine in good years and fatal in bad ones. It is why some stocks die in a crash and others just dip.",
+      "Debt means they're aggressive. Aggressive wins."],
+  };
+  var classSpent = 0, neighborAsks = 0;
+  function learnStat(key) {
+    var L = LEARN[key];
+    if (knowledge[key]) {
+      ev("FROM YOUR NOTES", L[0], L[1], [{ label: "Got it", pri: true, fn: function () {} }]);
+      return;
+    }
+    ev("YOU CANNOT READ THIS YET", L[0], "The number is a blur to you. A night class would fix that for every stock, forever. Or the neighbor will explain it for free.",
+      [
+        { label: "Night class: $" + CLASS_COST, pri: true, disabled: cashDollars() < CLASS_COST,
+          fn: function () {
+            spendCash(CLASS_COST);
+            classSpent += CLASS_COST;
+            knowledge[key] = true;
+            setTimeout(function () { ev("THE CLASS PAID OFF", L[0], L[1] + " You can read this on every stock now.", [{ label: "Got it", pri: true, fn: function () {} }]); }, 250);
+          } },
+        { label: "Ask the neighbor (free)",
+          fn: function () {
+            neighborAsks++;
+            setTimeout(function () { ev("OVER THE FENCE", L[0] + ", according to the neighbor", '"' + L[2] + '" The number is still a blur to you.', [{ label: "Thanks, I guess", pri: true, fn: function () {} }]); }, 250);
+          } },
+      ]);
+  }
+
+  function optionsMoment() {
+    var hot = assets.slice(1).filter(function (x) { return age >= x.unlockAge && !x.fund; })
+      .sort(function (a, b) { return b.vol - a.vol; })[0];
+    ev("OVER THE FENCE", "The neighbor turned $500 into $5,000.", "Options, he says. There is a shiny new button in the app. Max profit: unlimited. Max loss: $500.",
+      [
+        { label: "Try it: $500 on a " + hot.tk + " call", pri: true, disabled: cashDollars() < 500,
+          fn: function () { spendCash(500); optionBet = { tk: hot.tk, resolveAge: age + 1 }; } },
+        { label: "Not for me", fn: function () { optionResult = "declined"; } },
+      ]);
+  }
+
+  function crashMoment() {
+    assets.slice(1).forEach(function (s) {
+      s.px = Math.max(1, s.px * (s.fund ? 0.88 : 0.8));
+      s.hist.push(s.px);
+    });
+    selectRefresh();
+    ev("THE CRASH", "Markets fall hard.", "The neighbor sold everything this morning and will not stop talking about it.",
+      [
+        { label: "Hold", pri: true, fn: function () {} },
+        { label: "Sell everything", fn: function () { stats.panicSold = true; assets.slice(1).forEach(function (s) { addCash(s.sh * s.px); s.sh = 0; }); } },
+      ]);
+  }
+
+  function stageOf(a) {
+    if (a < 22) return [1, "Broke and brave", "linear-gradient(180deg,#54514e,#3b3936)"];
+    if (a < 30) return [2, "First paychecks", "linear-gradient(180deg,#7a5c3a,#57402a)"];
+    if (a < 45) return [3, "The building years", "linear-gradient(180deg,#5d6b46,#3f4a30)"];
+    if (a < 60) return [4, "The heavy years", "linear-gradient(180deg,#4d5a70,#333d4d)"];
+    return [5, "The landing", "linear-gradient(180deg,#8a5e46,#4f3527)"];
+  }
+  function goalOf(a) {
+    if (a < 22) return "build a cash cushion";
+    if (a < 30) return "the car, then invest every payday";
+    if (a < 45) return "the house at 33";
+    if (a < 60) return "tuition is coming at 47";
+    return "land this thing";
+  }
+  function salaryOf(a) {
+    var base = a < 22 ? 2000 : a < 30 ? 6000 : a < 45 ? 10000 : a < 60 ? 12000 : 8000;
+    return base + (hasCar ? 2000 : 0);
+  }
+  function netOf(a) {
+    var s = salaryOf(a);
+    return s - Math.round(s * (hasHome ? 0.5 : 0.68));
+  }
+
+  function step() {
+    if (paused || over) return;
+    tick++;
+    assets.slice(1).forEach(function (s) {
+      s.px = Math.max(1, s.px * (yearFactors[s.tk] || 1));
+      if (tick % 2 === 0) {
+        s.hist.push(s.px);
+        if (s.hist.length > 900) {
+          s.hist.shift();
+          s.histStartYear += 2 / TICKS_PER_YEAR;
+          s.marks.forEach(function (m) { m.i--; });
+          s.marks = s.marks.filter(function (m) { return m.i >= 0; });
+        }
+      }
+    });
+    if (hasHome) HOME.px *= yearFactors.HOME || 1;
+    var w = worth();
+    var stocksVal = assets.slice(1).reduce(function (a, s2) { return a + s2.sh * s2.px; }, 0);
+    var liq = stocksVal + cashDollars();
+    var invested = liq > 0 ? stocksVal / liq : 0;
+    stats.investedSum += Math.max(0, Math.min(1, invested)); stats.investedN++;
+    var vals = assets.slice(1).map(function (s) { return s.sh * s.px; });
+    var tv = vals.reduce(function (a, b) { return a + b; }, 0);
+    if (tv >= 3000) stats.concMax = Math.max(stats.concMax, Math.max.apply(null, vals) / tv);
+
+    if (tick % TICKS_PER_YEAR === 0) {
+      age++; year++;
+      if (age >= 65) { retiredAt = retiredAt || 65; return endRun(); }
+      salary = salaryOf(age);
+      if (debt > 0) debt = Math.round(debt * 1.1);
+      if (mortgage > 0) {
+        spendCash(6000);
+        mortgage = Math.max(0, mortgage - Math.max(0, 6000 - Math.round(mortgage * 0.05)));
+      }
+      var net = netOf(age);
+      addCash(net);
+      var fund = byTk("FUND");
+      if (autoInvest && age >= 22 && debt === 0) {
+        var put = Math.round(net * 0.2);
+        spendCash(put);
+        fund.sh = Math.round((fund.sh + put / fund.px) * 100) / 100;
+        fund.basisCost += put; fund.basisSh += put / fund.px;
+        autoTotal += put;
+        toast("Payday: +" + money(net - put) + " kept, " + money(put) + " auto-invested");
+        flyCoin("CASH", "FUND", "#3fae6b");
+      } else {
+        toast("Payday: +" + money(net) + " after " + (hasHome ? "the house and living" : "rent and living") + (age === 19 ? " · paydays come once a year" : ""));
+      }
+      if (optionBet && age >= optionBet.resolveAge) {
+        if (Math.random() < 0.18) {
+          addCash(2500);
+          optionResult = "won";
+          toast("The " + optionBet.tk + " call paid $2,500. The neighbor says told you so.");
+        } else {
+          optionResult = "lost";
+          toast("The " + optionBet.tk + " call expired worthless. $500 gone.");
+        }
+        optionBet = null;
+      }
+      var crashed = rollYear();
+      var arriving = assets.filter(function (s) { return s.unlockAge === age; })[0];
+      var evFn = lifeEvents[age];
+      if (arriving && arriving.hype) { arriving.newUntil = age + 2; setTimeout(function () { neighborTip(arriving); }, 400); }
+      else if (arriving) { arriving.newUntil = age + 2; toast(arriving.name + " is on your desk now."); }
+      if (evFn) setTimeout(evFn, arriving ? 1400 : 400);
+      else if (crashed && age > 24 && tv > 2000) setTimeout(crashMoment, 400);
+    }
+    refresh();
+  }
+  var speedHold = false;
+  document.getElementById("ff").addEventListener("pointerdown", function () { speedHold = true; });
+  window.addEventListener("pointerup", function () { speedHold = false; });
+  setInterval(function () { step(); if (speedHold) { step(); step(); step(); step(); } }, TICK_MS);
+
+  var toastT = null;
+  function toast(t) {
+    var el = document.getElementById("toast");
+    el.textContent = t; el.style.opacity = 1;
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { el.style.opacity = 0; }, 1900);
+  }
+
+  function endRun() {
+    over = true;
+    var invPct = Math.round((stats.investedSum / Math.max(1, stats.investedN)) * 100);
+    var tipIn = 0, tipNow = 0;
+    tips.forEach(function (t) {
+      tipIn += t.invested;
+      var s2 = byTk(t.tk);
+      if (t.sh) tipNow += t.sh * s2.px;
+    });
+    var lines = [
+      "Retired at " + retiredAt + " with " + money(worth()) + (debt > 0 ? ", carrying " + money(debt) + " of debt" : "") + ".",
+      "Emergencies: cash covered " + stats.cashCovered + " of " + stats.emergencies +
+        (stats.forcedSell ? ". " + stats.forcedSell + " coins had to be sold to pay bills." : "."),
+      "Your biggest stack peaked at " + Math.round(stats.concMax * 100) + "% of your stocks" + (stats.concMax > 0.6 ? ". One bad year there would have hurt." : ". Spread out."),
+      stats.panicSold ? "The crash: you sold near the bottom." : "The crash: you held.",
+      "Invested " + invPct + "% of the time. Cash on the desk earns nothing.",
+      autoInvest ? "The Everything Fund quietly took " + money(autoTotal) + " of paydays and turned it into " + money(byTk("FUND").sh * byTk("FUND").px) + "."
+        : "You skipped auto-invest at 22. Every coin had to be moved by hand.",
+      tipIn > 0 ? "The neighbor's tips: you put in " + money(tipIn) + "; it is worth " + money(tipNow) + " now."
+        : "The neighbor's tips: you never bought one. The scorecard respects that.",
+      (function () {
+        var learned = Object.keys(knowledge).filter(function (k) { return knowledge[k]; }).length;
+        var l = "Night school: " + money(classSpent) + " for " + learned + " of 3 numbers" +
+          (learned === 3 ? ". The desk was in focus by the end." : ". Some numbers stayed blurry your whole life.");
+        if (neighborAsks > 0) l += " The neighbor explained things " + neighborAsks + " " + (neighborAsks === 1 ? "time" : "times") + ", for free, wrongly.";
+        return l;
+      })(),
+      optionResult === "lost" ? "Options: the neighbor's call cost you $500. That is how they usually go."
+        : optionResult === "won" ? "Options: the call paid $2,500. Dangerous luck teaches the wrong lesson."
+        : optionResult === "declined" ? "Options: you left the casino alone."
+        : "Options: the offer never tempted you.",
+      "Life: " + (hasCar ? "car at 23" : "no car") + ", " + (hasHome ? (mortgage > 0 ? "house at 33, still owing " + money(mortgage) : "house at 33, paid off") : "never owned a home") + ", " +
+        (paidTuition === null ? "no tuition came due" : paidTuition ? "tuition paid" : "the kid took loans") + ".",
+    ];
+    var estate = Math.max(0, Math.round(worth() * 0.6));
+    try { localStorage.setItem("stackmarket-legacy", JSON.stringify({ gen: generation + 1, amount: estate })); } catch (e) {}
+    lines.push("What you leave behind: " + money(estate) + ". Generation " + (generation + 1) + " starts at 18 with it.");
+    document.getElementById("scorecard").innerHTML =
+      "<h2>Generation " + generation + ", played.</h2><div class='big'>" + money(worth()) + "</div>" +
+      lines.map(function (l) { return "<div class='line'>" + l + "</div>"; }).join("") +
+      "<button onclick='location.reload()'>Raise the next generation</button>";
+    document.getElementById("score").style.display = "block";
+  }
+
+  // -------- rendering
+  // The stacks rebuild on a throttle and the panel is built ONCE per
+  // selection; clock ticks only update its numbers, so the slider is
+  // never destroyed mid-drag.
+  function renderStacks() {
+    var zone = document.getElementById("stacks");
+    zone.innerHTML = "";
+    unlocked().forEach(function (s) {
+      var col = document.createElement("div");
+      col.className = "stackcol" + (s.tk === selTk ? " sel" : "");
+      col.dataset.tk = s.tk;
+      var coins = "";
+      var clipped = "";
+      if (s.cash) {
+        var n = Math.min(28, Math.max(0, Math.round(s.sh)));
+        var needCoins = 0;
+        if (selTk !== "CASH") {
+          var t = byTk(selTk);
+          if (t && !t.cash && !t.home) needCoins = Math.min(n, Math.ceil(qty * t.px / 100));
+        }
+        for (var c = 0; c < n; c++)
+          coins += '<div class="coin top' + (c >= n - needCoins ? " need" : "") + '" style="background:' + s.color + '">$</div>';
+      } else if (s.home) {
+        var nh = Math.min(28, Math.max(1, Math.round(s.sh / 4)));
+        for (var h = 0; h < nh; h++)
+          coins += '<div class="coin' + (h === nh - 1 ? " top" : "") + '" style="background:' + s.color + '">' + (h === nh - 1 ? "H" : "") + "</div>";
+      } else if (s.sh < 1) {
+        coins = '<div class="coin ghost top">buy</div>';
+      } else {
+        // one wrapper is one share; the $100 coins inside it are its value,
+        // so a winning share visibly fills with coins on its own
+        var cps = Math.max(1, Math.min(12, Math.round(s.px / 100)));
+        var shares = Math.floor(s.sh);
+        var showShares = Math.min(shares, Math.max(1, Math.floor(24 / cps)));
+        if (shares > showShares) clipped = " ×" + shares;
+        for (var g = 0; g < showShares; g++) {
+          var wrapCls = "sharewrap" + (s.tk === selTk && g >= showShares - Math.min(showShares, qty) ? " gone" : "");
+          var inner = "";
+          for (var k = 0; k < cps; k++)
+            inner += '<div class="coin' + (k === cps - 1 && g === showShares - 1 ? " top" : "") + '" style="background:' + s.color + '">' + (k === cps - 1 && g === showShares - 1 ? s.tk[0] : "") + "</div>";
+          coins += '<span class="' + wrapCls + '">' + inner + "</span>";
+        }
+      }
+      var gain = "";
+      if (!s.cash && !s.home && s.basisSh > 0.01 && s.sh > 0.01) {
+        var pct = Math.round((s.px / (s.basisCost / s.basisSh) - 1) * 100);
+        gain = "<br/><span style='color:" + (pct >= 0 ? "#4ade80" : "#ef7367") + "'>" + (pct >= 0 ? "+" : "") + pct + "% since you bought</span>";
+      }
+      col.innerHTML =
+        '<div class="tag">' + (s.cash
+          ? money(cashDollars()) + (debt ? "<br/><span style='color:#ef7367'>debt " + money(debt) + "</span>" : "")
+          : s.home
+            ? money(s.sh * s.px) + (mortgage > 0 ? "<br/><span style='color:#ef7367'>owes " + money(mortgage) + "</span>" : "")
+            : money(s.px) + gain) + "</div>" +
+        '<div class="coins">' + coins + "</div>" +
+        '<div class="plate">' + s.tk + clipped + (age < s.newUntil ? '<span class="new">NEW</span>' : "") + "</div>";
+      col.addEventListener("click", function () { selTk = s.tk; qty = 1; selectRefresh(); });
+      zone.appendChild(col);
+    });
+  }
+
+  // The chart, Trigger style: the line, your buys and sells pinned on it,
+  // price on the right, years along the bottom.
+  function sparkline(s) {
+    var h = s.hist;
+    if (h.length < 2) return "";
+    var lo = Math.min.apply(null, h), hi = Math.max.apply(null, h);
+    var span = hi - lo || 1;
+    var X0 = 2, X1 = 226, Y0 = 6, Y1 = 74;
+    var x = function (i) { return X0 + (i / (h.length - 1)) * (X1 - X0); };
+    var y = function (p) { return Y1 - (p - lo) / span * (Y1 - Y0); };
+    var pts = h.map(function (p, i) { return x(i).toFixed(1) + "," + y(p).toFixed(1); });
+    var startYr = Math.round(s.histStartYear);
+    var endYr = year;
+    var midYr = Math.round((startYr + endYr) / 2);
+    var out = '<svg viewBox="0 0 260 92">' +
+      '<line x1="' + X0 + '" y1="' + Y1 + '" x2="' + X1 + '" y2="' + Y1 + '" stroke="#3a3f47" stroke-width="1"/>' +
+      '<polyline points="' + pts.join(" ") + '" fill="none" stroke="#4ade80" stroke-width="2" stroke-linejoin="round"/>';
+    s.marks.forEach(function (m) {
+      out += '<circle cx="' + x(m.i).toFixed(1) + '" cy="' + y(m.px).toFixed(1) + '" r="3.5" fill="' +
+        (m.kind === "buy" ? "#4ade80" : "#ef5350") + '" stroke="#17191d" stroke-width="1.2"/>';
+    });
+    out += '<text x="230" y="' + (Y0 + 6) + '" font-size="9.5" fill="#9aa2ac">' + money(hi) + "</text>" +
+      '<text x="230" y="' + Y1 + '" font-size="9.5" fill="#9aa2ac">' + money(lo) + "</text>" +
+      '<text x="' + X0 + '" y="88" font-size="9.5" fill="#9aa2ac">' + startYr + "</text>";
+    if (endYr - startYr > 3)
+      out += '<text x="' + ((X0 + X1) / 2 - 10) + '" y="88" font-size="9.5" fill="#9aa2ac">' + midYr + "</text>";
+    out += '<text x="' + (X1 - 24) + '" y="88" font-size="9.5" fill="#9aa2ac">' + endYr + "</text></svg>";
+    return out;
+  }
+
+  function qtyLineText(s) {
+    var cost = qty * s.px;
+    return "<b>" + qty + "</b> " + (qty === 1 ? "coin" : "coins") + " = <b>" + money(cost) + "</b> = " + Math.ceil(cost / 100) + " cash coins";
+  }
+
+  function panelFull() {
+    var s = byTk(selTk) || assets[1];
+    var el = document.getElementById("panel");
+    if (s.cash) {
+      el.innerHTML = "<h2>Cash</h2><div class='px' id='ppx'>" + money(cashDollars()) + "</div><div class='sub2'>A coin is $100. It never grows. It pays the bills.</div>";
+      return;
+    }
+    if (s.home) {
+      el.innerHTML = "<h2>Your house</h2><div class='px' id='ppx'>" + money(s.sh * s.px) + "</div><div class='sub2'>Grows about 4% a year. You live in it. " + (mortgage > 0 ? "The bank is still owed " + money(mortgage) + "." : "Paid off.") + "</div>";
+      return;
+    }
+    var maxBuy = Math.max(1, Math.floor(cashDollars() / s.px));
+    var maxQ = Math.max(1, Math.max(maxBuy, Math.floor(s.sh)));
+    if (qty > maxQ) qty = maxQ;
+    el.innerHTML =
+      "<h2>" + s.name + "</h2><div class='px' id='ppx'>" + money(s.px) + "</div>" +
+      "<div class='sub2'>" + (s.fund ? "a little of everything in one coin" : "one coin is one share") + "</div>" +
+      (s.fund ? "" :
+        "<div class='statrow'>" +
+        "<div class='stat1'>price vs profit<b class='" + (knowledge.pe ? "" : "blurval") + "' data-learn='pe'>$" + s.pe + " per $1 earned</b></div>" +
+        "<div class='stat1'>growing<b class='" + (knowledge.grow ? "" : "blurval") + "' data-learn='grow'>" + s.grow + "</b></div>" +
+        "<div class='stat1'>debt<b class='" + (knowledge.debt ? "" : "blurval") + "' data-learn='debt'>" + (s.debtHigh ? "high" : "low") + "</b></div>" +
+        "</div>") +
+      "<div id='spark'>" + sparkline(s) + "</div>" +
+      "<div id='own'><div>You own<b id='pown'>" + s.sh + "</b></div><div>Worth<b id='pworth'>" + money(s.sh * s.px) + "</b></div></div>" +
+      "<input id='qty' type='range' min='1' max='" + maxQ + "' value='" + qty + "'/>" +
+      "<div id='qtyline'>" + qtyLineText(s) + "</div>" +
+      "<div id='tbtns'><button id='buy'>Buy <span id='bq'>" + qty + "</span></button>" +
+      "<button id='sellb'>Sell <span id='sq'>" + qty + "</span></button></div>";
+    document.getElementById("qty").addEventListener("input", function (e) {
+      qty = Number(e.target.value);
+      qtyRefresh();
+    });
+    document.getElementById("buy").addEventListener("click", function () {
+      var cost = qty * s.px;
+      if (cashDollars() < cost) return;
+      spendCash(cost);
+      s.sh = Math.round((s.sh + qty) * 100) / 100;
+      s.basisCost += cost; s.basisSh += qty;
+      var tip = tips.filter(function (t) { return t.tk === s.tk; })[0];
+      if (tip) { tip.invested += cost; tip.sh = (tip.sh || 0) + qty; }
+      s.marks.push({ i: s.hist.length - 1, px: s.px, kind: "buy" });
+      flyCoin("CASH", s.tk, "#3fae6b");
+      qty = 1;
+      selectRefresh();
+    });
+    document.getElementById("sellb").addEventListener("click", function () {
+      if (s.sh < qty) return;
+      var cost = qty * s.px;
+      var bf = s.basisSh > 0 ? Math.min(1, qty / s.basisSh) : 0;
+      s.basisCost *= (1 - bf); s.basisSh = Math.max(0, s.basisSh - qty);
+      s.sh = Math.round((s.sh - qty) * 100) / 100;
+      addCash(cost);
+      s.marks.push({ i: s.hist.length - 1, px: s.px, kind: "sell" });
+      flyCoin(s.tk, "CASH", s.color);
+      qty = 1;
+      selectRefresh();
+    });
+    el.querySelectorAll("[data-learn]").forEach(function (b) {
+      b.addEventListener("click", function () { learnStat(b.dataset.learn); });
+    });
+    panelTick();
+  }
+
+  function panelTick() {
+    var s = byTk(selTk) || assets[1];
+    var px = document.getElementById("ppx");
+    if (!px) return;
+    if (s.cash) { px.textContent = money(cashDollars()); return; }
+    if (s.home) { px.textContent = money(s.sh * s.px); return; }
+    px.textContent = money(s.px);
+    var own = document.getElementById("pown"), w = document.getElementById("pworth");
+    if (own) own.textContent = s.sh;
+    if (w) w.textContent = money(s.sh * s.px);
+    var ql = document.getElementById("qtyline");
+    if (ql) ql.innerHTML = qtyLineText(s);
+    var spark = document.getElementById("spark");
+    if (spark && tick % 6 === 0) spark.innerHTML = sparkline(s);
+    var cost = qty * s.px;
+    var b = document.getElementById("buy"), sb = document.getElementById("sellb");
+    if (b) b.disabled = cashDollars() < cost;
+    if (sb) sb.disabled = s.sh < qty;
+  }
+
+  function qtyRefresh() {
+    var s = byTk(selTk);
+    var ql = document.getElementById("qtyline");
+    if (ql && s) ql.innerHTML = qtyLineText(s);
+    var bq = document.getElementById("bq"), sq = document.getElementById("sq");
+    if (bq) bq.textContent = qty;
+    if (sq) sq.textContent = qty;
+    panelTick();
+    renderStacks();
+  }
+
+  function updateHud() {
+    document.getElementById("pv").textContent = money(worth());
+    document.getElementById("sal").textContent = money(netOf(age));
+    document.getElementById("age").textContent = "Age " + age;
+    document.getElementById("year").textContent = String(year);
+    document.getElementById("gen").textContent = generation > 1 ? "· Gen " + generation : "";
+    var st = stageOf(age);
+    document.getElementById("lvln").textContent = st[0];
+    document.getElementById("lvlname").textContent = st[1];
+    document.body.style.background = st[2];
+    document.getElementById("goal").textContent = goalOf(age);
+    document.getElementById("owns").innerHTML =
+      (hasCar ? "<span class='tokn'>The car</span>" : "") + (hasHome ? "<span class='tokn'>The house</span>" : "");
+    var learnedN = Object.keys(knowledge).filter(function (k) { return knowledge[k]; }).length;
+    document.getElementById("notes").style.display = learnedN > 0 ? "block" : "none";
+  }
+
+  function refresh() {
+    updateHud();
+    if (tick % 4 === 0) renderStacks();
+    panelTick();
+  }
+
+  function selectRefresh() {
+    updateHud();
+    renderStacks();
+    panelFull();
+  }
+
+  document.getElementById("notes").addEventListener("click", function () {
+    var learned = Object.keys(knowledge).filter(function (k) { return knowledge[k]; });
+    var body = learned.map(function (k) { return LEARN[k][0] + ": " + LEARN[k][1]; }).join(" ");
+    ev("YOUR NOTES", learned.length + " of 3 terms learned", body || "Nothing yet.",
+      [{ label: "Close the notebook", pri: true, fn: function () {} }]);
+  });
+
+  if (inherited > 0) addCash(inherited);
+  rollYear();
+  selectRefresh();
+  paused = true;
+  setTimeout(function () {
+    if (generation === 1) {
+      ev("ONE LIFE", "You wake up. You're 18.",
+        "You have $1,000, a job that barely pays, and a desk with three stacks on it. The market is open. Retire well.",
+        [{ label: "Begin", pri: true, fn: function () {} }]);
+    } else {
+      ev("ONE LIFE · GENERATION " + generation, "You wake up. You're 18. Again.",
+        "Your parent left you " + money(inherited) + ", a job that barely pays, and the family desk. Retire better than they did.",
+        [{ label: "Begin", pri: true, fn: function () {} }]);
+    }
+  }, 400);
+})();
+</script>
+</body>
+</html>
