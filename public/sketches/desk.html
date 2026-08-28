@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Desk</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #4d3b28; overflow: hidden;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #f3ead8;
+  }
+  #desk {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(255,235,200,0.10), rgba(0,0,0,0.25)),
+      repeating-linear-gradient(87deg, #5a462f 0 90px, #55422c 90px 180px),
+      #55422c;
+  }
+  .blotter {
+    position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%);
+    width: min(640px, 62vw); height: min(440px, 74vh);
+    background: #3d4a3a; border-radius: 10px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.3);
+  }
+  #clock {
+    position: absolute; left: 3vw; top: 4vh;
+    font-size: 44px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  #clocksub { position: absolute; left: 3vw; top: calc(4vh + 54px); font-size: 14px; color: #cdbfa4; }
+  #cash { position: absolute; right: 3vw; top: 4vh; text-align: right; }
+  #cash .n { font-size: 28px; font-weight: 700; }
+  #cash .l { font-size: 13px; color: #cdbfa4; }
+  #folio {
+    position: absolute; right: 2.5vw; bottom: 4vh; width: min(240px, 24vw);
+    background: #241d13; border-radius: 10px; padding: 10px 12px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+  }
+  #folio .l { font-size: 12.5px; color: #cdbfa4; margin-bottom: 4px; }
+  #folio svg { display: block; width: 100%; height: 74px; }
+  #bin {
+    position: absolute; left: 2.5vw; bottom: 4vh; width: min(200px, 20vw);
+    color: #cdbfa4; font-size: 13px;
+  }
+  #bin .pile { height: 60px; position: relative; margin-bottom: 4px; }
+  #bin .dead {
+    position: absolute; width: 84px; height: 56px; background: #efe7d2; border-radius: 4px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+  }
+  #hint {
+    position: absolute; left: 50%; bottom: 2.2vh; transform: translateX(-50%);
+    font-size: 13.5px; color: #cdbfa4; white-space: nowrap;
+  }
+  .paper {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 330px; min-height: 240px;
+    background: #f7f0dd; color: #26221a; border-radius: 6px;
+    padding: 16px 18px 14px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+    cursor: grab; user-select: none; -webkit-user-select: none;
+    touch-action: none;
+  }
+  .paper .tk { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; color: #5a5342; }
+  .paper .tk .warn {
+    float: right; background: #b8342a; color: #fff; border-radius: 999px;
+    padding: 1px 9px; font-size: 11.5px;
+  }
+  .paper .tk .own {
+    float: right; background: #2e5d3f; color: #fff; border-radius: 999px;
+    padding: 1px 9px; font-size: 11.5px;
+  }
+  .paper h2 { margin: 8px 0 6px; font-size: 19px; line-height: 1.3; }
+  .paper .stat { font-size: 13.5px; color: #5a5342; }
+  .paper .stat.red { color: #b8342a; font-weight: 700; }
+  .paper .btns { display: flex; gap: 8px; margin-top: 14px; }
+  .paper button {
+    font: inherit; font-size: 14.5px; font-weight: 700; flex: 1; padding: 9px 0;
+    border-radius: 7px; border: none; cursor: pointer;
+  }
+  .b-buy { background: #2e7d44; color: #fff; }
+  .b-sell { background: #b8342a; color: #fff; }
+  .b-hold { background: #efe7d2; color: #26221a; border: 1.5px solid #b3ab97 !important; }
+  .b-rep { background: transparent; color: #5a5342; border: 1.5px solid #b3ab97 !important; font-weight: 400; }
+  .under { pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="desk">
+  <div class="blotter"></div>
+  <div id="clock">9:00</div>
+  <div id="clocksub">Market closes at 4:00</div>
+  <div id="cash"><div class="n">$10,000</div><div class="l">cash</div></div>
+  <div id="bin"><div class="pile" id="pile"></div><span id="bincount">0 passed</span></div>
+  <div id="folio"><div class="l">Portfolio $10,000</div><svg viewBox="0 0 220 74" id="chart"></svg></div>
+  <div id="stackzone"></div>
+  <div id="hint">Drag a paper off the desk to pass. Buttons act.</div>
+</div>
+<script>
+(function () {
+  var cash = 10000;
+  var minutes = 9 * 60;
+  var owned = {};   // ticker -> dollars in
+  var passed = 0;
+  var boughtLog = [];
+
+  function money(n) { return "$" + Math.round(n).toLocaleString("en-US"); }
+
+  // ---- the deck: fictional tickers during play, revealed at the end
+  var deck = [
+    { tk: "ROAR · Entertainment", tag: "warn:hot", head: '"Up 210% this year, and analysts say it is still early."',
+      stat: "You pay $92 for every $1 it earns in a year.", red: true, act: ["buy", "pass"] },
+    { tk: "HTHR · Household goods", head: '"The boring one: steady profits, raised guidance again."',
+      stat: "You pay $14 for every $1 it earns.", red: false, act: ["buy", "report", "pass"] },
+    { tk: "ROAR · Entertainment", tag: "warn:2nd paper today", head: '"Your neighbor made $4,000 on it last month."',
+      stat: "You pay $92 for every $1 it earns.", red: true, act: ["buy", "pass"] },
+    { tk: "NOVA · Software", head: '"Quiet software firm signs another government contract."',
+      stat: "You pay $11 for every $1 it earns.", red: false, act: ["buy", "report", "pass"] },
+    { tk: "GLOW · Biotech", head: '"Breakthrough cure rumored. Trading halted twice today."',
+      stat: "No profits yet. You are paying for the story.", red: true, act: ["buy", "pass"] },
+    { tk: "ROAR · Entertainment", tag: "warn:3rd paper today", head: '"Are you really going to sit this one out?"',
+      stat: "You pay $92 for every $1 it earns.", red: true, act: ["buy", "pass"] },
+    { tk: "DRIL · Energy", head: '"Downgraded on weak quarter. Nothing here sparkles."',
+      stat: "You pay $9 for every $1 it earns.", red: false, act: ["buy", "pass"] },
+  ];
+
+  // ---- desk furniture
+  function drawChart() {
+    var svg = document.getElementById("chart");
+    var names = Object.keys(owned);
+    var worth = cash + names.reduce(function (a, t) { return a + owned[t]; }, 0);
+    document.querySelector("#folio .l").textContent = "Portfolio " + money(worth);
+    var bands = [{ v: cash, c: "#2e7d44" }].concat(names.map(function (t, i) {
+      return { v: owned[t], c: ["#4e8fd9", "#e0a53f", "#b06fc0", "#c05555"][i % 4] };
+    }));
+    var total = bands.reduce(function (a, b) { return a + b.v; }, 0) || 1;
+    var y = 74, out = "";
+    bands.forEach(function (b) {
+      var h = (b.v / total) * 70;
+      y -= h;
+      out += '<rect x="0" y="' + y + '" width="220" height="' + h + '" fill="' + b.c + '"/>';
+    });
+    svg.innerHTML = out;
+  }
+
+  function tickClock(mins) {
+    minutes += mins;
+    var h = Math.floor(minutes / 60), m = minutes % 60;
+    var hh = h > 12 ? h - 12 : h;
+    document.getElementById("clock").textContent = hh + ":" + (m < 10 ? "0" : "") + m;
+  }
+
+  function addToBin() {
+    passed++;
+    var pile = document.getElementById("pile");
+    var d = document.createElement("div");
+    d.className = "dead";
+    d.style.bottom = Math.min(passed * 3, 30) + "px";
+    d.style.left = (Math.random() * 30) + "px";
+    d.style.transform = "rotate(" + (Math.random() * 14 - 7) + "deg)";
+    pile.appendChild(d);
+    document.getElementById("bincount").textContent = passed + " passed";
+  }
+
+  // ---- papers
+  var zone = document.getElementById("stackzone");
+  var idx = -1;
+
+  function nextPaper() {
+    idx++;
+    if (minutes >= 16 * 60 || idx >= deck.length) return endOfDay();
+    renderStack();
+  }
+
+  function renderStack() {
+    zone.innerHTML = "";
+    // under-papers for depth
+    for (var d = Math.min(deck.length - 1, idx + 2); d > idx; d--) {
+      var u = document.createElement("div");
+      u.className = "paper under";
+      u.style.transform = "translate(-50%, -50%) rotate(" + ((d - idx) * 2.5) + "deg) translateY(" + ((d - idx) * 6) + "px)";
+      zone.appendChild(u);
+    }
+    var p = deck[idx];
+    var el = document.createElement("div");
+    el.className = "paper";
+    var tag = "";
+    if (p.tag && p.tag.indexOf("warn:") === 0) tag = '<span class="warn">' + p.tag.slice(5) + "</span>";
+    if (p.own) tag = '<span class="own">you own this</span>';
+    var btns = p.act.map(function (a) {
+      if (a === "buy") return '<button class="b-buy" data-a="buy">Buy $500</button>';
+      if (a === "buy2") return '<button class="b-buy" data-a="buy2">Buy $2,000</button>';
+      if (a === "sell") return '<button class="b-sell" data-a="sell">Sell</button>';
+      if (a === "hold") return '<button class="b-hold" data-a="hold">Hold</button>';
+      if (a === "report") return '<button class="b-rep" data-a="report">Request the report</button>';
+      return "";
+    }).join("");
+    el.innerHTML = '<div class="tk">' + p.tk + tag + '</div><h2>' + p.head + "</h2>" +
+      '<div class="stat' + (p.red ? " red" : "") + '">' + p.stat + "</div>" +
+      '<div class="btns">' + btns + "</div>";
+    zone.appendChild(el);
+    attachDrag(el, p);
+    el.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        act(b.dataset.a, p, el);
+      });
+    });
+  }
+
+  function flyOff(el, dir, cb) {
+    el.style.transition = "transform .35s ease, opacity .35s ease";
+    el.style.transform = "translate(" + (dir * 130 - 50) + "%, -70%) rotate(" + dir * 24 + "deg)";
+    el.style.opacity = "0";
+    setTimeout(cb, 300);
+  }
+
+  function act(a, p, el) {
+    var t = p.tk.split(" ")[0];
+    if (a === "buy" || a === "buy2") {
+      var amt = a === "buy2" ? 2000 : 500;
+      if (cash < amt) return;
+      cash -= amt;
+      owned[t] = (owned[t] || 0) + amt;
+      boughtLog.push({ t: t, amt: amt, papers: countPapers(t), report: !!p.isReport });
+      scheduleScare(t);
+    }
+    if (a === "sell") { cash += owned[t] || 0; delete owned[t]; }
+    if (a === "report") {
+      deck.splice(idx + 2, 0, {
+        tk: p.tk, isReport: true, head: "The report you asked for.",
+        stat: "Sales growing 9% a year. Low debt. Profitable 12 years straight. You pay $11 for every $1 it earns.",
+        red: false, act: ["buy2", "pass"],
+      });
+      flyOff(el, 1, function () { tickClock(45); updateTop(); nextPaper(); });
+      return;
+    }
+    document.getElementById("cash").querySelector(".n").textContent = money(cash);
+    drawChart();
+    flyOff(el, a === "sell" ? -1 : 1, function () { tickClock(25); updateTop(); nextPaper(); });
+  }
+
+  function countPapers(t) {
+    var n = 0;
+    for (var i = 0; i <= idx; i++) if (deck[i].tk.indexOf(t) === 0) n++;
+    return n;
+  }
+
+  var scared = {};
+  function scheduleScare(t) {
+    if (scared[t]) return;
+    scared[t] = true;
+    deck.splice(Math.min(idx + 3, deck.length), 0, {
+      tk: t + " · you hold " + money(owned[t] || 500), own: true,
+      head: '"Shares slide 8% as fears grow. Is the run over?"',
+      stat: "Down " + money((owned[t] || 500) * 0.08) + " today on your position.",
+      red: true, act: ["sell", "hold"],
+    });
+  }
+
+  function updateTop() {
+    document.getElementById("cash").querySelector(".n").textContent = money(cash);
+    drawChart();
+  }
+
+  function attachDrag(el, p) {
+    var sx = 0, sy = 0, dragging = false;
+    el.addEventListener("pointerdown", function (e) {
+      dragging = true; sx = e.clientX; sy = e.clientY;
+      el.setPointerCapture(e.pointerId);
+      el.style.transition = "none"; el.style.cursor = "grabbing";
+    });
+    el.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      el.style.transform = "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px)) rotate(" + dx / 14 + "deg)";
+    });
+    el.addEventListener("pointerup", function (e) {
+      if (!dragging) return;
+      dragging = false; el.style.cursor = "grab";
+      var dx = e.clientX - sx;
+      if (Math.abs(dx) > 110) {
+        addToBin();
+        flyOff(el, dx > 0 ? 1 : -1, function () { tickClock(25); nextPaper(); });
+      } else {
+        el.style.transition = "transform .25s ease";
+        el.style.transform = "translate(-50%, -50%)";
+      }
+    });
+  }
+
+  // ---- end of day: reveal and score, as papers on the desk
+  function endOfDay() {
+    document.getElementById("clock").textContent = "4:00";
+    document.getElementById("clocksub").textContent = "Market closed";
+    var hypeIn = 0, repIn = 0;
+    boughtLog.forEach(function (b) { if (b.report) repIn += b.amt; else if (b.papers >= 2) hypeIn += b.amt; });
+    zone.innerHTML = "";
+    var el = document.createElement("div");
+    el.className = "paper";
+    el.style.minHeight = "260px";
+    el.innerHTML = '<div class="tk">END OF LEVEL · the reveal</div>' +
+      '<h2>The names come out.</h2>' +
+      '<div class="stat">ROAR was AMC, 2021. ' + (hypeIn ? "Your " + money(hypeIn) + " became " + money(hypeIn * 0.38) + "." : "You passed. It fell 62%.") + "</div>" +
+      '<div class="stat" style="margin-top:6px">NOVA was Microsoft, 2013. ' + (repIn ? "Your " + money(repIn) + " became " + money(repIn * 2.8) + "." : "You passed. It tripled.") + "</div>" +
+      '<div class="stat" style="margin-top:6px">GLOW was a fraud. It went to zero.</div>' +
+      '<div class="stat" style="margin-top:6px">' + passed + " papers hit the bin. One mattered.</div>" +
+      '<div class="btns"><button class="b-buy" onclick="location.reload()">Play the day again</button></div>';
+    zone.appendChild(el);
+    document.getElementById("hint").textContent = "A level is 30 days. This mock is one.";
+  }
+
+  drawChart();
+  nextPaper();
+})();
+</script>
+</body>
+</html>
