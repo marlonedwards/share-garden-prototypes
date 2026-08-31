@@ -19,6 +19,12 @@ RIDE IT OUT, NAME THE STRATEGY, plus sparing plain choice items.
   teaching line with the bear.
 - Lesson end is numbers only: accuracy, pay ticking in as bills,
   the buy prompt. Labels of at most three words, no sentences.
+- PLAIN LANGUAGE LAW (Marlon, Aug 31, overrides brevity when they
+  conflict): no trader shorthand, no euphemism, no cleverness the
+  target audience has to decode. "Buyers piling in" and "which lets
+  you sleep" are rejection triggers; the model sentence is "More
+  people are buying the stock than selling it." Questions carry the
+  clarity; feedback stays short but literal.
 
 ## Lesson 1: Own something real
 

@@ -102,6 +102,11 @@ whole real share.
   one line under eight words), no footer explainers anywhere,
   correct feedback 2 to 3 words (wrong keeps one bear line), lesson
   end numbers only.
+- SETTLED Aug 31, plain language law (overrides brevity when they
+  conflict): everyday words only, no trader shorthand or euphemism.
+  "Buyers piling in" and "which lets you sleep" were rejected; the
+  model sentence is "More people are buying the stock than selling
+  it."
 
 ## Social
 

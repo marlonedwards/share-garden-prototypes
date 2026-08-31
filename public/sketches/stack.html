@@ -280,52 +280,52 @@
       { title: "The price of a piece", meet: ["cost", "ko"], items: [
         T("The price",
           '<div class="card">' + chartBox(svgLine(CALM, "#3d8c5b"), 52, "teachlive") + cap('<span id="teachpx">$69.85</span>') + '</div>',
-          "The price is just the last trade."),
-        { k: "live", mode: "up", q: "Buyers piling in. Which one?", ok: "Buyers.", no: "Sellers were winning that one." },
-        { k: "live", mode: "down", q: "Sellers winning. Which one?", ok: "Sellers.", no: "That one was climbing." },
-        { k: "pile", q: "Which whole company is worth more?", ok: "The pile.", no: "Count the pile, not the piece." },
-        { k: "mc", q: "A rising price proves", opts: [O("More buyers than sellers", true), O("A better company"), O("It keeps rising")], ok: "Just buyers.", no: "Only that buyers showed up." },
+          "Just the last price someone paid."),
+        { k: "live", mode: "up", q: "Which stock are more people buying?", ok: "That one.", no: "More people were selling that one." },
+        { k: "live", mode: "down", q: "Which stock are more people selling?", ok: "That one.", no: "More people were buying that one." },
+        { k: "pile", q: "Which whole company is worth more?", ok: "The whole pile.", no: "Count the whole pile, not one piece." },
+        { k: "mc", q: "A price going up means", opts: [O("More people want to buy it", true), O("The company is doing great"), O("It will keep going up")], ok: "Just more buyers.", no: "It only means more people are buying." },
       ]},
       { title: "The ride", meet: ["pfe", "nvda"], items: [
         T("Volatility",
           '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(CALM, "#3d8c5b")) + '</div>',
-          "The size of the ride, not the ending."),
-        { k: "live", mode: "vol", q: "More volatile?", ok: "That one.", no: "Watch the swings, not the end." },
-        { k: "mc", q: "Same ending. Which lets you sleep?", opts: [O(chartBox(svgLine(CALM, "#3d8c5b")), true), O(chartBox(svgLine(WILD, "#b23a2e")))], ok: "Sleep counts.", no: "That ride costs you nights." },
-        { k: "break", q: "One company goes broke. Who survives?", ok: "Spread survives.", no: "All in one means all gone.",
-          a: { colors: ["red","red","red","red","red"], label: "one company", broke: [0,1,2,3,4] },
-          b: { colors: ["red","black","slate","cream","red"], label: "four companies", broke: [0] }, correct: "b" },
-        { k: "mc", q: "The steady grower?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")), true), O(chartBox(svgLine(SPIKE, "#b23a2e")))], ok: "Steady.", no: "That was the rocket." },
+          "How big the swings are."),
+        { k: "live", mode: "vol", q: "Which is more volatile?", ok: "That one.", no: "Watch the swings, not the ending." },
+        { k: "mc", q: "Same ending. Which is less stressful to own?", opts: [O(chartBox(svgLine(CALM, "#3d8c5b")), true), O(chartBox(svgLine(WILD, "#b23a2e")))], ok: "The calm one.", no: "Those big swings are stressful to own." },
+        { k: "break", q: "One company goes broke. Who survives?", ok: "Spread out survives.", no: "All in one means all gone.",
+          a: { colors: ["red","red","red","red","red"], label: "all in one company", broke: [0,1,2,3,4] },
+          b: { colors: ["red","black","slate","cream","red"], label: "spread across four", broke: [0] }, correct: "b" },
+        { k: "mc", q: "Which one grew steadily?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")), true), O(chartBox(svgLine(SPIKE, "#b23a2e")))], ok: "Steady.", no: "That one spiked, then crashed." },
       ]},
       { title: "Time beats timing", meet: ["mcd"], items: [
         T("Zoom out",
           '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + cap("one week") + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years") + '</div>',
-          "Owners live in the bottom picture."),
-        { k: "race", q: "Crash. Who ends highest?", ok: "Every crash.", no: "So far, the buyer always won." },
-        { k: "mc", q: "Where do owners live?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one week"))], ok: "The decade.", no: "The week is noise." },
-        { k: "mc", q: "Find the steady buyer.", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_LUMP, 8)), O(dotChart(STRAT, DOTS_CHASE))], ok: "On schedule.", no: "Those dots bunch or chase." },
-        { k: "mc", q: "Find the peak chaser.", opts: [O(dotChart(STRAT, DOTS_CHASE), true), O(dotChart(STRAT, DOTS_STEADY))], ok: "Chased tops.", no: "That one kept a schedule." },
-        { k: "dca", q: "Your year. Tap 4 buys." },
+          "Ten years matters. One week doesn't."),
+        { k: "race", q: "The market crashes. Who ends up highest?", ok: "Kept buying wins.", no: "The one who kept buying always won." },
+        { k: "mc", q: "Which picture matters to an owner?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one week"))], ok: "The ten years.", no: "One week is just noise." },
+        { k: "mc", q: "Each dot is a buy. Who bought steadily?", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_LUMP, 8)), O(dotChart(STRAT, DOTS_CHASE))], ok: "Same time every month.", no: "Those buys bunch up or chase peaks." },
+        { k: "mc", q: "Who only bought at the top?", opts: [O(dotChart(STRAT, DOTS_CHASE), true), O(dotChart(STRAT, DOTS_STEADY))], ok: "Bought every peak.", no: "That one bought on a schedule." },
+        { k: "dca", q: "Tap the line 4 times to buy." },
       ]},
       { title: "What you pay for what it earns", meet: ["xom", "jnj"], items: [
         T("The price tag",
           '<div class="card" style="display:flex;gap:14px;justify-content:center">' + pcHtml("cream", 54, "$40") + pcHtml("cream", 54, "$80") + '</div>',
-          "Never the price. Price against profit."),
-        { k: "dollar", q: "A $100 sale. Tap the owner's cut.", ok: "Profit.", no: "The owner keeps what is left." },
-        { k: "drip", q: "Same profit. Which piece gets fatter?", ok: "Fatter slices.", no: "More pieces, thinner slices." },
-        { k: "mc", q: "Which price rests on profits?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("earns $8 a share"), true), O(chartBox(svgLine(SPIKE, "#b23a2e")) + cap("earns nothing"))], ok: "Real earnings.", no: "Nothing under that one but story." },
-        { k: "mc", q: "The question is always", opts: [O("Price against profit", true), O("Price alone"), O("The chart shape")], ok: "Both together.", no: "Price means nothing alone." },
+          "What it costs versus what it earns."),
+        { k: "dollar", q: "A $100 sale. Tap the owner's share.", ok: "The profit.", no: "The owner keeps what is left over." },
+        { k: "drip", q: "Same profit. Which pieces each get more?", ok: "Fewer pieces, more each.", no: "Split more ways, each piece gets less." },
+        { k: "mc", q: "Which price has real profits under it?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("earns $8 a share"), true), O(chartBox(svgLine(SPIKE, "#b23a2e")) + cap("earns nothing"))], ok: "Real profits.", no: "That one earns nothing. Just hype." },
+        { k: "mc", q: "What matters when you buy?", opts: [O("The price versus the profit", true), O("The price alone"), O("The chart shape")], ok: "Both together.", no: "The price alone tells you nothing." },
       ]},
       { title: "The first stack", meet: [], cap: true, items: [
         T("What you know",
           '<div class="card" style="display:flex;gap:10px;justify-content:center">' + pcHtml("red", 40) + pcHtml("slate", 40) + pcHtml("black", 40) + pcHtml("cream", 40) + pcHtml("gold", 40) + '</div>',
-          "Pieces, prices, rides, time, the tag."),
-        { k: "break", q: "One goes broke. Who shrugs?", ok: "Spread it.", no: "All Apple, all gone.",
-          a: { colors: ["slate","slate","slate","slate"], label: "all Apple", broke: [0,1,2,3] },
-          b: { colors: ["slate","red","black","cream"], label: "four companies", broke: [0] }, correct: "b" },
-        { k: "pile", q: "Which whole company is worth more?", ok: "The pile.", no: "Count the pile, not the piece." },
-        { k: "race", q: "It crashes again. Who ends highest?", ok: "The reflex.", no: "The schedule. Always the schedule." },
-        { k: "mc", q: "Find the schedule.", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_CHASE))], ok: "Steady.", no: "Those dots chased the peaks." },
+          "Pieces, prices, swings, time, price tags."),
+        { k: "break", q: "One goes broke. Who barely feels it?", ok: "Spread out.", no: "All in Apple, all gone.",
+          a: { colors: ["slate","slate","slate","slate"], label: "all in Apple", broke: [0,1,2,3] },
+          b: { colors: ["slate","red","black","cream"], label: "spread across four", broke: [0] }, correct: "b" },
+        { k: "pile", q: "Which whole company is worth more?", ok: "The whole pile.", no: "Count the whole pile, not one piece." },
+        { k: "race", q: "It crashes again. Who ends up highest?", ok: "Kept buying.", no: "Keep buying on schedule." },
+        { k: "mc", q: "Who bought on a schedule?", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_CHASE))], ok: "Steady.", no: "Those buys chased the peaks." },
         { k: "mc", q: "A share is", opts: [O("A piece of a company", true), O("A ticket"), O("A loan")], ok: "Ownership.", no: "Ownership. Everything builds on it." },
       ]},
     ]},
@@ -336,7 +336,7 @@
           '<span class="slab" style="font-size:18px;color:#8a7c5c">=</span>' +
           '<div>' + chipRow(["red","slate","black","cream","red"], 18) + chipRow(["slate","cream","red","black","slate"], 18) + '</div></div>',
           "One gold piece, five hundred companies."),
-        { k: "break", q: "One company dies. Which piece shrugs?", ok: "One of 500.", no: "The single piece takes it all.",
+        { k: "break", q: "One company dies. Which piece is safer?", ok: "One of 500.", no: "The single piece takes the whole hit.",
           a: { colors: ["red"], label: "one company's piece", broke: [0] },
           b: { colors: ["gold"], label: "the fund piece", broke: [] }, correct: "b" },
         { k: "mc", q: "A fund is a bet on", opts: [O("Everyone at once", true), O("One winner"), O("A lucky manager")], ok: "Everyone.", no: "Nobody picks. That is the trick." },
@@ -344,15 +344,15 @@
       { title: "The fee leak", sub: "The leak that compounds", meet: [], items: [
         T("The fee",
           '<div class="card">' + chartBox(svgLine(UP, "#3d8c5b") + svgLine("0,44 50,42 100,38 150,36 200,31 250,29 300,24", "#c9913f")) + cap("same fund, 2% fee") + '</div>',
-          "A small leak, a long time."),
-        { k: "drain", q: "One charges 2% a year. Which one?", ok: "A third, gone.", no: "The leak never has a bad year." },
+          "Small fee now, big hole later."),
+        { k: "drain", q: "Same fund. Which is the better deal?", ok: "2% ate a third.", no: "The fee takes a bite every year." },
       ]},
       { title: "Buying the argument", sub: "The starter strategy, complete", meet: [], items: [
         T("The index",
           '<div class="card" style="display:flex;gap:8px;justify-content:center">' + pcHtml("gold", 46) + '</div>',
-          "The index buys the whole argument."),
-        { k: "mc", q: "Thirty years of sleep. Which piece?", opts: [O('<div style="display:flex;justify-content:center">' + pcHtml("gold", 40) + '</div>' + cap("the fund"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one wild stock"))], ok: "Sleep pays.", no: "The wild one costs you nights." },
-        { k: "dca", q: "A year of the fund. Tap 4 buys.", gold: true },
+          "One piece owns every big company."),
+        { k: "mc", q: "Holding for thirty years. Which piece?", opts: [O('<div style="display:flex;justify-content:center">' + pcHtml("gold", 40) + '</div>' + cap("the fund"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one wild stock"))], ok: "Easier to hold.", no: "The wild one is hard to hold." },
+        { k: "dca", q: "Tap the line 4 times to buy.", gold: true },
       ]},
     ]},
   ];
@@ -669,7 +669,7 @@
     if (it.k === "race") {
       h += '<div class="q">' + it.q + '</div>' +
         '<div class="card" style="margin-bottom:10px">' + chartBox(svgLine("0,48 40,42 80,36 120,30 150,26 168,66", "#8a7c5c") + '<g id="racelines"></g><circle cx="168" cy="66" r="3.5" fill="#2a2419"/>', 92, "racesvg") + '</div>';
-      [["#3d8c5b", "Keep buying on schedule", 1], ["#c9913f", "Freeze and hold", 0], ["#c05545", "Sell now", 0]].forEach(function (o) {
+      [["#3d8c5b", "Keep buying on schedule", 1], ["#c9913f", "Stop buying, just hold", 0], ["#c05545", "Sell everything now", 0]].forEach(function (o) {
         h += '<div class="opt" data-c="' + o[2] + '"><div style="display:flex;align-items:center;gap:9px"><span style="width:22px;height:4px;border-radius:2px;background:' + o[0] + ';flex:none"></span>' +
           '<span class="slab" style="font-weight:600;font-size:14px">' + o[1] + '</span></div></div>';
       });
@@ -810,7 +810,7 @@
           var avg = Math.round(taps.reduce(function (a, t) { return a + (120 - t.y); }, 0) / 4);
           var xs = taps.map(function (t) { return t.x; }).sort(function (a, b) { return a - b; });
           var minGap = Math.min(xs[1] - xs[0], xs[2] - xs[1], xs[3] - xs[2]);
-          var line = minGap > 40 ? "Steady. Average $" + avg + "." : "Bunched. Average $" + avg + ". Spread them.";
+          var line = minGap > 40 ? "Nice and steady. Average $" + avg + "." : "Too bunched. Average $" + avg + ". Spread your buys.";
           later(function () {
             document.getElementById("vslot").innerHTML = '<div class="flash ok dropin"><span class="slab">' + line + '</span></div>';
             later(advance, 1700);
@@ -1089,7 +1089,7 @@
       { n: "Nick", s: S.friendSeed.nick, streak: 2, st: [["black", 2]] },
       { n: "Jared", s: S.friendSeed.jared, streak: 11, st: [["red", 3], ["slate", 1]] },
     ];
-    var h = '<div class="h1s">Friends</div><div class="subs">Same paychecks, different calls.</div>';
+    var h = '<div class="h1s">Friends</div><div class="subs">Same paychecks, different choices.</div>';
     F.forEach(function (f) {
       var w = f.s[S.day - 1], y = f.s[Math.max(0, S.day - 2)];
       var chg = (w / y - 1) * 100;
@@ -1124,7 +1124,7 @@
   var game = null;
   function renderPractice() {
     if (S.arc.day !== S.day) S.arc = { day: S.day, paidWins: 0, plays: 0 };
-    var h = topbar() + '<div class="h1s">Practice</div><div class="subs">First wins pay.</div>';
+    var h = topbar() + '<div class="h1s">Practice</div><div class="subs">Win games, earn cash.</div>';
     if (game) { h += gameHtml(); screen.innerHTML = h; drawIn(screen, 1.0); wireGame(); return; }
     var left = Math.max(0, ARCADE_PAID_PLAYS - S.arc.paidWins);
     h += '<div class="card"><div class="slab" style="font-weight:700;font-size:17px">Guess the Stock</div>' +
