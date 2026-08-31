@@ -162,16 +162,16 @@
     };
   }
   var CO = {
-    aapl: { name: "Apple", color: "slate", p0: 232.10, dr: 0.0005, vol: 0.012, seed: 7, blurb: "iPhones and everything on them" },
-    nke: { name: "Nike", color: "black", p0: 75.40, dr: -0.0003, vol: 0.013, seed: 43, blurb: "The swoosh, since 1964" },
-    cost: { name: "Costco", color: "cream", p0: 912.40, dr: 0.0006, vol: 0.009, seed: 41, blurb: "The membership is the business" },
-    ko: { name: "Coca-Cola", color: "red", p0: 69.85, dr: 0.0002, vol: 0.007, seed: 53, blurb: "Sells syrup, not cans" },
-    pfe: { name: "Pfizer", color: "cream", p0: 27.60, dr: -0.0004, vol: 0.011, seed: 71, blurb: "Drugs since 1849" },
-    nvda: { name: "Nvidia", color: "black", p0: 121.30, dr: 0.0015, vol: 0.028, seed: 29, blurb: "Designs the AI chips" },
-    mcd: { name: "McDonald's", color: "red", p0: 291.80, dr: 0.0003, vol: 0.008, seed: 47, blurb: "Secretly a landlord" },
-    xom: { name: "ExxonMobil", color: "slate", p0: 112.50, dr: 0.0002, vol: 0.013, seed: 59, blurb: "Standard Oil's descendant" },
-    jnj: { name: "Johnson & Johnson", color: "red", p0: 156.20, dr: 0.0002, vol: 0.007, seed: 67, blurb: "Band-Aids to cancer drugs" },
-    voo: { name: "The 500 fund", color: "gold", p0: 530.10, dr: 0.0004, vol: 0.008, seed: 11, blurb: "One piece, five hundred companies", fund: true },
+    aapl: { name: "Apple", color: "slate", p0: 232.10, dr: 0.0005, vol: 0.012, seed: 7, blurb: "Phones, computers, and the apps on them" },
+    nke: { name: "Nike", color: "black", p0: 75.40, dr: -0.0003, vol: 0.013, seed: 43, blurb: "Shoes and athletic wear" },
+    cost: { name: "Costco", color: "cream", p0: 912.40, dr: 0.0006, vol: 0.009, seed: 41, blurb: "Warehouse stores you pay to shop in" },
+    ko: { name: "Coca-Cola", color: "red", p0: 69.85, dr: 0.0002, vol: 0.007, seed: 53, blurb: "Soft drinks" },
+    pfe: { name: "Pfizer", color: "cream", p0: 27.60, dr: -0.0004, vol: 0.011, seed: 71, blurb: "Medicines" },
+    nvda: { name: "Nvidia", color: "black", p0: 121.30, dr: 0.0015, vol: 0.028, seed: 29, blurb: "Computer chips" },
+    mcd: { name: "McDonald's", color: "red", p0: 291.80, dr: 0.0003, vol: 0.008, seed: 47, blurb: "Fast food restaurants" },
+    xom: { name: "ExxonMobil", color: "slate", p0: 112.50, dr: 0.0002, vol: 0.013, seed: 59, blurb: "Oil and gas" },
+    jnj: { name: "Johnson & Johnson", color: "red", p0: 156.20, dr: 0.0002, vol: 0.007, seed: 67, blurb: "Medicines and health products" },
+    voo: { name: "The 500 fund", color: "gold", p0: 530.10, dr: 0.0004, vol: 0.008, seed: 11, blurb: "One share of 500 big companies", fund: true },
   };
   Object.keys(CO).forEach(function (id) {
     var c = CO[id], r = rng(c.seed), a = [c.p0];
@@ -423,7 +423,7 @@
     h += '<div class="h1s">Stack</div><div class="subs">Learn daily. Own what you learn.</div>';
     if (S.overnight !== null && S.overnight !== undefined) {
       var o = S.overnight;
-      if (Math.abs(o) > 0.005) h += '<div class="banner' + (o < 0 ? " dn" : "") + '">Overnight your pieces ' + (o >= 0 ? "grew " : "fell ") + money(Math.abs(o)) + '.</div>';
+      if (Math.abs(o) > 0.005) h += '<div class="banner' + (o < 0 ? " dn" : "") + '">Overnight your stocks ' + (o >= 0 ? "grew " : "fell ") + money(Math.abs(o)) + '.</div>';
       S.overnight = null;
     }
     UNITS.forEach(function (unit, u) {
@@ -576,7 +576,7 @@
           screen.innerHTML = lessonHead() +
             '<div style="text-align:center;margin-top:18px">' +
             '<div class="dropin" style="display:flex;justify-content:center">' + pcHtml(c.color, 74, c.name[0]) + '</div>' +
-            '<div class="slab" style="font-weight:700;font-size:22px;margin-top:10px">' + (bought ? "1 share of " + c.name + ". Yours." : c.name + ", your piece, live.") + '</div></div>' +
+            '<div class="slab" style="font-weight:700;font-size:22px;margin-top:10px">' + (bought ? "1 share of " + c.name + ". Yours." : c.name + ", your share, live.") + '</div></div>' +
             '<div class="card" style="margin-top:14px">' + chartBox("", 62, "ownlive") + cap('<span id="ownpx">' + money(price(id)) + '</span>') + '</div>' +
             '<div class="bigline">' + CONTENT.lesson1.ownLine + '</div>' +
             '<div style="margin-top:auto"></div><div id="contslot"></div>';
@@ -677,8 +677,8 @@
     }
 
     if (it.k === "pile") {
-      var pA = '<div class="opt" data-c="1"><div id="pileA" style="display:grid;grid-template-columns:repeat(18,1fr);gap:2px;padding:2px 8px;min-height:44px"></div>' + cap('<span id="pileAn">Apple &middot; $232 a piece</span>') + '</div>';
-      var pB = '<div class="opt" data-c="0"><div id="pileB" style="display:flex;gap:4px;justify-content:center;min-height:30px;padding:2px 0"></div>' + cap('<span id="pileBn">Costco &middot; $912 a piece</span>') + '</div>';
+      var pA = '<div class="opt" data-c="1"><div id="pileA" style="display:grid;grid-template-columns:repeat(18,1fr);gap:2px;padding:2px 8px;min-height:44px"></div>' + cap('<span id="pileAn">Apple &middot; $232 a share</span>') + '</div>';
+      var pB = '<div class="opt" data-c="0"><div id="pileB" style="display:flex;gap:4px;justify-content:center;min-height:30px;padding:2px 0"></div>' + cap('<span id="pileBn">Costco &middot; $912 a share</span>') + '</div>';
       h += '<div class="q">' + it.q + '</div>' +
         (Math.random() < 0.5 ? pA + pB : pB + pA) +
         '<div id="vslot" style="margin-top:auto"></div>';
@@ -890,7 +890,7 @@
     var acc = L.total ? L.firstCorrect / L.total : 1;
     var pay = 0, payNote = "";
     if (L.isReview) { pay = REVIEW_PAY; payNote = "review pay"; }
-    else if (lesson.prepay) { pay = 0; payNote = "your piece now"; }
+    else if (lesson.prepay) { pay = 0; payNote = "your stock now"; }
     else if (acc < 0.75) { pay = 0; payNote = "under 75%"; }
     else {
       pay = BASE_PAY + (acc >= 0.999 ? PERFECT_BONUS : 0);
@@ -993,7 +993,7 @@
     var h = '<div class="h1s" style="text-align:center">' + money(worth()) + '</div>';
     h += '<div class="subs" style="text-align:center;margin-bottom:10px">';
     if (held.length) {
-      h += money(hw) + ' in pieces &middot; put in ' + money(paid);
+      h += money(hw) + ' in stocks &middot; put in ' + money(paid);
       if (Math.abs(diff) > 0.005) h += ' &middot; <span style="color:' + (diff >= 0 ? "#8fd8a8" : "#f0a89b") + '">' + (diff >= 0 ? "up " : "down ") + money(Math.abs(diff)) + '</span>';
     } else h += 'Lessons pay.';
     h += '</div>';
@@ -1028,7 +1028,7 @@
         (S.cash >= price(sel) ? '<span class="btn" id="buy1">Buy 1</span>' : '') + '</div>';
       h += picks.length
         ? '<button class="bigbtn green" style="margin:4px 0 2px" id="sellpicked">Sell ' + picks.length + ' &middot; ' + money(picks.length * price(sel)) + '</button>'
-        : '<div style="text-align:center;font-size:12.5px;color:rgba(242,233,210,0.6);padding-top:4px">Tap pieces to sell</div>';
+        : '<div style="text-align:center;font-size:12.5px;color:rgba(242,233,210,0.6);padding-top:4px">Tap shares to sell</div>';
     }
     return h;
   }

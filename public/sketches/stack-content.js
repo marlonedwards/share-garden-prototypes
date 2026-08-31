@@ -45,7 +45,7 @@ window.STACK_CONTENT = {
   lesson1: {
     paySub: "Lessons pay. This one pays first.",
     payLine: "Now go own something.",
-    ownLine: "It moves while you hold it.",
+    ownLine: "It moves while you own it.",
   },
 
   units: [
@@ -56,14 +56,14 @@ window.STACK_CONTENT = {
 
         { title: "Own something real", meet: ["aapl", "nke", "pfe"], prepay: true, items: [
           { type: "paydrop" },
-          { type: "firstbuy", q: "Pick your first piece." },
+          { type: "firstbuy", q: "Pick your first stock." },
           { type: "choice", q: "You just became",
             options: ["An owner", "A customer", "A lender"], answer: 0,
             right: "Owner.",
             wrong: "Owner. You hold a piece of the company." },
         ]},
 
-        { title: "The price of a piece", meet: ["cost", "ko"], items: [
+        { title: "The price of a share", meet: ["cost", "ko"], items: [
           { type: "teach", word: "The price", pic: "live-price",
             line: "Just the last price someone paid." },
           { type: "live-up", q: "Which stock are more people buying?",
@@ -74,7 +74,7 @@ window.STACK_CONTENT = {
             wrong: "More people were buying that one." },
           { type: "pile", q: "Which whole company is worth more?",
             right: "The whole pile.",
-            wrong: "Count the whole pile, not one piece." },
+            wrong: "Count the whole pile, not one share." },
           { type: "choice", q: "A price going up means",
             options: ["More people want to buy it", "The company is doing great", "It will keep going up"], answer: 0,
             right: "Just more buyers.",
@@ -133,9 +133,9 @@ window.STACK_CONTENT = {
             rows: [["Workers", "$38"], ["Suppliers", "$30"], ["The bank", "$8"], ["Taxes", "$12"], ["You, the owner", "$12"]], answer: 4,
             right: "What's left is profit.",
             wrong: "Everyone else gets paid first. The owner keeps what is left." },
-          { type: "drip", q: "Same profit. Which pieces each get more?",
-            right: "Fewer pieces, more each.",
-            wrong: "Split more ways, each piece gets less." },
+          { type: "drip", q: "Same profit. Which shares each get more?",
+            right: "Fewer shares, more each.",
+            wrong: "Split more ways, each share gets less." },
           { type: "choice", q: "Which price has real profits under it?",
             options: [{ pic: "up", caption: "earns $8 a share" }, { pic: "spike", caption: "earns nothing" }], answer: 0,
             right: "Real profits.",
@@ -158,7 +158,7 @@ window.STACK_CONTENT = {
             wrong: "All in Apple, all gone." },
           { type: "pile", q: "Which whole company is worth more?",
             right: "The whole pile.",
-            wrong: "Count the whole pile, not one piece." },
+            wrong: "Count the whole pile, not one share." },
           { type: "race", q: "It crashes again. Who ends up highest?",
             choices: ["Keep buying on schedule", "Stop buying, just hold", "Sell everything now"],
             right: "Kept buying.",
@@ -177,19 +177,19 @@ window.STACK_CONTENT = {
     },
     {
       name: "Funds and ETFs",
-      sub: "Hundreds of companies, one piece",
+      sub: "Hundreds of companies, one share",
       lessons: [
 
-        { title: "Hundreds in one piece", meet: ["voo"], items: [
+        { title: "Hundreds in one share", meet: ["voo"], items: [
           { type: "teach", word: "A fund", pic: "fund-equals",
-            line: "One gold piece, five hundred companies." },
-          { type: "break", q: "One company dies. Which piece is safer?",
+            line: "One share, five hundred companies." },
+          { type: "break", q: "One company dies. Which is safer?",
             sides: [
-              { label: "one company's piece", pieces: ["red"], gone: [0] },
-              { label: "the fund piece", pieces: ["gold"], gone: [] },
+              { label: "one company's stock", pieces: ["red"], gone: [0] },
+              { label: "the fund", pieces: ["gold"], gone: [] },
             ], answer: 1,
             right: "One of 500.",
-            wrong: "The single piece takes the whole hit." },
+            wrong: "The single stock takes the whole hit." },
           { type: "choice", q: "A fund is a bet on",
             options: ["Everyone at once", "One winner", "A lucky manager"], answer: 0,
             right: "Everyone.",
@@ -206,8 +206,8 @@ window.STACK_CONTENT = {
 
         { title: "Buying the argument", sub: "The starter strategy, complete", meet: [], items: [
           { type: "teach", word: "The index", pic: "gold-piece",
-            line: "One piece owns every big company." },
-          { type: "choice", q: "Holding for thirty years. Which piece?",
+            line: "One share owns every big company." },
+          { type: "choice", q: "Holding for thirty years. Which one?",
             options: [{ pic: "gold-piece", caption: "the fund" }, { pic: "wild", caption: "one wild stock" }], answer: 0,
             right: "Easier to hold.",
             wrong: "The wild one is hard to hold." },
