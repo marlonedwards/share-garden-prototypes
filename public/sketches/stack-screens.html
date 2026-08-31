@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stack, every screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #cdcac2;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e1d1a;
+    padding-bottom: 48px;
+  }
+  .slab { font-family: "Roboto Slab", Georgia, serif; }
+  #head { text-align: center; padding: 26px 16px 2px; }
+  #head h1 { font-family: "Roboto Slab", Georgia, serif; font-size: 24px; margin: 0 0 4px; }
+  #head p { margin: 0; color: #57544c; font-size: 14.5px; }
+  h2.sec { font-family: "Roboto Slab", Georgia, serif; font-size: 18px; text-align: center; margin: 40px 16px 4px; }
+  p.secd { text-align: center; color: #57544c; font-size: 13.5px; margin: 0 16px; }
+  .row { display: flex; gap: 26px; justify-content: center; align-items: flex-start; flex-wrap: wrap; padding: 22px 18px 0; }
+  .fig { width: 360px; max-width: 94vw; }
+  .cap { text-align: center; margin-top: 10px; }
+  .cap .t { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 15px; }
+  .cap .d { font-size: 13px; color: #57544c; margin-top: 2px; }
+
+  .phone {
+    height: 700px; border-radius: 28px; overflow: hidden; position: relative;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+    background: radial-gradient(140% 90% at 50% 0%, #2f7350 0%, #266243 46%, #1d5237 100%);
+    color: #f2e9d2;
+  }
+  .body { flex: 1; overflow: hidden; padding: 0 16px; display: flex; flex-direction: column; }
+
+  .topbar { display: flex; align-items: center; gap: 8px; padding: 14px 14px 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 14px;
+    padding: 6px 11px; border-radius: 999px;
+    background: rgba(0,0,0,0.28); color: #f2e9d2;
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08);
+  }
+  .chip svg { display: block; }
+  .chip.worth { margin-left: auto; }
+  .chip .up { font-size: 12px; font-weight: 600; color: #8fd8a8; }
+
+  .lhead { display: flex; align-items: center; gap: 12px; padding: 16px 16px 10px; }
+  .lhead .x { width: 26px; height: 26px; opacity: 0.6; flex: none; }
+  .lhead .barw { flex: 1; height: 10px; border-radius: 999px; background: rgba(0,0,0,0.3); overflow: hidden; }
+  .lhead .barw div { height: 100%; border-radius: 999px; background: #ecdcae; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15); }
+
+  .q { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 18.5px; line-height: 1.3; margin: 8px 2px 14px; }
+  .card {
+    background: #f4ecd6; color: #2a2419; border-radius: 13px;
+    padding: 13px 15px; box-shadow: 0 5px 0 rgba(0,0,0,0.28);
+  }
+  .verdict { border-radius: 13px; padding: 12px 14px; font-size: 14px; margin-top: auto; }
+  .verdict b { display: block; font-family: "Roboto Slab", Georgia, serif; font-size: 15px; margin-bottom: 2px; }
+  .verdict.ok { background: #dff0e2; color: #1d4a2b; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .verdict.no { background: #f6ded9; color: #6e241b; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .bigbtn {
+    display: block; width: 100%; text-align: center;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 16px;
+    padding: 13px 0; border-radius: 13px; margin: 12px 0 16px;
+    background: #ecdcae; color: #2a2419; box-shadow: 0 5px 0 #a68d58;
+  }
+  .bigbtn.green { background: #3d8c5b; color: #f2e9d2; box-shadow: 0 5px 0 #1e4a30; }
+  .bigbtn.quiet { background: rgba(0,0,0,0.25); color: rgba(242,233,210,0.85); box-shadow: none; margin-top: 8px; }
+
+  /* pieces */
+  .pc { border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .pc.cream { background: radial-gradient(circle at 50% 38%, #f7edd0, #ecdcae 66%, #dcc98f 67%); border: 3px dashed rgba(90,70,30,0.25); }
+  .pc.red { background: radial-gradient(circle at 50% 38%, #d95c4e, #b23a2e 66%, #9c3226 67%); border: 3px dashed rgba(255,255,255,0.35); }
+  .pc.black { background: radial-gradient(circle at 50% 38%, #4a443c, #322d26 66%, #262119 67%); border: 3px dashed rgba(255,255,255,0.25); }
+  .pc.slate { background: radial-gradient(circle at 50% 38%, #9aa4ab, #7a8288 66%, #6a7278 67%); border: 3px dashed rgba(255,255,255,0.3); }
+
+  /* bills and coins */
+  .bill {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 66px; height: 30px; border-radius: 5px;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 13.5px;
+    color: #f7f2e2; box-shadow: 0 2.5px 0 rgba(0,0,0,0.3); flex: none;
+    border: 1.5px solid rgba(0,0,0,0.22);
+  }
+  .b20 { background: #4d9d67; } .b10 { background: #c9913f; } .b5 { background: #8d7bb0; }
+  .b1 { background: #93a396; } .b100 { background: #b89f5e; }
+  .coin {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 10.5px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3); flex: none;
+  }
+  .silver { background: radial-gradient(circle at 50% 35%, #dfe3e8, #b9bec6); color: #4c525a; border: 1.5px solid #979da6; }
+  .copper { background: radial-gradient(circle at 50% 35%, #cf9268, #b87348); color: #5e341f; border: 1.5px solid #935c39; }
+
+  .tabbar { display: flex; padding: 6px 8px 12px; background: rgba(0,0,0,0.22); }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; padding-top: 7px; color: rgba(242,233,210,0.55); }
+  .tab.on { color: #f2e9d2; }
+  .tab svg { display: block; }
+
+  .subtabs { display: flex; gap: 6px; padding: 2px 0 12px; }
+  .subtab {
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 13px;
+    padding: 6px 14px; border-radius: 999px; color: rgba(242,233,210,0.6);
+    background: rgba(0,0,0,0.22);
+  }
+  .subtab.on { background: #ecdcae; color: #2a2419; box-shadow: 0 3px 0 rgba(0,0,0,0.25); }
+
+  .h1s { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 21px; margin: 6px 0 2px; }
+  .subs { font-size: 13.5px; color: rgba(242,233,210,0.7); margin-bottom: 12px; }
+
+  .mascot { position: absolute; width: 78px; bottom: 84px; right: 12px; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+</style>
+</head>
+<body>
+<div id="head">
+  <h1>Stack, every screen</h1>
+  <p>Felt table locked. Item types round two and the rest of the app, before a line of build code.</p>
+</div>
+<div id="mount"></div>
+<script>
+(function () {
+  var flame = '<svg width="14" height="15" viewBox="0 0 15 16"><path fill="#e8853c" d="M7.6 0c.9 3.4 4.9 4.6 4.9 8.6a5.4 5.4 0 0 1-10.8 0c0-2.7 2.1-3.6 2.8-6 .9 1.2 1.8 1.6 3.1-2.6z"/><path fill="#f3b64f" d="M7.5 6.5c.5 1.9 2.4 2.5 2.4 4.5a2.6 2.6 0 0 1-5.2 0c0-1.5 1-2 1.4-3.2.4.6.8.8 1.4-1.3z"/></svg>';
+  var bills3 = '<svg width="18" height="13" viewBox="0 0 19 14"><rect x="1" y="6" width="17" height="7" rx="1.5" fill="#3e8b58"/><rect x="1" y="3.4" width="17" height="7" rx="1.5" fill="#4d9d67" stroke="rgba(0,0,0,.18)"/><rect x="1" y="0.8" width="17" height="7" rx="1.5" fill="#5cae76" stroke="rgba(0,0,0,.18)"/><circle cx="9.5" cy="4.3" r="2.1" fill="rgba(255,255,255,.5)"/></svg>';
+  var pieces = '<svg width="14" height="14" viewBox="0 0 15 15"><ellipse cx="7.5" cy="10.6" rx="6" ry="3.4" fill="#b03a2e"/><ellipse cx="7.5" cy="7.8" rx="6" ry="3.4" fill="#cd4a3c" stroke="rgba(0,0,0,.2)"/><ellipse cx="7.5" cy="5" rx="6" ry="3.4" fill="#d95c4e" stroke="rgba(0,0,0,.2)"/></svg>';
+  var xicon = '<svg class="x" viewBox="0 0 26 26"><path d="M6 6 L20 20 M20 6 L6 20" stroke="#f2e9d2" stroke-width="3" stroke-linecap="round"/></svg>';
+  var bull = '<svg class="mascot" style="animation: bob 2.6s ease-in-out infinite" viewBox="0 0 100 90">' +
+    '<path fill="#f2e6c4" d="M24 32 Q8 28 5 12 Q21 13 30 24z"/><path fill="#f2e6c4" d="M76 32 Q92 28 95 12 Q79 13 70 24z"/>' +
+    '<ellipse fill="#8a5a3b" cx="19" cy="40" rx="10" ry="7"/><ellipse fill="#8a5a3b" cx="81" cy="40" rx="10" ry="7"/>' +
+    '<ellipse fill="#8a5a3b" cx="50" cy="50" rx="31" ry="27"/>' +
+    '<circle fill="#74492e" cx="41" cy="28" r="7"/><circle fill="#74492e" cx="51" cy="26" r="7"/><circle fill="#74492e" cx="60" cy="29" r="6"/>' +
+    '<circle cx="39" cy="48" r="3.6" fill="#1e1d1a"/><circle cx="61" cy="48" r="3.6" fill="#1e1d1a"/>' +
+    '<ellipse fill="#c98d6b" cx="50" cy="68" rx="18" ry="11.5"/>' +
+    '<circle cx="43.5" cy="68" r="2.7" fill="#1e1d1a" opacity=".5"/><circle cx="56.5" cy="68" r="2.7" fill="#1e1d1a" opacity=".5"/></svg>';
+  var bear = '<svg class="mascot" viewBox="0 0 100 90">' +
+    '<circle cx="25" cy="20" r="11" fill="#5f4130"/><circle cx="75" cy="20" r="11" fill="#5f4130"/>' +
+    '<circle cx="25" cy="20" r="5" fill="#a3785a"/><circle cx="75" cy="20" r="5" fill="#a3785a"/>' +
+    '<ellipse cx="50" cy="49" rx="31" ry="28" fill="#5f4130"/>' +
+    '<path d="M32 37 l11 5 M68 37 l-11 5" stroke="#1e1d1a" stroke-width="2.6" stroke-linecap="round" fill="none"/>' +
+    '<circle cx="39" cy="49" r="3.4" fill="#1e1d1a"/><circle cx="61" cy="49" r="3.4" fill="#1e1d1a"/>' +
+    '<ellipse cx="50" cy="66" rx="16" ry="12" fill="#a3785a"/>' +
+    '<ellipse cx="50" cy="61" rx="5.5" ry="4" fill="#1e1d1a"/>' +
+    '<path d="M44 72 Q50 69 56 72" stroke="#1e1d1a" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+  function tabIcon(kind) {
+    if (kind === "learn") return '<svg width="20" height="20" viewBox="0 0 22 22"><circle cx="11" cy="4" r="3.1" fill="currentColor"/><circle cx="5" cy="12" r="3.1" fill="currentColor" opacity=".65"/><circle cx="17" cy="12" r="3.1" fill="currentColor" opacity=".65"/><circle cx="11" cy="19" r="3.1" fill="currentColor" opacity=".4"/></svg>';
+    if (kind === "practice") return '<svg width="20" height="20" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.6" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="11" cy="11" r="3.2" fill="currentColor"/></svg>';
+    return '<svg width="20" height="20" viewBox="0 0 22 22"><circle cx="11" cy="7" r="4.4" fill="currentColor"/><path d="M2.5 20a8.5 8.5 0 0 1 17 0z" fill="currentColor"/></svg>';
+  }
+  function tabs(on) {
+    return '<div class="tabbar">' +
+      '<div class="tab' + (on === "learn" ? " on" : "") + '">' + tabIcon("learn") + 'Learn</div>' +
+      '<div class="tab' + (on === "practice" ? " on" : "") + '">' + tabIcon("practice") + 'Practice</div>' +
+      '<div class="tab' + (on === "profile" ? " on" : "") + '">' + tabIcon("profile") + 'Profile</div></div>';
+  }
+  function topbar() {
+    return '<div class="topbar"><span class="chip">' + flame + '12</span>' +
+      '<span class="chip">' + bills3 + '$205.40</span>' +
+      '<span class="chip worth">' + pieces + '$312.15 <span class="up">+$4.10</span></span></div>';
+  }
+  function lhead(pct) {
+    return '<div class="lhead">' + xicon + '<div class="barw"><div style="width:' + pct + '%"></div></div></div>';
+  }
+  function pc(color, size, label) {
+    return '<span class="pc ' + color + '" style="width:' + size + 'px;height:' + size + 'px;font-size:' + (size * 0.3) + 'px">' +
+      (label ? '<b class="slab" style="color:rgba(0,0,0,0.55)">' + label + '</b>' : '') + '</span>';
+  }
+
+  // ---------- shared chart bits
+  function chart(points, color) {
+    return '<svg viewBox="0 0 300 52" style="display:block;width:100%;height:46px"><polyline fill="none" stroke="' + (color || "#3d8c5b") + '" stroke-width="2.5" points="' + points + '"/></svg>';
+  }
+  var WILD = "0,40 22,12 44,36 66,8 88,44 110,18 132,46 154,10 176,34 198,6 220,38 242,16 264,40 286,12 300,20";
+  var CALM = "0,44 30,42 60,38 90,39 120,33 150,32 180,28 210,27 240,22 270,20 300,16";
+  function chipRow(colors, size) {
+    return '<div style="display:flex;gap:5px;justify-content:center;padding:4px 0">' +
+      colors.map(function (c) { return '<span class="pc ' + c + '" style="width:' + size + 'px;height:' + size + 'px;border-width:2.5px"></span>'; }).join("") + '</div>';
+  }
+
+  // ---------- teach card
+  function itemTeach() {
+    return '<div class="phone">' + lhead(12) + '<div class="body">' +
+      '<div class="q" style="font-size:26px;margin-bottom:4px">Volatility</div>' +
+      '<div class="subs">Two stocks. Same five years, same ending.</div>' +
+      '<div class="card">' + chart(WILD, "#b23a2e") +
+      '<div class="slab" style="font-size:12.5px;font-weight:600;color:#8a7c5c;text-align:center;padding-top:2px">the wild ride</div></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card">' + chart(CALM) +
+      '<div class="slab" style="font-size:12.5px;font-weight:600;color:#8a7c5c;text-align:center;padding-top:2px">the calm ride</div></div>' +
+      '<div class="verdict ok" style="background:#f4ecd6;color:#2a2419;margin-top:14px"><b>Volatility is the size of the ride.</b>It says nothing about where the ride ends.</div>' +
+      '<div style="margin-top:auto"></div><a class="bigbtn green">Got it</a>' +
+      '</div></div>';
+  }
+
+  // ---------- spot it, correct
+  function itemSpot() {
+    return '<div class="phone">' + lhead(30) + '<div class="body">' +
+      '<div class="q">Which stock is more volatile?</div>' +
+      '<div class="card" style="outline:3px solid #3d8c5b">' + chart(WILD, "#b23a2e") + '</div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card" style="opacity:0.62">' + chart(CALM) + '</div>' +
+      '<div class="verdict ok"><b>Right.</b>Both ended up 40%. Only one owner slept at night.</div>' +
+      '<a class="bigbtn green">Continue</a>' +
+      '</div></div>';
+  }
+
+  // ---------- spot it, wrong, bear
+  function itemSpotWrong() {
+    return '<div class="phone">' + lhead(48) + '<div class="body">' +
+      '<div class="q">One company in each goes broke. Which portfolio survives it?</div>' +
+      '<div class="card" style="outline:3px solid #c05545">' + chipRow(["red", "red", "red", "red", "red"], 34) +
+      '<div class="slab" style="font-size:12.5px;font-weight:600;color:#8a7c5c;text-align:center">five shares, one company</div></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card">' + chipRow(["red", "black", "slate", "cream", "red"], 34) +
+      '<div class="slab" style="font-size:12.5px;font-weight:600;color:#8a7c5c;text-align:center">five shares, four companies</div></div>' +
+      '<div class="verdict no" style="margin-top:auto;margin-right:86px"><b>The bear got that one.</b>Top loses everything. Bottom loses a fifth.</div>' +
+      '<a class="bigbtn" style="width:calc(100% - 90px)">Okay</a>' +
+      bear +
+      '</div></div>';
+  }
+
+  // ---------- follow the dollar
+  function itemDollar() {
+    function frow(label, amt, dim) {
+      return '<div class="card" style="display:flex;align-items:center;padding:8px 13px;margin-bottom:6px;' + (dim ? "opacity:0.62" : "") + '">' +
+        '<span style="font-size:13.5px">' + label + '</span>' +
+        '<b class="slab" style="margin-left:auto;font-size:14px">' + amt + '</b></div>';
+    }
+    return '<div class="phone">' + lhead(40) + '<div class="body">' +
+      '<div class="q">A $100 sale. Where does the owner stand in line?</div>' +
+      '<div style="display:flex;justify-content:center;padding:0 0 8px"><span class="bill b100">$100</span></div>' +
+      frow("Workers paid", "$38", true) +
+      frow("Suppliers paid", "$30", true) +
+      frow("The bank paid", "$8", true) +
+      frow("Taxes paid", "$12", true) +
+      '<div class="card" style="display:flex;align-items:center;padding:9px 13px;outline:3px solid #3d8c5b">' +
+      '<span style="font-size:13.5px;font-weight:600">What is left, to the owners</span>' +
+      '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">' +
+      '<span class="pc red" style="width:22px;height:22px;border-width:2px"></span>' +
+      '<b class="slab" style="font-size:15px;color:#3d6b47">$12</b></span></div>' +
+      '<div class="verdict ok"><b>Last in line.</b>Owners get what is left. That is why profits matter and stories do not.</div>' +
+      '<a class="bigbtn green">Continue</a>' +
+      '</div></div>';
+  }
+
+  // ---------- the whole pile
+  function itemPile() {
+    function dots(color, n, size, cols) {
+      var h = '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:3px;justify-items:center;padding:4px 20px">';
+      for (var i = 0; i < n; i++) h += '<span class="pc ' + color + '" style="width:' + size + 'px;height:' + size + 'px;border-width:1.5px"></span>';
+      return h + '</div>';
+    }
+    return '<div class="phone">' + lhead(56) + '<div class="body">' +
+      '<div class="q">Costco&rsquo;s share costs four times Apple&rsquo;s. Which whole company is worth more?</div>' +
+      '<div class="card" style="outline:3px solid #3d8c5b">' + dots("slate", 54, 13, 18) +
+      '<div class="slab" style="font-size:12.5px;font-weight:600;color:#8a7c5c;text-align:center">Apple &middot; billions of $232 pieces</div></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card" style="opacity:0.62">' + dots("cream", 7, 22, 7) +
+      '<div class="slab" style="font-size:12.5px;font-weight:600;color:#8a7c5c;text-align:center">Costco &middot; far fewer $912 pieces</div></div>' +
+      '<div class="verdict ok"><b>The pile, not the piece.</b>Apple&rsquo;s pile is about eight times bigger. Share price alone tells you neither.</div>' +
+      '<a class="bigbtn green">Continue</a>' +
+      '</div></div>';
+  }
+
+  // ---------- ride it out
+  function itemRide() {
+    function leg(color, label, state) {
+      var s = state === "sel" ? "outline:3px solid #3d8c5b;" : state === "dim" ? "opacity:0.62;" : "";
+      return '<div class="card" style="display:flex;align-items:center;gap:9px;padding:9px 13px;margin-bottom:7px;' + s + '">' +
+        '<span style="width:22px;height:4px;border-radius:2px;background:' + color + ';flex:none"></span>' +
+        '<span class="slab" style="font-weight:600;font-size:13.5px">' + label + '</span></div>';
+    }
+    return '<div class="phone">' + lhead(72) + '<div class="body">' +
+      '<div class="q">The market crashes. Three owners, three moves. Who ends highest?</div>' +
+      '<div class="card"><svg viewBox="0 0 300 92" style="display:block;width:100%;height:84px">' +
+      '<polyline fill="none" stroke="#8a7c5c" stroke-width="2.5" points="0,48 40,42 80,36 120,30 150,26 168,66"/>' +
+      '<polyline fill="none" stroke="#3d8c5b" stroke-width="2.5" points="168,66 200,52 240,34 300,14"/>' +
+      '<polyline fill="none" stroke="#c9913f" stroke-width="2.5" points="168,66 210,58 255,48 300,38"/>' +
+      '<polyline fill="none" stroke="#c05545" stroke-width="2.5" points="168,66 300,70"/>' +
+      '<circle cx="168" cy="66" r="3.5" fill="#2a2419"/></svg></div>' +
+      '<div style="height:10px"></div>' +
+      leg("#3d8c5b", "Kept buying on schedule", "sel") +
+      leg("#c9913f", "Froze and held", "dim") +
+      leg("#c05545", "Sold at the bottom", "dim") +
+      '<div class="verdict ok"><b>Every crash so far.</b>The schedule buyer wins, and it never feels that way in the moment.</div>' +
+      '<a class="bigbtn green">Continue</a>' +
+      '</div></div>';
+  }
+
+  // ---------- name the strategy
+  function itemStrategy() {
+    function mini(pts, dots, sel, label) {
+      var d = dots.map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4" fill="#2a2419"/>'; }).join("");
+      return '<div class="card" style="padding:9px 13px;margin-bottom:8px;' + (sel ? "outline:3px solid #3d8c5b" : "opacity:0.62") + '">' +
+        '<svg viewBox="0 0 300 46" style="display:block;width:100%;height:38px"><polyline fill="none" stroke="#3d8c5b" stroke-width="2" points="' + pts + '"/>' + d + '</svg>' +
+        (label ? '<div class="slab" style="font-size:12px;font-weight:600;color:#8a7c5c;text-align:center;padding-top:2px">' + label + '</div>' : "") + '</div>';
+    }
+    var line = "0,38 40,35 80,30 110,33 150,25 190,27 230,18 270,15 300,12";
+    var wig = "0,36 30,16 60,30 90,10 120,28 150,8 180,26 210,12 240,30 270,14 300,24";
+    return '<div class="phone">' + lhead(88) + '<div class="body">' +
+      '<div class="q">Three buyers, same stock. Which chart is the steady monthly buyer?</div>' +
+      mini(line, [[20, 37], [75, 31], [130, 28], [185, 27], [240, 17], [290, 13]], true, "") +
+      mini(line, [[12, 38]], false, "") +
+      mini(wig, [[90, 10], [150, 8], [210, 12]], false, "") +
+      '<div class="verdict ok"><b>Even dots, no drama.</b>Buying on a schedule ignores the weather. The last one only bought at peaks.</div>' +
+      '<a class="bigbtn green">Continue</a>' +
+      '</div></div>';
+  }
+
+  // ---------- lesson end: pay, accuracy, buy in one screen
+  function lessonEnd() {
+    function row(piece, name, btn, gray, note) {
+      return '<div class="card" style="display:flex;align-items:center;gap:11px;margin-bottom:8px;padding:10px 13px;' + (gray ? "opacity:0.62" : "") + '">' +
+        piece + '<div><div class="slab" style="font-weight:700;font-size:14.5px">' + name + '</div>' +
+        '<div style="font-size:12px;color:#6f6248">' + note + '</div></div>' +
+        '<a class="slab" style="margin-left:auto;font-weight:700;font-size:12.5px;padding:8px 13px;border-radius:10px;white-space:nowrap;' +
+        (gray ? 'background:#d8cba4;color:#8a7c5c' : 'background:#3d8c5b;color:#f2e9d2;box-shadow:0 3.5px 0 #1e4a30') + '">' + btn + '</a></div>';
+    }
+    return '<div class="phone">' + lhead(100) + '<div class="body">' +
+      '<div style="text-align:center">' +
+      '<div class="slab" style="font-weight:700;font-size:40px;margin-top:4px">6 of 6</div>' +
+      '<div style="color:rgba(242,233,210,0.75);margin-bottom:12px">Perfect, first try</div></div>' +
+      '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;font-size:14px;padding:2px 0"><span>Lesson pay</span><b class="slab">$50.00</b></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:14px;padding:2px 0;color:#3d6b47"><span>Perfect bonus</span><b class="slab">+$10.00</b></div>' +
+      '<div style="border-top:1.5px solid #d8cba4;margin:6px 0 5px"></div>' +
+      '<div style="display:flex;justify-content:space-between"><span class="slab" style="font-weight:700;font-size:15px">To your pocket</span><b class="slab" style="font-size:17px">$60.00</b></div></div>' +
+      '<div class="slab" style="font-weight:700;font-size:15px;margin:14px 0 8px">Buy into what you met?</div>' +
+      row(pc("red", 36, "K"), "Coca-Cola", "Buy 1 &middot; $69.85", false, "$69.85 a share") +
+      row(pc("black", 36, "N"), "Nike", "Buy 1 &middot; $75.40", false, "$75.40 a share") +
+      row(pc("cream", 36, "C"), "Costco", "Save up", true, "$912.40 &middot; you have 22%") +
+      '<div style="margin-top:auto"></div>' +
+      '<a class="bigbtn quiet">Keep the cash</a>' +
+      '</div></div>';
+  }
+
+  // ---------- exchange
+  function exchange() {
+    function row(piece, name, price, chg, up) {
+      return '<div class="card" style="display:flex;align-items:center;gap:11px;margin-bottom:8px;padding:10px 13px">' +
+        piece + '<div class="slab" style="font-weight:700;font-size:14.5px">' + name + '</div>' +
+        '<div style="margin-left:auto;text-align:right"><div class="slab" style="font-weight:700;font-size:14.5px">' + price + '</div>' +
+        '<div style="font-size:12px;color:' + (up ? "#3d6b47" : "#a33325") + '">' + chg + '</div></div></div>';
+    }
+    return '<div class="phone">' + topbar() + '<div class="body">' +
+      '<div class="h1s">The Exchange</div>' +
+      '<div class="subs">Whole shares only. Change comes back as coins.</div>' +
+      '<div class="card" style="outline:3px solid #ecdcae;margin-bottom:9px">' +
+      '<div style="display:flex;align-items:center;gap:11px">' + pc("red", 44, "K") +
+      '<div><div class="slab" style="font-weight:700;font-size:16px">Coca-Cola</div>' +
+      '<div style="font-size:12.5px;color:#6f6248">$69.85 &middot; you can afford 2</div></div></div>' +
+      '<a class="slab" style="display:block;text-align:center;margin-top:11px;font-weight:700;font-size:14.5px;padding:11px 0;border-radius:11px;background:#3d8c5b;color:#f2e9d2;box-shadow:0 4px 0 #1e4a30">Mint 1 piece &middot; $69.85</a></div>' +
+      row(pc("slate", 34, "A"), "Apple", "$232.10", "+0.4% today", true) +
+      row(pc("black", 34, "N"), "Nike", "$75.40", "+1.1% today", true) +
+      row(pc("cream", 34, "C"), "Costco", "$912.40", "-0.6% today", false) +
+      '<div style="margin-top:auto;padding-bottom:10px">' +
+      '<div style="font-size:12.5px;color:rgba(242,233,210,0.6);margin-bottom:6px">Your stacks</div>' +
+      '<div style="display:flex;gap:14px;align-items:flex-end">' +
+      stackMini("red", 4, "KO") + stackMini("black", 2, "NKE") + stackMini("slate", 1, "AAPL") +
+      '<span style="font-size:12.5px;color:rgba(242,233,210,0.6);margin-left:auto">Tap a stack to sell</span></div></div>' +
+      '</div>' + tabs("profile") + '</div>';
+  }
+  function stackMini(color, n, label) {
+    var h = '<div style="text-align:center">';
+    h += '<div style="display:flex;flex-direction:column-reverse;align-items:center">';
+    for (var i = 0; i < n; i++) {
+      h += '<span class="pc ' + color + '" style="width:44px;height:16px;border-radius:8px;margin-top:-6px;border-width:2px"></span>';
+    }
+    h += '</div><div class="slab" style="font-size:11.5px;font-weight:600;color:rgba(242,233,210,0.7);margin-top:4px">' + label + '</div></div>';
+    return h;
+  }
+
+  // ---------- portfolio
+  function portfolio() {
+    function lot(paid, date, chg, up) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1.5px solid #e4d9b4">' +
+        '<span class="pc red" style="width:26px;height:26px;border-width:2px"></span>' +
+        '<span class="slab" style="font-weight:700;font-size:14px">' + paid + '</span>' +
+        '<span style="font-size:12.5px;color:#8a7c5c">' + date + '</span>' +
+        '<span class="slab" style="margin-left:auto;font-weight:600;font-size:13px;color:' + (up ? "#3d6b47" : "#a33325") + '">' + chg + '</span></div>';
+    }
+    return '<div class="phone">' + topbar() + '<div class="body">' +
+      '<div class="subtabs"><span class="subtab on">Portfolio</span><span class="subtab">Friends</span><span class="subtab">Guide</span></div>' +
+      '<div class="h1s">$312.15</div>' +
+      '<div class="subs">Put in $298.90, up $13.25</div>' +
+      '<div style="display:flex;gap:20px;align-items:flex-end;padding:4px 4px 14px">' +
+      '<div style="outline:3px solid #ecdcae;border-radius:12px;padding:6px 10px 2px">' + stackMini("red", 4, "KO &middot; $279.40") + '</div>' +
+      stackMini("black", 2, "NKE &middot; $150.80") + stackMini("slate", 1, "AAPL &middot; $232.10") + '</div>' +
+      '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+      '<span class="slab" style="font-weight:700;font-size:15.5px">Coca-Cola &middot; 4 shares</span>' +
+      '<span class="slab" style="font-weight:700;font-size:14px;color:#3d6b47">+1.7%</span></div>' +
+      '<div style="font-size:12.5px;color:#6f6248;margin:2px 0 8px">Avg paid $68.90 &middot; worth $279.40</div>' +
+      lot("$67.20", "May 12", "+3.9%", true) +
+      lot("$68.40", "May 13", "+2.1%", true) +
+      lot("$69.10", "May 14", "+1.1%", true) +
+      lot("$70.90", "May 16", "-1.5%", false) +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+      '<a class="slab" style="flex:1;text-align:center;font-weight:700;font-size:13.5px;padding:9px 0;border-radius:10px;background:#3d8c5b;color:#f2e9d2;box-shadow:0 3.5px 0 #1e4a30">Buy 1</a>' +
+      '<a class="slab" style="flex:1;text-align:center;font-weight:700;font-size:13.5px;padding:9px 0;border-radius:10px;background:#efe3c0;color:#2a2419;box-shadow:0 3.5px 0 #a68d58">Sell a piece</a></div></div>' +
+      '<div style="margin-top:auto;text-align:center;font-size:12.5px;color:rgba(242,233,210,0.6);padding-bottom:8px">Four buys, four prices. That spread is DCA doing its job.</div>' +
+      '</div>' + tabs("profile") + '</div>';
+  }
+
+  // ---------- friends
+  function friends() {
+    function frow(init, name, worth, streak, chg, up, stacks) {
+      return '<div class="card" style="display:flex;align-items:center;gap:11px;margin-bottom:9px">' +
+        '<span class="pc cream" style="width:40px;height:40px"><b class="slab" style="font-size:16px;color:rgba(0,0,0,0.55)">' + init + '</b></span>' +
+        '<div><div class="slab" style="font-weight:700;font-size:15px">' + name + '</div>' +
+        '<div style="font-size:12.5px;color:#6f6248">' + worth + ' &middot; ' + streak + '</div></div>' +
+        '<div style="margin-left:auto;text-align:right">' +
+        '<div style="display:flex;gap:3px;justify-content:flex-end">' + stacks + '</div>' +
+        '<div class="slab" style="font-size:12.5px;font-weight:600;margin-top:3px;color:' + (up ? "#3d6b47" : "#a33325") + '">' + chg + '</div></div></div>';
+    }
+    function mini(color) { return '<span class="pc ' + color + '" style="width:18px;height:18px;border-width:2px"></span>'; }
+    return '<div class="phone">' + topbar() + '<div class="body">' +
+      '<div class="subtabs"><span class="subtab">Portfolio</span><span class="subtab on">Friends</span><span class="subtab">Guide</span></div>' +
+      '<div class="h1s">Friends</div>' +
+      '<div class="subs">Same paychecks, different calls. Tap a stack to see it all.</div>' +
+      frow("A", "Ada", "$482.19", "21 days", "+2.1% today", true, mini("slate") + mini("red") + mini("cream")) +
+      frow("N", "Nick", "$130.05", "3 days", "-0.4% today", false, mini("black")) +
+      frow("J", "Jared", "$355.60", "12 days", "+0.9% today", true, mini("red") + mini("slate")) +
+      '<div style="margin-top:auto"></div>' +
+      '<a class="bigbtn quiet">Add a friend</a>' +
+      '</div>' + tabs("profile") + '</div>';
+  }
+
+  // ---------- field guide
+  function guide() {
+    var met = ["KO", "NKE", "AAPL", "MCD", "COST", "NVDA", "PFE", "XOM", "JNJ", "MSFT"];
+    var colors = { KO: "red", NKE: "black", AAPL: "slate", MCD: "red", COST: "cream", NVDA: "black", PFE: "cream", XOM: "slate", JNJ: "red", MSFT: "slate" };
+    var h = '<div class="phone">' + topbar() + '<div class="body">' +
+      '<div class="subtabs"><span class="subtab">Portfolio</span><span class="subtab">Friends</span><span class="subtab on">Guide</span></div>' +
+      '<div class="h1s">Field guide</div>' +
+      '<div class="subs">23 of 500 met. Every company you have ever learned.</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;justify-items:center">';
+    met.forEach(function (t) {
+      h += '<div style="text-align:center">' + pc(colors[t], 46, t[0]) +
+        '<div class="slab" style="font-size:10.5px;font-weight:600;color:rgba(242,233,210,0.7);margin-top:3px">' + t + '</div></div>';
+    });
+    for (var i = 0; i < 10; i++) {
+      h += '<div style="text-align:center"><span class="pc" style="width:46px;height:46px;background:rgba(0,0,0,0.24);box-shadow:inset 0 3px 6px rgba(0,0,0,0.3)"><b class="slab" style="color:rgba(242,233,210,0.3);font-size:15px">?</b></span>' +
+        '<div style="font-size:10.5px;color:transparent;margin-top:3px">.</div></div>';
+    }
+    h += '</div><div style="margin-top:auto;text-align:center;font-size:12.5px;color:rgba(242,233,210,0.6);padding-bottom:12px">Tap any piece for its story and its numbers.</div>' +
+      '</div>' + tabs("profile") + '</div>';
+    return h;
+  }
+
+  // ---------- practice
+  function practice() {
+    return '<div class="phone">' + topbar() + '<div class="body">' +
+      '<div class="h1s">Practice</div>' +
+      '<div class="subs">Games pay first, then they are just for fun.</div>' +
+      '<div class="card">' +
+      '<div class="slab" style="font-weight:700;font-size:17px">Guess the Stock</div>' +
+      '<div style="font-size:13px;color:#6f6248;margin:2px 0 8px">Name the company from its chart</div>' +
+      '<svg viewBox="0 0 300 60" style="display:block;width:100%;height:52px">' +
+      '<polyline fill="none" stroke="#3d8c5b" stroke-width="2.5" points="0,50 30,44 60,47 90,36 120,39 150,28 180,31 210,18 240,24 270,10 300,14"/></svg>' +
+      '<div style="display:flex;align-items:center;margin-top:8px">' +
+      '<span style="font-size:12.5px;color:#6f6248">3 plays pay today &middot; $5 each</span>' +
+      '<a class="slab" style="margin-left:auto;font-weight:700;font-size:13.5px;padding:9px 18px;border-radius:10px;background:#3d8c5b;color:#f2e9d2;box-shadow:0 3.5px 0 #1e4a30">Play</a></div></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card" style="opacity:0.6;display:flex;align-items:center;gap:10px"><div>' +
+      '<div class="slab" style="font-weight:700;font-size:15px">Worth More</div>' +
+      '<div style="font-size:12.5px;color:#6f6248">Which company is worth more</div></div>' +
+      '<span class="slab" style="margin-left:auto;font-size:12.5px;color:#8a7c5c">Soon</span></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card" style="opacity:0.6;display:flex;align-items:center;gap:10px"><div>' +
+      '<div class="slab" style="font-weight:700;font-size:15px">Time Machine</div>' +
+      '<div style="font-size:12.5px;color:#6f6248">Old prices, guess what happened next</div></div>' +
+      '<span class="slab" style="margin-left:auto;font-size:12.5px;color:#8a7c5c">Soon</span></div>' +
+      '<div style="margin-top:auto;text-align:center;font-size:12.5px;color:rgba(242,233,210,0.6);padding-bottom:12px">Every game feeds the field guide.</div>' +
+      '</div>' + tabs("practice") + '</div>';
+  }
+
+  // ---------- mount
+  var sections = [
+    { t: "The lesson, item types round two", d: "Concepts over numbers, visuals over text. A teach card opens, checks follow, misses re-queue, first tries pay.",
+      figs: [
+        [itemTeach(), "The teach card", "One concept, one look. Volatility as two rides."],
+        [itemSpot(), "Spot it", "The workhorse: concept named, two charts, tap one. Works for volatility, growth, bubbles, fees."],
+        [itemSpotWrong(), "Spot it, wrong", "Same shape on portfolios: which survives a failure. The bear collects the miss."],
+        [itemDollar(), "Follow the dollar", "A sale flows through the company. The owner is last in line, and that is the point."],
+        [itemPile(), "The whole pile", "Price per piece against the size of the pile. Market cap without saying it."],
+        [itemRide(), "Ride it out", "A crash, three behaviors, three endings. The DCA reflex as a picture."],
+        [itemStrategy(), "Name the strategy", "Buy dots on a chart. Steady dots, one dot, or peak-chasing dots. Your shape."],
+      ] },
+    { t: "Lesson end", d: "Money, accuracy, and the buy, one screen.",
+      figs: [
+        [lessonEnd(), "Lesson end", "Pay and accuracy on top, the stocks you met below, one is a saving-up goal."],
+      ] },
+    { t: "The Exchange and the Profile", d: "Money chip opens the Exchange. Profile holds portfolio, friends, guide.",
+      figs: [
+        [exchange(), "The Exchange", "Mint whole pieces, change back as coins, stacks sell below."],
+        [portfolio(), "Portfolio", "Stacks on the shelf, tap one and the lots fan out. DCA as a receipt."],
+        [friends(), "Friends", "Full stacks visible. The envy is the point."],
+        [guide(), "Field guide", "The 500 as a collection. Met pieces in color."],
+      ] },
+    { t: "Practice", d: "The arcade half. First plays pay, everything feeds the guide.",
+      figs: [
+        [practice(), "Practice", "Guess the Stock leads, more games slot in."],
+      ] },
+  ];
+  var mount = document.getElementById("mount");
+  sections.forEach(function (s) {
+    var h = '<h2 class="sec">' + s.t + '</h2><p class="secd">' + s.d + '</p><div class="row">';
+    s.figs.forEach(function (f) {
+      h += '<div class="fig">' + f[0] + '<div class="cap"><div class="t">' + f[1] + '</div><div class="d">' + f[2] + '</div></div></div>';
+    });
+    h += '</div>';
+    mount.insertAdjacentHTML("beforeend", h);
+  });
+})();
+</script>
+</body>
+</html>

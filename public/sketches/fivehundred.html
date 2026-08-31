@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The 500</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #e9e7e1;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e1d1a;
+  }
+  #phone {
+    max-width: 420px; margin: 0 auto; min-height: 100dvh;
+    background: #faf9f6; display: flex; flex-direction: column;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+  }
+  #top { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; }
+  .chip { font-size: 13.5px; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: #efece5; }
+  .chip.day { background: #e8f0e9; color: #2e6d40; }
+  .chip.worth { margin-left: auto; cursor: pointer; }
+  #screen { flex: 1; overflow-y: auto; padding: 4px 14px 18px; }
+  #tabs { display: flex; border-top: 1px solid #e2ded5; background: #faf9f6; position: sticky; bottom: 0; }
+  #tabs button { flex: 1; font: inherit; font-size: 14px; padding: 12px 0 14px; border: none; background: none; color: #8a857a; cursor: pointer; }
+  #tabs button.on { color: #1e1d1a; font-weight: 700; }
+
+  h1 { font-size: 21px; margin: 10px 2px 2px; }
+  .sub { font-size: 14px; color: #6f6a5f; margin: 0 2px 14px; }
+  .sech { font-size: 14px; font-weight: 700; margin: 16px 2px 8px; color: #6f6a5f; }
+  .sech span { font-weight: 400; color: #a39d90; }
+
+  .node {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1px solid #e2ded5; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
+  }
+  .node .dot {
+    width: 32px; height: 32px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .node.done .dot { background: #2e7d44; color: #fff; }
+  .node.now .dot { background: #1e1d1a; color: #fff; }
+  .node.lock .dot { background: #efece5; color: #b3ada0; }
+  .node.lock { color: #a39d90; cursor: default; }
+  .node .t { font-size: 15px; font-weight: 700; }
+  .node .d { font-size: 13px; color: #8a857a; }
+  .node.lock .t { color: #a39d90; }
+  .node.now { border-color: #1e1d1a; }
+  .node .go { margin-left: auto; font-size: 13.5px; font-weight: 700; color: #2e6d40; }
+  .node .own { margin-left: auto; font-size: 13px; color: #8a857a; }
+
+  .banner { background: #e8f0e9; color: #24512f; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin: 0 0 12px; }
+  .banner.dn { background: #f7e7e5; color: #7c2620; }
+  .foot { font-size: 12.5px; color: #a39d90; text-align: center; margin-top: 16px; }
+
+  .bigbtn {
+    display: block; width: 100%; font: inherit; font-size: 15.5px; font-weight: 700;
+    padding: 13px 0; border-radius: 12px; border: none; cursor: pointer;
+    background: #2e7d44; color: #fff; margin-top: 14px;
+  }
+  .bigbtn.quiet { background: #efece5; color: #1e1d1a; }
+  .bigbtn:disabled { background: #d8d4ca; color: #94907f; cursor: default; }
+
+  .story {
+    background: #fff; border: 1px solid #e2ded5; border-radius: 14px;
+    padding: 18px 16px; font-size: 16px; line-height: 1.55; margin-top: 6px;
+  }
+  .story .what { font-weight: 700; margin-bottom: 10px; }
+  .numline { font-size: 14.5px; color: #6f6a5f; background: #fff; border: 1px solid #e2ded5; border-radius: 12px; padding: 13px 14px; margin-top: 10px; }
+  .numline b { color: #1e1d1a; }
+
+  #bar { height: 8px; background: #e7e3da; border-radius: 999px; margin: 10px 0 16px; overflow: hidden; }
+  #bar div { height: 100%; background: #2e7d44; border-radius: 999px; transition: width .3s ease; }
+  .q { font-size: 18px; font-weight: 700; margin: 4px 2px 16px; line-height: 1.35; }
+  .opt {
+    display: block; width: 100%; text-align: left; font: inherit; font-size: 15px;
+    background: #fff; border: 1.5px solid #d8d4ca; border-radius: 12px;
+    padding: 13px 14px; margin-bottom: 9px; cursor: pointer;
+  }
+  .opt.right { border-color: #2e7d44; background: #e8f0e9; }
+  .opt.wrong { border-color: #b8342a; background: #f7e7e5; animation: shake .3s; }
+  .opt:disabled { cursor: default; }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .verdict { border-radius: 12px; padding: 13px 14px; font-size: 14.5px; margin-top: 12px; }
+  .verdict.ok { background: #e8f0e9; color: #24512f; }
+  .verdict.no { background: #f7e7e5; color: #7c2620; }
+  .verdict b { display: block; font-size: 15px; margin-bottom: 3px; }
+
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1px solid #e2ded5; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 9px;
+  }
+  .row .t { font-size: 15px; font-weight: 700; }
+  .row .d { font-size: 13px; color: #8a857a; }
+  .row .pc { margin-left: auto; font-size: 13.5px; font-weight: 700; flex: none; }
+  .row .pc.up { color: #2e6d40; }
+  .row .pc.dn { color: #b8342a; }
+  .row button {
+    font: inherit; font-size: 13.5px; font-weight: 700; border: none; border-radius: 9px;
+    padding: 8px 13px; cursor: pointer; flex: none;
+  }
+  .row .b-buy { background: #1e1d1a; color: #fff; }
+  .row .b-buy:disabled { background: #d8d4ca; color: #94907f; cursor: default; }
+  .row .b-sell { background: #efece5; color: #1e1d1a; }
+  svg.big { display: block; width: 100%; height: 180px; background: #fff; border: 1px solid #e2ded5; border-radius: 12px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div id="top">
+    <span class="chip day" id="daychip">Day 1</span>
+    <span class="chip" id="xpchip">0 XP</span>
+    <span class="chip worth" id="worthchip">Worth $0</span>
+  </div>
+  <div id="screen"></div>
+  <div id="tabs">
+    <button data-t="tree" class="on">The tree</button>
+    <button data-t="folio">Portfolio</button>
+  </div>
+</div>
+<script>
+(function () {
+  var LESSON_XP = 50, CHUNK = 50, DAYS = 420;
+
+  // ---- companies: 12 stand-ins for the 500
+  var TREE = [
+    { sector: "Tech", list: [
+      { id: "aapl", name: "Apple", p0: 230, drift: 0.0006, vol: 0.012, seed: 7,
+        what: "Sells iPhones, Macs and the services on them.",
+        story: "Started in a garage in 1976. Nearly died in 1997, and Microsoft of all companies helped bail it out. Then the iPhone changed everything.",
+        q: "Where does most of Apple's money come from?",
+        opts: ["The iPhone", "The Mac", "Apple Stores"], right: 0,
+        ok: "Over half of all sales, for nearly two decades.",
+        no: "The Mac is a sliver now. The iPhone is over half.",
+        num: "You pay about $35 for every $1 it earns in a year." },
+      { id: "msft", name: "Microsoft", p0: 420, drift: 0.0007, vol: 0.011, seed: 13,
+        what: "Makes Windows and Office, and rents out cloud computing.",
+        story: "Founded 1975. It missed phones completely, then quietly became a landlord of the internet: companies pay it monthly for cloud computers.",
+        q: "What is Microsoft's fastest growing business?",
+        opts: ["Renting cloud computing", "Selling Windows discs", "The Xbox"], right: 0,
+        ok: "Azure. Companies pay it every month, like rent.",
+        no: "Windows built the company. The cloud grows it.",
+        num: "You pay about $35 for every $1 it earns." },
+      { id: "nvda", name: "Nvidia", p0: 120, drift: 0.0012, vol: 0.028, seed: 29,
+        what: "Designs the chips that power games and AI.",
+        story: "Started in 1993 making chips for video games. The same chips turned out to be perfect for AI, and demand exploded.",
+        q: "Does Nvidia build chips in its own factories?",
+        opts: ["No, it only designs them", "Yes, all of them", "Only the AI ones"], right: 0,
+        ok: "A factory in Taiwan builds them. Nvidia does the thinking.",
+        no: "It owns no chip factories. It designs, others build.",
+        num: "You pay about $45 for every $1 it earns. Priced for a big future." },
+      { id: "adbe", name: "Adobe", p0: 550, drift: 0.0002, vol: 0.014, seed: 31,
+        what: "Makes Photoshop and invented the PDF.",
+        story: "In 2012 it stopped selling software in boxes and switched to monthly subscriptions. Wall Street hated it, then loved it.",
+        q: "How do you pay for Photoshop today?",
+        opts: ["A monthly subscription", "One box, one time", "It is free with ads"], right: 0,
+        ok: "Subscriptions turned one sale into income forever.",
+        no: "The boxes are gone. It is a subscription now.",
+        num: "You pay about $40 for every $1 it earns." },
+    ]},
+    { sector: "Everyday", list: [
+      { id: "cost", name: "Costco", p0: 900, drift: 0.0007, vol: 0.009, seed: 41,
+        what: "Warehouse stores you pay a yearly fee to enter.",
+        story: "The goods are sold nearly at cost. The real product is the membership card, and the $1.50 hot dog has not changed price since 1985.",
+        q: "Where does most of Costco's profit come from?",
+        opts: ["Membership fees", "Groceries", "The hot dogs"], right: 0,
+        ok: "The stores roughly break even. The fees are the profit.",
+        no: "Groceries are sold near cost. The fee is the business.",
+        num: "You pay about $50 for every $1 it earns. Loyalty is expensive to buy." },
+      { id: "nke", name: "Nike", p0: 75, drift: -0.0004, vol: 0.013, seed: 43,
+        what: "Designs sneakers and sportswear, sold worldwide.",
+        story: "Began in 1964 selling Japanese running shoes out of a car trunk. The swoosh logo was bought from a design student for $35.",
+        q: "The swoosh logo cost",
+        opts: ["$35", "$35,000", "$3.5 million"], right: 0,
+        ok: "A design student, 1971. She got stock later.",
+        no: "Thirty five dollars, in 1971.",
+        num: "You pay about $28 for every $1 it earns. It has been losing ground lately." },
+      { id: "mcd", name: "McDonald's", p0: 290, drift: 0.0004, vol: 0.008, seed: 47,
+        what: "Burgers, fries and 40,000 restaurants.",
+        story: "Here is the secret: it barely flips burgers. Franchisees run the restaurants and pay McDonald's rent, because McDonald's owns the land.",
+        q: "What business is McDonald's really in?",
+        opts: ["Real estate", "Beef", "Toys"], right: 0,
+        ok: "It owns the land under the stores. Rent is the engine.",
+        no: "It owns the land and collects the rent.",
+        num: "You pay about $26 for every $1 it earns." },
+      { id: "ko", name: "Coca-Cola", p0: 70, drift: 0.0002, vol: 0.006, seed: 53,
+        what: "The world's best known drink, since 1886.",
+        story: "It mostly does not bottle anything. It sells concentrated syrup to bottlers, and it has raised its dividend every year for over 60 years.",
+        q: "What does Coca-Cola mostly sell?",
+        opts: ["Syrup to bottlers", "Cans it fills itself", "Restaurants"], right: 0,
+        ok: "The bottlers do the heavy lifting. It sells the recipe.",
+        no: "Bottlers buy the syrup. That is the business.",
+        num: "You pay about $28 for every $1 it earns. Slow, steady, pays you yearly." },
+    ]},
+    { sector: "Energy", list: [
+      { id: "xom", name: "ExxonMobil", p0: 110, drift: 0.0003, vol: 0.014, seed: 59,
+        what: "Finds, pumps and refines oil and gas.",
+        story: "A direct descendant of Rockefeller's Standard Oil, which the government broke up in 1911. The pieces became Exxon, Mobil and Chevron.",
+        q: "Exxon descends from",
+        opts: ["Standard Oil", "The East India Company", "Ford"], right: 0,
+        ok: "The 1911 breakup made the pieces worth more than the whole.",
+        no: "Rockefeller's Standard Oil, broken up in 1911.",
+        num: "You pay about $14 for every $1 it earns. Cheap, but oil prices decide its fate." },
+      { id: "nee", name: "NextEra", p0: 75, drift: 0.0002, vol: 0.011, seed: 61,
+        what: "A Florida utility that became America's biggest wind and solar builder.",
+        story: "It sells electricity like any utility, and quietly built more wind and solar than anyone else in the country.",
+        q: "NextEra is the country's biggest builder of",
+        opts: ["Wind and solar power", "Oil rigs", "Data centers"], right: 0,
+        ok: "A boring utility on the outside, a builder underneath.",
+        no: "Wind and solar. The utility funds the buildout.",
+        num: "You pay about $22 for every $1 it earns." },
+    ]},
+    { sector: "Health", list: [
+      { id: "jnj", name: "Johnson & Johnson", p0: 155, drift: 0.0002, vol: 0.007, seed: 67,
+        what: "Band-Aids, Tylenol and cancer drugs.",
+        story: "Founded 1886. It has raised its dividend every single year for over 60 years, through wars, crashes and pandemics.",
+        q: "J&J has raised its dividend every year for over",
+        opts: ["60 years", "10 years", "2 years"], right: 0,
+        ok: "Companies that can do that are rare and prized.",
+        no: "Over 60 straight years.",
+        num: "You pay about $15 for every $1 it earns." },
+      { id: "pfe", name: "Pfizer", p0: 28, drift: -0.0005, vol: 0.012, seed: 71,
+        what: "One of the oldest drug makers, since 1849.",
+        story: "Viagra was discovered by accident during a heart drug trial. In 2020 it built a covid vaccine in under a year.",
+        q: "Viagra was originally being tested as",
+        opts: ["A heart drug", "A hair drug", "A sleep aid"], right: 0,
+        ok: "The side effect became the product.",
+        no: "A heart drug. The trial found something else.",
+        num: "You pay about $12 for every $1 it earns. Cheap because its covid boom faded." },
+    ]},
+  ];
+  var ALL = {};
+  TREE.forEach(function (s) { s.list.forEach(function (c) { ALL[c.id] = c; }); });
+
+  // ---- deterministic daily prices
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  for (var id in ALL) {
+    var c = ALL[id], r = rng(c.seed), arr = [c.p0];
+    for (var d = 1; d <= DAYS; d++) arr.push(arr[d - 1] * (1 + c.drift + (r() - 0.5) * 2 * c.vol));
+    c.prices = arr;
+  }
+
+  var S = {
+    day: 1, xp: 0,
+    learned: [],           // ids in learn order
+    holdings: {},          // id -> { qty, paidIn }
+    hist: [], buys: [],
+    overnight: null,
+  };
+
+  function price(id) { return ALL[id].prices[S.day - 1]; }
+  function money2(n) { return "$" + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function money(n) { return "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 }); }
+  function holdingsWorth() {
+    var w = 0;
+    for (var id in S.holdings) w += S.holdings[id].qty * price(id);
+    return w;
+  }
+  function paidTotal() {
+    var p = 0;
+    for (var id in S.holdings) p += S.holdings[id].paidIn;
+    return p;
+  }
+  function pushHist() { S.hist.push({ d: S.day, v: holdingsWorth(), p: paidTotal() }); }
+  function updateTop() {
+    document.getElementById("daychip").textContent = "Day " + S.day;
+    document.getElementById("xpchip").textContent = Math.round(S.xp) + " XP";
+    document.getElementById("worthchip").textContent = "Worth " + money(holdingsWorth() + S.xp);
+  }
+  document.getElementById("worthchip").addEventListener("click", function () { show("folio"); });
+
+  var screen = document.getElementById("screen");
+  var tabs = document.getElementById("tabs");
+  tabs.querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () { show(b.dataset.t); });
+  });
+  function show(t) {
+    tabs.style.display = "flex";
+    tabs.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b.dataset.t === t); });
+    if (t === "tree") renderTree();
+    if (t === "folio") renderFolio();
+    updateTop();
+  }
+
+  // ---- the tree
+  function renderTree() {
+    var h = "<h1>The 500</h1><p class='sub'>Learn a company, earn a stake in it. You know " +
+      S.learned.length + " of the 500.</p>";
+    if (S.overnight !== null) {
+      var o = S.overnight;
+      h += "<div class='banner" + (o < 0 ? " dn" : "") + "'>Overnight your portfolio " +
+        (o >= 0 ? "grew " + money2(o) : "fell " + money2(o)) + ".</div>";
+      S.overnight = null;
+    }
+    TREE.forEach(function (sec) {
+      var done = sec.list.filter(function (c) { return S.learned.indexOf(c.id) >= 0; }).length;
+      h += "<div class='sech'>" + sec.sector + " <span>" + done + " of " + sec.list.length + "</span></div>";
+      var nextFound = false;
+      sec.list.forEach(function (c) {
+        var isDone = S.learned.indexOf(c.id) >= 0;
+        var isNow = !isDone && !nextFound;
+        if (isNow) nextFound = true;
+        var cls = isDone ? "done" : isNow ? "now" : "lock";
+        var mark = isDone ? "&#10003;" : isNow ? "&#9654;" : "";
+        var side = "";
+        if (isDone) {
+          var hd = S.holdings[c.id];
+          side = "<span class='own'>" + (hd && hd.qty ? "you hold " + money(hd.qty * price(c.id)) : "learned") + "</span>";
+        } else if (isNow) side = "<span class='go'>Start</span>";
+        h += "<div class='node " + cls + "' data-id='" + c.id + "'><div class='dot'>" + mark + "</div>" +
+          "<div><div class='t'>" + c.name + "</div><div class='d'>" + c.what + "</div></div>" + side + "</div>";
+      });
+    });
+    if (S.learned.length) {
+      h += "<button class='bigbtn quiet' id='tomorrow'>Tomorrow</button>";
+    }
+    h += "<p class='foot'>This mock carries 12 of the 500. A day here is a tap, in the real app it is a real market day.</p>";
+    screen.innerHTML = h;
+    screen.querySelectorAll(".node.now").forEach(function (n) {
+      n.addEventListener("click", function () { startLesson(ALL[n.dataset.id]); });
+    });
+    var tm = document.getElementById("tomorrow");
+    if (tm) tm.addEventListener("click", nextDay);
+  }
+
+  function nextDay() {
+    var before = holdingsWorth();
+    S.day++;
+    pushHist();
+    S.overnight = holdingsWorth() - before;
+    renderTree();
+    updateTop();
+  }
+
+  // ---- lesson: story, quiz, stake
+  var cur = null;
+  function lessonHead(pct) {
+    var secName = "";
+    TREE.forEach(function (s) { if (s.list.indexOf(cur) >= 0) secName = s.sector; });
+    return "<p class='sub' style='margin-top:10px'>" + secName + " · company " + (S.learned.length + 1) + " of 500</p>" +
+      "<div id='bar'><div style='width:" + pct + "%'></div></div>";
+  }
+  function startLesson(c) {
+    cur = c;
+    tabs.style.display = "none";
+    screen.innerHTML = lessonHead(10) +
+      "<h1>" + c.name + "</h1>" +
+      "<div class='story'><div class='what'>" + c.what + "</div>" + c.story + "</div>" +
+      "<button class='bigbtn' id='cont'>Continue</button>";
+    document.getElementById("cont").addEventListener("click", renderQuiz);
+  }
+  function renderQuiz() {
+    var c = cur;
+    var h = lessonHead(55) + "<div class='q'>" + c.q + "</div>";
+    c.opts.forEach(function (o, i) { h += "<button class='opt' data-i='" + i + "'>" + o + "</button>"; });
+    h += "<div id='vslot'></div>";
+    screen.innerHTML = h;
+    screen.querySelectorAll(".opt").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var right = +b.dataset.i === c.right;
+        screen.querySelectorAll(".opt").forEach(function (x) { x.disabled = true; });
+        b.classList.add(right ? "right" : "wrong");
+        document.getElementById("vslot").innerHTML =
+          "<div class='verdict " + (right ? "ok" : "no") + "'><b>" + (right ? "Right." : "Not quite.") + "</b>" +
+          (right ? c.ok : c.no) + "</div>" +
+          "<button class='bigbtn' id='cont'>" + (right ? "Continue" : "Okay") + "</button>";
+        document.getElementById("cont").addEventListener("click", finishLesson);
+      });
+    });
+  }
+  function finishLesson() {
+    var c = cur;
+    S.xp += LESSON_XP;
+    S.learned.push(c.id);
+    screen.innerHTML = lessonHead(100) +
+      "<h1>" + c.name + " learned. +" + LESSON_XP + " XP.</h1>" +
+      "<div class='numline'><b>" + money2(price(c.id)) + " a share.</b> " + c.num + "</div>" +
+      "<button class='bigbtn' id='stake'>Put your XP to work</button>" +
+      "<button class='bigbtn quiet' id='back'>Back to the tree</button>";
+    document.getElementById("stake").addEventListener("click", function () { show("folio"); });
+    document.getElementById("back").addEventListener("click", function () { show("tree"); });
+    updateTop();
+  }
+
+  // ---- portfolio: chart, holdings, the learned shelf
+  function renderFolio() {
+    var w = holdingsWorth(), paid = paidTotal(), diff = w - paid;
+    var h = "<h1>Your portfolio</h1>";
+    if (!S.learned.length) {
+      h += "<p class='sub'>Learn your first company. Your XP becomes your stake.</p>";
+      screen.innerHTML = h;
+      return;
+    }
+    if (S.hist.length > 1) {
+      h += "<p class='sub'>You put in " + money(paid) + ". Worth " + money2(w) + " now, " +
+        (diff >= 0 ? "up " : "down ") + money2(diff) + ".</p>" + folioChart();
+    } else {
+      h += "<p class='sub'>" + Math.round(S.xp) + " XP to spend. Every " + CHUNK + " XP is " + money(CHUNK) + " of stock.</p>";
+    }
+    var owned = S.learned.filter(function (id) { return S.holdings[id] && S.holdings[id].qty > 0; });
+    var shelf = S.learned.filter(function (id) { return !S.holdings[id] || !S.holdings[id].qty; });
+    owned.forEach(function (id) {
+      var c = ALL[id], hd = S.holdings[id], v = hd.qty * price(id);
+      var pc = (v / hd.paidIn - 1) * 100;
+      h += "<div class='row'><div><div class='t'>" + c.name + "</div>" +
+        "<div class='d'>In " + money(hd.paidIn) + ", worth " + money2(v) + "</div></div>" +
+        "<span class='pc " + (pc >= 0 ? "up" : "dn") + "'>" + (pc >= 0 ? "+" : "") + pc.toFixed(1) + "%</span>" +
+        "<button class='b-buy' data-buy='" + id + "' " + (S.xp < CHUNK ? "disabled" : "") + ">Buy</button>" +
+        "<button class='b-sell' data-sell='" + id + "'>Sell</button></div>";
+    });
+    if (shelf.length) {
+      h += "<div class='sech'>Learned, not owned</div>";
+      shelf.forEach(function (id) {
+        var c = ALL[id];
+        h += "<div class='row'><div><div class='t'>" + c.name + "</div>" +
+          "<div class='d'>" + money2(price(id)) + " a share</div></div>" +
+          "<button class='b-buy' data-buy='" + id + "' style='margin-left:auto' " + (S.xp < CHUNK ? "disabled" : "") + ">Buy " + CHUNK + " XP</button></div>";
+      });
+    }
+    h += "<div class='row'><div><div class='t'>XP</div><div class='d'>Earned by learning, spent on shares</div></div>" +
+      "<span class='pc'>" + Math.round(S.xp) + "</span></div>";
+    h += "<p class='foot'>Sell anytime, it becomes XP again. Prices here are pretend, the real app runs on real closes.</p>";
+    screen.innerHTML = h;
+    screen.querySelectorAll("[data-buy]").forEach(function (b) {
+      b.addEventListener("click", function () { buy(b.dataset.buy); });
+    });
+    screen.querySelectorAll("[data-sell]").forEach(function (b) {
+      b.addEventListener("click", function () { sell(b.dataset.sell); });
+    });
+    updateTop();
+  }
+  function buy(id) {
+    if (S.xp < CHUNK) return;
+    S.xp -= CHUNK;
+    var hd = S.holdings[id] || (S.holdings[id] = { qty: 0, paidIn: 0 });
+    hd.qty += CHUNK / price(id);
+    hd.paidIn += CHUNK;
+    pushHist();
+    S.buys.push({ d: S.day, v: holdingsWorth() });
+    renderFolio();
+  }
+  function sell(id) {
+    var hd = S.holdings[id];
+    if (!hd) return;
+    S.xp += hd.qty * price(id);
+    delete S.holdings[id];
+    pushHist();
+    renderFolio();
+  }
+  function folioChart() {
+    var W = 380, H = 180, padL = 8, padR = 52, padT = 12, padB = 24;
+    var pts = S.hist;
+    var maxV = 1, minD = pts[0].d, maxD = Math.max(S.day, minD + 1);
+    pts.forEach(function (p) { maxV = Math.max(maxV, p.v, p.p); });
+    function x(d) { return padL + ((d - minD) / (maxD - minD)) * (W - padL - padR); }
+    function y(v) { return padT + (1 - v / maxV) * (H - padT - padB); }
+    var line = pts.map(function (p) { return x(p.d).toFixed(1) + "," + y(p.v).toFixed(1); }).join(" ");
+    var paidLine = pts.map(function (p) { return x(p.d).toFixed(1) + "," + y(p.p).toFixed(1); }).join(" ");
+    var dots = S.buys.map(function (b) {
+      return "<circle cx='" + x(b.d).toFixed(1) + "' cy='" + y(b.v).toFixed(1) + "' r='3.5' fill='#1e1d1a'/>";
+    }).join("");
+    var last = pts[pts.length - 1];
+    var step = maxD - minD <= 14 ? 5 : maxD - minD <= 60 ? 15 : 30;
+    var xlabels = "";
+    for (var d = minD + step; d <= maxD; d += step) {
+      xlabels += "<text x='" + x(d).toFixed(1) + "' y='" + (H - 8) + "' font-size='11' fill='#8a857a' text-anchor='middle'>day " + d + "</text>";
+    }
+    var paidLabelY = y(last.p) + 4;
+    if (Math.abs(paidLabelY - (y(last.v) + 4)) < 14) paidLabelY = y(last.v) + 4 + (last.p > last.v ? 14 : -14);
+    return "<svg class='big' viewBox='0 0 " + W + " " + H + "'>" +
+      "<polyline fill='none' stroke='#b3ada0' stroke-width='1.5' stroke-dasharray='4 4' points='" + paidLine + "'/>" +
+      "<polyline fill='none' stroke='#2e7d44' stroke-width='2.5' points='" + line + "'/>" + dots +
+      "<text x='" + (x(last.d) + 6).toFixed(1) + "' y='" + (y(last.v) + 4).toFixed(1) + "' font-size='12' font-weight='700' fill='#1e1d1a'>" + money2(last.v) + "</text>" +
+      "<text x='" + (x(last.d) + 6).toFixed(1) + "' y='" + paidLabelY.toFixed(1) + "' font-size='11' fill='#8a857a'>put in</text>" +
+      xlabels + "</svg>";
+  }
+
+  pushHist();
+  show("tree");
+})();
+</script>
+</body>
+</html>

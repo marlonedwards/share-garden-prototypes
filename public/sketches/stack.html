@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #b9b6ae; font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #1e1d1a; }
+  .slab { font-family: "Roboto Slab", Georgia, serif; }
+  #phone {
+    max-width: 430px; margin: 0 auto; min-height: 100dvh;
+    display: flex; flex-direction: column; position: relative;
+    background: radial-gradient(140% 90% at 50% 0%, #2f7350 0%, #266243 46%, #1d5237 100%);
+    color: #f2e9d2; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); overflow: hidden;
+  }
+  #screen { flex: 1; overflow-y: auto; padding: 0 16px 16px; display: flex; flex-direction: column; }
+  .topbar { display: flex; align-items: center; gap: 8px; padding: 14px 14px 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 14px;
+    padding: 6px 11px; border-radius: 999px;
+    background: rgba(0,0,0,0.28); color: #f2e9d2;
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08);
+  }
+  .chip svg { display: block; }
+  .chip.worth { margin-left: auto; }
+  .chip .up { font-size: 12px; font-weight: 600; color: #8fd8a8; }
+  .chip .dn { font-size: 12px; font-weight: 600; color: #f0a89b; }
+
+  .lhead { display: flex; align-items: center; gap: 12px; padding: 16px 16px 10px; }
+  .lhead .x { width: 26px; height: 26px; opacity: 0.6; flex: none; cursor: pointer; }
+  .lhead .barw { flex: 1; height: 10px; border-radius: 999px; background: rgba(0,0,0,0.3); overflow: hidden; }
+  .lhead .barw div { height: 100%; border-radius: 999px; background: #ecdcae; transition: width 0.35s ease; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15); }
+
+  .q { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 21px; line-height: 1.25; margin: 4px 2px 14px; }
+  .card { background: #f4ecd6; color: #2a2419; border-radius: 13px; padding: 13px 15px; box-shadow: 0 5px 0 rgba(0,0,0,0.28); }
+  .opt { background: #f4ecd6; color: #2a2419; border-radius: 13px; padding: 11px 14px; box-shadow: 0 5px 0 rgba(0,0,0,0.28); margin-bottom: 10px; cursor: pointer; transition: transform 0.08s ease; }
+  .opt:active { transform: scale(0.97); }
+  .opt.right { outline: 3.5px solid #3d8c5b; }
+  .opt.wrong { outline: 3.5px solid #c05545; animation: shake 0.3s; }
+  .opt.dim { opacity: 0.55; }
+  .opt.off { pointer-events: none; }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  .flash { border-radius: 13px; padding: 13px 15px; display: flex; align-items: center; gap: 10px; }
+  .flash .slab { font-weight: 700; font-size: 17px; }
+  .flash.ok { background: #3d8c5b; color: #f2e9d2; box-shadow: 0 5px 0 #1e4a30; }
+  .flash.no { background: #c05545; color: #fff; box-shadow: 0 5px 0 #6e241b; }
+  #tapnext { position: absolute; inset: 0; z-index: 5; }
+
+  .bigbtn {
+    display: block; width: 100%; text-align: center; border: none; cursor: pointer; font: inherit;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 16px;
+    padding: 13px 0; border-radius: 13px; margin: 12px 0 4px;
+    background: #ecdcae; color: #2a2419; box-shadow: 0 5px 0 #a68d58;
+  }
+  .bigbtn:active { transform: translateY(2px); box-shadow: 0 3px 0 #a68d58; }
+  .bigbtn.green { background: #3d8c5b; color: #f2e9d2; box-shadow: 0 5px 0 #1e4a30; }
+  .bigbtn.green:active { box-shadow: 0 3px 0 #1e4a30; }
+  .bigbtn.quiet { background: rgba(0,0,0,0.25); color: rgba(242,233,210,0.85); box-shadow: none; }
+
+  .pc { border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; transition: all 0.5s ease; }
+  .pc.cream { background: radial-gradient(circle at 50% 38%, #f7edd0, #ecdcae 66%, #dcc98f 67%); border: 3px dashed rgba(90,70,30,0.25); }
+  .pc.red { background: radial-gradient(circle at 50% 38%, #d95c4e, #b23a2e 66%, #9c3226 67%); border: 3px dashed rgba(255,255,255,0.35); }
+  .pc.black { background: radial-gradient(circle at 50% 38%, #4a443c, #322d26 66%, #262119 67%); border: 3px dashed rgba(255,255,255,0.25); }
+  .pc.slate { background: radial-gradient(circle at 50% 38%, #9aa4ab, #7a8288 66%, #6a7278 67%); border: 3px dashed rgba(255,255,255,0.3); }
+  .pc.gold { background: radial-gradient(circle at 50% 38%, #f0d98a, #ddbf5e 66%, #c7a848 67%); border: 3px dashed rgba(120,90,20,0.35); }
+  .pc.broke { filter: grayscale(1); opacity: 0.3; transform: translateY(8px) rotate(14deg); }
+  .dropin { animation: dropin 0.45s cubic-bezier(0.2, 1.6, 0.4, 1); }
+  @keyframes dropin { from { transform: translateY(-30px); opacity: 0; } }
+  .wobble { animation: wob 0.5s ease-in-out infinite; display: inline-flex; }
+  .wobble.calm { animation-duration: 2.4s; }
+  @keyframes wob { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-2px); } }
+
+  .node { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.18); border-radius: 13px; padding: 10px 13px; margin-bottom: 8px; cursor: pointer; }
+  .node.lock { opacity: 0.55; cursor: default; }
+  .node .nt { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 14.5px; }
+  .node .nd { font-size: 12.5px; color: rgba(242,233,210,0.65); }
+  .node .go { margin-left: auto; font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 13px; color: #a7e3bc; }
+  .unitcard { background: #f4ecd6; color: #2a2419; border-radius: 14px; padding: 11px 15px; margin: 10px 0; box-shadow: 0 5px 0 rgba(0,0,0,0.28); }
+  .unitcard .u { font-size: 12.5px; color: #8a7c5c; font-weight: 600; }
+  .unitcard .n { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 17px; }
+
+  .banner { background: #dff0e2; color: #1d4a2b; border-radius: 12px; padding: 11px 14px; font-size: 14px; margin: 8px 0; box-shadow: 0 4px 0 rgba(0,0,0,0.25); }
+  .banner.dn { background: #f6ded9; color: #6e241b; }
+  .h1s { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 21px; margin: 6px 0 2px; }
+  .subs { font-size: 13.5px; color: rgba(242,233,210,0.7); margin-bottom: 12px; }
+  .foot { font-size: 12.5px; color: rgba(242,233,210,0.55); text-align: center; margin-top: 14px; }
+
+  .row { background: #f4ecd6; color: #2a2419; border-radius: 12px; padding: 10px 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 11px; }
+  .row .t { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 14.5px; }
+  .row .d { font-size: 12.5px; color: #6f6248; }
+  .row .btn { margin-left: auto; font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 12.5px; padding: 8px 13px; border-radius: 10px; cursor: pointer; white-space: nowrap; background: #3d8c5b; color: #f2e9d2; box-shadow: 0 3.5px 0 #1e4a30; }
+  .row .btn.gray { background: #d8cba4; color: #8a7c5c; box-shadow: none; cursor: default; }
+  .row .btn.sell { background: #efe3c0; color: #2a2419; box-shadow: 0 3.5px 0 #a68d58; }
+
+  .tabbar { display: flex; padding: 6px 8px 12px; background: rgba(0,0,0,0.22); }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; padding-top: 7px; color: rgba(242,233,210,0.55); cursor: pointer; }
+  .tab.on { color: #f2e9d2; }
+  .subtabs { display: flex; gap: 6px; padding: 2px 0 12px; }
+  .subtab { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 999px; color: rgba(242,233,210,0.6); background: rgba(0,0,0,0.22); cursor: pointer; }
+  .subtab.on { background: #ecdcae; color: #2a2419; box-shadow: 0 3px 0 rgba(0,0,0,0.25); }
+  .mascot { position: absolute; width: 74px; right: 14px; bottom: 20px; pointer-events: none; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .capline { font-family: "Roboto Slab", Georgia, serif; font-size: 12.5px; font-weight: 600; color: #8a7c5c; text-align: center; padding-top: 3px; }
+  .bigline { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 15px; color: #f2e9d2; text-align: center; padding: 10px 0 2px; }
+  .coinrow { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; padding-top: 6px; min-height: 18px; }
+  .mcoin { width: 13px; height: 13px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #f0d98a, #c7a848); border: 1px solid #a68d58; transition: all 0.3s ease; }
+  .mcoin.gone { opacity: 0; transform: translateY(10px); }
+
+  .table { background: rgba(0,0,0,0.16); border-radius: 16px; padding: 16px 6px 20px; box-shadow: inset 0 3px 10px rgba(0,0,0,0.28); }
+  .shelf { display: flex; align-items: flex-end; justify-content: space-evenly; min-height: 172px; }
+  .stackcol { display: flex; flex-direction: column; align-items: center; cursor: pointer; max-width: 92px; }
+  .stag { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 11.5px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 3px 9px; margin-bottom: 10px; text-align: center; color: #f2e9d2; line-height: 1.3; }
+  .stag .chg { font-size: 10.5px; font-weight: 600; }
+  .discs { display: flex; flex-direction: column-reverse; align-items: center; }
+  .disc {
+    width: 62px; height: 15px; border-radius: 7.5px; margin-top: -7px; position: relative; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    --face: #f7edd0; --edge: #dcc98f; --stripe: rgba(90,70,30,0.3);
+    background: repeating-linear-gradient(90deg, var(--stripe) 0 5px, transparent 5px 16px), linear-gradient(180deg, var(--face), var(--edge));
+    box-shadow: 0 2px 2px rgba(0,0,0,0.3); transition: transform 0.15s ease;
+  }
+  .disc.red { --face: #d95c4e; --edge: #9c3226; --stripe: rgba(247,237,208,0.7); }
+  .disc.slate { --face: #9aa4ab; --edge: #6a7278; --stripe: rgba(247,237,208,0.7); }
+  .disc.black { --face: #4a443c; --edge: #262119; --stripe: rgba(247,237,208,0.55); }
+  .disc.gold { --face: #f0d98a; --edge: #c7a848; --stripe: rgba(120,90,20,0.35); }
+  .disc b { display: none; font-family: "Roboto Slab", Georgia, serif; font-size: 9px; font-weight: 700; color: #f7f2e2; background: rgba(42,36,25,0.55); border-radius: 6px; padding: 0 5px; position: relative; z-index: 3; }
+  .stackcol.sel .disc { margin-top: 3px; }
+  .stackcol.sel .disc b { display: block; }
+  .disc.cap::before { content: ""; position: absolute; left: 2px; right: 2px; top: -8px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 50% 38%, var(--face), var(--edge)); border: 2px dashed var(--stripe); }
+  .disc.pick { outline: 2.5px solid #ffffff; outline-offset: -1px; transform: translateY(-3px); z-index: 2; }
+  .disc.ghost { background: transparent; border: 2px dashed rgba(255,255,255,0.3); box-shadow: none; }
+  .disc.mini { width: 28px; height: 8px; border-radius: 4px; margin-top: -3.5px; box-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+  .disc.mini::before { display: none; }
+  .bill3d { width: 56px; height: 13px; border-radius: 3px; margin-top: -6px; position: relative; flex: none; background: linear-gradient(180deg, #5cae76, #3e8b58); border: 1px solid rgba(0,0,0,0.28); box-shadow: 0 2px 2px rgba(0,0,0,0.25); }
+  .bill3d::after { content: ""; position: absolute; left: 21px; right: 21px; top: -1px; bottom: -1px; background: rgba(242,233,210,0.65); border-radius: 1px; }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div id="screen"></div>
+  <div class="tabbar" id="tabbar"></div>
+</div>
+<script>
+(function () {
+  var BASE_PAY = 80, PERFECT_BONUS = 10, REVIEW_PAY = 15, ARCADE_PAY = 5, ARCADE_PAID_PLAYS = 3;
+
+  // ---------------- prices
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var CO = {
+    aapl: { name: "Apple", color: "slate", p0: 232.10, dr: 0.0005, vol: 0.012, seed: 7, blurb: "iPhones and everything on them" },
+    nke: { name: "Nike", color: "black", p0: 75.40, dr: -0.0003, vol: 0.013, seed: 43, blurb: "The swoosh, since 1964" },
+    cost: { name: "Costco", color: "cream", p0: 912.40, dr: 0.0006, vol: 0.009, seed: 41, blurb: "The membership is the business" },
+    ko: { name: "Coca-Cola", color: "red", p0: 69.85, dr: 0.0002, vol: 0.007, seed: 53, blurb: "Sells syrup, not cans" },
+    pfe: { name: "Pfizer", color: "cream", p0: 27.60, dr: -0.0004, vol: 0.011, seed: 71, blurb: "Drugs since 1849" },
+    nvda: { name: "Nvidia", color: "black", p0: 121.30, dr: 0.0015, vol: 0.028, seed: 29, blurb: "Designs the AI chips" },
+    mcd: { name: "McDonald's", color: "red", p0: 291.80, dr: 0.0003, vol: 0.008, seed: 47, blurb: "Secretly a landlord" },
+    xom: { name: "ExxonMobil", color: "slate", p0: 112.50, dr: 0.0002, vol: 0.013, seed: 59, blurb: "Standard Oil's descendant" },
+    jnj: { name: "Johnson & Johnson", color: "red", p0: 156.20, dr: 0.0002, vol: 0.007, seed: 67, blurb: "Band-Aids to cancer drugs" },
+    voo: { name: "The 500 fund", color: "gold", p0: 530.10, dr: 0.0004, vol: 0.008, seed: 11, blurb: "One piece, five hundred companies", fund: true },
+  };
+  Object.keys(CO).forEach(function (id) {
+    var c = CO[id], r = rng(c.seed), a = [c.p0];
+    for (var d = 1; d <= 400; d++) a.push(a[d - 1] * (1 + c.dr + (r() - 0.5) * 2 * c.vol));
+    c.px = a;
+  });
+  function price(id) { return CO[id].px[S.day - 1]; }
+  function priceAt(id, day) { return CO[id].px[day - 1]; }
+  function money(n) {
+    return (n < 0 ? "-" : "") + "$" + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ---------------- svg bits
+  function flame() { return '<svg width="14" height="15" viewBox="0 0 15 16"><path fill="#e8853c" d="M7.6 0c.9 3.4 4.9 4.6 4.9 8.6a5.4 5.4 0 0 1-10.8 0c0-2.7 2.1-3.6 2.8-6 .9 1.2 1.8 1.6 3.1-2.6z"/><path fill="#f3b64f" d="M7.5 6.5c.5 1.9 2.4 2.5 2.4 4.5a2.6 2.6 0 0 1-5.2 0c0-1.5 1-2 1.4-3.2.4.6.8.8 1.4-1.3z"/></svg>'; }
+  function bills3() { return '<svg width="18" height="13" viewBox="0 0 19 14"><rect x="1" y="6" width="17" height="7" rx="1.5" fill="#3e8b58"/><rect x="1" y="3.4" width="17" height="7" rx="1.5" fill="#4d9d67" stroke="rgba(0,0,0,.18)"/><rect x="1" y="0.8" width="17" height="7" rx="1.5" fill="#5cae76" stroke="rgba(0,0,0,.18)"/><circle cx="9.5" cy="4.3" r="2.1" fill="rgba(255,255,255,.5)"/></svg>'; }
+  function chips3() { return '<svg width="14" height="14" viewBox="0 0 15 15"><ellipse cx="7.5" cy="10.6" rx="6" ry="3.4" fill="#b03a2e"/><ellipse cx="7.5" cy="7.8" rx="6" ry="3.4" fill="#cd4a3c" stroke="rgba(0,0,0,.2)"/><ellipse cx="7.5" cy="5" rx="6" ry="3.4" fill="#d95c4e" stroke="rgba(0,0,0,.2)"/></svg>'; }
+  var BULL = '<svg class="mascot" style="animation:bob 2.6s ease-in-out infinite" viewBox="0 0 100 90"><path fill="#f2e6c4" d="M24 32 Q8 28 5 12 Q21 13 30 24z"/><path fill="#f2e6c4" d="M76 32 Q92 28 95 12 Q79 13 70 24z"/><ellipse fill="#8a5a3b" cx="19" cy="40" rx="10" ry="7"/><ellipse fill="#8a5a3b" cx="81" cy="40" rx="10" ry="7"/><ellipse fill="#8a5a3b" cx="50" cy="50" rx="31" ry="27"/><circle fill="#74492e" cx="41" cy="28" r="7"/><circle fill="#74492e" cx="51" cy="26" r="7"/><circle fill="#74492e" cx="60" cy="29" r="6"/><circle cx="39" cy="48" r="3.6" fill="#1e1d1a"/><circle cx="61" cy="48" r="3.6" fill="#1e1d1a"/><ellipse fill="#c98d6b" cx="50" cy="68" rx="18" ry="11.5"/><circle cx="43.5" cy="68" r="2.7" fill="#1e1d1a" opacity=".5"/><circle cx="56.5" cy="68" r="2.7" fill="#1e1d1a" opacity=".5"/></svg>';
+  var BEARSM = '<svg width="46" height="42" viewBox="0 0 100 90" style="flex:none"><circle cx="25" cy="20" r="11" fill="#5f4130"/><circle cx="75" cy="20" r="11" fill="#5f4130"/><circle cx="25" cy="20" r="5" fill="#a3785a"/><circle cx="75" cy="20" r="5" fill="#a3785a"/><ellipse cx="50" cy="49" rx="31" ry="28" fill="#5f4130"/><path d="M32 37 l11 5 M68 37 l-11 5" stroke="#1e1d1a" stroke-width="2.6" stroke-linecap="round" fill="none"/><circle cx="39" cy="49" r="3.4" fill="#1e1d1a"/><circle cx="61" cy="49" r="3.4" fill="#1e1d1a"/><ellipse cx="50" cy="66" rx="16" ry="12" fill="#a3785a"/><ellipse cx="50" cy="61" rx="5.5" ry="4" fill="#1e1d1a"/><path d="M44 72 Q50 69 56 72" stroke="#1e1d1a" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+  function tabIcon(kind) {
+    if (kind === "learn") return '<svg width="20" height="20" viewBox="0 0 22 22"><circle cx="11" cy="4" r="3.1" fill="currentColor"/><circle cx="5" cy="12" r="3.1" fill="currentColor" opacity=".65"/><circle cx="17" cy="12" r="3.1" fill="currentColor" opacity=".65"/><circle cx="11" cy="19" r="3.1" fill="currentColor" opacity=".4"/></svg>';
+    if (kind === "practice") return '<svg width="20" height="20" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.6" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="11" cy="11" r="3.2" fill="currentColor"/></svg>';
+    return '<svg width="20" height="20" viewBox="0 0 22 22"><circle cx="11" cy="7" r="4.4" fill="currentColor"/><path d="M2.5 20a8.5 8.5 0 0 1 17 0z" fill="currentColor"/></svg>';
+  }
+  function pcHtml(color, size, label, extra) {
+    return '<span class="pc ' + color + (extra ? " " + extra : "") + '" style="width:' + size + 'px;height:' + size + 'px">' +
+      (label ? '<b class="slab" style="font-size:' + Math.round(size * 0.34) + 'px;color:rgba(0,0,0,0.5)">' + label + '</b>' : '') + '</span>';
+  }
+  function svgLine(pts, color, w, id) {
+    return '<polyline ' + (id ? 'id="' + id + '" ' : '') + 'fill="none" stroke="' + color + '" stroke-width="' + (w || 2.5) + '" points="' + pts + '"/>';
+  }
+  function chartBox(inner, h, id) {
+    return '<svg ' + (id ? 'id="' + id + '" ' : '') + 'viewBox="0 0 300 ' + (h || 52) + '" style="display:block;width:100%;height:' + Math.round((h || 52) * 0.95) + 'px">' + inner + '</svg>';
+  }
+  function chipRow(colors, size, brokeIdx) {
+    return '<div style="display:flex;gap:5px;justify-content:center;padding:3px 0">' +
+      colors.map(function (c, i) {
+        return '<span class="pc ' + c + '" data-bk="' + (brokeIdx && brokeIdx.indexOf(i) >= 0 ? 1 : 0) + '" style="width:' + size + 'px;height:' + size + 'px;border-width:2.5px"></span>';
+      }).join("") + '</div>';
+  }
+  function cap(t) { return '<div class="capline">' + t + '</div>'; }
+  var UP = "0,44 50,40 100,34 150,30 200,22 250,18 300,10";
+  var DOWN = "0,12 50,18 100,24 150,26 200,34 250,40 300,46";
+  var WILD = "0,40 22,12 44,36 66,8 88,44 110,18 132,46 154,10 176,34 198,6 220,38 242,16 264,40 286,12 300,22";
+  var CALM = "0,44 30,42 60,38 90,39 120,33 150,32 180,28 210,27 240,22 270,20 300,16";
+  var SPIKE = "0,44 60,40 120,34 170,10 200,6 230,16 260,38 300,46";
+  var STRAT = "0,42 40,28 80,36 120,20 160,28 200,14 240,24 280,10 300,14";
+  function ptsY(pts, x) {
+    var P = pts.split(" ").map(function (s) { return s.split(",").map(Number); });
+    for (var i = 1; i < P.length; i++) {
+      if (x <= P[i][0]) {
+        var t = (x - P[i - 1][0]) / (P[i][0] - P[i - 1][0]);
+        return P[i - 1][1] + t * (P[i][1] - P[i - 1][1]);
+      }
+    }
+    return P[P.length - 1][1];
+  }
+  function dotChart(pts, xs, r) {
+    return chartBox(svgLine(pts, "#8a7c5c", 2) + xs.map(function (x) {
+      return '<circle cx="' + x + '" cy="' + ptsY(pts, x).toFixed(1) + '" r="' + (r || 5) + '" fill="#2a2419"/>';
+    }).join(""), 56);
+  }
+  var DOTS_STEADY = [22, 90, 158, 226, 294];
+  var DOTS_LUMP = [40];
+  var DOTS_CHASE = [40, 120, 200, 280];
+
+  // ---------------- anim helpers
+  var anims = [];
+  function later(fn, ms) { anims.push(setTimeout(fn, ms)); }
+  function every(fn, ms) { var h = setInterval(fn, ms); anims.push({ i: h }); return h; }
+  function clearAnims() {
+    anims.forEach(function (a) { if (a && a.i) clearInterval(a.i); else clearTimeout(a); });
+    anims = [];
+  }
+  function drawIn(root, dur) {
+    (root.querySelectorAll ? root : document).querySelectorAll("polyline").forEach(function (p) {
+      try {
+        var len = p.getTotalLength();
+        p.style.strokeDasharray = len;
+        p.style.strokeDashoffset = len;
+        p.getBoundingClientRect();
+        p.style.transition = "stroke-dashoffset " + (dur || 0.9) + "s ease";
+        p.style.strokeDashoffset = 0;
+      } catch (e) {}
+    });
+  }
+  function tickNum(el, from, to, ms, fmt) {
+    var t0 = null;
+    function frame(t) {
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / ms);
+      el.textContent = fmt(from + (to - from) * k);
+      if (k < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------- curriculum (visual-first)
+  function T(word, body, line) { return { k: "teach", word: word, body: body, line: line }; }
+  function O(h, c) { return { h: h, c: !!c }; }
+  var UNITS = [
+    { name: "Single stocks", sub: "Own a piece of a company", lessons: [
+      { title: "Own something real", meet: ["aapl", "nke", "pfe"], prepay: true, items: [
+        { k: "paydrop" },
+        { k: "firstbuy", q: "Pick your first piece." },
+        { k: "mc", q: "You just became", opts: [O("An owner", true), O("A customer"), O("A lender")], ok: "Owner.", no: "Owner. You hold a piece of the company." },
+      ]},
+      { title: "The price of a piece", meet: ["cost", "ko"], items: [
+        T("The price",
+          '<div class="card">' + chartBox(svgLine(CALM, "#3d8c5b"), 52, "teachlive") + cap('<span id="teachpx">$69.85</span>') + '</div>',
+          "The price is just the last trade."),
+        { k: "live", mode: "up", q: "Buyers piling in. Which one?", ok: "Buyers.", no: "Sellers were winning that one." },
+        { k: "live", mode: "down", q: "Sellers winning. Which one?", ok: "Sellers.", no: "That one was climbing." },
+        { k: "pile", q: "Which whole company is worth more?", ok: "The pile.", no: "Count the pile, not the piece." },
+        { k: "mc", q: "A rising price proves", opts: [O("More buyers than sellers", true), O("A better company"), O("It keeps rising")], ok: "Just buyers.", no: "Only that buyers showed up." },
+      ]},
+      { title: "The ride", meet: ["pfe", "nvda"], items: [
+        T("Volatility",
+          '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(CALM, "#3d8c5b")) + '</div>',
+          "The size of the ride, not the ending."),
+        { k: "live", mode: "vol", q: "More volatile?", ok: "That one.", no: "Watch the swings, not the end." },
+        { k: "mc", q: "Same ending. Which lets you sleep?", opts: [O(chartBox(svgLine(CALM, "#3d8c5b")), true), O(chartBox(svgLine(WILD, "#b23a2e")))], ok: "Sleep counts.", no: "That ride costs you nights." },
+        { k: "break", q: "One company goes broke. Who survives?", ok: "Spread survives.", no: "All in one means all gone.",
+          a: { colors: ["red","red","red","red","red"], label: "one company", broke: [0,1,2,3,4] },
+          b: { colors: ["red","black","slate","cream","red"], label: "four companies", broke: [0] }, correct: "b" },
+        { k: "mc", q: "The steady grower?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")), true), O(chartBox(svgLine(SPIKE, "#b23a2e")))], ok: "Steady.", no: "That was the rocket." },
+      ]},
+      { title: "Time beats timing", meet: ["mcd"], items: [
+        T("Zoom out",
+          '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + cap("one week") + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years") + '</div>',
+          "Owners live in the bottom picture."),
+        { k: "race", q: "Crash. Who ends highest?", ok: "Every crash.", no: "So far, the buyer always won." },
+        { k: "mc", q: "Where do owners live?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one week"))], ok: "The decade.", no: "The week is noise." },
+        { k: "mc", q: "Find the steady buyer.", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_LUMP, 8)), O(dotChart(STRAT, DOTS_CHASE))], ok: "On schedule.", no: "Those dots bunch or chase." },
+        { k: "mc", q: "Find the peak chaser.", opts: [O(dotChart(STRAT, DOTS_CHASE), true), O(dotChart(STRAT, DOTS_STEADY))], ok: "Chased tops.", no: "That one kept a schedule." },
+        { k: "dca", q: "Your year. Tap 4 buys." },
+      ]},
+      { title: "What you pay for what it earns", meet: ["xom", "jnj"], items: [
+        T("The price tag",
+          '<div class="card" style="display:flex;gap:14px;justify-content:center">' + pcHtml("cream", 54, "$40") + pcHtml("cream", 54, "$80") + '</div>',
+          "Never the price. Price against profit."),
+        { k: "dollar", q: "A $100 sale. Tap the owner's cut.", ok: "Profit.", no: "The owner keeps what is left." },
+        { k: "drip", q: "Same profit. Which piece gets fatter?", ok: "Fatter slices.", no: "More pieces, thinner slices." },
+        { k: "mc", q: "Which price rests on profits?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("earns $8 a share"), true), O(chartBox(svgLine(SPIKE, "#b23a2e")) + cap("earns nothing"))], ok: "Real earnings.", no: "Nothing under that one but story." },
+        { k: "mc", q: "The question is always", opts: [O("Price against profit", true), O("Price alone"), O("The chart shape")], ok: "Both together.", no: "Price means nothing alone." },
+      ]},
+      { title: "The first stack", meet: [], cap: true, items: [
+        T("What you know",
+          '<div class="card" style="display:flex;gap:10px;justify-content:center">' + pcHtml("red", 40) + pcHtml("slate", 40) + pcHtml("black", 40) + pcHtml("cream", 40) + pcHtml("gold", 40) + '</div>',
+          "Pieces, prices, rides, time, the tag."),
+        { k: "break", q: "One goes broke. Who shrugs?", ok: "Spread it.", no: "All Apple, all gone.",
+          a: { colors: ["slate","slate","slate","slate"], label: "all Apple", broke: [0,1,2,3] },
+          b: { colors: ["slate","red","black","cream"], label: "four companies", broke: [0] }, correct: "b" },
+        { k: "pile", q: "Which whole company is worth more?", ok: "The pile.", no: "Count the pile, not the piece." },
+        { k: "race", q: "It crashes again. Who ends highest?", ok: "The reflex.", no: "The schedule. Always the schedule." },
+        { k: "mc", q: "Find the schedule.", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_CHASE))], ok: "Steady.", no: "Those dots chased the peaks." },
+        { k: "mc", q: "A share is", opts: [O("A piece of a company", true), O("A ticket"), O("A loan")], ok: "Ownership.", no: "Ownership. Everything builds on it." },
+      ]},
+    ]},
+    { name: "Funds and ETFs", sub: "Hundreds of companies, one piece", lessons: [
+      { title: "Hundreds in one piece", meet: ["voo"], items: [
+        T("A fund",
+          '<div class="card" style="display:flex;align-items:center;gap:14px;justify-content:center">' + pcHtml("gold", 54) +
+          '<span class="slab" style="font-size:18px;color:#8a7c5c">=</span>' +
+          '<div>' + chipRow(["red","slate","black","cream","red"], 18) + chipRow(["slate","cream","red","black","slate"], 18) + '</div></div>',
+          "One gold piece, five hundred companies."),
+        { k: "break", q: "One company dies. Which piece shrugs?", ok: "One of 500.", no: "The single piece takes it all.",
+          a: { colors: ["red"], label: "one company's piece", broke: [0] },
+          b: { colors: ["gold"], label: "the fund piece", broke: [] }, correct: "b" },
+        { k: "mc", q: "A fund is a bet on", opts: [O("Everyone at once", true), O("One winner"), O("A lucky manager")], ok: "Everyone.", no: "Nobody picks. That is the trick." },
+      ]},
+      { title: "The fee leak", sub: "The leak that compounds", meet: [], items: [
+        T("The fee",
+          '<div class="card">' + chartBox(svgLine(UP, "#3d8c5b") + svgLine("0,44 50,42 100,38 150,36 200,31 250,29 300,24", "#c9913f")) + cap("same fund, 2% fee") + '</div>',
+          "A small leak, a long time."),
+        { k: "drain", q: "One charges 2% a year. Which one?", ok: "A third, gone.", no: "The leak never has a bad year." },
+      ]},
+      { title: "Buying the argument", sub: "The starter strategy, complete", meet: [], items: [
+        T("The index",
+          '<div class="card" style="display:flex;gap:8px;justify-content:center">' + pcHtml("gold", 46) + '</div>',
+          "The index buys the whole argument."),
+        { k: "mc", q: "Thirty years of sleep. Which piece?", opts: [O('<div style="display:flex;justify-content:center">' + pcHtml("gold", 40) + '</div>' + cap("the fund"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one wild stock"))], ok: "Sleep pays.", no: "The wild one costs you nights." },
+        { k: "dca", q: "A year of the fund. Tap 4 buys.", gold: true },
+      ]},
+    ]},
+  ];
+
+  // ---------------- state
+  var S = {
+    day: 1, cash: 0,
+    holdings: {}, learned: [], done: {},
+    overnight: null,
+    arc: { day: 1, paidWins: 0, plays: 0 },
+    friendSeed: { ada: rngSeries(101, 480), nick: rngSeries(102, 130), jared: rngSeries(103, 350) },
+  };
+  function rngSeries(seed, base) {
+    var r = rng(seed), a = [base];
+    for (var d = 1; d <= 400; d++) a.push(a[d - 1] * (1 + 0.0006 + (r() - 0.5) * 0.02));
+    return a;
+  }
+  try {
+    var sv = JSON.parse(localStorage.getItem("stack-save"));
+    if (sv && sv.day) {
+      S = sv;
+      S.arc = S.arc || { day: S.day, paidWins: 0, plays: 0 };
+      S.friendSeed = S.friendSeed || { ada: rngSeries(101, 480), nick: rngSeries(102, 130), jared: rngSeries(103, 350) };
+    }
+  } catch (e) {}
+  function save() { try { localStorage.setItem("stack-save", JSON.stringify(S)); } catch (e) {} }
+  function lots(id) { return S.holdings[id] || []; }
+  function holdingsWorth() {
+    var w = 0;
+    Object.keys(S.holdings).forEach(function (id) { w += lots(id).length * price(id); });
+    return w;
+  }
+  function worth() { return S.cash + holdingsWorth(); }
+  function buy(id) {
+    var p = price(id);
+    if (S.cash < p) return false;
+    S.cash -= p;
+    (S.holdings[id] = S.holdings[id] || []).push({ p: p, d: S.day });
+    save();
+    return true;
+  }
+  function sellLot(id, i) {
+    var l = S.holdings[id];
+    if (!l || !l[i]) return;
+    l.splice(i, 1);
+    if (!l.length) delete S.holdings[id];
+    S.cash += price(id);
+    save();
+  }
+  function unitUnlocked(u) { return u === 0 || UNITS[0].lessons.every(function (_, i) { return S.done["0-" + i]; }); }
+  function nextLesson(u) {
+    for (var i = 0; i < UNITS[u].lessons.length; i++) if (!S.done[u + "-" + i]) return i;
+    return -1;
+  }
+
+  // ---------------- chrome
+  var screen = document.getElementById("screen");
+  var tabbar = document.getElementById("tabbar");
+  function topbar() {
+    var delta = "";
+    if (typeof S.dayChg === "number" && Math.abs(S.dayChg) > 0.005) {
+      delta = ' <span class="' + (S.dayChg >= 0 ? "up" : "dn") + '">' + (S.dayChg >= 0 ? "+" : "-") + "$" + Math.abs(S.dayChg).toFixed(2) + "</span>";
+    }
+    return '<div class="topbar">' +
+      '<span class="chip">' + flame() + S.day + '</span>' +
+      '<span class="chip" id="cashchip">' + bills3() + money(S.cash) + '</span>' +
+      '<span class="chip worth" id="worthchip">' + chips3() + money(worth()) + delta + '</span></div>';
+  }
+  function wireTop() {
+    var c = document.getElementById("cashchip");
+    if (c) c.addEventListener("click", function () { view = "exchange"; render(); });
+    var w = document.getElementById("worthchip");
+    if (w) w.addEventListener("click", function () { view = "profile"; subtab = "folio"; render(); });
+  }
+  function drawTabs() {
+    var t = { learn: "Learn", practice: "Practice", profile: "Profile" };
+    tabbar.innerHTML = Object.keys(t).map(function (k) {
+      var on = (view === k) || (k === "learn" && view === "exchange");
+      return '<div class="tab' + (on ? " on" : "") + '" data-v="' + k + '">' + tabIcon(k) + t[k] + '</div>';
+    }).join("");
+    tabbar.querySelectorAll(".tab").forEach(function (el) {
+      el.addEventListener("click", function () { view = el.dataset.v; render(); });
+    });
+    tabbar.style.display = "flex";
+  }
+  var view = "learn", subtab = "folio";
+  function render() {
+    clearAnims();
+    save();
+    if (view === "learn") renderTree();
+    if (view === "exchange") renderExchange();
+    if (view === "profile") renderProfile();
+    if (view === "practice") renderPractice();
+    drawTabs();
+    wireTop();
+  }
+
+  // ---------------- tree
+  function renderTree() {
+    var h = topbar();
+    h += '<div class="h1s">Stack</div><div class="subs">Learn daily. Own what you learn.</div>';
+    if (S.overnight !== null && S.overnight !== undefined) {
+      var o = S.overnight;
+      if (Math.abs(o) > 0.005) h += '<div class="banner' + (o < 0 ? " dn" : "") + '">Overnight your pieces ' + (o >= 0 ? "grew " : "fell ") + money(Math.abs(o)) + '.</div>';
+      S.overnight = null;
+    }
+    UNITS.forEach(function (unit, u) {
+      var unlocked = unitUnlocked(u);
+      h += '<div class="unitcard"><div class="u">Unit ' + (u + 1) + '</div><div class="n">' + unit.name + '</div>' +
+        '<div style="font-size:12.5px;color:#6f6248">' + unit.sub + '</div></div>';
+      unit.lessons.forEach(function (l, i) {
+        var done = S.done[u + "-" + i];
+        var isNext = unlocked && nextLesson(u) === i;
+        var open = done || isNext;
+        var piece = done ? pcHtml("cream", 36, "&#10003;") : isNext ? pcHtml("red", 36, "&#9654;") : '<span class="pc" style="width:36px;height:36px;background:rgba(0,0,0,0.24)"></span>';
+        h += '<div class="node' + (open ? "" : " lock") + '" data-u="' + u + '" data-l="' + i + '">' + piece +
+          '<div><div class="nt">' + l.title + '</div>' +
+          '<div class="nd">' + (done ? "Review pays " + money(REVIEW_PAY) : l.meet.length ? "Meet " + l.meet.map(function (id) { return CO[id].name; }).join(" and ") : (l.sub || "The capstone")) + '</div></div>' +
+          (isNext ? '<span class="go">Start</span>' : done ? '<span class="go" style="color:rgba(242,233,210,0.5)">Review</span>' : "") + '</div>';
+      });
+    });
+    h += '<button class="bigbtn quiet" id="tomorrow">Tomorrow</button>' +
+      '<p class="foot" id="reset" style="cursor:pointer;text-decoration:underline;margin-top:8px">Start over</p>';
+    screen.innerHTML = h;
+    screen.querySelectorAll(".node:not(.lock)").forEach(function (n) {
+      n.addEventListener("click", function () { startLesson(+n.dataset.u, +n.dataset.l); });
+    });
+    document.getElementById("reset").addEventListener("click", function () {
+      try { localStorage.removeItem("stack-save"); } catch (e) {}
+      location.reload();
+    });
+    document.getElementById("tomorrow").addEventListener("click", function () {
+      var before = holdingsWorth();
+      S.day = Math.min(S.day + 1, 399);
+      S.overnight = holdingsWorth() - before;
+      S.dayChg = S.overnight;
+      if (S.arc.day !== S.day) S.arc = { day: S.day, paidWins: 0, plays: 0 };
+      render();
+    });
+  }
+
+  // ---------------- lesson engine
+  var L = null;
+  function startLesson(u, li) {
+    var lesson = UNITS[u].lessons[li];
+    var items = lesson.items.map(function (it) { return Object.assign({}, it); });
+    if (lesson.cap && S.missKinds) {
+      var head = items.filter(function (i) { return i.k === "teach"; });
+      var rest = items.filter(function (i) { return i.k !== "teach"; });
+      rest.sort(function (a, b) { return (S.missKinds[b.k] ? 1 : 0) - (S.missKinds[a.k] ? 1 : 0); });
+      items = head.concat(rest);
+    }
+    var total = items.filter(function (i) { return ["teach", "dca", "paydrop", "firstbuy"].indexOf(i.k) < 0; }).length;
+    L = { u: u, l: li, queue: items, idx: 0, total: total, firstCorrect: 0, isReview: !!S.done[u + "-" + li] };
+    tabbar.style.display = "none";
+    renderItem();
+  }
+  function lessonHead() {
+    var pct = Math.round((L.idx / L.queue.length) * 100);
+    return '<div class="lhead"><svg class="x" id="quit" viewBox="0 0 26 26"><path d="M6 6 L20 20 M20 6 L6 20" stroke="#f2e9d2" stroke-width="3" stroke-linecap="round"/></svg>' +
+      '<div class="barw"><div style="width:' + pct + '%"></div></div></div>';
+  }
+  function wireQuit() {
+    var q = document.getElementById("quit");
+    if (q) q.addEventListener("click", function () { L = null; view = "learn"; render(); });
+  }
+  function advance() { L.idx++; renderItem(); }
+  // one-line feedback, then move
+  function flash(correct, line, it) {
+    var v = document.getElementById("vslot");
+    if (correct) {
+      v.innerHTML = '<div class="flash ok dropin"><span class="slab">' + line + '</span></div>';
+      later(advance, 1200);
+    } else {
+      if (it) {
+        L.queue.push(Object.assign({}, it, { requeued: true }));
+        if (it.k) { S.missKinds = S.missKinds || {}; S.missKinds[it.k] = 1; save(); }
+      }
+      v.innerHTML = '<div class="flash no dropin">' + BEARSM + '<span class="slab">' + line + '</span></div>';
+      var t = document.createElement("div");
+      t.id = "tapnext";
+      document.getElementById("phone").appendChild(t);
+      t.addEventListener("click", function () { t.remove(); advance(); });
+    }
+  }
+  function score(it, correct) { if (!it.requeued && correct) L.firstCorrect++; }
+  function pickWire(it, onPick) {
+    screen.querySelectorAll(".opt").forEach(function (el) {
+      el.addEventListener("click", function () {
+        if (el.classList.contains("off")) return;
+        screen.querySelectorAll(".opt").forEach(function (o) { o.classList.add("off"); });
+        onPick(el, el.dataset.c === "1");
+      });
+    });
+  }
+  function markPick(el, correct) {
+    screen.querySelectorAll(".opt").forEach(function (o) { if (o !== el) o.classList.add("dim"); });
+    el.classList.add(correct ? "right" : "wrong");
+  }
+
+  function renderItem() {
+    clearAnims();
+    var it = L.queue[L.idx];
+    if (!it) return lessonEnd();
+    var h = lessonHead();
+
+    if (it.k === "paydrop") {
+      if (L.isReview) return advance();
+      if (!L.prepaid) { S.cash += BASE_PAY; L.prepaid = true; save(); }
+      h += '<div style="text-align:center;margin-top:34px">' +
+        '<div class="subs">Lessons pay. This one pays first.</div>' +
+        '<div class="slab" style="font-weight:700;font-size:52px" id="paytick">$0.00</div>' +
+        '<div style="display:flex;gap:6px;justify-content:center;padding:18px 0 4px" id="payrow"></div>' +
+        '<div class="bigline">Now go own something.</div></div>' +
+        '<div style="margin-top:auto"></div><button class="bigbtn green" id="cont">Take it</button>';
+      screen.innerHTML = h;
+      tickNum(document.getElementById("paytick"), 0, BASE_PAY, 750, function (v) { return money(v); });
+      var pr0 = document.getElementById("payrow");
+      for (var bi = 0; bi < 4; bi++) {
+        (function (bi) {
+          later(function () {
+            pr0.insertAdjacentHTML("beforeend", '<span class="dropin" style="display:inline-flex;width:52px;height:24px;border-radius:4px;background:#4d9d67;border:1.5px solid rgba(0,0,0,0.22);box-shadow:0 2.5px 0 rgba(0,0,0,0.3);align-items:center;justify-content:center"><b class="slab" style="font-size:12px;color:#f7f2e2">$20</b></span>');
+          }, 160 + bi * 170);
+        })(bi);
+      }
+      document.getElementById("cont").addEventListener("click", advance);
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "firstbuy") {
+      function pickCard(id, canB) {
+        var c = CO[id], p = price(id);
+        return '<div class="opt' + (canB ? '" data-c="1' : ' dim off') + '" data-pick="' + id + '" style="display:flex;align-items:center;gap:12px">' +
+          pcHtml(c.color, 44, c.name[0]) +
+          '<div><div class="slab" style="font-weight:700;font-size:16px">' + c.name + '</div>' +
+          '<div style="font-size:12.5px;color:#6f6248">' + c.blurb + '</div></div>' +
+          '<b class="slab" style="margin-left:auto;font-size:14.5px;text-align:right">' + money(p) +
+          '<span style="display:block;font-size:11.5px;font-weight:600;color:' + (canB ? "#3d6b47" : "#8a7c5c") + '">' + (canB ? "yours today" : "save up") + '</span></b></div>';
+      }
+      h += '<div class="q">' + it.q + '</div>' +
+        pickCard("nke", S.cash >= price("nke")) +
+        pickCard("pfe", S.cash >= price("pfe")) +
+        pickCard("aapl", false) +
+        '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      screen.querySelectorAll("[data-pick][data-c]").forEach(function (el) {
+        el.addEventListener("click", function () {
+          if (el.classList.contains("off")) return;
+          screen.querySelectorAll(".opt").forEach(function (o) { o.classList.add("off"); });
+          var id = el.dataset.pick;
+          var bought = S.cash >= price(id) ? buy(id) : false;
+          var c = CO[id];
+          screen.innerHTML = lessonHead() +
+            '<div style="text-align:center;margin-top:18px">' +
+            '<div class="dropin" style="display:flex;justify-content:center">' + pcHtml(c.color, 74, c.name[0]) + '</div>' +
+            '<div class="slab" style="font-weight:700;font-size:22px;margin-top:10px">' + (bought ? "1 share of " + c.name + ". Yours." : c.name + ", your piece, live.") + '</div></div>' +
+            '<div class="card" style="margin-top:14px">' + chartBox("", 62, "ownlive") + cap('<span id="ownpx">' + money(price(id)) + '</span>') + '</div>' +
+            '<div class="bigline">It moves while you hold it.</div>' +
+            '<div style="margin-top:auto"></div><div id="contslot"></div>';
+          startOwnLive(id);
+          later(function () {
+            document.getElementById("contslot").innerHTML = '<button class="bigbtn green" id="cont">Continue</button>';
+            document.getElementById("cont").addEventListener("click", advance);
+          }, 1900);
+          wireQuit();
+        });
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "teach") {
+      h += '<div class="q" style="font-size:26px;margin-bottom:10px">' + it.word + '</div>' + it.body +
+        '<div class="bigline">' + it.line + '</div>' +
+        '<div style="margin-top:auto"></div><button class="bigbtn green" id="cont">Got it</button>';
+      screen.innerHTML = h;
+      drawIn(screen);
+      if (document.getElementById("teachlive")) startTeachLive();
+      document.getElementById("cont").addEventListener("click", advance);
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "mc") {
+      h += '<div class="q">' + it.q + '</div>';
+      var opts = it.opts.slice();
+      for (var si = opts.length - 1; si > 0; si--) {
+        var sj = Math.floor(Math.random() * (si + 1)), tmp = opts[si];
+        opts[si] = opts[sj]; opts[sj] = tmp;
+      }
+      opts.forEach(function (o, i) { h += '<div class="opt" data-i="' + i + '" data-c="' + (o.c ? 1 : 0) + '">' + o.h + '</div>'; });
+      h += '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      drawIn(screen);
+      pickWire(it, function (el, c) { markPick(el, c); score(it, c); flash(c, c ? it.ok : it.no, it); });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "live") {
+      var lvA = '<div class="opt" data-c="1">' + chartBox("", 62, "lv0") + '</div>';
+      var lvB = '<div class="opt" data-c="0">' + chartBox("", 62, "lv1") + '</div>';
+      h += '<div class="q">' + it.q + '</div>' +
+        (Math.random() < 0.5 ? lvA + lvB : lvB + lvA) +
+        '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      startLive(it.mode);
+      pickWire(it, function (el, c) { markPick(el, c); score(it, c); flash(c, c ? it.ok : it.no, it); });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "race") {
+      h += '<div class="q">' + it.q + '</div>' +
+        '<div class="card" style="margin-bottom:10px">' + chartBox(svgLine("0,48 40,42 80,36 120,30 150,26 168,66", "#8a7c5c") + '<g id="racelines"></g><circle cx="168" cy="66" r="3.5" fill="#2a2419"/>', 92, "racesvg") + '</div>';
+      [["#3d8c5b", "Keep buying on schedule", 1], ["#c9913f", "Freeze and hold", 0], ["#c05545", "Sell now", 0]].forEach(function (o) {
+        h += '<div class="opt" data-c="' + o[2] + '"><div style="display:flex;align-items:center;gap:9px"><span style="width:22px;height:4px;border-radius:2px;background:' + o[0] + ';flex:none"></span>' +
+          '<span class="slab" style="font-weight:600;font-size:14px">' + o[1] + '</span></div></div>';
+      });
+      h += '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      drawIn(screen, 1.1);
+      pickWire(it, function (el, c) {
+        markPick(el, c);
+        var g = document.getElementById("racelines");
+        g.innerHTML = svgLine("168,66 200,52 240,34 300,14", "#3d8c5b", c ? 4 : 2.5) +
+          svgLine("168,66 210,58 255,48 300,38", "#c9913f", 2.5) +
+          svgLine("168,66 300,70", "#c05545", 2.5);
+        drawIn(document.getElementById("racesvg"), 1.2);
+        score(it, c);
+        later(function () { flash(c, c ? it.ok : it.no, it); }, 1350);
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "break") {
+      function bcard(side, spec) {
+        return '<div class="opt" data-c="' + (it.correct === side ? 1 : 0) + '" data-side="' + side + '">' + chipRow(spec.colors, 34, spec.broke) + cap(spec.label) + '</div>';
+      }
+      h += '<div class="q">' + it.q + '</div>' + bcard("a", it.a) + bcard("b", it.b) + '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      pickWire(it, function (el, c) {
+        markPick(el, c);
+        screen.querySelectorAll('[data-bk="1"]').forEach(function (p, i) {
+          later(function () { p.classList.add("broke"); }, 150 + i * 120);
+        });
+        score(it, c);
+        later(function () { flash(c, c ? it.ok : it.no, it); }, 1100);
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "pile") {
+      var pA = '<div class="opt" data-c="1"><div id="pileA" style="display:grid;grid-template-columns:repeat(18,1fr);gap:2px;padding:2px 8px;min-height:44px"></div>' + cap('<span id="pileAn">Apple &middot; $232 a piece</span>') + '</div>';
+      var pB = '<div class="opt" data-c="0"><div id="pileB" style="display:flex;gap:4px;justify-content:center;min-height:30px;padding:2px 0"></div>' + cap('<span id="pileBn">Costco &middot; $912 a piece</span>') + '</div>';
+      h += '<div class="q">' + it.q + '</div>' +
+        (Math.random() < 0.5 ? pA + pB : pB + pA) +
+        '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      var pa = document.getElementById("pileA"), pb = document.getElementById("pileB");
+      var ai = 0, bi = 0;
+      every(function () {
+        if (ai < 54) { pa.insertAdjacentHTML("beforeend", '<span class="pc slate dropin" style="width:11px;height:11px;border-width:1.5px"></span>'); ai++; }
+        if (bi < 7 && ai % 8 === 0) { pb.insertAdjacentHTML("beforeend", '<span class="pc cream dropin" style="width:22px;height:22px;border-width:2px"></span>'); bi++; }
+      }, 26);
+      pickWire(it, function (el, c) {
+        markPick(el, c);
+        document.getElementById("pileAn").textContent = "Apple, all together: $3.5 trillion";
+        document.getElementById("pileBn").textContent = "Costco, all together: $400 billion";
+        score(it, c);
+        later(function () { flash(c, c ? it.ok : it.no, it); }, 900);
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "dollar") {
+      var rows = [["Workers", "$38", 0], ["Suppliers", "$30", 0], ["The bank", "$8", 0], ["Taxes", "$12", 0], ["You, the owner", "$12", 1]];
+      h += '<div class="q">' + it.q + '</div><div id="drows"></div><div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      var dr = document.getElementById("drows");
+      rows.forEach(function (r, i) {
+        later(function () {
+          dr.insertAdjacentHTML("beforeend",
+            '<div class="opt dropin" data-c="' + r[2] + '" style="padding:9px 14px"><div style="display:flex;align-items:center"><span style="font-size:14px">' + r[0] + '</span>' +
+            '<span style="margin-left:auto;display:flex;align-items:center;gap:6px">' + (r[2] ? '<span class="pc red" style="width:20px;height:20px;border-width:2px"></span>' : '') +
+            '<b class="slab" style="font-size:14.5px">' + r[1] + '</b></span></div></div>');
+          if (i === rows.length - 1) pickWire(it, function (el, c) { markPick(el, c); score(it, c); flash(c, c ? it.ok : it.no, it); });
+        }, i * 260);
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "drain") {
+      function fcard(cor, feetxt, coins) {
+        return '<div class="opt" data-c="' + (cor ? 1 : 0) + '"><div style="display:flex;align-items:baseline"><span class="slab" style="font-weight:700;font-size:15px">' + feetxt + '</span>' +
+          '<b class="slab" style="margin-left:auto;font-size:15px" data-val="' + (cor ? "a" : "b") + '">$10,000</b></div>' +
+          '<div class="coinrow" data-coins="' + (cor ? "a" : "b") + '">' + Array(13).join('<span class="mcoin"></span>') + '</div></div>';
+      }
+      h += '<div class="q">' + it.q + '</div>' + fcard(true, "0.05% a year") + fcard(false, "2% a year") +
+        '<div class="bigline" id="yearline" style="visibility:hidden">year 1</div><div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      pickWire(it, function (el, c) {
+        markPick(el, c);
+        score(it, c);
+        var yl = document.getElementById("yearline");
+        yl.style.visibility = "visible";
+        var coins = screen.querySelectorAll('[data-coins="b"] .mcoin');
+        var valA = screen.querySelector('[data-val="a"]'), valB = screen.querySelector('[data-val="b"]');
+        var yr = 0;
+        every(function () {
+          yr += 3;
+          if (yr > 30) return;
+          yl.textContent = "year " + yr;
+          var gone = Math.floor(yr / 3) - 1;
+          if (coins[gone]) coins[gone].classList.add("gone");
+          valA.textContent = "$" + Math.round(10000 * Math.pow(1.07, yr)).toLocaleString();
+          valB.textContent = "$" + Math.round(10000 * Math.pow(1.05, yr)).toLocaleString();
+        }, 200);
+        later(function () { flash(c, c ? it.ok : it.no, it); }, 2300);
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "dca") {
+      var pts = it.gold ? CALM : "0,40 30,26 60,34 90,18 120,30 150,20 180,34 210,16 240,26 270,12 300,20";
+      h += '<div class="q">' + it.q + '</div>' +
+        '<div class="card">' + chartBox(svgLine(pts, it.gold ? "#c7a848" : "#3d8c5b") + '<g id="dcadots"></g>', 92, "dcasvg") + '</div>' +
+        '<div class="coinrow" id="dcapieces" style="min-height:40px;padding-top:12px"></div>' +
+        '<div class="bigline" id="dcaline">0 of 4 buys placed</div>' +
+        '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      drawIn(screen, 1.0);
+      var svg = document.getElementById("dcasvg");
+      function yAt(x) { return ptsY(pts, x); }
+      var taps = [];
+      svg.addEventListener("click", function (e) {
+        if (taps.length >= 4) return;
+        var r = svg.getBoundingClientRect();
+        var x = Math.max(4, Math.min(296, (e.clientX - r.left) / r.width * 300));
+        var y = yAt(x);
+        taps.push({ x: x, y: y });
+        document.getElementById("dcadots").insertAdjacentHTML("beforeend", '<circle cx="' + x + '" cy="' + y + '" r="5.5" fill="#2a2419"/>');
+        document.getElementById("dcaline").textContent = taps.length + " of 4 buys placed";
+        var priceOf = function (yy) { return Math.round(120 - yy); };
+        document.getElementById("dcapieces").insertAdjacentHTML("beforeend",
+          '<span class="dropin" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px">' + pcHtml(it.gold ? "gold" : "red", 26) +
+          '<b class="slab" style="font-size:11px;color:#f2e9d2">$' + priceOf(y) + '</b></span>');
+        if (taps.length === 4) {
+          var avg = Math.round(taps.reduce(function (a, t) { return a + (120 - t.y); }, 0) / 4);
+          var xs = taps.map(function (t) { return t.x; }).sort(function (a, b) { return a - b; });
+          var minGap = Math.min(xs[1] - xs[0], xs[2] - xs[1], xs[3] - xs[2]);
+          var line = minGap > 40 ? "Steady. Average $" + avg + "." : "Bunched. Average $" + avg + ". Spread them.";
+          later(function () {
+            document.getElementById("vslot").innerHTML = '<div class="flash ok dropin"><span class="slab">' + line + '</span></div>';
+            later(advance, 1700);
+          }, 700);
+        }
+      });
+      wireQuit();
+      return;
+    }
+
+    if (it.k === "drip") {
+      h += '<div class="q">' + it.q + '</div>' +
+        '<div class="opt" data-c="1">' + chipRow(["red", "red", "red"], 34) + '<div class="coinrow" data-dc="a"></div>' + cap("profit split 3 ways &middot; <b data-dv=\'a\'></b>") + '</div>' +
+        '<div class="opt" data-c="0">' + chipRow(["red", "red", "red", "red", "red", "red", "red", "red"], 22) + '<div class="coinrow" data-dc="b"></div>' + cap("profit split 8 ways &middot; <b data-dv=\'b\'></b>") + '</div>' +
+        '<div id="vslot" style="margin-top:auto"></div>';
+      screen.innerHTML = h;
+      pickWire(it, function (el, c) {
+        markPick(el, c);
+        var ca = screen.querySelector('[data-dc="a"]'), cb = screen.querySelector('[data-dc="b"]');
+        var n = 0;
+        every(function () {
+          n++;
+          if (n <= 12) {
+            (n % 2 ? ca : cb).insertAdjacentHTML("beforeend", '<span class="mcoin dropin"></span>');
+          }
+        }, 90);
+        later(function () {
+          screen.querySelector('[data-dv="a"]').textContent = "$4 a piece";
+          screen.querySelector('[data-dv="b"]').textContent = "$1.50 a piece";
+        }, 1150);
+        score(it, c);
+        later(function () { flash(c, c ? it.ok : it.no, it); }, 1500);
+      });
+      wireQuit();
+      return;
+    }
+  }
+
+  // live charts
+  function startLive(mode) {
+    // lv0 is always the correct chart. vol: wild vs calm; up: rising vs falling; down: falling vs rising.
+    var s0 = document.getElementById("lv0"), s1 = document.getElementById("lv1");
+    var r0 = rng(5), r1 = rng(9);
+    var a = [30], b = [40];
+    function step(arr, r, bias, size) {
+      arr.push(Math.max(4, Math.min(58, arr[arr.length - 1] + (r() - bias) * size)));
+    }
+    // SVG y grows downward: bias above 0.5 drifts the line visually UP.
+    function tickOnce() {
+      if (mode === "vol") { step(a, r0, 0.5, 26); step(b, r1, 0.52, 5); }
+      else if (mode === "up") { step(a, r0, 0.62, 7); step(b, r1, 0.36, 7); }
+      else { step(a, r0, 0.36, 7); step(b, r1, 0.62, 7); }
+      if (a.length > 46) { a.shift(); b.shift(); }
+    }
+    for (var pre = 0; pre < 45; pre++) tickOnce();
+    var colors = mode === "vol" ? ["#b23a2e", "#3d8c5b"] : mode === "up" ? ["#3d8c5b", "#b23a2e"] : ["#b23a2e", "#3d8c5b"];
+    every(function () {
+      tickOnce();
+      function draw(svg, arr, color) {
+        if (!svg) return;
+        var pts = arr.map(function (y, i) { return (i / 45 * 300).toFixed(1) + "," + y.toFixed(1); }).join(" ");
+        svg.innerHTML = svgLine(pts, color, 2.5);
+      }
+      draw(s0, a, colors[0]);
+      draw(s1, b, colors[1]);
+    }, 90);
+  }
+  function startOwnLive(id) {
+    var svg = document.getElementById("ownlive"), px = document.getElementById("ownpx");
+    var c = CO[id], r = rng(17), a = [30], p = price(id);
+    for (var pre = 0; pre < 45; pre++) a.push(Math.max(6, Math.min(52, a[a.length - 1] + (r() - 0.5) * 6)));
+    every(function () {
+      a.push(Math.max(6, Math.min(52, a[a.length - 1] + (r() - 0.5) * 6)));
+      if (a.length > 46) a.shift();
+      p = p * (1 + (r() - 0.5) * 0.0035);
+      if (px) px.textContent = money(p) + " and moving";
+      if (svg) svg.innerHTML = svgLine(a.map(function (y, i) { return (i / 45 * 300).toFixed(1) + "," + y.toFixed(1); }).join(" "), "#3d8c5b", 2.5);
+    }, 110);
+  }
+  function startTeachLive() {
+    var svg = document.getElementById("teachlive"), px = document.getElementById("teachpx");
+    var r = rng(13), a = [40], p = 69.85;
+    for (var pre = 0; pre < 45; pre++) a.push(Math.max(6, Math.min(48, a[a.length - 1] + (r() - 0.52) * 6)));
+    every(function () {
+      a.push(Math.max(6, Math.min(48, a[a.length - 1] + (r() - 0.52) * 6)));
+      if (a.length > 46) a.shift();
+      p = p * (1 + (r() - 0.5) * 0.004);
+      if (px) px.textContent = money(p);
+      if (svg) svg.innerHTML = svgLine(a.map(function (y, i) { return (i / 45 * 300).toFixed(1) + "," + y.toFixed(1); }).join(" "), "#3d8c5b", 2.5);
+    }, 110);
+  }
+
+  // ---------------- lesson end
+  function lessonEnd() {
+    clearAnims();
+    var key = L.u + "-" + L.l;
+    var lesson = UNITS[L.u].lessons[L.l];
+    var acc = L.total ? L.firstCorrect / L.total : 1;
+    var pay = 0, payNote = "";
+    if (L.isReview) { pay = REVIEW_PAY; payNote = "review pay"; }
+    else if (lesson.prepay) { pay = 0; payNote = "your piece now"; }
+    else if (acc < 0.75) { pay = 0; payNote = "under 75%"; }
+    else {
+      pay = BASE_PAY + (acc >= 0.999 ? PERFECT_BONUS : 0);
+      payNote = acc >= 0.999 ? "perfect bonus" : "lesson pay";
+    }
+    S.cash += pay;
+    var endVal = (lesson.prepay && !L.isReview) ? holdingsWorth() : pay;
+    if (!S.done[key]) {
+      S.done[key] = true;
+      lesson.meet.forEach(function (id) { if (S.learned.indexOf(id) < 0) S.learned.push(id); });
+    }
+    save();
+    var buyables = lesson.meet.length ? lesson.meet : S.learned.slice(0, 3);
+    var h = '<div class="lhead"><span style="width:26px"></span><div class="barw"><div style="width:100%"></div></div></div>' +
+      '<div style="text-align:center"><div class="slab" style="font-weight:700;font-size:38px;margin-top:2px">' + L.firstCorrect + " of " + L.total + '</div>' +
+      '<div style="color:rgba(242,233,210,0.75)">first try</div>' +
+      '<div style="display:flex;gap:6px;justify-content:center;padding:14px 0 4px" id="payrow"></div>' +
+      '<div class="slab" style="font-weight:700;font-size:30px" id="paytick">$0.00</div>' +
+      '<div style="font-size:12.5px;color:rgba(242,233,210,0.6);margin-bottom:10px">' + payNote + '</div></div>';
+    if (buyables.length) h += '<div class="slab" style="font-weight:700;font-size:15px;margin:8px 0 8px">Buy what you met?</div><div id="buyrows"></div>';
+    h += '<div style="margin-top:auto;position:relative;min-height:' + (acc >= 0.999 && !L.isReview ? 74 : 10) + 'px">' +
+      (acc >= 0.999 && !L.isReview ? BULL : "") + '</div>' +
+      '<button class="bigbtn quiet" id="tokeep">Keep the cash</button>';
+    screen.innerHTML = h;
+    tickNum(document.getElementById("paytick"), 0, endVal, 800, function (v) { return money(v); });
+    var pr = document.getElementById("payrow");
+    for (var i = 0; i < Math.min(4, Math.ceil(pay / 20)); i++) {
+      (function (i) {
+        later(function () {
+          pr.insertAdjacentHTML("beforeend", '<span class="dropin" style="display:inline-flex;width:44px;height:20px;border-radius:4px;background:#4d9d67;border:1.5px solid rgba(0,0,0,0.22);box-shadow:0 2px 0 rgba(0,0,0,0.3);align-items:center;justify-content:center"><b class="slab" style="font-size:11px;color:#f7f2e2">$20</b></span>');
+        }, 150 + i * 160);
+      })(i);
+    }
+    var justBought = null;
+    function drawBuyRows() {
+      var el = document.getElementById("buyrows");
+      if (!el) return;
+      el.innerHTML = buyables.map(function (id) {
+        var c = CO[id], p = price(id), can = S.cash >= p;
+        var owned = lots(id).length;
+        return '<div class="row">' + pcHtml(c.color, 34, c.name[0], justBought === id ? "dropin" : "") +
+          '<div><div class="t">' + c.name + '</div><div class="d">' + money(p) + " a share" + (owned ? " &middot; you hold " + owned : "") + '</div></div>' +
+          (can ? '<span class="btn" data-buy="' + id + '">Buy 1</span>'
+               : '<span class="btn gray">Save up &middot; ' + Math.round(S.cash / p * 100) + '%</span>') + '</div>';
+      }).join("");
+      el.querySelectorAll("[data-buy]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          if (buy(b.dataset.buy)) { justBought = b.dataset.buy; drawBuyRows(); }
+        });
+      });
+    }
+    drawBuyRows();
+    document.getElementById("tokeep").addEventListener("click", function () { L = null; view = "learn"; render(); });
+  }
+
+  // ---------------- exchange
+  function renderExchange() {
+    var h = topbar() + '<div class="h1s">The Exchange</div><div class="subs">Whole shares only.</div>';
+    if (!S.learned.length) h += '<div class="card" style="color:#6f6248">Learn a company first.</div>';
+    S.learned.forEach(function (id) {
+      var c = CO[id], p = price(id), y = priceAt(id, Math.max(1, S.day - 1));
+      var chg = (p / y - 1) * 100;
+      var can = S.cash >= p;
+      h += '<div class="row">' + pcHtml(c.color, 36, c.name[0]) +
+        '<div><div class="t">' + c.name + '</div><div class="d">' + money(p) +
+        ' &middot; <span style="color:' + (chg >= 0 ? "#3d6b47" : "#a33325") + '">' + (chg >= 0 ? "+" : "") + chg.toFixed(1) + '% today</span></div></div>' +
+        (can ? '<span class="btn" data-buy="' + id + '">Buy 1</span>' : '<span class="btn gray">' + Math.round(S.cash / p * 100) + '% saved</span>') + '</div>';
+    });
+    if (Object.keys(S.holdings).length) h += '<button class="bigbtn quiet" id="tostacks">Your stacks</button>';
+    screen.innerHTML = h;
+    screen.querySelectorAll("[data-buy]").forEach(function (b) {
+      b.addEventListener("click", function () { if (buy(b.dataset.buy)) renderExchange(); wireTop(); });
+    });
+    var ts = document.getElementById("tostacks");
+    if (ts) ts.addEventListener("click", function () { view = "profile"; subtab = "folio"; render(); });
+  }
+
+  // ---------------- profile
+  var sel = null, picks = [];
+  function renderProfile() {
+    var h = topbar() +
+      '<div class="subtabs">' +
+      '<span class="subtab' + (subtab === "folio" ? " on" : "") + '" data-s="folio">Portfolio</span>' +
+      '<span class="subtab' + (subtab === "friends" ? " on" : "") + '" data-s="friends">Friends</span>' +
+      '<span class="subtab' + (subtab === "guide" ? " on" : "") + '" data-s="guide">Guide</span></div>';
+    if (subtab === "folio") h += folioHtml();
+    if (subtab === "friends") h += friendsHtml();
+    if (subtab === "guide") h += guideHtml();
+    screen.innerHTML = h;
+    screen.querySelectorAll(".subtab").forEach(function (el) {
+      el.addEventListener("click", function () { subtab = el.dataset.s; render(); });
+    });
+    if (subtab === "folio") wireFolio();
+  }
+  function folioHtml() {
+    var held = Object.keys(S.holdings);
+    var paid = 0;
+    held.forEach(function (id) { lots(id).forEach(function (l) { paid += l.p; }); });
+    var hw = holdingsWorth(), diff = hw - paid;
+    var h = '<div class="h1s" style="text-align:center">' + money(worth()) + '</div>';
+    h += '<div class="subs" style="text-align:center;margin-bottom:10px">';
+    if (held.length) {
+      h += money(hw) + ' in pieces &middot; put in ' + money(paid);
+      if (Math.abs(diff) > 0.005) h += ' &middot; <span style="color:' + (diff >= 0 ? "#8fd8a8" : "#f0a89b") + '">' + (diff >= 0 ? "up " : "down ") + money(Math.abs(diff)) + '</span>';
+    } else h += 'Lessons pay.';
+    h += '</div>';
+    h += '<div class="table"><div class="shelf">';
+    held.forEach(function (id) {
+      var c = CO[id], ls = lots(id), n = ls.length;
+      var p = price(id), y = priceAt(id, Math.max(1, S.day - 1));
+      var chg = (p / y - 1) * 100;
+      h += '<div class="stackcol' + (sel === id ? " sel" : "") + '" data-stack="' + id + '">' +
+        '<div class="stag">' + c.name + '<div class="chg" style="color:' + (chg >= 0 ? "#8fd8a8" : "#f0a89b") + '">' + (chg >= 0 ? "+" : "") + chg.toFixed(1) + '%</div></div>' +
+        '<div class="discs">' + ls.map(function (l, i) {
+          var pick = sel === id && picks.indexOf(i) >= 0;
+          return '<span class="disc ' + c.color + (i === n - 1 ? " cap" : "") + (pick ? " pick" : "") + '" data-lot="' + id + ':' + i + '"><b>' + money(l.p) + '</b></span>';
+        }).join("") + '</div></div>';
+    });
+    if (!held.length) {
+      h += '<div class="stackcol"><div class="stag" style="opacity:0.7">Lessons pay</div><div class="discs">' +
+        '<span class="disc ghost"></span><span class="disc ghost"></span><span class="disc ghost"></span></div></div>';
+    }
+    var bills = Math.max(1, Math.min(10, Math.round(S.cash / 25)));
+    var bh = "";
+    for (var bi = 0; bi < bills; bi++) bh += '<span class="bill3d"></span>';
+    h += '<div class="stackcol" style="cursor:default"><div class="stag">Cash<div class="chg">' + money(S.cash) + '</div></div><div class="discs">' + bh + '</div></div>';
+    h += '</div></div>';
+    if (sel && S.holdings[sel]) {
+      var c2 = CO[sel], ls2 = lots(sel), n2 = ls2.length;
+      var avg = ls2.reduce(function (a, l) { return a + l.p; }, 0) / n2;
+      var pv = n2 * price(sel), pcnt = (price(sel) / avg - 1) * 100;
+      h += '<div class="row" style="margin-top:12px">' + pcHtml(c2.color, 36, c2.name[0]) +
+        '<div><div class="t">' + c2.name + ' &middot; ' + n2 + '</div>' +
+        '<div class="d">avg ' + money(avg) + ' &middot; worth ' + money(pv) + ' &middot; <span style="color:' + (pcnt >= 0 ? "#3d6b47" : "#a33325") + '">' + (pcnt >= 0 ? "+" : "") + pcnt.toFixed(1) + '%</span></div></div>' +
+        (S.cash >= price(sel) ? '<span class="btn" id="buy1">Buy 1</span>' : '') + '</div>';
+      h += picks.length
+        ? '<button class="bigbtn green" style="margin:4px 0 2px" id="sellpicked">Sell ' + picks.length + ' &middot; ' + money(picks.length * price(sel)) + '</button>'
+        : '<div style="text-align:center;font-size:12.5px;color:rgba(242,233,210,0.6);padding-top:4px">Tap pieces to sell</div>';
+    }
+    return h;
+  }
+  function wireFolio() {
+    screen.querySelectorAll("[data-lot]").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var parts = el.dataset.lot.split(":"), id = parts[0], i = +parts[1];
+        if (sel !== id) { sel = id; picks = [i]; }
+        else {
+          var at = picks.indexOf(i);
+          if (at >= 0) picks.splice(at, 1); else picks.push(i);
+        }
+        render();
+      });
+    });
+    screen.querySelectorAll("[data-stack]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var id = el.dataset.stack;
+        if (sel === id) { sel = null; picks = []; } else { sel = id; picks = []; }
+        render();
+      });
+    });
+    var sp = document.getElementById("sellpicked");
+    if (sp) sp.addEventListener("click", function () {
+      picks.sort(function (a, b) { return b - a; }).forEach(function (i) { sellLot(sel, i); });
+      picks = [];
+      if (!S.holdings[sel]) sel = null;
+      render();
+    });
+    var b1 = document.getElementById("buy1");
+    if (b1) b1.addEventListener("click", function () { buy(sel); render(); });
+  }
+  function friendsHtml() {
+    var F = [
+      { n: "Ada", s: S.friendSeed.ada, streak: 20, st: [["slate", 4], ["red", 3], ["gold", 2]] },
+      { n: "Nick", s: S.friendSeed.nick, streak: 2, st: [["black", 2]] },
+      { n: "Jared", s: S.friendSeed.jared, streak: 11, st: [["red", 3], ["slate", 1]] },
+    ];
+    var h = '<div class="h1s">Friends</div><div class="subs">Same paychecks, different calls.</div>';
+    F.forEach(function (f) {
+      var w = f.s[S.day - 1], y = f.s[Math.max(0, S.day - 2)];
+      var chg = (w / y - 1) * 100;
+      h += '<div class="row">' + pcHtml("cream", 38, f.n[0]) +
+        '<div><div class="t">' + f.n + '</div><div class="d">' + money(w) + ' &middot; ' + (f.streak + S.day) + ' day streak</div></div>' +
+        '<div style="margin-left:auto;text-align:right"><div style="display:flex;gap:6px;align-items:flex-end;justify-content:flex-end">' +
+        f.st.map(function (p) {
+          var col = "";
+          for (var i = 0; i < p[1]; i++) col += '<span class="disc mini ' + p[0] + '"></span>';
+          return '<span style="display:flex;flex-direction:column-reverse;align-items:center">' + col + '</span>';
+        }).join("") + '</div>' +
+        '<div class="slab" style="font-size:12.5px;font-weight:600;color:' + (chg >= 0 ? "#3d6b47" : "#a33325") + '">' + (chg >= 0 ? "+" : "") + chg.toFixed(1) + '%</div></div></div>';
+    });
+    return h;
+  }
+  function guideHtml() {
+    var h = '<div class="h1s">Field guide</div><div class="subs">' + S.learned.length + ' of 500 met.</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;justify-items:center">';
+    S.learned.forEach(function (id) {
+      var c = CO[id];
+      h += '<div style="text-align:center">' + pcHtml(c.color, 46, c.name[0]) +
+        '<div class="slab" style="font-size:10.5px;font-weight:600;color:rgba(242,233,210,0.7);margin-top:3px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + c.name + '</div></div>';
+    });
+    for (var i = 0; i < Math.max(5, 15 - S.learned.length); i++) {
+      h += '<div style="text-align:center"><span class="pc" style="width:46px;height:46px;background:rgba(0,0,0,0.24)"><b class="slab" style="color:rgba(242,233,210,0.3);font-size:15px">?</b></span></div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  // ---------------- practice
+  var game = null;
+  function renderPractice() {
+    if (S.arc.day !== S.day) S.arc = { day: S.day, paidWins: 0, plays: 0 };
+    var h = topbar() + '<div class="h1s">Practice</div><div class="subs">First wins pay.</div>';
+    if (game) { h += gameHtml(); screen.innerHTML = h; drawIn(screen, 1.0); wireGame(); return; }
+    var left = Math.max(0, ARCADE_PAID_PLAYS - S.arc.paidWins);
+    h += '<div class="card"><div class="slab" style="font-weight:700;font-size:17px">Guess the Stock</div>' +
+      '<div style="font-size:13px;color:#6f6248;margin:2px 0 8px">Name the company from its chart</div>' +
+      '<div style="display:flex;align-items:center;margin-top:4px">' +
+      '<span style="font-size:12.5px;color:#6f6248">' + (left ? left + ' paid wins left &middot; ' + money(ARCADE_PAY) + ' each' : 'Paid out today') + '</span>' +
+      '<span class="btn" id="play" style="margin-left:auto">' + (S.learned.length ? "Play" : "Learn first") + '</span></div></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card" style="opacity:0.6"><div class="slab" style="font-weight:700;font-size:15px">Worth More</div><div style="font-size:12.5px;color:#6f6248">Soon</div></div>' +
+      '<div style="height:10px"></div>' +
+      '<div class="card" style="opacity:0.6"><div class="slab" style="font-weight:700;font-size:15px">Time Machine</div><div style="font-size:12.5px;color:#6f6248">Soon</div></div>';
+    screen.innerHTML = h;
+    var p = document.getElementById("play");
+    if (p && S.learned.length) p.addEventListener("click", function () { newGame(); render(); });
+  }
+  var grng = rng(999);
+  function newGame() {
+    var id = S.learned[Math.floor(grng() * S.learned.length)];
+    var names = Object.keys(CO).filter(function (k) { return k !== id; });
+    var wrong = [];
+    while (wrong.length < 2) {
+      var w = names[Math.floor(grng() * names.length)];
+      if (wrong.indexOf(w) < 0) wrong.push(w);
+    }
+    var opts = [id].concat(wrong).sort(function () { return grng() - 0.5; });
+    game = { id: id, opts: opts, state: null };
+  }
+  function gameHtml() {
+    var c = CO[game.id];
+    var px = c.px.slice(0, 180), max = Math.max.apply(null, px), min = Math.min.apply(null, px);
+    var pts = px.map(function (p, i) {
+      return (i / (px.length - 1) * 300).toFixed(1) + "," + (80 - (p - min) / (max - min || 1) * 72 + 4).toFixed(1);
+    }).join(" ");
+    var h = '<div class="card">' + chartBox(svgLine(pts, "#3d8c5b"), 88) +
+      cap(game.state ? c.name + " &middot; " + c.blurb : "180 days of one company you know") + '</div><div style="height:10px"></div>';
+    game.opts.forEach(function (id) {
+      var cls = "opt";
+      if (game.state) {
+        cls += id === game.id ? " right" : (game.state.pick === id ? " wrong" : " dim");
+        cls += " off";
+      }
+      h += '<div class="' + cls + '" data-g="' + id + '"><span class="slab" style="font-weight:700;font-size:14.5px">' + CO[id].name + '</span></div>';
+    });
+    if (game.state) {
+      h += '<div class="flash ' + (game.state.win ? "ok" : "no") + '"><span class="slab">' +
+        (game.state.win ? (game.state.paid ? "+" + money(ARCADE_PAY) : "Right.") : "It was " + c.name + ".") + '</span></div>' +
+        '<button class="bigbtn green" id="again">Play again</button>';
+    }
+    h += '<button class="bigbtn quiet" id="backarc">Back to Practice</button>';
+    return h;
+  }
+  function wireGame() {
+    screen.querySelectorAll("[data-g]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        if (game.state) return;
+        var win = el.dataset.g === game.id;
+        var paid = false;
+        S.arc.plays++;
+        if (win && S.arc.paidWins < ARCADE_PAID_PLAYS) { S.arc.paidWins++; S.cash += ARCADE_PAY; paid = true; }
+        game.state = { pick: el.dataset.g, win: win, paid: paid };
+        save();
+        render();
+      });
+    });
+    var a = document.getElementById("again");
+    if (a) a.addEventListener("click", function () { newGame(); render(); });
+    var b = document.getElementById("backarc");
+    if (b) b.addEventListener("click", function () { game = null; render(); });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

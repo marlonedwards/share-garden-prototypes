@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compound</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #e9e7e1;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e1d1a;
+  }
+  #phone {
+    max-width: 420px; margin: 0 auto; min-height: 100dvh;
+    background: #faf9f6; display: flex; flex-direction: column;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+  }
+  #top {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 14px 10px;
+  }
+  .chip {
+    font-size: 13.5px; font-weight: 700; padding: 5px 11px;
+    border-radius: 999px; background: #efece5;
+  }
+  .chip.streak { background: #e8f0e9; color: #2e6d40; }
+  .chip.worth { margin-left: auto; cursor: pointer; }
+  #screen { flex: 1; overflow-y: auto; padding: 4px 14px 18px; }
+  #tabs {
+    display: flex; border-top: 1px solid #e2ded5; background: #faf9f6;
+    position: sticky; bottom: 0;
+  }
+  #tabs button {
+    flex: 1; font: inherit; font-size: 14px; padding: 12px 0 14px;
+    border: none; background: none; color: #8a857a; cursor: pointer;
+  }
+  #tabs button.on { color: #1e1d1a; font-weight: 700; }
+
+  h1 { font-size: 21px; margin: 10px 2px 2px; }
+  .sub { font-size: 14px; color: #6f6a5f; margin: 0 2px 14px; }
+
+  .node {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1px solid #e2ded5; border-radius: 12px;
+    padding: 13px 14px; margin-bottom: 9px; cursor: pointer;
+  }
+  .node .dot {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700;
+  }
+  .node.done .dot { background: #2e7d44; color: #fff; }
+  .node.now .dot { background: #1e1d1a; color: #fff; }
+  .node.lock .dot { background: #efece5; color: #b3ada0; }
+  .node.lock { color: #a39d90; cursor: default; }
+  .node .t { font-size: 15.5px; font-weight: 700; }
+  .node .d { font-size: 13px; color: #8a857a; }
+  .node.lock .d { color: #b3ada0; }
+  .node.now { border-color: #1e1d1a; }
+  .node .go {
+    margin-left: auto; font-size: 13.5px; font-weight: 700; color: #2e6d40;
+  }
+
+  .banner {
+    background: #e8f0e9; color: #24512f; border-radius: 12px;
+    padding: 12px 14px; font-size: 14px; margin: 0 0 12px;
+  }
+  .foot { font-size: 12.5px; color: #a39d90; text-align: center; margin-top: 16px; }
+
+  .bigbtn {
+    display: block; width: 100%; font: inherit; font-size: 15.5px; font-weight: 700;
+    padding: 13px 0; border-radius: 12px; border: none; cursor: pointer;
+    background: #2e7d44; color: #fff; margin-top: 14px;
+  }
+  .bigbtn.quiet { background: #efece5; color: #1e1d1a; }
+  .bigbtn:disabled { background: #d8d4ca; color: #94907f; cursor: default; }
+
+  /* lesson */
+  #bar { height: 8px; background: #e7e3da; border-radius: 999px; margin: 10px 0 18px; overflow: hidden; }
+  #bar div { height: 100%; background: #2e7d44; border-radius: 999px; transition: width .3s ease; width: 0; }
+  .q { font-size: 18px; font-weight: 700; margin: 4px 2px 16px; line-height: 1.35; }
+  .opt {
+    display: block; width: 100%; text-align: left; font: inherit; font-size: 15px;
+    background: #fff; border: 1.5px solid #d8d4ca; border-radius: 12px;
+    padding: 13px 14px; margin-bottom: 9px; cursor: pointer;
+  }
+  .opt.right { border-color: #2e7d44; background: #e8f0e9; }
+  .opt.wrong { border-color: #b8342a; background: #f7e7e5; animation: shake .3s; }
+  .opt:disabled { cursor: default; }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .verdict {
+    border-radius: 12px; padding: 13px 14px; font-size: 14.5px; margin-top: 12px;
+  }
+  .verdict.ok { background: #e8f0e9; color: #24512f; }
+  .verdict.no { background: #f7e7e5; color: #7c2620; }
+  .verdict b { display: block; font-size: 15px; margin-bottom: 3px; }
+
+  .pairs { display: flex; gap: 9px; }
+  .pairs .col { flex: 1; }
+  .tile {
+    display: block; width: 100%; font: inherit; font-size: 13.5px; text-align: center;
+    background: #fff; border: 1.5px solid #d8d4ca; border-radius: 10px;
+    padding: 11px 8px; margin-bottom: 9px; cursor: pointer; min-height: 58px;
+  }
+  .tile.sel { border-color: #1e1d1a; }
+  .tile.hit { border-color: #2e7d44; background: #e8f0e9; color: #8aa892; }
+  .tile.miss { border-color: #b8342a; animation: shake .3s; }
+
+  svg.mini { display: block; width: 100%; height: 120px; background: #fff; border: 1px solid #e2ded5; border-radius: 10px; margin-bottom: 14px; }
+
+  /* market and portfolio */
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1px solid #e2ded5; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 9px;
+  }
+  .row .t { font-size: 15px; font-weight: 700; }
+  .row .d { font-size: 13px; color: #8a857a; }
+  .row .d.up { color: #2e6d40; }
+  .row .d.dn { color: #b8342a; }
+  .row .new {
+    font-size: 12px; font-weight: 700; color: #fff; background: #2e7d44;
+    border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: 2px;
+  }
+  .row .buy {
+    margin-left: auto; font: inherit; font-size: 13.5px; font-weight: 700;
+    background: #1e1d1a; color: #fff; border: none; border-radius: 9px;
+    padding: 8px 13px; cursor: pointer; flex: none;
+  }
+  .row .buy:disabled { background: #d8d4ca; color: #94907f; cursor: default; }
+  .row.lock { color: #a39d90; background: #f4f2ec; }
+  .row.lock .t { color: #a39d90; }
+  svg.big { display: block; width: 100%; height: 180px; background: #fff; border: 1px solid #e2ded5; border-radius: 12px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div id="top">
+    <span class="chip streak" id="streak">Day 1</span>
+    <span class="chip" id="coins">$0</span>
+    <span class="chip worth" id="worthchip">Worth $0</span>
+  </div>
+  <div id="screen"></div>
+  <div id="tabs">
+    <button data-t="path" class="on">Path</button>
+    <button data-t="market">Market</button>
+    <button data-t="folio">Portfolio</button>
+  </div>
+</div>
+<script>
+(function () {
+  // ---- deterministic prices, 60 months, crash baked at months 13 to 15
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function series(start, drift, vol, seed, crash) {
+    var r = rng(seed), out = [start];
+    for (var m = 1; m <= 60; m++) {
+      var f = 1 + drift + (r() - 0.5) * 2 * vol;
+      if (crash && m >= 13 && m <= 15) f = 1 + crash;
+      out.push(out[m - 1] * f);
+    }
+    return out;
+  }
+  var ASSETS = {
+    aapl: { name: "Apple", unit: "shares", prices: series(230, 0.013, 0.07, 7, -0.10) },
+    fund: { name: "Everything fund", unit: "funds", prices: series(100, 0.007, 0.016, 3, -0.065) },
+    bond: { name: "Bonds", unit: "bonds", prices: series(100, 0.0033, 0.001, 5, 0) },
+  };
+
+  var S = {
+    day: 1, month: 0, coins: 0,
+    unitsDone: { shares: true },
+    holdings: {},          // id -> { qty, paidIn }
+    hist: [],              // { m, v }
+    buys: [],              // { m, v }
+    lessonDone: false,
+    overnight: 0,
+  };
+
+  var UNITS = [
+    { id: "shares", name: "Shares", d: "What owning a piece means" },
+    { id: "funds", name: "Funds", d: "One buy, hundreds of companies" },
+    { id: "bonds", name: "Bonds", d: "The loan that pays you" },
+    { id: "hype", name: "Spotting hype", d: "When the price is a story" },
+    { id: "reading", name: "Reading a company", d: "What you pay for what it earns" },
+  ];
+  var UNIT_BY_DAY = { 3: "bonds", 4: "hype", 6: "reading" };
+
+  function money(n) {
+    var neg = n < 0 ? "-" : "";
+    return neg + "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  }
+  function money2(n) { return "$" + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function price(id) { return ASSETS[id].prices[S.month]; }
+  function holdingsWorth() {
+    var w = 0;
+    for (var id in S.holdings) w += S.holdings[id].qty * price(id);
+    return w;
+  }
+  function paidTotal() {
+    var p = 0;
+    for (var id in S.holdings) p += S.holdings[id].paidIn;
+    return p;
+  }
+  function updateTop() {
+    document.getElementById("streak").textContent = "Day " + S.day;
+    document.getElementById("coins").textContent = money(S.coins);
+    document.getElementById("worthchip").textContent = "Worth " + money(holdingsWorth() + S.coins);
+  }
+  document.getElementById("worthchip").addEventListener("click", function () { show("folio"); });
+
+  // ---- tabs
+  var screen = document.getElementById("screen");
+  var tabs = document.getElementById("tabs");
+  tabs.querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () { show(b.dataset.t); });
+  });
+  function show(t) {
+    tabs.style.display = "flex";
+    tabs.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b.dataset.t === t); });
+    if (t === "path") renderPath();
+    if (t === "market") renderMarket();
+    if (t === "folio") renderFolio();
+    updateTop();
+  }
+
+  // ---- path
+  function renderPath() {
+    var h = "<h1>Compound</h1><p class='sub'>One lesson a day. It pays.</p>";
+    if (S.overnight) {
+      var o = S.overnight;
+      h += "<div class='banner'>Overnight, 3 months passed in your market. Your money " +
+        (o >= 0 ? "grew " + money2(o) : "fell " + money2(o)) + ".</div>";
+      S.overnight = 0;
+    }
+    UNITS.forEach(function (u) {
+      var done = S.unitsDone[u.id];
+      var now = !done && isNext(u.id);
+      var cls = done ? "done" : now ? "now" : "lock";
+      var mark = done ? "&#10003;" : now ? "&#9654;" : "";
+      var go = now && !S.lessonDone ? "<span class='go'>Start</span>" : "";
+      h += "<div class='node " + cls + "' data-u='" + u.id + "'><div class='dot'>" + mark + "</div>" +
+        "<div><div class='t'>" + u.name + "</div><div class='d'>" + u.d + "</div></div>" + go + "</div>";
+    });
+    if (S.lessonDone) {
+      h += "<button class='bigbtn quiet' id='tomorrow'>Tomorrow</button>" +
+        "<p class='foot'>Tomorrow is a tap here. In the real app it is a real day.</p>";
+    }
+    screen.innerHTML = h;
+    screen.querySelectorAll(".node.now").forEach(function (n) {
+      if (!S.lessonDone) n.addEventListener("click", startLesson);
+    });
+    var tm = document.getElementById("tomorrow");
+    if (tm) tm.addEventListener("click", nextDay);
+  }
+  function isNext(id) {
+    for (var i = 0; i < UNITS.length; i++) {
+      if (!S.unitsDone[UNITS[i].id]) return UNITS[i].id === id;
+    }
+    return false;
+  }
+
+  function nextDay() {
+    var before = holdingsWorth();
+    for (var i = 0; i < 3; i++) {
+      S.month++;
+      S.hist.push({ m: S.month, v: holdingsWorth(), p: paidTotal() });
+    }
+    S.overnight = holdingsWorth() - before;
+    S.day++;
+    S.lessonDone = false;
+    startLesson();
+  }
+
+  // ---- lesson items
+  function mc(q, opts, right, okText, noText) {
+    return { kind: "mc", q: q, opts: opts, right: right, ok: okText, no: noText };
+  }
+  var LESSON_1 = [
+    mc("You buy one share of Apple. What are you now?",
+      ["A part owner of Apple", "Someone Apple owes money to", "A customer with perks"], 0,
+      "Owners ride the price, up and down.",
+      "That would be a bond. A share makes you an owner."),
+    { kind: "chart", q: "Forty years of one stock. It sold you your phone. Which is it?",
+      opts: ["Apple", "Kodak", "Blockbuster"], right: 0,
+      ok: "Kodak had the camera first and missed the phone.",
+      no: "This line is Apple. The other two went the other way." },
+    { kind: "match", q: "Match each one to what it is.",
+      pairs: [["Stock", "A piece of one company"], ["Fund", "Slivers of hundreds"], ["Cash", "Sits still"]] },
+    mc("Your friend owns one stock. You own a fund holding 500. One company fails. Who feels it?",
+      ["Mostly your friend", "Both of you the same", "Neither of you"], 0,
+      "Spreading out is the whole trick. That is a fund.",
+      "One failure barely dents 500. It can erase 1."),
+  ];
+  var DAILY = {
+    2: mc("A stock tripled last month and your feed will not stop talking about it. Today's price already includes",
+      ["All of that excitement", "None of it, prices reset daily", "Next year's growth, guaranteed"], 0,
+      "By the time everyone knows, it is in the price.",
+      "Prices move first. The story you heard is already priced in."),
+    3: mc("A bond is",
+      ["A loan that pays you interest", "A piece of a company", "A faster kind of stock"], 0,
+      "Steadier than stocks. It pays you for waiting.",
+      "That is a stock. A bond is a loan you make."),
+    4: mc("A stock with no profits is halted twice in a day on a rumored cure. You are paying for",
+      ["The story", "The profits", "The building"], 0,
+      "Stories can be worth it. Just know that is the bet.",
+      "There are no profits yet. Only the story."),
+    5: mc("Your market just dropped hard. Your move?",
+      ["Keep buying on schedule", "Sell before it gets worse", "Wait until it feels safe"], 0,
+      "Every recovery started while it still felt scary.",
+      "Selling the dip locks it in. Check your bonds today."),
+    6: mc("Apple earns about $6 a share and costs about $230. For every $1 it earns you pay",
+      ["About $38", "About $6", "About $230"], 0,
+      "That number is the P/E. High means expensive hopes.",
+      "Divide price by earnings. 230 over 6 is about 38."),
+    7: mc("Two identical funds. One charges 2% a year, one charges 0.05%. Over 30 years the difference is",
+      ["About a third of your money", "Pocket change", "Nothing, fees come from profits"], 0,
+      "Fees compound too, against you.",
+      "Small numbers, long time. It adds up to a third."),
+  };
+  function todaysItems() {
+    if (S.day === 1) return LESSON_1;
+    var item = DAILY[((S.day - 2) % 6) + 2];
+    return [item];
+  }
+  function todaysUnitName() {
+    if (S.day === 1) return "Funds";
+    var u = UNIT_BY_DAY[S.day];
+    if (u) { for (var i = 0; i < UNITS.length; i++) if (UNITS[i].id === u) return UNITS[i].name; }
+    return "Review";
+  }
+
+  // ---- lesson flow
+  var items, itemIdx;
+  function startLesson() {
+    items = todaysItems(); itemIdx = 0;
+    tabs.style.display = "none";
+    renderItem();
+  }
+  function renderItem() {
+    var it = items[itemIdx];
+    var pct = Math.round((itemIdx / items.length) * 100);
+    var h = "<p class='sub' style='margin-top:10px'>" + todaysUnitName() + "</p>" +
+      "<div id='bar'><div style='width:" + pct + "%'></div></div>";
+    if (it.kind === "mc" || it.kind === "chart") {
+      h += "<div class='q'>" + it.q + "</div>";
+      if (it.kind === "chart") h += lessonChart();
+      it.opts.forEach(function (o, i) {
+        h += "<button class='opt' data-i='" + i + "'>" + o + "</button>";
+      });
+      h += "<div id='vslot'></div>";
+      screen.innerHTML = h;
+      screen.querySelectorAll(".opt").forEach(function (b) {
+        b.addEventListener("click", function () { answer(b, +b.dataset.i === it.right, it); });
+      });
+    } else {
+      renderMatch(it, h);
+    }
+    updateTop();
+  }
+  function lessonChart() {
+    var r = rng(11), pts = [], vals = [], max = 0;
+    for (var i = 0; i <= 80; i++) {
+      var v = Math.exp(i / 80 * 6.4) * (1 + (r() - 0.5) * 0.55);
+      if (i > 22 && i < 30) v *= 0.45;
+      vals.push(v); max = Math.max(max, v);
+    }
+    for (var j = 0; j < vals.length; j++) {
+      pts.push((j / (vals.length - 1) * 330 + 5).toFixed(1) + "," + (110 - vals[j] / max * 98).toFixed(1));
+    }
+    return "<svg class='mini' viewBox='0 0 340 120'><polyline fill='none' stroke='#2e7d44' stroke-width='2.5' points='" +
+      pts.join(" ") + "'/><text x='6' y='116' font-size='11' fill='#8a857a'>1985</text>" +
+      "<text x='308' y='116' font-size='11' fill='#8a857a'>2025</text></svg>";
+  }
+  function answer(btn, right, it) {
+    screen.querySelectorAll(".opt").forEach(function (b) { b.disabled = true; });
+    btn.classList.add(right ? "right" : "wrong");
+    var v = document.getElementById("vslot");
+    v.innerHTML = "<div class='verdict " + (right ? "ok" : "no") + "'><b>" +
+      (right ? "Right." : "Not quite.") + "</b>" + (right ? it.ok : it.no) + "</div>" +
+      "<button class='bigbtn' id='cont'>" + (right ? "Continue" : "Okay") + "</button>";
+    document.getElementById("cont").addEventListener("click", nextItem);
+  }
+  function nextItem() {
+    itemIdx++;
+    if (itemIdx >= items.length) return finishLesson();
+    renderItem();
+  }
+  function renderMatch(it, head) {
+    var left = it.pairs.map(function (p) { return p[0]; });
+    var right = it.pairs.map(function (p) { return p[1]; }).sort(function () { return 0.5 - Math.random(); });
+    var h = head + "<div class='q'>" + it.q + "</div><div class='pairs'><div class='col' id='cl'>";
+    left.forEach(function (t) { h += "<button class='tile' data-v='" + t + "'>" + t + "</button>"; });
+    h += "</div><div class='col' id='cr'>";
+    right.forEach(function (t) { h += "<button class='tile' data-v='" + t + "'>" + t + "</button>"; });
+    h += "</div></div><div id='vslot'></div>";
+    screen.innerHTML = h;
+    var selL = null, selR = null, hits = 0;
+    function check() {
+      if (!selL || !selR) return;
+      var ok = it.pairs.some(function (p) { return p[0] === selL.dataset.v && p[1] === selR.dataset.v; });
+      var a = selL, b = selR;
+      selL = null; selR = null;
+      if (ok) {
+        a.classList.remove("sel"); b.classList.remove("sel");
+        a.classList.add("hit"); b.classList.add("hit");
+        a.disabled = true; b.disabled = true;
+        hits++;
+        if (hits === it.pairs.length) {
+          document.getElementById("vslot").innerHTML =
+            "<div class='verdict ok'><b>All matched.</b>A fund is the spread-out one. Remember that in the market.</div>" +
+            "<button class='bigbtn' id='cont'>Continue</button>";
+          document.getElementById("cont").addEventListener("click", nextItem);
+        }
+      } else {
+        a.classList.add("miss"); b.classList.add("miss");
+        setTimeout(function () {
+          a.classList.remove("miss", "sel"); b.classList.remove("miss", "sel");
+        }, 350);
+      }
+    }
+    screen.querySelectorAll("#cl .tile").forEach(function (t) {
+      t.addEventListener("click", function () {
+        if (selL) selL.classList.remove("sel");
+        selL = t; t.classList.add("sel"); check();
+      });
+    });
+    screen.querySelectorAll("#cr .tile").forEach(function (t) {
+      t.addEventListener("click", function () {
+        if (selR) selR.classList.remove("sel");
+        selR = t; t.classList.add("sel"); check();
+      });
+    });
+  }
+
+  function finishLesson() {
+    S.coins += 20;
+    S.lessonDone = true;
+    var unlocked = null;
+    if (S.day === 1) { S.unitsDone.funds = true; unlocked = "Funds"; }
+    var u = UNIT_BY_DAY[S.day];
+    if (u && !S.unitsDone[u]) {
+      S.unitsDone[u] = true;
+      unlocked = u === "bonds" ? "Bonds" : null;
+      if (u === "hype" || u === "reading") unlocked = null;
+    }
+    var h = "<h1 style='margin-top:26px'>Lesson done. You earned $20.</h1>" +
+      "<p class='sub'>Day " + S.day + " streak. Your streak is time in the market.</p>";
+    if (unlocked) h += "<div class='banner'>" + unlocked + " just unlocked in your market.</div>";
+    h += "<button class='bigbtn' id='tomarket'>Spend it in your market</button>" +
+      "<button class='bigbtn quiet' id='topath'>Back to the path</button>";
+    screen.innerHTML = h;
+    document.getElementById("tomarket").addEventListener("click", function () { show("market"); });
+    document.getElementById("topath").addEventListener("click", function () { show("path"); });
+    updateTop();
+  }
+
+  // ---- market
+  var lastSeen = {};
+  function renderMarket() {
+    var h = "<h1>Your market</h1><p class='sub'>Lessons pay. This is where it goes to work.</p>";
+    ["aapl", "fund", "bond"].forEach(function (id) {
+      var a = ASSETS[id];
+      if (!S.unitsDone[a.unit]) {
+        var un = UNITS.filter(function (u) { return u.id === a.unit; })[0];
+        h += "<div class='row lock'><div><div class='t'>" + a.name + "</div>" +
+          "<div class='d'>Finish " + un.name + " to unlock</div></div></div>";
+        return;
+      }
+      var p = price(id);
+      var seen = lastSeen[id];
+      var chg = seen ? (p / seen - 1) * 100 : 0;
+      var chgTxt = seen && Math.abs(chg) > 0.05
+        ? "<span class='d " + (chg >= 0 ? "up" : "dn") + "'>" + (chg >= 0 ? "+" : "") + chg.toFixed(1) + "% since your last visit</span>"
+        : "";
+      var isNew = seen === undefined && id !== "aapl";
+      h += "<div class='row'><div><div class='t'>" + a.name + (isNew ? "<span class='new'>New</span>" : "") + "</div>" +
+        "<div class='d'>" + money2(p) + " a share. " + chgTxt + "</div></div>" +
+        "<button class='buy' data-id='" + id + "' " + (S.coins < 10 ? "disabled" : "") + ">Buy $10</button></div>";
+      lastSeen[id] = p;
+    });
+    h += "<p class='foot'>Fractions are fine. $10 of Apple is real ownership.</p>";
+    screen.innerHTML = h;
+    screen.querySelectorAll(".buy").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.dataset.id;
+        if (S.coins < 10) return;
+        S.coins -= 10;
+        var hd = S.holdings[id] || (S.holdings[id] = { qty: 0, paidIn: 0 });
+        hd.qty += 10 / price(id);
+        hd.paidIn += 10;
+        S.hist.push({ m: S.month, v: holdingsWorth(), p: paidTotal() });
+        S.buys.push({ m: S.month, v: holdingsWorth() });
+        renderMarket();
+      });
+    });
+    updateTop();
+  }
+
+  // ---- portfolio
+  function renderFolio() {
+    var w = holdingsWorth();
+    var h = "<h1>Your portfolio</h1>";
+    if (!S.hist.length) {
+      h += "<p class='sub'>Nothing here yet. Do a lesson, get paid, buy something.</p>";
+      screen.innerHTML = h;
+      return;
+    }
+    var paidIn = paidTotal();
+    var diff = w - paidIn;
+    h += "<p class='sub'>You put in " + money(paidIn) + ". Worth " + money2(w) + " now, " +
+      (diff >= 0 ? "up " : "down ") + money2(diff) + ".</p>";
+    h += folioChart();
+    for (var id2 in S.holdings) {
+      var hd = S.holdings[id2], v = hd.qty * price(id2);
+      var pc = (v / hd.paidIn - 1) * 100;
+      h += "<div class='row'><div><div class='t'>" + ASSETS[id2].name + "</div>" +
+        "<div class='d'>In " + money(hd.paidIn) + ", worth " + money2(v) + "</div></div>" +
+        "<div class='d " + (pc >= 0 ? "up" : "dn") + "' style='margin-left:auto'>" +
+        (pc >= 0 ? "+" : "") + pc.toFixed(1) + "%</div></div>";
+    }
+    h += "<div class='row'><div><div class='t'>Wallet</div><div class='d'>Unspent lesson pay</div></div>" +
+      "<div class='d' style='margin-left:auto'>" + money(S.coins) + "</div></div>";
+    h += "<p class='foot'>Your streak keeps the clock running. Miss a day and the market waits.</p>";
+    screen.innerHTML = h;
+  }
+  function folioChart() {
+    var W = 380, H = 180, padL = 8, padR = 52, padT = 12, padB = 24;
+    var pts = S.hist;
+    var maxV = 1, maxM = Math.max(S.month, 1);
+    pts.forEach(function (p) { maxV = Math.max(maxV, p.v); });
+    function x(m, i) { return padL + (maxM ? (m / maxM) : 0) * (W - padL - padR); }
+    function y(v) { return padT + (1 - v / maxV) * (H - padT - padB); }
+    var line = pts.map(function (p) { return x(p.m).toFixed(1) + "," + y(p.v).toFixed(1); }).join(" ");
+    var paidLine = pts.map(function (p) { return x(p.m).toFixed(1) + "," + y(p.p || 0).toFixed(1); }).join(" ");
+    var dots = S.buys.map(function (b) {
+      return "<circle cx='" + x(b.m).toFixed(1) + "' cy='" + y(b.v).toFixed(1) + "' r='3.5' fill='#1e1d1a'/>";
+    }).join("");
+    var last = pts[pts.length - 1];
+    var years = "";
+    for (var yr = 12; yr <= maxM; yr += 12) {
+      years += "<text x='" + x(yr).toFixed(1) + "' y='" + (H - 8) + "' font-size='11' fill='#8a857a' text-anchor='middle'>year " + (yr / 12) + "</text>";
+    }
+    if (maxM < 12) years = "<text x='" + padL + "' y='" + (H - 8) + "' font-size='11' fill='#8a857a'>month " + maxM + "</text>";
+    var paidLabelY = y(last.p || 0) + 4;
+    if (Math.abs(paidLabelY - (y(last.v) + 4)) < 14) paidLabelY = y(last.v) + 4 + (last.p > last.v ? 14 : -14);
+    return "<svg class='big' viewBox='0 0 " + W + " " + H + "'>" +
+      "<polyline fill='none' stroke='#b3ada0' stroke-width='1.5' stroke-dasharray='4 4' points='" + paidLine + "'/>" +
+      "<polyline fill='none' stroke='#2e7d44' stroke-width='2.5' points='" + line + "'/>" + dots +
+      "<text x='" + (x(last.m) + 6).toFixed(1) + "' y='" + (y(last.v) + 4).toFixed(1) + "' font-size='12' font-weight='700' fill='#1e1d1a'>" + money2(last.v) + "</text>" +
+      "<text x='" + (x(last.m) + 6).toFixed(1) + "' y='" + paidLabelY.toFixed(1) + "' font-size='11' fill='#8a857a'>put in</text>" +
+      years + "</svg>";
+  }
+
+  show("path");
+})();
+</script>
+</body>
+</html>

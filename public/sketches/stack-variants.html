@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stack, three skins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #cdcac2;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e1d1a;
+    padding-bottom: 40px;
+  }
+  .slab { font-family: "Roboto Slab", Georgia, serif; }
+  #head { text-align: center; padding: 26px 16px 4px; }
+  #head h1 { font-family: "Roboto Slab", Georgia, serif; font-size: 24px; margin: 0 0 4px; }
+  #head p { margin: 0; color: #57544c; font-size: 14.5px; }
+  #row { display: flex; gap: 30px; justify-content: center; align-items: flex-start; flex-wrap: wrap; padding: 26px 18px 0; }
+  .fig { width: 390px; max-width: 94vw; }
+  .cap { text-align: center; margin-top: 12px; }
+  .cap .t { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 16px; }
+  .cap .d { font-size: 13.5px; color: #57544c; margin-top: 2px; }
+
+  .phone {
+    height: 760px; border-radius: 30px; overflow: hidden; position: relative;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+  }
+  .topbar { display: flex; align-items: center; gap: 8px; padding: 16px 14px 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 15px;
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .chip svg { display: block; }
+  .chip.worth { margin-left: auto; }
+  .chip .up { font-size: 12.5px; font-weight: 600; }
+
+  .unitcard { margin: 8px 14px 4px; border-radius: 14px; padding: 12px 15px; }
+  .unitcard .u { font-size: 12.5px; font-weight: 600; }
+  .unitcard .n { font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 18px; margin-top: 1px; }
+  .unitcard .p { font-size: 13px; margin-top: 2px; }
+
+  .pathwrap { flex: 1; overflow: hidden; position: relative; }
+  .path { display: flex; flex-direction: column; align-items: center; padding: 18px 0 8px; }
+  .slot { position: relative; height: 84px; width: 100%; display: flex; justify-content: center; }
+  .node {
+    width: 60px; height: 60px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .node svg { display: block; }
+  .slot.cur { height: 138px; }
+  .slot.cur .node { width: 76px; height: 76px; margin-top: 26px; animation: bob 2.4s ease-in-out infinite; cursor: pointer; }
+  .slot.cur .node:active { transform: scale(0.93); }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .startpill {
+    position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 13px;
+    padding: 4px 13px; border-radius: 999px; white-space: nowrap;
+  }
+  .lname {
+    position: absolute; top: 112px; left: 50%; transform: translateX(-50%);
+    font-size: 12.5px; white-space: nowrap;
+  }
+  .bull { position: absolute; width: 74px; top: 8px; }
+  .gate { display: flex; align-items: center; gap: 10px; margin: 14px 0 16px; }
+  .gate .rule { width: 64px; height: 1.5px; }
+  .gate .g {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: "Roboto Slab", Georgia, serif; font-weight: 700; font-size: 13.5px;
+    padding: 6px 14px; border-radius: 999px;
+  }
+
+  .tabbar { display: flex; padding: 6px 8px 14px; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12.5px; padding-top: 8px; }
+  .tab svg { display: block; }
+
+  .ticker { display: none; }
+
+  /* ============ A: felt table ============ */
+  .vA .phone { background: radial-gradient(140% 90% at 50% 0%, #2f7350 0%, #266243 46%, #1d5237 100%); }
+  .vA .chip { background: rgba(0,0,0,0.28); color: #f2e9d2; box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.08); }
+  .vA .chip .up { color: #8fd8a8; }
+  .vA .unitcard { background: #f4ecd6; color: #2a2419; box-shadow: 0 5px 0 rgba(0,0,0,0.28); }
+  .vA .unitcard .u { color: #8a7c5c; }
+  .vA .unitcard .p { color: #6f6248; }
+  .vA .node.done {
+    background: radial-gradient(circle at 50% 38%, #f7edd0, #ecdcae 66%, #dcc98f 67%);
+    border: 4px dashed rgba(90,70,30,0.25);
+    box-shadow: 0 6px 0 #a68d58, inset 0 2px 0 rgba(255,255,255,0.6);
+  }
+  .vA .node.cur {
+    background: radial-gradient(circle at 50% 38%, #d95c4e, #b23a2e 66%, #9c3226 67%);
+    border: 4px dashed rgba(255,255,255,0.35);
+    box-shadow: 0 7px 0 #6e1f18, inset 0 2px 0 rgba(255,255,255,0.25);
+  }
+  .vA .node.lock, .vA .node.far {
+    background: rgba(0,0,0,0.24);
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(255,255,255,0.06);
+  }
+  .vA .node.far { opacity: 0.55; }
+  .vA .startpill { background: #f4ecd6; color: #2a2419; box-shadow: 0 3px 0 rgba(0,0,0,0.3); }
+  .vA .lname { color: rgba(242,233,210,0.75); }
+  .vA .gate .rule { background: rgba(255,255,255,0.18); }
+  .vA .gate .g { background: rgba(0,0,0,0.28); color: rgba(242,233,210,0.85); }
+  .vA .tabbar { background: rgba(0,0,0,0.22); }
+  .vA .tab { color: rgba(242,233,210,0.55); }
+  .vA .tab.on { color: #f2e9d2; }
+  .vA .ck { fill: #2e7d44; } .vA .lk { fill: rgba(242,233,210,0.4); } .vA .tri { fill: #f7edd0; }
+
+  /* ============ B: paper and ink ============ */
+  .vB .phone { background: #faf8f3; }
+  .vB .chip { background: #fff; color: #1e1d1a; border: 2px solid #1e1d1a; box-shadow: 0 3px 0 #1e1d1a; }
+  .vB .chip .up { color: #2e7d44; }
+  .vB .unitcard { background: #fff; border: 2px solid #1e1d1a; box-shadow: 0 4px 0 #1e1d1a; }
+  .vB .unitcard .u { color: #8a857a; }
+  .vB .unitcard .p { color: #6f6a5f; }
+  .vB .node.done { background: #2e7d44; border: 2.5px solid #1e1d1a; box-shadow: 0 5px 0 #1e1d1a; }
+  .vB .node.cur { background: #fff; border: 2.5px solid #1e1d1a; box-shadow: 0 6px 0 #1e1d1a; }
+  .vB .node.lock, .vB .node.far { background: #efece4; border: 2.5px solid #c9c4b8; box-shadow: 0 5px 0 #c9c4b8; }
+  .vB .node.far { opacity: 0.55; }
+  .vB .startpill { background: #2e7d44; color: #fff; border: 2px solid #1e1d1a; box-shadow: 0 3px 0 #1e1d1a; }
+  .vB .lname { color: #8a857a; }
+  .vB .gate .rule { background: #d8d4c8; }
+  .vB .gate .g { background: #fff; color: #8a857a; border: 2px solid #c9c4b8; }
+  .vB .tabbar { background: #faf8f3; border-top: 2px solid #1e1d1a; }
+  .vB .tab { color: #a39d90; }
+  .vB .tab.on { color: #1e1d1a; }
+  .vB .ck { fill: #fff; } .vB .lk { fill: #b3ada0; } .vB .tri { fill: #2e7d44; }
+
+  /* ============ C: light terminal ============ */
+  .vC .phone {
+    background:
+      linear-gradient(rgba(23,102,58,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(23,102,58,0.035) 1px, transparent 1px),
+      #f7f9f7;
+    background-size: 26px 26px, 26px 26px, auto;
+  }
+  .vC .chip { background: #fff; color: #182420; border: 1px solid #d3dad4; }
+  .vC .chip .up { color: #17663a; }
+  .vC .ticker {
+    display: flex; gap: 18px; padding: 7px 14px; font-family: "Roboto Slab", Georgia, serif;
+    font-size: 12.5px; font-weight: 600; color: #6d7a71;
+    border-top: 1px solid #e3e8e3; border-bottom: 1px solid #e3e8e3; background: #fff;
+    white-space: nowrap; overflow: hidden;
+  }
+  .vC .ticker .g { color: #17663a; } .vC .ticker .r { color: #b03a2e; }
+  .vC .unitcard { background: #fff; border: 1px solid #d3dad4; border-left: 4px solid #17663a; }
+  .vC .unitcard .u { color: #93a096; }
+  .vC .unitcard .p { color: #6d7a71; }
+  .vC .node.done { background: #17663a; box-shadow: 0 2px 6px rgba(23,102,58,0.3); }
+  .vC .node.cur { background: #fff; border: 2.5px solid #17663a; box-shadow: 0 8px 20px rgba(23,102,58,0.22); }
+  .vC .node.lock, .vC .node.far { background: #eef1ee; border: 1px solid #d3dad4; }
+  .vC .node.far { opacity: 0.55; }
+  .vC .startpill { background: #17663a; color: #fff; box-shadow: 0 3px 10px rgba(23,102,58,0.35); }
+  .vC .lname { color: #93a096; }
+  .vC .gate .rule { background: #d3dad4; }
+  .vC .gate .g { background: #fff; color: #6d7a71; border: 1px solid #d3dad4; }
+  .vC .tabbar { background: #fff; border-top: 1px solid #d3dad4; }
+  .vC .tab { color: #93a096; }
+  .vC .tab.on { color: #17663a; }
+  .vC .ck { fill: #fff; } .vC .lk { fill: #b7c0b9; } .vC .tri { fill: #17663a; }
+
+  /* bull colors */
+  .bull .horn { fill: #ead9b6; }
+  .bull .body { fill: #8a5a3b; }
+  .bull .body2 { fill: #74492e; }
+  .bull .snout { fill: #c98d6b; }
+  .vA .bull .horn { fill: #f2e6c4; }
+</style>
+</head>
+<body>
+<div id="head">
+  <h1>Stack</h1>
+  <p>The home tree in three skins. Same screen, pick the world.</p>
+</div>
+<div id="row"></div>
+<script>
+(function () {
+  var flame = '<svg width="15" height="16" viewBox="0 0 15 16"><path fill="#e8853c" d="M7.6 0c.9 3.4 4.9 4.6 4.9 8.6a5.4 5.4 0 0 1-10.8 0c0-2.7 2.1-3.6 2.8-6 .9 1.2 1.8 1.6 3.1-2.6z"/><path fill="#f3b64f" d="M7.5 6.5c.5 1.9 2.4 2.5 2.4 4.5a2.6 2.6 0 0 1-5.2 0c0-1.5 1-2 1.4-3.2.4.6.8.8 1.4-1.3z"/></svg>';
+  var bills = '<svg width="19" height="14" viewBox="0 0 19 14"><rect x="1" y="6" width="17" height="7" rx="1.5" fill="#3e8b58"/><rect x="1" y="3.4" width="17" height="7" rx="1.5" fill="#4d9d67" stroke="rgba(0,0,0,.18)"/><rect x="1" y="0.8" width="17" height="7" rx="1.5" fill="#5cae76" stroke="rgba(0,0,0,.18)"/><circle cx="9.5" cy="4.3" r="2.1" fill="rgba(255,255,255,.5)"/></svg>';
+  var pieces = '<svg width="15" height="15" viewBox="0 0 15 15"><ellipse cx="7.5" cy="10.6" rx="6" ry="3.4" fill="#b03a2e"/><ellipse cx="7.5" cy="7.8" rx="6" ry="3.4" fill="#cd4a3c" stroke="rgba(0,0,0,.2)"/><ellipse cx="7.5" cy="5" rx="6" ry="3.4" fill="#d95c4e" stroke="rgba(0,0,0,.2)"/></svg>';
+  var check = '<svg width="26" height="26" viewBox="0 0 26 26"><path class="ck" d="M5 13.5 L10.5 19 L21 7.5 L18.4 5 L10.5 13.8 L7.5 11z"/></svg>';
+  var lock = '<svg width="20" height="22" viewBox="0 0 20 22"><path class="lk" d="M4 9V6.5a6 6 0 0 1 12 0V9h1.4a1.6 1.6 0 0 1 1.6 1.6v8.3a1.6 1.6 0 0 1-1.6 1.6H2.6A1.6 1.6 0 0 1 1 18.9v-8.3A1.6 1.6 0 0 1 2.6 9H4zm2.6 0h6.8V6.5a3.4 3.4 0 0 0-6.8 0V9z"/></svg>';
+  var play = '<svg width="24" height="26" viewBox="0 0 24 26"><path class="tri" d="M3.5 2.2 L21.5 13 L3.5 23.8z"/></svg>';
+  var bull = '<svg class="bull" viewBox="0 0 100 90">' +
+    '<path class="horn" d="M24 32 Q8 28 5 12 Q21 13 30 24z"/>' +
+    '<path class="horn" d="M76 32 Q92 28 95 12 Q79 13 70 24z"/>' +
+    '<ellipse class="body" cx="19" cy="40" rx="10" ry="7"/>' +
+    '<ellipse class="body" cx="81" cy="40" rx="10" ry="7"/>' +
+    '<ellipse class="body" cx="50" cy="50" rx="31" ry="27"/>' +
+    '<circle class="body2" cx="41" cy="28" r="7"/><circle class="body2" cx="51" cy="26" r="7"/><circle class="body2" cx="60" cy="29" r="6"/>' +
+    '<circle cx="39" cy="48" r="3.6" fill="#1e1d1a"/><circle cx="61" cy="48" r="3.6" fill="#1e1d1a"/>' +
+    '<ellipse class="snout" cx="50" cy="68" rx="18" ry="11.5"/>' +
+    '<circle cx="43.5" cy="68" r="2.7" fill="#1e1d1a" opacity=".5"/><circle cx="56.5" cy="68" r="2.7" fill="#1e1d1a" opacity=".5"/>' +
+    '</svg>';
+  function tabIcon(kind) {
+    if (kind === "learn") return '<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="4" r="3.1" fill="currentColor"/><circle cx="5" cy="12" r="3.1" fill="currentColor" opacity=".65"/><circle cx="17" cy="12" r="3.1" fill="currentColor" opacity=".65"/><circle cx="11" cy="19" r="3.1" fill="currentColor" opacity=".4"/></svg>';
+    if (kind === "practice") return '<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.6" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="11" cy="11" r="3.2" fill="currentColor"/></svg>';
+    return '<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="7" r="4.4" fill="currentColor"/><path d="M2.5 20a8.5 8.5 0 0 1 17 0z" fill="currentColor"/></svg>';
+  }
+
+  var NODES = [
+    { s: "done", off: 0, name: "" },
+    { s: "done", off: -58, name: "" },
+    { s: "done", off: 0, name: "" },
+    { s: "cur", off: 58, name: "Why prices move" },
+    { s: "lock", off: 0, name: "" },
+    { s: "lock", off: -58, name: "" },
+  ];
+
+  function phone(v) {
+    var h = '<div class="phone">';
+    h += '<div class="topbar">' +
+      '<span class="chip">' + flame + '12</span>' +
+      '<span class="chip">' + bills + '$145</span>' +
+      '<span class="chip worth">' + pieces + '$312 <span class="up">+$4</span></span></div>';
+    if (v === "vC") h += '<div class="ticker"><span>AAPL <span class="g">+0.4%</span></span><span>KO <span class="r">-0.2%</span></span><span>NKE <span class="g">+1.1%</span></span><span>PFE <span class="g">+0.6%</span></span></div>';
+    h += '<div class="unitcard"><div class="u">Unit 1</div><div class="n">Single stocks</div><div class="p">Own a piece of a company &middot; 3 of 6 lessons</div></div>';
+    h += '<div class="pathwrap"><div class="path">';
+    NODES.forEach(function (n) {
+      var inner = n.s === "done" ? check : n.s === "cur" ? play : lock;
+      h += '<div class="slot ' + (n.s === "cur" ? "cur" : "") + '">';
+      h += '<div class="node ' + n.s + '" style="transform: translateX(' + n.off + 'px)">' +
+        (n.s === "cur" ? '<span class="startpill">Start</span>' : "") + inner + '</div>';
+      if (n.s === "cur") {
+        h += '<div class="lname" style="transform: translateX(calc(-50% + ' + n.off + 'px))">' + n.name + '</div>';
+        h += '<div style="position:absolute; left: calc(50% + ' + (n.off - 148) + 'px); top: 32px; width: 74px;">' + bull + '</div>';
+      }
+      h += '</div>';
+    });
+    h += '<div class="gate"><span class="rule"></span><span class="g">' + lock + ' Funds and ETFs</span><span class="rule"></span></div>';
+    h += '<div class="slot"><div class="node far" style="transform: translateX(0)">' + lock + '</div></div>';
+    h += '</div></div>';
+    h += '<div class="tabbar">' +
+      '<div class="tab on">' + tabIcon("learn") + 'Learn</div>' +
+      '<div class="tab">' + tabIcon("practice") + 'Practice</div>' +
+      '<div class="tab">' + tabIcon("profile") + 'Profile</div></div>';
+    h += '</div>';
+    return h;
+  }
+
+  var caps = {
+    vA: ["A &middot; Felt table", "Checkers on baize, cream cards, chunky drop."],
+    vB: ["B &middot; Paper and ink", "Hard lines, hard shadows, one green."],
+    vC: ["C &middot; Light terminal", "Airy grid, thin rules, market ticks."],
+  };
+  var row = document.getElementById("row");
+  ["vA", "vB", "vC"].forEach(function (v) {
+    var f = document.createElement("div");
+    f.className = "fig " + v;
+    f.innerHTML = phone(v) + '<div class="cap"><div class="t">' + caps[v][0] + '</div><div class="d">' + caps[v][1] + '</div></div>';
+    row.appendChild(f);
+  });
+})();
+</script>
+</body>
+</html>
