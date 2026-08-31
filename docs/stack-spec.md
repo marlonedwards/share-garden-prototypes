@@ -107,6 +107,11 @@ whole real share.
   "Buyers piling in" and "which lets you sleep" were rejected; the
   model sentence is "More people are buying the stock than selling
   it."
+- SETTLED Aug 31, content authoring: MARLON WRITES THE LESSON COPY.
+  All words live in public/sketches/stack-content.js (plain data,
+  editing guide at the top, save and refresh). The engine keeps the
+  graphics and mechanics behind named pics and item types. Agents
+  do not rewrite content copy beyond mechanical fixes he asks for.
 
 ## Social
 

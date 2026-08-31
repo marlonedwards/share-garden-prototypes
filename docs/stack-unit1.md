@@ -26,6 +26,16 @@ RIDE IT OUT, NAME THE STRATEGY, plus sparing plain choice items.
   people are buying the stock than selling it." Questions carry the
   clarity; feedback stays short but literal.
 
+## Content authoring (settled Aug 31: Marlon writes the copy)
+
+Every lesson's words live in public/sketches/stack-content.js, a
+plain data file with an editing guide at the top. Edit, save,
+refresh; no build step. The engine (stack.html) holds the graphics
+and mechanics, referenced by name (pics like "up", "spike",
+"dots-steady"; item types like choice, live-up, race, dollar).
+Marlon owns the content file; agents own the engine. The dollar
+item's rows and the race behaviors are editable data too.
+
 ## Lesson 1: Own something real
 
 Lesson 1 IS the guided first buy ("own it in 60 seconds"):

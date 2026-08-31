@@ -147,6 +147,7 @@
   <div id="screen"></div>
   <div class="tabbar" id="tabbar"></div>
 </div>
+<script src="stack-content.js"></script>
 <script>
 (function () {
   var BASE_PAY = 80, PERFECT_BONUS = 10, REVIEW_PAY = 15, ARCADE_PAY = 5, ARCADE_PAID_PLAYS = 3;
@@ -268,94 +269,60 @@
   }
 
   // ---------------- curriculum (visual-first)
-  function T(word, body, line) { return { k: "teach", word: word, body: body, line: line }; }
+  // ---------------- curriculum: copy lives in stack-content.js, visuals live here
   function O(h, c) { return { h: h, c: !!c }; }
-  var UNITS = [
-    { name: "Single stocks", sub: "Own a piece of a company", lessons: [
-      { title: "Own something real", meet: ["aapl", "nke", "pfe"], prepay: true, items: [
-        { k: "paydrop" },
-        { k: "firstbuy", q: "Pick your first piece." },
-        { k: "mc", q: "You just became", opts: [O("An owner", true), O("A customer"), O("A lender")], ok: "Owner.", no: "Owner. You hold a piece of the company." },
-      ]},
-      { title: "The price of a piece", meet: ["cost", "ko"], items: [
-        T("The price",
-          '<div class="card">' + chartBox(svgLine(CALM, "#3d8c5b"), 52, "teachlive") + cap('<span id="teachpx">$69.85</span>') + '</div>',
-          "Just the last price someone paid."),
-        { k: "live", mode: "up", q: "Which stock are more people buying?", ok: "That one.", no: "More people were selling that one." },
-        { k: "live", mode: "down", q: "Which stock are more people selling?", ok: "That one.", no: "More people were buying that one." },
-        { k: "pile", q: "Which whole company is worth more?", ok: "The whole pile.", no: "Count the whole pile, not one piece." },
-        { k: "mc", q: "A price going up means", opts: [O("More people want to buy it", true), O("The company is doing great"), O("It will keep going up")], ok: "Just more buyers.", no: "It only means more people are buying." },
-      ]},
-      { title: "The ride", meet: ["pfe", "nvda"], items: [
-        T("Volatility",
-          '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(CALM, "#3d8c5b")) + '</div>',
-          "How big the swings are."),
-        { k: "live", mode: "vol", q: "Which is more volatile?", ok: "That one.", no: "Watch the swings, not the ending." },
-        { k: "mc", q: "Same ending. Which is less stressful to own?", opts: [O(chartBox(svgLine(CALM, "#3d8c5b")), true), O(chartBox(svgLine(WILD, "#b23a2e")))], ok: "The calm one.", no: "Those big swings are stressful to own." },
-        { k: "break", q: "One company goes broke. Who survives?", ok: "Spread out survives.", no: "All in one means all gone.",
-          a: { colors: ["red","red","red","red","red"], label: "all in one company", broke: [0,1,2,3,4] },
-          b: { colors: ["red","black","slate","cream","red"], label: "spread across four", broke: [0] }, correct: "b" },
-        { k: "mc", q: "Which one grew steadily?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")), true), O(chartBox(svgLine(SPIKE, "#b23a2e")))], ok: "Steady.", no: "That one spiked, then crashed." },
-      ]},
-      { title: "Time beats timing", meet: ["mcd"], items: [
-        T("Zoom out",
-          '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + cap("one week") + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years") + '</div>',
-          "Ten years matters. One week doesn't."),
-        { k: "race", q: "The market crashes. Who ends up highest?", ok: "Kept buying wins.", no: "The one who kept buying always won." },
-        { k: "mc", q: "Which picture matters to an owner?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one week"))], ok: "The ten years.", no: "One week is just noise." },
-        { k: "mc", q: "Each dot is a buy. Who bought steadily?", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_LUMP, 8)), O(dotChart(STRAT, DOTS_CHASE))], ok: "Same time every month.", no: "Those buys bunch up or chase peaks." },
-        { k: "mc", q: "Who only bought at the top?", opts: [O(dotChart(STRAT, DOTS_CHASE), true), O(dotChart(STRAT, DOTS_STEADY))], ok: "Bought every peak.", no: "That one bought on a schedule." },
-        { k: "dca", q: "Tap the line 4 times to buy." },
-      ]},
-      { title: "What you pay for what it earns", meet: ["xom", "jnj"], items: [
-        T("The price tag",
-          '<div class="card" style="display:flex;gap:14px;justify-content:center">' + pcHtml("cream", 54, "$40") + pcHtml("cream", 54, "$80") + '</div>',
-          "What it costs versus what it earns."),
-        { k: "dollar", q: "A $100 sale. Tap the owner's share.", ok: "The profit.", no: "The owner keeps what is left over." },
-        { k: "drip", q: "Same profit. Which pieces each get more?", ok: "Fewer pieces, more each.", no: "Split more ways, each piece gets less." },
-        { k: "mc", q: "Which price has real profits under it?", opts: [O(chartBox(svgLine(UP, "#3d8c5b")) + cap("earns $8 a share"), true), O(chartBox(svgLine(SPIKE, "#b23a2e")) + cap("earns nothing"))], ok: "Real profits.", no: "That one earns nothing. Just hype." },
-        { k: "mc", q: "What matters when you buy?", opts: [O("The price versus the profit", true), O("The price alone"), O("The chart shape")], ok: "Both together.", no: "The price alone tells you nothing." },
-      ]},
-      { title: "The first stack", meet: [], cap: true, items: [
-        T("What you know",
-          '<div class="card" style="display:flex;gap:10px;justify-content:center">' + pcHtml("red", 40) + pcHtml("slate", 40) + pcHtml("black", 40) + pcHtml("cream", 40) + pcHtml("gold", 40) + '</div>',
-          "Pieces, prices, swings, time, price tags."),
-        { k: "break", q: "One goes broke. Who barely feels it?", ok: "Spread out.", no: "All in Apple, all gone.",
-          a: { colors: ["slate","slate","slate","slate"], label: "all in Apple", broke: [0,1,2,3] },
-          b: { colors: ["slate","red","black","cream"], label: "spread across four", broke: [0] }, correct: "b" },
-        { k: "pile", q: "Which whole company is worth more?", ok: "The whole pile.", no: "Count the whole pile, not one piece." },
-        { k: "race", q: "It crashes again. Who ends up highest?", ok: "Kept buying.", no: "Keep buying on schedule." },
-        { k: "mc", q: "Who bought on a schedule?", opts: [O(dotChart(STRAT, DOTS_STEADY), true), O(dotChart(STRAT, DOTS_CHASE))], ok: "Steady.", no: "Those buys chased the peaks." },
-        { k: "mc", q: "A share is", opts: [O("A piece of a company", true), O("A ticket"), O("A loan")], ok: "Ownership.", no: "Ownership. Everything builds on it." },
-      ]},
-    ]},
-    { name: "Funds and ETFs", sub: "Hundreds of companies, one piece", lessons: [
-      { title: "Hundreds in one piece", meet: ["voo"], items: [
-        T("A fund",
-          '<div class="card" style="display:flex;align-items:center;gap:14px;justify-content:center">' + pcHtml("gold", 54) +
-          '<span class="slab" style="font-size:18px;color:#8a7c5c">=</span>' +
-          '<div>' + chipRow(["red","slate","black","cream","red"], 18) + chipRow(["slate","cream","red","black","slate"], 18) + '</div></div>',
-          "One gold piece, five hundred companies."),
-        { k: "break", q: "One company dies. Which piece is safer?", ok: "One of 500.", no: "The single piece takes the whole hit.",
-          a: { colors: ["red"], label: "one company's piece", broke: [0] },
-          b: { colors: ["gold"], label: "the fund piece", broke: [] }, correct: "b" },
-        { k: "mc", q: "A fund is a bet on", opts: [O("Everyone at once", true), O("One winner"), O("A lucky manager")], ok: "Everyone.", no: "Nobody picks. That is the trick." },
-      ]},
-      { title: "The fee leak", sub: "The leak that compounds", meet: [], items: [
-        T("The fee",
-          '<div class="card">' + chartBox(svgLine(UP, "#3d8c5b") + svgLine("0,44 50,42 100,38 150,36 200,31 250,29 300,24", "#c9913f")) + cap("same fund, 2% fee") + '</div>',
-          "Small fee now, big hole later."),
-        { k: "drain", q: "Same fund. Which is the better deal?", ok: "2% ate a third.", no: "The fee takes a bite every year." },
-      ]},
-      { title: "Buying the argument", sub: "The starter strategy, complete", meet: [], items: [
-        T("The index",
-          '<div class="card" style="display:flex;gap:8px;justify-content:center">' + pcHtml("gold", 46) + '</div>',
-          "One piece owns every big company."),
-        { k: "mc", q: "Holding for thirty years. Which piece?", opts: [O('<div style="display:flex;justify-content:center">' + pcHtml("gold", 40) + '</div>' + cap("the fund"), true), O(chartBox(svgLine(WILD, "#b23a2e")) + cap("one wild stock"))], ok: "Easier to hold.", no: "The wild one is hard to hold." },
-        { k: "dca", q: "Tap the line 4 times to buy.", gold: true },
-      ]},
-    ]},
-  ];
+  var CONTENT = window.STACK_CONTENT;
+  var PICS = {
+    "up": function () { return chartBox(svgLine(UP, "#3d8c5b")); },
+    "spike": function () { return chartBox(svgLine(SPIKE, "#b23a2e")); },
+    "calm": function () { return chartBox(svgLine(CALM, "#3d8c5b")); },
+    "wild": function () { return chartBox(svgLine(WILD, "#b23a2e")); },
+    "gold-piece": function () { return '<div style="display:flex;justify-content:center">' + pcHtml("gold", 40) + '</div>'; },
+    "dots-steady": function () { return dotChart(STRAT, DOTS_STEADY); },
+    "dots-lump": function () { return dotChart(STRAT, DOTS_LUMP, 8); },
+    "dots-chase": function () { return dotChart(STRAT, DOTS_CHASE); },
+  };
+  var TEACH_PICS = {
+    "live-price": function () { return '<div class="card">' + chartBox(svgLine(CALM, "#3d8c5b"), 52, "teachlive") + cap('<span id="teachpx">$69.85</span>') + '</div>'; },
+    "two-rides": function () { return '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(CALM, "#3d8c5b")) + '</div>'; },
+    "week-vs-decade": function () { return '<div class="card">' + chartBox(svgLine(WILD, "#b23a2e")) + cap("one week") + '</div><div style="height:8px"></div><div class="card">' + chartBox(svgLine(UP, "#3d8c5b")) + cap("ten years") + '</div>'; },
+    "two-stands": function () { return '<div class="card" style="display:flex;gap:14px;justify-content:center">' + pcHtml("cream", 54, "$40") + pcHtml("cream", 54, "$80") + '</div>'; },
+    "recap-pieces": function () { return '<div class="card" style="display:flex;gap:10px;justify-content:center">' + pcHtml("red", 40) + pcHtml("slate", 40) + pcHtml("black", 40) + pcHtml("cream", 40) + pcHtml("gold", 40) + '</div>'; },
+    "fund-equals": function () { return '<div class="card" style="display:flex;align-items:center;gap:14px;justify-content:center">' + pcHtml("gold", 54) + '<span class="slab" style="font-size:18px;color:#8a7c5c">=</span>' + '<div>' + chipRow(["red","slate","black","cream","red"], 18) + chipRow(["slate","cream","red","black","slate"], 18) + '</div></div>'; },
+    "fee-leak": function () { return '<div class="card">' + chartBox(svgLine(UP, "#3d8c5b") + svgLine("0,44 50,42 100,38 150,36 200,31 250,29 300,24", "#c9913f")) + cap("same fund, 2% fee") + '</div>'; },
+    "gold-piece": function () { return '<div class="card" style="display:flex;gap:8px;justify-content:center">' + pcHtml("gold", 46) + '</div>'; },
+  };
+  function optHtml(o) {
+    if (typeof o === "string") return o;
+    return (PICS[o.pic] ? PICS[o.pic]() : "") + (o.caption ? cap(o.caption) : "");
+  }
+  function compileItem(it) {
+    var t = it.type;
+    if (t === "teach") return { k: "teach", word: it.word, body: TEACH_PICS[it.pic] ? TEACH_PICS[it.pic]() : "", line: it.line };
+    if (t === "choice") return { k: "mc", q: it.q, ok: it.right, no: it.wrong, opts: it.options.map(function (o, i) { return O(optHtml(o), i === it.answer); }) };
+    if (t === "live-up" || t === "live-down" || t === "live-vol") return { k: "live", mode: t.slice(5), q: it.q, ok: it.right, no: it.wrong };
+    if (t === "pile") return { k: "pile", q: it.q, ok: it.right, no: it.wrong };
+    if (t === "race") return { k: "race", q: it.q, ok: it.right, no: it.wrong, choices: it.choices };
+    if (t === "break") {
+      var sa = it.sides[0], sb = it.sides[1];
+      return { k: "break", q: it.q, ok: it.right, no: it.wrong,
+        a: { colors: sa.pieces, label: sa.label, broke: sa.gone },
+        b: { colors: sb.pieces, label: sb.label, broke: sb.gone },
+        correct: it.answer === 0 ? "a" : "b" };
+    }
+    if (t === "dollar") return { k: "dollar", q: it.q, ok: it.right, no: it.wrong, rows: it.rows, answer: it.answer };
+    if (t === "drip") return { k: "drip", q: it.q, ok: it.right, no: it.wrong };
+    if (t === "drain") return { k: "drain", q: it.q, ok: it.right, no: it.wrong };
+    if (t === "dca") return { k: "dca", q: it.q, gold: !!it.fund };
+    if (t === "paydrop") return { k: "paydrop" };
+    if (t === "firstbuy") return { k: "firstbuy", q: it.q };
+    return { k: "mc", q: "Missing item type: " + t, ok: "", no: "", opts: [O("Fix stack-content.js", true)] };
+  }
+  var UNITS = CONTENT.units.map(function (u) {
+    return { name: u.name, sub: u.sub, lessons: u.lessons.map(function (ls) {
+      return { title: ls.title, sub: ls.sub, meet: ls.meet || [], prepay: !!ls.prepay, cap: !!ls.capstone, items: ls.items.map(compileItem) };
+    }) };
+  });
 
   // ---------------- state
   var S = {
@@ -563,10 +530,10 @@
       if (L.isReview) return advance();
       if (!L.prepaid) { S.cash += BASE_PAY; L.prepaid = true; save(); }
       h += '<div style="text-align:center;margin-top:34px">' +
-        '<div class="subs">Lessons pay. This one pays first.</div>' +
+        '<div class="subs">' + CONTENT.lesson1.paySub + '</div>' +
         '<div class="slab" style="font-weight:700;font-size:52px" id="paytick">$0.00</div>' +
         '<div style="display:flex;gap:6px;justify-content:center;padding:18px 0 4px" id="payrow"></div>' +
-        '<div class="bigline">Now go own something.</div></div>' +
+        '<div class="bigline">' + CONTENT.lesson1.payLine + '</div></div>' +
         '<div style="margin-top:auto"></div><button class="bigbtn green" id="cont">Take it</button>';
       screen.innerHTML = h;
       tickNum(document.getElementById("paytick"), 0, BASE_PAY, 750, function (v) { return money(v); });
@@ -611,7 +578,7 @@
             '<div class="dropin" style="display:flex;justify-content:center">' + pcHtml(c.color, 74, c.name[0]) + '</div>' +
             '<div class="slab" style="font-weight:700;font-size:22px;margin-top:10px">' + (bought ? "1 share of " + c.name + ". Yours." : c.name + ", your piece, live.") + '</div></div>' +
             '<div class="card" style="margin-top:14px">' + chartBox("", 62, "ownlive") + cap('<span id="ownpx">' + money(price(id)) + '</span>') + '</div>' +
-            '<div class="bigline">It moves while you hold it.</div>' +
+            '<div class="bigline">' + CONTENT.lesson1.ownLine + '</div>' +
             '<div style="margin-top:auto"></div><div id="contslot"></div>';
           startOwnLive(id);
           later(function () {
@@ -669,9 +636,10 @@
     if (it.k === "race") {
       h += '<div class="q">' + it.q + '</div>' +
         '<div class="card" style="margin-bottom:10px">' + chartBox(svgLine("0,48 40,42 80,36 120,30 150,26 168,66", "#8a7c5c") + '<g id="racelines"></g><circle cx="168" cy="66" r="3.5" fill="#2a2419"/>', 92, "racesvg") + '</div>';
-      [["#3d8c5b", "Keep buying on schedule", 1], ["#c9913f", "Stop buying, just hold", 0], ["#c05545", "Sell everything now", 0]].forEach(function (o) {
-        h += '<div class="opt" data-c="' + o[2] + '"><div style="display:flex;align-items:center;gap:9px"><span style="width:22px;height:4px;border-radius:2px;background:' + o[0] + ';flex:none"></span>' +
-          '<span class="slab" style="font-weight:600;font-size:14px">' + o[1] + '</span></div></div>';
+      var raceColors = ["#3d8c5b", "#c9913f", "#c05545"];
+      (it.choices || []).forEach(function (label, ri) {
+        h += '<div class="opt" data-c="' + (ri === 0 ? 1 : 0) + '"><div style="display:flex;align-items:center;gap:9px"><span style="width:22px;height:4px;border-radius:2px;background:' + raceColors[ri] + ';flex:none"></span>' +
+          '<span class="slab" style="font-weight:600;font-size:14px">' + label + '</span></div></div>';
       });
       h += '<div id="vslot" style="margin-top:auto"></div>';
       screen.innerHTML = h;
@@ -733,7 +701,7 @@
     }
 
     if (it.k === "dollar") {
-      var rows = [["Workers", "$38", 0], ["Suppliers", "$30", 0], ["The bank", "$8", 0], ["Taxes", "$12", 0], ["You, the owner", "$12", 1]];
+      var rows = it.rows.map(function (r, ri) { return [r[0], r[1], ri === it.answer ? 1 : 0]; });
       h += '<div class="q">' + it.q + '</div><div id="drows"></div><div id="vslot" style="margin-top:auto"></div>';
       screen.innerHTML = h;
       var dr = document.getElementById("drows");
@@ -850,56 +818,67 @@
   }
 
   // live charts
+  // Values are unbounded; each frame the window rescales like a real chart,
+  // so a trending line keeps trending instead of pinning flat at a clamp.
+  function drawNorm(svg, arr, color, lo, hi) {
+    if (!svg) return;
+    var mn = lo !== undefined ? lo : Math.min.apply(null, arr);
+    var mx = hi !== undefined ? hi : Math.max.apply(null, arr);
+    var span = Math.max(mx - mn, 0.0001);
+    var pts = arr.map(function (v, i) {
+      return (i / (arr.length - 1) * 300).toFixed(1) + "," + (56 - (v - mn) / span * 50).toFixed(1);
+    }).join(" ");
+    svg.innerHTML = svgLine(pts, color, 2.5);
+  }
   function startLive(mode) {
     // lv0 is always the correct chart. vol: wild vs calm; up: rising vs falling; down: falling vs rising.
     var s0 = document.getElementById("lv0"), s1 = document.getElementById("lv1");
     var r0 = rng(5), r1 = rng(9);
-    var a = [30], b = [40];
-    function step(arr, r, bias, size) {
-      arr.push(Math.max(4, Math.min(58, arr[arr.length - 1] + (r() - bias) * size)));
-    }
-    // SVG y grows downward: bias above 0.5 drifts the line visually UP.
+    var a = [50], b = [50];
     function tickOnce() {
-      if (mode === "vol") { step(a, r0, 0.5, 26); step(b, r1, 0.52, 5); }
-      else if (mode === "up") { step(a, r0, 0.62, 7); step(b, r1, 0.36, 7); }
-      else { step(a, r0, 0.36, 7); step(b, r1, 0.62, 7); }
+      if (mode === "vol") { a.push(a[a.length - 1] + (r0() - 0.5) * 10); b.push(b[b.length - 1] + (r1() - 0.5) * 1.6); }
+      else if (mode === "up") { a.push(a[a.length - 1] + (r0() - 0.38) * 3); b.push(b[b.length - 1] + (r1() - 0.62) * 3); }
+      else { a.push(a[a.length - 1] + (r0() - 0.62) * 3); b.push(b[b.length - 1] + (r1() - 0.38) * 3); }
       if (a.length > 46) { a.shift(); b.shift(); }
     }
     for (var pre = 0; pre < 45; pre++) tickOnce();
     var colors = mode === "vol" ? ["#b23a2e", "#3d8c5b"] : mode === "up" ? ["#3d8c5b", "#b23a2e"] : ["#b23a2e", "#3d8c5b"];
     every(function () {
       tickOnce();
-      function draw(svg, arr, color) {
-        if (!svg) return;
-        var pts = arr.map(function (y, i) { return (i / 45 * 300).toFixed(1) + "," + y.toFixed(1); }).join(" ");
-        svg.innerHTML = svgLine(pts, color, 2.5);
+      if (mode === "vol") {
+        // one shared scale, so the calm line actually looks calm
+        var all = a.concat(b);
+        var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+        drawNorm(s0, a, colors[0], lo, hi);
+        drawNorm(s1, b, colors[1], lo, hi);
+      } else {
+        drawNorm(s0, a, colors[0]);
+        drawNorm(s1, b, colors[1]);
       }
-      draw(s0, a, colors[0]);
-      draw(s1, b, colors[1]);
     }, 90);
   }
   function startOwnLive(id) {
     var svg = document.getElementById("ownlive"), px = document.getElementById("ownpx");
-    var c = CO[id], r = rng(17), a = [30], p = price(id);
-    for (var pre = 0; pre < 45; pre++) a.push(Math.max(6, Math.min(52, a[a.length - 1] + (r() - 0.5) * 6)));
+    var r = rng(17), a = [50], p = price(id);
+    for (var pre = 0; pre < 45; pre++) a.push(a[a.length - 1] + (r() - 0.5) * 3);
     every(function () {
-      a.push(Math.max(6, Math.min(52, a[a.length - 1] + (r() - 0.5) * 6)));
+      a.push(a[a.length - 1] + (r() - 0.5) * 3);
       if (a.length > 46) a.shift();
       p = p * (1 + (r() - 0.5) * 0.0035);
       if (px) px.textContent = money(p) + " and moving";
-      if (svg) svg.innerHTML = svgLine(a.map(function (y, i) { return (i / 45 * 300).toFixed(1) + "," + y.toFixed(1); }).join(" "), "#3d8c5b", 2.5);
+      drawNorm(svg, a, "#3d8c5b");
     }, 110);
   }
   function startTeachLive() {
     var svg = document.getElementById("teachlive"), px = document.getElementById("teachpx");
-    var r = rng(13), a = [40], p = 69.85;
-    for (var pre = 0; pre < 45; pre++) a.push(Math.max(6, Math.min(48, a[a.length - 1] + (r() - 0.52) * 6)));
+    var r = rng(13), a = [50], p = 69.85;
+    for (var pre = 0; pre < 45; pre++) a.push(a[a.length - 1] + (r() - 0.5) * 3);
     every(function () {
-      a.push(Math.max(6, Math.min(48, a[a.length - 1] + (r() - 0.52) * 6)));
+      a.push(a[a.length - 1] + (r() - 0.5) * 3);
       if (a.length > 46) a.shift();
       p = p * (1 + (r() - 0.5) * 0.004);
       if (px) px.textContent = money(p);
-      if (svg) svg.innerHTML = svgLine(a.map(function (y, i) { return (i / 45 * 300).toFixed(1) + "," + y.toFixed(1); }).join(" "), "#3d8c5b", 2.5);
+      drawNorm(svg, a, "#3d8c5b");
     }, 110);
   }
 
