@@ -16,6 +16,15 @@ export const OPTION_EXPIRY_DAYS = 3;
 export type CardId = "buy" | "sell" | "schedule" | "the500" | "options";
 export type ChestId = "unit1" | "unit2" | "endgame";
 
+// Cards stack and consume: one trade is one card, any number of shares.
+export type Deck = Record<CardId, number>;
+
+export const LESSON_DEAL: Partial<Deck> = { buy: 2, sell: 1 };
+export const PERFECT_DEAL: Partial<Deck> = { buy: 1 };
+export const REVIEW_DEAL: Partial<Deck> = { buy: 1 };
+export const ARCADE_DEAL: Partial<Deck> = { buy: 1 };
+export const CHEST_BUNDLE = 3;
+
 export type Lot = { p: number; d: number };
 
 export type OptionPosition = {
@@ -27,6 +36,8 @@ export type OptionPosition = {
   expires: number; // day
 };
 
+export type DayReportLine = { kind: "auto" | "option-win" | "option-loss"; text: string };
+
 export type StackState = {
   day: number;
   cash: number;
@@ -34,13 +45,17 @@ export type StackState = {
   learned: string[];
   done: Record<string, boolean>;
   missKinds: Record<string, boolean>;
-  deck: CardId[];
+  deck: Deck;
   chestsEarned: ChestId[];
   chestsOpened: ChestId[];
   conceptCards: string[];
   autopilot: string[]; // stock ids with Schedule playing
   options: OptionPosition[];
+  optionsTaught: boolean; // the teach card that gates the first play
   dayChg: number | null; // pinned at day tick; a sale never reads as a loss
+  lastReport: DayReportLine[]; // what the last day tick did on its own
+  streak: number;
+  lastActionDay: number; // last day with a market action (lesson, buy, sell)
   arc: { day: number; paidWins: number; plays: number };
 };
 
@@ -120,6 +135,10 @@ export const FRIENDS: Friend[] = [
 
 const SAVE_KEY = "stackv2-save";
 
+export function emptyDeck(): Deck {
+  return { buy: 0, sell: 0, schedule: 0, the500: 0, options: 0 };
+}
+
 export function freshState(): StackState {
   return {
     day: 1,
@@ -128,13 +147,17 @@ export function freshState(): StackState {
     learned: [],
     done: {},
     missKinds: {},
-    deck: [],
+    deck: emptyDeck(),
     chestsEarned: [],
     chestsOpened: [],
     conceptCards: [],
     autopilot: [],
     options: [],
+    optionsTaught: false,
     dayChg: null,
+    lastReport: [],
+    streak: 0,
+    lastActionDay: 0,
     arc: { day: 1, paidWins: 0, plays: 0 },
   };
 }
@@ -144,7 +167,13 @@ export function loadState(): StackState {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const s = JSON.parse(raw) as StackState;
-      if (s && typeof s.day === "number") return { ...freshState(), ...s };
+      if (s && typeof s.day === "number") {
+        const merged = { ...freshState(), ...s };
+        // a pre-card-economy save carried the deck as an array
+        if (Array.isArray(merged.deck)) merged.deck = emptyDeck();
+        merged.deck = { ...emptyDeck(), ...merged.deck };
+        return merged;
+      }
     }
   } catch {
     // fall through to fresh
@@ -174,7 +203,9 @@ export function demoState(): StackState {
   const s = freshState();
   s.day = 6;
   s.cash = 131.75;
-  s.deck = ["buy", "sell"];
+  s.deck = { ...emptyDeck(), buy: 7, sell: 3 };
+  s.streak = 5;
+  s.lastActionDay = 6;
   s.learned = ["aapl", "nke", "pfe", "cost", "ko", "nvda", "mcd"];
   s.done = { "0-0": true, "0-1": true, "0-2": true, "0-3": true };
   s.lots = {
@@ -210,8 +241,28 @@ export function putIn(s: StackState): number {
   return p;
 }
 
-export function hasCard(s: StackState, c: CardId): boolean {
-  return s.deck.includes(c);
+export function cardCount(s: StackState, c: CardId): number {
+  return s.deck[c] ?? 0;
+}
+
+// whether the card slot shows face-up at all (ever dealt or currently held)
+export function cardKnown(s: StackState, c: CardId): boolean {
+  if (cardCount(s, c) > 0) return true;
+  if (c === "buy" || c === "sell") return s.done["0-0"] === true;
+  if (c === "schedule") return s.chestsOpened.includes("unit1");
+  if (c === "the500") return s.chestsOpened.includes("unit2");
+  return s.chestsOpened.includes("endgame");
+}
+
+export function dealCards(s: StackState, deal: Partial<Deck>): StackState {
+  const deck = { ...s.deck };
+  for (const k of Object.keys(deal) as CardId[]) deck[k] = (deck[k] ?? 0) + (deal[k] ?? 0);
+  return { ...s, deck };
+}
+
+function consumeCard(s: StackState, c: CardId): StackState | null {
+  if (cardCount(s, c) < 1) return null;
+  return { ...s, deck: { ...s.deck, [c]: s.deck[c] - 1 } };
 }
 
 export function lessonKey(u: number, l: number): string {
@@ -238,77 +289,192 @@ export function allCapstonesDone(s: StackState): boolean {
 
 // ---------------- actions (each returns a new state; callers save)
 
-export function buyShare(s: StackState, id: string): StackState | null {
-  const p = priceAt(id, s.day);
-  if (s.cash < p) return null;
-  const lots = { ...s.lots, [id]: [...lotsOf(s, id), { p, d: s.day }] };
-  return { ...s, cash: s.cash - p, lots };
+// any market action feeds the streak
+export function markAction(s: StackState): StackState {
+  if (s.lastActionDay === s.day) return s;
+  const streak = s.lastActionDay === s.day - 1 || s.lastActionDay === 0 ? s.streak + 1 : 1;
+  return { ...s, streak, lastActionDay: s.day };
 }
 
-export function sellLots(s: StackState, id: string, idxs: number[]): StackState {
-  const keep = lotsOf(s, id).filter((_, i) => !idxs.includes(i));
-  const lots = { ...s.lots };
+// a bare share purchase; card consumption is the caller's contract
+function mintShares(s: StackState, id: string, n: number): StackState | null {
+  const p = priceAt(id, s.day);
+  if (n < 1 || s.cash < p * n - 0.001) return null;
+  const minted: Lot[] = Array.from({ length: n }, () => ({ p, d: s.day }));
+  const lots = { ...s.lots, [id]: [...lotsOf(s, id), ...minted] };
+  return markAction({ ...s, cash: Math.round((s.cash - p * n) * 100) / 100, lots });
+}
+
+export function maxAffordable(s: StackState, id: string): number {
+  return Math.floor((s.cash + 0.001) / priceAt(id, s.day));
+}
+
+// one trade, one card: Buy n shares of one stock
+export function playBuy(s: StackState, id: string, n: number): StackState | null {
+  const afterCard = consumeCard(s, "buy");
+  if (!afterCard) return null;
+  return mintShares(afterCard, id, n);
+}
+
+// one trade, one card: Sell the newest n shares off a stack
+export function playSell(s: StackState, id: string, n: number): StackState | null {
+  const held = lotsOf(s, id);
+  if (n < 1 || n > held.length) return null;
+  const afterCard = consumeCard(s, "sell");
+  if (!afterCard) return null;
+  const keep = held.slice(0, held.length - n);
+  const lots = { ...afterCard.lots };
   if (keep.length) lots[id] = keep;
   else delete lots[id];
-  const proceeds = idxs.length * priceAt(id, s.day);
-  return { ...s, cash: s.cash + proceeds, lots };
+  const proceeds = n * priceAt(id, s.day);
+  return markAction({ ...afterCard, cash: Math.round((afterCard.cash + proceeds) * 100) / 100, lots });
 }
 
-export function toggleAutopilot(s: StackState, id: string): StackState {
-  const on = s.autopilot.includes(id);
-  return { ...s, autopilot: on ? s.autopilot.filter((x) => x !== id) : [...s.autopilot, id] };
+export function playSchedule(s: StackState, id: string): StackState | null {
+  if (s.autopilot.includes(id)) return null;
+  const afterCard = consumeCard(s, "schedule");
+  if (!afterCard) return null;
+  return markAction({ ...afterCard, autopilot: [...afterCard.autopilot, id] });
 }
 
-export function openOption(s: StackState, stock: string, dir: "up" | "down"): StackState | null {
-  const price = priceAt(stock, s.day);
-  const premium = Math.round(price * OPTION_PREMIUM_RATE * 100) / 100;
+// stopping does not refund the card
+export function stopSchedule(s: StackState, id: string): StackState {
+  return { ...s, autopilot: s.autopilot.filter((x) => x !== id) };
+}
+
+export function playThe500(s: StackState, n: number): StackState | null {
+  const afterCard = consumeCard(s, "the500");
+  if (!afterCard) return null;
+  return mintShares(afterCard, "voo", n);
+}
+
+export function optionPremium(stock: string, day: number): number {
+  return Math.round(priceAt(stock, day) * OPTION_PREMIUM_RATE * 100) / 100;
+}
+
+export function playOptions(s: StackState, stock: string, dir: "up" | "down"): StackState | null {
+  const premium = optionPremium(stock, s.day);
   if (s.cash < premium) return null;
+  const afterCard = consumeCard(s, "options");
+  if (!afterCard) return null;
   const pos: OptionPosition = {
-    stock, dir, premium, strike: price, opened: s.day, expires: s.day + OPTION_EXPIRY_DAYS,
+    stock, dir, premium, strike: priceAt(stock, s.day), opened: s.day, expires: s.day + OPTION_EXPIRY_DAYS,
   };
-  return { ...s, cash: s.cash - premium, options: [...s.options, pos] };
+  return markAction({
+    ...afterCard,
+    cash: Math.round((afterCard.cash - premium) * 100) / 100,
+    options: [...afterCard.options, pos],
+  });
 }
 
-export type DayReport = {
-  overnight: number; // holdings move
-  autopilotBuys: { stock: string; price: number }[];
-  optionResults: { pos: OptionPosition; payout: number }[];
-};
+// lesson completion: pay, cards, learned companies, streak, due chests.
+// Under 75% first-try accuracy pays nothing and deals nothing.
+export function applyLesson(
+  s: StackState,
+  u: number,
+  l: number,
+  firstCorrect: number,
+  total: number,
+): { state: StackState; pay: number; dealt: Partial<Deck>; payNote: string } {
+  const key = lessonKey(u, l);
+  const isReview = !!s.done[key];
+  const lesson = UNITS_CONTENT[u].lessons[l];
+  const acc = total > 0 ? firstCorrect / total : 1;
+  let pay = 0;
+  let dealt: Partial<Deck> = {};
+  let payNote = "lesson pay";
+  if (isReview) {
+    pay = REVIEW_PAY;
+    payNote = "review pay";
+    dealt = { ...REVIEW_DEAL };
+    if (u === 0 && s.chestsOpened.includes("unit1")) dealt.schedule = (dealt.schedule ?? 0) + 1;
+    if (u === 1 && s.chestsOpened.includes("unit2")) dealt.the500 = (dealt.the500 ?? 0) + 1;
+    if (lesson.capstone && s.chestsOpened.includes("endgame")) dealt.options = (dealt.options ?? 0) + 1;
+  } else if (lesson.prepay) {
+    pay = 0;
+    payNote = "your stock now";
+    dealt = {}; // lesson 1's cards were dealt with the paycheck up front
+  } else if (acc < 0.75) {
+    pay = 0;
+    payNote = "under 75%";
+  } else {
+    pay = BASE_PAY + (acc >= 0.999 ? PERFECT_BONUS : 0);
+    payNote = acc >= 0.999 ? "perfect bonus" : "lesson pay";
+    dealt = { ...LESSON_DEAL };
+    if (acc >= 0.999) dealt.buy = (dealt.buy ?? 0) + (PERFECT_DEAL.buy ?? 0);
+  }
+  let next = { ...s, cash: Math.round((s.cash + pay) * 100) / 100 };
+  next = dealCards(next, dealt);
+  if (!next.done[key]) {
+    next = { ...next, done: { ...next.done, [key]: true } };
+    const learned = [...next.learned];
+    for (const id of lesson.meet) if (!learned.includes(id)) learned.push(id);
+    next = { ...next, learned };
+  }
+  next = markAction(next);
+  next = earnDueChests(next);
+  return { state: next, pay, dealt, payNote };
+}
 
-// The Tomorrow tick: prices move, Schedule buys, options at expiry
+export function arcadeWin(s: StackState): { state: StackState; paid: boolean } {
+  let next = { ...s, arc: { ...s.arc, plays: s.arc.plays + 1 } };
+  const paid = next.arc.paidWins < ARCADE_PAID_PLAYS;
+  if (paid) {
+    next = {
+      ...next,
+      cash: Math.round((next.cash + ARCADE_PAY) * 100) / 100,
+      arc: { ...next.arc, paidWins: next.arc.paidWins + 1 },
+    };
+    next = dealCards(next, ARCADE_DEAL);
+  }
+  return { state: next, paid };
+}
+
+export function arcadeLoss(s: StackState): StackState {
+  return { ...s, arc: { ...s.arc, plays: s.arc.plays + 1 } };
+}
+
+// The Tomorrow tick: prices move, Schedule buys on its own (no card,
+// the Schedule card already paid for the autopilot), options at expiry
 // resolve. Loss on an option never exceeds its premium (payout >= 0).
-export function tomorrow(s: StackState): { state: StackState; report: DayReport } {
+export function tomorrow(s: StackState): StackState {
   const before = holdingsWorth(s);
   let next: StackState = { ...s, day: Math.min(s.day + 1, MAX_DAY) };
-  const overnight = holdingsWorth(next) - before;
-  next.dayChg = overnight;
+  next.dayChg = holdingsWorth(next) - before;
   if (next.arc.day !== next.day) next = { ...next, arc: { day: next.day, paidWins: 0, plays: 0 } };
 
-  const autopilotBuys: { stock: string; price: number }[] = [];
+  const report: DayReportLine[] = [];
   for (const id of next.autopilot) {
-    const bought = buyShare(next, id);
-    if (bought) {
-      next = bought;
-      autopilotBuys.push({ stock: id, price: priceAt(id, next.day) });
+    const p = priceAt(id, next.day);
+    if (next.cash >= p) {
+      const lots = { ...next.lots, [id]: [...lotsOf(next, id), { p, d: next.day }] };
+      next = { ...next, cash: Math.round((next.cash - p) * 100) / 100, lots };
+      report.push({ kind: "auto", text: `Schedule bought 1 ${COMPANIES[id].name} at ${money(p)}.` });
+    } else {
+      report.push({ kind: "auto", text: `Schedule skipped ${COMPANIES[id].name}: not enough cash.` });
     }
   }
 
-  const optionResults: { pos: OptionPosition; payout: number }[] = [];
   const open: OptionPosition[] = [];
   for (const pos of next.options) {
     if (next.day >= pos.expires) {
       const now = priceAt(pos.stock, next.day);
       const move = pos.dir === "up" ? now - pos.strike : pos.strike - now;
       const payout = Math.max(0, Math.round(move * 100) / 100);
-      next = { ...next, cash: next.cash + payout };
-      optionResults.push({ pos, payout });
+      next = { ...next, cash: Math.round((next.cash + payout) * 100) / 100 };
+      const name = COMPANIES[pos.stock].name;
+      report.push(
+        payout > 0
+          ? { kind: "option-win", text: `Your ${name} option paid ${money(payout)} on a ${money(pos.premium)} premium.` }
+          : { kind: "option-loss", text: `Your ${name} option expired worthless. The ${money(pos.premium)} premium is gone.` },
+      );
     } else {
       open.push(pos);
     }
   }
-  next = { ...next, options: open };
+  next = { ...next, options: open, lastReport: report };
 
-  return { state: next, report: { overnight, autopilotBuys, optionResults } };
+  return next;
 }
 
 // ---------------- chests
@@ -335,10 +501,10 @@ export function earnDueChests(s: StackState): StackState {
 export function openChest(s: StackState, chest: ChestId): StackState {
   if (!s.chestsEarned.includes(chest) || s.chestsOpened.includes(chest)) return s;
   const grant = CHEST_CARDS[chest];
-  const deck = s.deck.includes(grant.strategy) ? s.deck : [...s.deck, grant.strategy];
-  const conceptCards = [...s.conceptCards];
+  let next = dealCards(s, { [grant.strategy]: CHEST_BUNDLE });
+  const conceptCards = [...next.conceptCards];
   for (const c of grant.concepts) if (!conceptCards.includes(c)) conceptCards.push(c);
-  return { ...s, deck, conceptCards, chestsOpened: [...s.chestsOpened, chest] };
+  return { ...next, conceptCards, chestsOpened: [...next.chestsOpened, chest] };
 }
 
 export function unopenedChest(s: StackState): ChestId | null {

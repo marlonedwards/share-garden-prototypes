@@ -29,6 +29,7 @@ import Monkey3 from "./pages/Monkey3";
 import Street from "./pages/Street";
 import Stack from "./pages/Stack";
 import StackDesk from "./pages/StackDesk";
+import StackPractice from "./pages/StackPractice";
 
 // remount the scenario page whenever the scenario id changes, so the sim
 // engine never carries one era's state into another
@@ -84,6 +85,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/intro" element={<Onboarding />} />
         <Route path="/stack" element={<Stack />} />
         <Route path="/stack/desk" element={<StackDesk />} />
+        <Route path="/stack/practice" element={<StackPractice />} />
         <Route path="/orb/stackview/s/:id" element={<StackViewRoute />} />
         <Route path="/stack/s/:id" element={<LegacyStackRedirect />} />
         {/* The Tally runs a whole ladder of chapters, so it takes no era in

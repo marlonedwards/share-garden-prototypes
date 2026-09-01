@@ -24,7 +24,7 @@ export function useStackState(): [StackState, (s: StackState) => void] {
 export function TopBar(props: {
   state: StackState;
   update: (s: StackState) => void;
-  active: "learn" | "desk";
+  active: "learn" | "practice" | "desk";
 }) {
   const nav = useNavigate();
   const s = props.state;
@@ -42,6 +42,13 @@ export function TopBar(props: {
         Learn
       </Link>
       <Link
+        to="/stack/practice"
+        className="stk-chip"
+        style={{ textDecoration: "none", background: props.active === "practice" ? "rgba(0,0,0,0.42)" : undefined }}
+      >
+        Practice
+      </Link>
+      <Link
         to="/stack/desk"
         className="stk-chip"
         style={{ textDecoration: "none", background: props.active === "desk" ? "rgba(0,0,0,0.42)" : undefined }}
@@ -49,9 +56,12 @@ export function TopBar(props: {
         The Desk
       </Link>
       <span style={{ flex: 1 }} />
-      <span className="stk-chip" style={{ cursor: "default" }} title={`Day ${s.day}`}>
+      <span className="stk-chip" style={{ cursor: "default" }} title={`${s.streak} day streak`} data-streak>
         <FlameGlyph />
-        {s.day}
+        {s.streak}
+      </span>
+      <span className="stk-chip" style={{ cursor: "default", background: "rgba(0,0,0,0.16)", fontWeight: 600 }}>
+        Day {s.day}
       </span>
       <span className="stk-chip" style={{ cursor: "default" }} data-cash>
         <BillsGlyph />
@@ -70,10 +80,7 @@ export function TopBar(props: {
         className="stk-btn quiet"
         style={{ padding: "8px 15px", fontSize: 13.5 }}
         data-tomorrow
-        onClick={() => {
-          const { state } = tomorrow(s);
-          props.update(state);
-        }}
+        onClick={() => props.update(tomorrow(s))}
       >
         Tomorrow
       </button>

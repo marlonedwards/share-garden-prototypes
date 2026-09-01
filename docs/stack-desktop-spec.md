@@ -96,9 +96,22 @@ Balatro/MTG feel: your deck of trading moves grows as you learn.
 - ALL TRADING IS CARD PLAY. There are no Buy/Sell buttons
   anywhere. Lesson 1 introduces the Buy card and the Sell card as
   part of the guided first buy ("This is your Buy card. Play it.").
-- PERMANENT DECK: a card, once unlocked, is yours forever. Chests
-  never repeat a card. The curriculum is literally your deck
-  growing.
+- CARDS STACK AND CONSUME (settled Sep 1, supersedes the permanent
+  deck): the hand shows counts under each card (Buy x45). ONE TRADE
+  IS ONE CARD, any number of shares: buying picks a quantity with a
+  +/- stepper and consumes one Buy card; selling the same with one
+  Sell card.
+- CARD SUPPLY (working figures): finishing a lesson deals +2 Buy
+  +1 Sell with the pay; a perfect lesson deals +1 Buy more; a
+  review deals +1 Buy and restocks +1 of that unit's strategy card
+  once its chest is open (capstone reviews also restock Options
+  once the endgame chest is open). Paid arcade wins deal +1 Buy
+  beside the cash. Under 75% deals nothing, like the pay.
+- EMPTY HAND IS A HARD STOP: zero Buy cards means no buying until
+  a lesson deals more. The empty slot says "Lessons deal cards."
+  This is the anti-day-trading lesson said as a mechanic.
+- Chests deal strategy cards in bundles of three (Schedule x3,
+  The 500 x3, Options x3) plus the unit's concept cards.
 - Card anatomy (Tally minimal faces): front = name, art, one
   plain line ("Buy: pay the price, own a share"). No stats
   clutter. Concept cards same frame, different back color.
@@ -135,15 +148,20 @@ Profile IS the trading desk.
   out, each lot shows the price paid.
 - Bottom: your HAND, the unlocked cards fanned Balatro-style.
 - Playing cards:
-  - BUY: play it, then pick any learned stock (the buy sheet
-    shows price, your cash, grayed if unaffordable). Piece mints
-    onto the stack with a punch.
-  - SELL: play it onto a stack, then tap-to-pick lots (white
-    outline marking, kept exactly), confirm sells them.
-  - SCHEDULE: play onto a stock, autopilot badge appears.
-  - THE 500: plays like Buy, fund only.
-  - OPTIONS: opens its small flow (stock, direction, premium),
-    resolves at expiry with an end-of-day banner.
+  - BUY: play it, pick any learned stock, pick a quantity with the
+    +/- stepper (capped by cash), confirm consumes one Buy card and
+    mints the shares onto the stack with a punch.
+  - SELL (settled Sep 1, supersedes tap-to-pick): click a stack,
+    the +/- stepper picks a count, and the white outline climbs
+    that many shares from the TOP of the stack (newest first,
+    StackMarket's marking). Confirm consumes one Sell card and
+    sells them.
+  - SCHEDULE: play onto a stock, autopilot badge appears, one card
+    consumed. Stopping the autopilot does not refund it.
+  - THE 500: plays like Buy, fund only, stepper included.
+  - OPTIONS: opens its small flow (owned stock, direction, premium
+    shown), one card consumed with the premium; resolves at expiry
+    with an end-of-day banner.
 - Lesson-end quick-buy stays: the buy prompt at lesson end is a
   one-tap shortcut that plays your Buy card for you (same rules,
   same animation).
@@ -222,6 +240,18 @@ Same working pay numbers. Phone later.
     daily cap all match the carried economy.
 12. cleancheck-style walk: no em dashes, no emoji, slab usage
     only where the charter allows.
+
+## Build record
+
+Shipped Sep 1, 2026, one builder end to end. Model
+src/lib/stack/model.ts, content src/content/stackContent.ts (Marlon
+edits this one), engine src/components/stack/Lesson.tsx, pages
+Stack/StackDesk/StackPractice.tsx, kit + TopBar in
+src/components/stack/. Walk: tools/stackcheck.mjs (25 checks, plays
+both units through the real engine, opens all three chests, trades
+with every card, proves the options loss cap and the one-trade-one-
+card law). Item options carry data-c markers for the walk, the
+sketch's precedent.
 
 ## Open, not blocking
 
