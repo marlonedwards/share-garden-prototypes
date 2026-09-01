@@ -59,7 +59,7 @@ function Sidebar(props: { state: StackState }) {
         <div className="stk-slab" style={{ fontWeight: 700, fontSize: 15.5 }}>Practice</div>
         <div style={{ fontSize: 13.5, margin: "6px 0 2px" }}>Guess the Stock</div>
         <div style={{ fontSize: 12.5, color: FELT.inkDim, marginBottom: 10 }}>
-          {left ? `${left} paid wins left · ${money(ARCADE_PAY)} + 1 Buy card each` : "Paid out today"}
+          {left ? `${left} paid wins left · first guess pays ${money(ARCADE_PAY)} + 1 Buy card` : "Paid out today"}
         </div>
         <Link to="/stack/practice" className="stk-btn green" style={{ textDecoration: "none", padding: "9px 18px", fontSize: 13.5 }}>Play</Link>
       </div>

@@ -273,30 +273,40 @@ const optionNet = sv.cash - cashAfterPlay; // payout only; autopilot is off now
 if (optionNet < -0.001) fail("option lost more than the premium after resolution");
 else ok("option resolved, payout " + optionNet.toFixed(2) + " (loss capped at premium " + premium.toFixed(2) + ")");
 
-// ---- practice: retry rounds until a win lands, then check the payout
+// ---- practice: a clean first guess pays; wrong guesses deal hints
 await page.goto(BASE + "/stack/practice");
 await page.waitForTimeout(500);
 await page.locator("[data-play]").click();
 await page.waitForTimeout(500);
-let sawPaidWin = false;
-for (let round = 0; round < 8 && !sawPaidWin; round++) {
-  const before = await save();
-  await page.locator("[data-guess]").first().click();
-  await page.waitForTimeout(400);
-  const result = (await page.locator("[data-arcresult]").textContent()) ?? "";
-  if (/\+\$/.test(result)) {
-    const after = await save();
-    if (!(Math.abs(after.cash - before.cash - 5) < 0.001 && after.deck.buy === before.deck.buy + 1)) {
-      fail("paid win did not pay $5 + 1 Buy card");
-    } else ok("paid arcade win pays $5 and deals a Buy card");
-    sawPaidWin = true;
-  } else {
-    await page.locator("[data-again]").click();
-    await page.waitForTimeout(500);
-  }
-}
-if (!sawPaidWin) fail("no paid arcade win in 8 rounds");
+let before = await save();
+await page.locator('[data-guess][data-c="1"]').click();
+await page.waitForTimeout(400);
+let sv2 = await save();
+if (!(Math.abs(sv2.cash - before.cash - 5) < 0.001 && sv2.deck.buy === before.deck.buy + 1)) {
+  fail("first-guess win did not pay $5 + 1 Buy card");
+} else ok("first-guess arcade win pays $5 and deals a Buy card");
 await page.screenshot({ path: SHOTS + "practice.png" });
+
+// hint path: one wrong guess widens the chart, the win then pays nothing
+await page.locator("[data-again]").click();
+await page.waitForTimeout(500);
+await page.locator('[data-guess][data-c="0"]').first().click();
+await page.waitForTimeout(400);
+if (!(await has("[data-hints]"))) fail("wrong guess did not deal a hint");
+else ok("wrong guess deals a hint");
+const widened = await page.evaluate(() => document.body.innerText.includes("the whole history"));
+if (!widened) fail("first hint did not widen the chart");
+else ok("first hint widens the chart to the whole history");
+await page.screenshot({ path: SHOTS + "practice-hint.png" });
+before = await save();
+await page.locator('[data-guess][data-c="1"]').click();
+await page.waitForTimeout(400);
+sv2 = await save();
+const hintedResult = (await page.locator("[data-arcresult]").textContent()) ?? "";
+if (!/hint/.test(hintedResult)) fail("hinted win result line wrong: " + hintedResult);
+if (Math.abs(sv2.cash - before.cash) > 0.001 || sv2.deck.buy !== before.deck.buy) {
+  fail("a win after hints still paid");
+} else ok("a win after hints pays nothing (" + hintedResult.trim() + ")");
 
 // ---- home banner after ticks
 await page.goto(BASE + "/stack");

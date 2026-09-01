@@ -641,7 +641,7 @@ function TeachItem(props: { it: Extract<ContentItem, { type: "teach" }>; onNext:
       <div className="stk-slab" style={{ fontWeight: 700, fontSize: 30, margin: "4px 2px 14px" }}>{props.it.word}</div>
       <TeachPic pic={props.it.pic} />
       <div className="stk-slab" style={{ fontWeight: 700, fontSize: 16.5, textAlign: "center", padding: "16px 0 4px" }}>{props.it.line}</div>
-      <div style={{ marginTop: "auto" }} />
+      <div style={{ height: 26 }} />
       <button className="stk-btn green" style={{ width: "100%" }} onClick={props.onNext} data-cont>Got it</button>
     </>
   );
@@ -655,7 +655,7 @@ function PaydropItem(props: { onNext: () => void }) {
       <Bills count={4} />
       <DealtRow dealt={LESSON_DEAL} />
       <div className="stk-slab" style={{ fontWeight: 700, fontSize: 16.5, padding: "10px 0" }}>{LESSON1.payLine}</div>
-      <div style={{ marginTop: "auto" }} />
+      <div style={{ height: 26 }} />
       <button className="stk-btn green" style={{ width: "100%" }} onClick={props.onNext} data-cont>Take it</button>
     </div>
   );
@@ -708,7 +708,7 @@ function FirstBuyItem(props: {
           <Cap t={pxText} />
         </div>
         <div className="stk-slab" style={{ fontWeight: 700, fontSize: 16, textAlign: "center", padding: "12px 0" }}>{LESSON1.ownLine}</div>
-        <div style={{ marginTop: "auto" }} />
+        <div style={{ height: 26 }} />
         {showCont ? <button className="stk-btn green" style={{ width: "100%" }} onClick={props.onNext} data-cont>Continue</button> : null}
       </>
     );
@@ -814,7 +814,7 @@ export function ChestCeremony(props: {
               ),
             )}
           </div>
-          <div style={{ marginTop: "auto", width: "100%" }}>
+          <div style={{ marginTop: 34, width: "100%" }}>
             {revealed < reveals.length ? (
               <button className="stk-btn" style={{ width: "100%" }} onClick={() => setRevealed(revealed + 1)} data-cont>Next</button>
             ) : (
@@ -978,7 +978,7 @@ export default function Lesson(props: {
             })}
           </>
         ) : null}
-        <div style={{ marginTop: "auto", position: "relative", minHeight: acc >= 0.999 && !isReview ? 78 : 12 }}>
+        <div style={{ marginTop: 16, position: "relative", minHeight: acc >= 0.999 && !isReview ? 78 : 12 }}>
           {acc >= 0.999 && !isReview ? <span style={{ position: "absolute", right: 0, bottom: 0 }}><Bull /></span> : null}
         </div>
         <button
