@@ -27,6 +27,8 @@ import Floor from "./pages/Floor";
 import Monkey from "./pages/Monkey";
 import Monkey3 from "./pages/Monkey3";
 import Street from "./pages/Street";
+import Stack from "./pages/Stack";
+import StackDesk from "./pages/StackDesk";
 
 // remount the scenario page whenever the scenario id changes, so the sim
 // engine never carries one era's state into another
@@ -35,11 +37,16 @@ function ScenarioRoute() {
   return <OrbScenario key={id ?? "era"} />;
 }
 
-// The Stack: the same lesson flow on the goal-band stage, with a toggle
-// between the cylinder and the countable blocks
-function StackRoute() {
+// The retired goal-band stage prototype kept its "stack" variant; the
+// rebuilt game owns /stack now, so the old view lives under /orb/stackview.
+function StackViewRoute() {
   const { id } = useParams();
   return <OrbScenario key={`stack-${id ?? "gfc"}`} variant="stack" />;
+}
+
+function LegacyStackRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/orb/stackview/s/${id ?? "gfc"}`} replace />;
 }
 
 // remount the lesson page whenever the lesson id changes, so step state never
@@ -75,8 +82,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/orb/free" element={<OrbFree />} />
         <Route path="/orb/guide" element={<FieldGuidePage />} />
         <Route path="/orb/intro" element={<Onboarding />} />
-        <Route path="/stack/s/:id" element={<StackRoute />} />
-        <Route path="/stack" element={<Navigate to="/stack/s/gfc" replace />} />
+        <Route path="/stack" element={<Stack />} />
+        <Route path="/stack/desk" element={<StackDesk />} />
+        <Route path="/orb/stackview/s/:id" element={<StackViewRoute />} />
+        <Route path="/stack/s/:id" element={<LegacyStackRedirect />} />
         {/* The Tally runs a whole ladder of chapters, so it takes no era in
             its path. Links to the retired era prototype land on the game. */}
         <Route path="/tally" element={<Tally />} />

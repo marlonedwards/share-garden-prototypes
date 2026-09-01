@@ -139,6 +139,37 @@ function MonkeyMotif() {
   );
 }
 
+// Stack's motif, in the game's own language: two checker-chip stacks on
+// felt beside one cream strategy card.
+function StackMotif() {
+  const disc = (x: number, y: number, face: string, edge: string, stripe: string) => (
+    <g key={`${x}-${y}`}>
+      <rect x={x} y={y} width="40" height="11" rx="5.5" fill={edge} />
+      <rect x={x} y={y} width="40" height="8" rx="4" fill={face} />
+      {[6, 18, 30].map((sx) => (
+        <rect key={sx} x={x + sx} y={y} width="4" height="11" rx="1" fill={stripe} opacity="0.7" />
+      ))}
+    </g>
+  );
+  const red = ["#d95c4e", "#9c3226", "#f7edd0"] as const;
+  const slate = ["#9aa4ab", "#6a7278", "#f7edd0"] as const;
+  return (
+    <svg width="118" height="104" viewBox="0 0 118 104" fill="none" aria-hidden>
+      <rect x="0" y="0" width="118" height="104" rx="14" fill="#266243" />
+      {[0, 1, 2, 3].map((i) => disc(12, 78 - i * 9, red[0], red[1], red[2]))}
+      <ellipse cx="32" cy="52" rx="20" ry="6" fill="#d95c4e" stroke="#9c3226" strokeWidth="1.5" strokeDasharray="4 3" />
+      {[0, 1].map((i) => disc(58, 78 - i * 9, slate[0], slate[1], slate[2]))}
+      <ellipse cx="78" cy="70" rx="20" ry="6" fill="#9aa4ab" stroke="#6a7278" strokeWidth="1.5" strokeDasharray="4 3" />
+      <g transform="rotate(6 92 40)">
+        <rect x="74" y="14" width="36" height="50" rx="5" fill="#f4ecd6" />
+        <rect x="77" y="17" width="30" height="44" rx="3.5" fill="none" stroke="rgba(90,70,30,0.35)" strokeWidth="2" />
+        <path d="M92 26 L99 35 H95 V43 H89 V35 H85 Z" fill="#3d8c5b" />
+        <rect x="82" y="50" width="20" height="3" rx="1.5" fill="rgba(0,0,0,0.18)" />
+      </g>
+    </svg>
+  );
+}
+
 export default function Landing() {
   return (
     <div className="min-h-full" style={{ background: "#f5f5f7", color: "#1d1d1f", colorScheme: "light" }}>
@@ -149,6 +180,28 @@ export default function Landing() {
         </p>
 
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <Link to="/stack" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <StackMotif />
+            </div>
+            <div className="text-[22px] font-semibold tracking-tight">Stack</div>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
+              Learn stocks daily.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#266243" }}>Play Stack</div>
+          </Link>
+
+          <Link to="/tally" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
+            <div className="h-28 flex items-center justify-center mb-4">
+              <TallyMotif />
+            </div>
+            <div className="text-[22px] font-semibold tracking-tight">The Tally</div>
+            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
+              Build a wall out of what you own.
+            </p>
+            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Tally</div>
+          </Link>
+
           <Link to="/trigger" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
             <div className="h-28 flex items-center justify-center mb-4">
               <TriggerMotif />
@@ -213,17 +266,6 @@ export default function Landing() {
               Name the company from its stock chart.
             </p>
             <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#14603C" }}>Play Guess the Stock</div>
-          </Link>
-
-          <Link to="/tally" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
-            <div className="h-28 flex items-center justify-center mb-4">
-              <TallyMotif />
-            </div>
-            <div className="text-[22px] font-semibold tracking-tight">The Tally</div>
-            <p className="text-[13.5px] mt-1.5 flex-1 line-clamp-4" style={{ color: "#6e6e73" }}>
-              Build a wall out of what you own.
-            </p>
-            <div className="mt-4 text-[13px] font-medium px-4 py-2 rounded-full text-white inline-flex items-center justify-center leading-none transition group-hover:brightness-110" style={{ background: "#B57A00" }}>Play the Tally</div>
           </Link>
 
           <Link to="/orb" className="group rounded-3xl bg-white border border-black/8 shadow-sm p-7 transition hover:shadow-md hover:-translate-y-0.5 flex flex-col">
