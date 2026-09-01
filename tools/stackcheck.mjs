@@ -308,6 +308,32 @@ if (Math.abs(sv2.cash - before.cash) > 0.001 || sv2.deck.buy !== before.deck.buy
   fail("a win after hints still paid");
 } else ok("a win after hints pays nothing (" + hintedResult.trim() + ")");
 
+// chart axes: price labels and time labels present
+await page.locator("[data-again]").click();
+await page.waitForTimeout(400);
+const axes = await page.evaluate(() => {
+  const texts = Array.from(document.querySelectorAll("svg text")).map((t) => t.textContent ?? "");
+  return {
+    price: texts.filter((t) => /^\$\d/.test(t)).length,
+    time: texts.some((t) => /days ago/.test(t)) && texts.some((t) => t === "today"),
+  };
+});
+if (axes.price < 3 || !axes.time) fail("chart missing readable axes: " + JSON.stringify(axes));
+else ok("chart has price and time axes");
+await page.screenshot({ path: SHOTS + "practice-axes.png" });
+await page.locator("[data-backarc]").click();
+await page.waitForTimeout(300);
+
+// ---- worth more: pick the higher cap, caps reveal
+await page.locator("[data-playworth]").click();
+await page.waitForTimeout(400);
+await page.locator('[data-worth][data-c="1"]').click();
+await page.waitForTimeout(400);
+const worthText = await page.evaluate(() => document.body.innerText);
+if (!/(trillion|billion)/.test(worthText)) fail("worth more did not reveal company sizes");
+else ok("worth more reveals whole-company worth");
+await page.screenshot({ path: SHOTS + "worthmore.png" });
+
 // ---- home banner after ticks
 await page.goto(BASE + "/stack");
 await page.waitForTimeout(500);

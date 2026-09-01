@@ -67,6 +67,7 @@ export type Company = {
   color: "cream" | "red" | "black" | "slate" | "gold";
   blurb: string;
   fund?: boolean;
+  cap: number; // whole-company worth, play data in real ballparks
   px: number[];
 };
 
@@ -80,25 +81,31 @@ function rng(seed: number): () => number {
   };
 }
 
-const CO_SPEC: [string, string, Company["color"], number, number, number, number, boolean?][] = [
-  ["aapl", "Apple", "slate", 232.1, 0.0005, 0.012, 7],
-  ["nke", "Nike", "black", 75.4, -0.0003, 0.013, 43],
-  ["cost", "Costco", "cream", 912.4, 0.0006, 0.009, 41],
-  ["ko", "Coca-Cola", "red", 69.85, 0.0002, 0.007, 53],
-  ["pfe", "Pfizer", "cream", 27.6, -0.0004, 0.011, 71],
-  ["nvda", "Nvidia", "black", 121.3, 0.0015, 0.028, 29],
-  ["mcd", "McDonald's", "red", 291.8, 0.0003, 0.008, 47],
-  ["xom", "ExxonMobil", "slate", 112.5, 0.0002, 0.013, 59],
-  ["jnj", "Johnson & Johnson", "red", 156.2, 0.0002, 0.007, 67],
-  ["voo", "The 500 fund", "gold", 530.1, 0.0004, 0.008, 11, true],
+const CO_SPEC: [string, string, Company["color"], number, number, number, number, number, boolean?][] = [
+  ["aapl", "Apple", "slate", 232.1, 0.0005, 0.012, 7, 3.5e12],
+  ["nke", "Nike", "black", 75.4, -0.0003, 0.013, 43, 1.1e11],
+  ["cost", "Costco", "cream", 912.4, 0.0006, 0.009, 41, 4.0e11],
+  ["ko", "Coca-Cola", "red", 69.85, 0.0002, 0.007, 53, 3.0e11],
+  ["pfe", "Pfizer", "cream", 27.6, -0.0004, 0.011, 71, 1.6e11],
+  ["nvda", "Nvidia", "black", 121.3, 0.0015, 0.028, 29, 3.0e12],
+  ["mcd", "McDonald's", "red", 291.8, 0.0003, 0.008, 47, 2.1e11],
+  ["xom", "ExxonMobil", "slate", 112.5, 0.0002, 0.013, 59, 4.7e11],
+  ["jnj", "Johnson & Johnson", "red", 156.2, 0.0002, 0.007, 67, 3.8e11],
+  ["voo", "The 500 fund", "gold", 530.1, 0.0004, 0.008, 11, 0, true],
 ];
 
 export const COMPANIES: Record<string, Company> = {};
-for (const [id, name, color, p0, dr, vol, seed, fund] of CO_SPEC) {
+for (const [id, name, color, p0, dr, vol, seed, cap, fund] of CO_SPEC) {
   const r = rng(seed);
   const px = [p0];
   for (let d = 1; d <= 400; d++) px.push(px[d - 1] * (1 + dr + (r() - 0.5) * 2 * vol));
-  COMPANIES[id] = { id, name, color, blurb: COMPANY_BLURBS[id] ?? "", fund, px };
+  COMPANIES[id] = { id, name, color, blurb: COMPANY_BLURBS[id] ?? "", fund, cap, px };
+}
+
+// "$3.5 trillion" / "$400 billion", for whole-company worth
+export function moneyBig(n: number): string {
+  if (n >= 1e12) return "$" + (Math.round(n / 1e11) / 10).toString().replace(/\.0$/, "") + " trillion";
+  return "$" + Math.round(n / 1e9) + " billion";
 }
 
 export const MAX_DAY = 399;

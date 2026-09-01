@@ -50,12 +50,15 @@ function WorthChart(props: { state: StackState }) {
   const hi = Math.max(...all, 1);
   const lo = Math.min(...all, 0);
   const span = Math.max(hi - lo, 1);
-  const W = 300;
-  const H = 92;
-  const x = (i: number) => (worth.length === 1 ? W / 2 : (i / (worth.length - 1)) * W);
-  const y = (v: number) => H - 8 - ((v - lo) / span) * (H - 20);
+  const W = 340;
+  const H = 116;
+  const x = (i: number) => (worth.length === 1 ? 189 : 46 + (i / (worth.length - 1)) * 286);
+  const y = (v: number) => 88 - ((v - lo) / span) * 76;
   const line = (arr: number[]) => arr.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const diff = worth[worth.length - 1] - putin[putin.length - 1];
+  const yTicks = [hi, (lo + hi) / 2, lo].map((v) => ({ y: y(v), label: "$" + Math.round(v) }));
+  const days = props.state.day;
+  const axisText = { fontSize: 9.5, fontWeight: 600, fill: "rgba(242,233,210,0.6)", fontFamily: '"Roboto Slab", Georgia, serif' } as const;
   return (
     <div className="stk-glass" data-worthchart>
       <div className="stk-slab" style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 4 }}>Your stocks over time</div>
@@ -65,9 +68,20 @@ function WorthChart(props: { state: StackState }) {
           <span style={{ color: diff >= 0 ? FELT.up : FELT.dn }}> · {diff >= 0 ? "up" : "down"} {money(Math.abs(diff))}</span>
         ) : null}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ display: "block", width: "100%", height: 88 }} aria-hidden>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ display: "block", width: "100%", height: 110 }} aria-hidden>
+        {yTicks.map((t, i) => (
+          <g key={i}>
+            <line x1={46} x2={332} y1={t.y} y2={t.y} stroke="rgba(255,255,255,0.1)" strokeWidth={1} strokeDasharray="4 4" />
+            <text x={42} y={t.y + 3} textAnchor="end" {...axisText}>{t.label}</text>
+          </g>
+        ))}
+        <line x1={46} x2={332} y1={92} y2={92} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
+        <text x={46} y={106} textAnchor="start" {...axisText}>day 1</text>
+        {days > 2 ? <text x={189} y={106} textAnchor="middle" {...axisText}>{`day ${Math.round(days / 2)}`}</text> : null}
+        <text x={332} y={106} textAnchor="end" {...axisText}>{`today · day ${days}`}</text>
         <polyline fill="none" stroke="rgba(242,233,210,0.55)" strokeWidth={2} strokeDasharray="6 5" points={line(putin)} />
         <polyline fill="none" stroke="#8fd8a8" strokeWidth={2.5} points={line(worth)} />
+        {worth.length === 1 ? <circle cx={189} cy={y(worth[0])} r={3.5} fill="#8fd8a8" /> : null}
       </svg>
       <div style={{ display: "flex", gap: 14, fontSize: 11.5, color: FELT.inkDim, paddingTop: 4 }}>
         <span><span style={{ display: "inline-block", width: 16, height: 3, background: "#8fd8a8", borderRadius: 2, verticalAlign: "middle", marginRight: 5 }} />worth</span>
