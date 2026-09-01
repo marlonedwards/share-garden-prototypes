@@ -10,7 +10,7 @@
 // Only a clean first guess pays cash and a Buy card, and only for the
 // first paid wins of the day. Contract: docs/stack-desktop-spec.md.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ARCADE_PAID_PLAYS, ARCADE_PAY, COMPANIES, arcadeLoss, arcadeWin,
   money, moneyBig,
@@ -91,16 +91,37 @@ function ChartOf(props: { id: string; revealed: boolean; widened: boolean }) {
   );
 }
 
-// ---------------- worth more
+// ---------------- worth more: the higher-lower chain
+// Left is the company you can see the worth of; right is the mystery.
+// Right answer: worths show for a beat, then the right company slides
+// into the left slot and a new mystery loads. Wrong answer ends the run.
 
-type WorthRound = { a: string; b: string; picked: string | null };
+type WorthRun = {
+  left: string;
+  right: string;
+  picked: string | null; // which card was tapped this round
+  streak: number;
+  over: boolean;
+};
 
-function newWorthRound(): WorthRound {
-  const pool = Object.keys(COMPANIES).filter((id) => !COMPANIES[id].fund);
-  const a = pool[Math.floor(Math.random() * pool.length)];
-  let b = a;
-  while (b === a) b = pool[Math.floor(Math.random() * pool.length)];
-  return { a, b, picked: null };
+const WORTH_POOL = () => Object.keys(COMPANIES).filter((id) => !COMPANIES[id].fund);
+
+function nextChallenger(exclude: string[]): string {
+  const pool = WORTH_POOL().filter((id) => !exclude.includes(id));
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function newWorthRun(): WorthRun {
+  const left = nextChallenger([]);
+  return { left, right: nextChallenger([left]), picked: null, streak: 0, over: false };
+}
+
+function worthBest(): number {
+  try { return parseInt(localStorage.getItem("stackv2-worthbest") ?? "0", 10) || 0; } catch { return 0; }
+}
+
+function saveWorthBest(n: number): void {
+  try { if (n > worthBest()) localStorage.setItem("stackv2-worthbest", String(n)); } catch { /* fine */ }
 }
 
 // ---------------- the page
@@ -108,8 +129,7 @@ function newWorthRound(): WorthRound {
 export default function StackPractice() {
   const [s, update] = useStackState();
   const [guessRound, setGuessRound] = useState<GuessRound | null>(null);
-  const [worthRound, setWorthRound] = useState<WorthRound | null>(null);
-  const [worthStreak, setWorthStreak] = useState(0);
+  const [worthRun, setWorthRun] = useState<WorthRun | null>(null);
   const [lastPaid, setLastPaid] = useState(false);
   const left = Math.max(0, ARCADE_PAID_PLAYS - s.arc.paidWins);
   const payLine = left
@@ -138,12 +158,35 @@ export default function StackPractice() {
   };
 
   const pickWorth = (id: string) => {
-    if (!worthRound || worthRound.picked) return;
-    const win = COMPANIES[id].cap > COMPANIES[id === worthRound.a ? worthRound.b : worthRound.a].cap;
+    if (!worthRun || worthRun.picked || worthRun.over) return;
+    const other = id === worthRun.left ? worthRun.right : worthRun.left;
+    const win = COMPANIES[id].cap > COMPANIES[other].cap;
     settle(win);
-    setWorthStreak(win ? worthStreak + 1 : 0);
-    setWorthRound({ ...worthRound, picked: id });
+    const streak = win ? worthRun.streak + 1 : worthRun.streak;
+    if (!win) saveWorthBest(streak);
+    setWorthRun({ ...worthRun, picked: id, streak });
   };
+
+  // right answer: hold the reveal for a beat, then the chain advances
+  useEffect(() => {
+    if (!worthRun?.picked || worthRun.over) return;
+    const other = worthRun.picked === worthRun.left ? worthRun.right : worthRun.left;
+    const won = COMPANIES[worthRun.picked].cap > COMPANIES[other].cap;
+    const t = setTimeout(() => {
+      if (won) {
+        setWorthRun({
+          left: worthRun.right,
+          right: nextChallenger([worthRun.left, worthRun.right]),
+          picked: null,
+          streak: worthRun.streak,
+          over: false,
+        });
+      } else {
+        setWorthRun({ ...worthRun, over: true });
+      }
+    }, won ? 1600 : 1200);
+    return () => clearTimeout(t);
+  }, [worthRun]);
 
   const resultBar = (line: string) => (
     <div
@@ -165,7 +208,7 @@ export default function StackPractice() {
         <div className="stk-slab" style={{ fontWeight: 700, fontSize: 24, margin: "6px 0 2px" }}>Practice</div>
         <div style={{ fontSize: 14, color: FELT.inkDim, marginBottom: 16 }}>Win games, earn cash.</div>
 
-        {!guessRound && !worthRound ? (
+        {!guessRound && !worthRun ? (
           <>
             <div className="stk-card" style={{ marginBottom: 12 }}>
               <div className="stk-slab" style={{ fontWeight: 700, fontSize: 18 }}>Guess the Stock</div>
@@ -192,7 +235,7 @@ export default function StackPractice() {
                   className="stk-btn green"
                   data-playworth
                   style={{ marginLeft: "auto", padding: "9px 20px", fontSize: 14 }}
-                  onClick={() => { setWorthRound(newWorthRound()); setWorthStreak(0); setLastPaid(false); }}
+                  onClick={() => { setWorthRun(newWorthRun()); setLastPaid(false); }}
                 >
                   Play
                 </button>
@@ -252,24 +295,26 @@ export default function StackPractice() {
               Back
             </button>
           </>
-        ) : worthRound ? (
+        ) : worthRun ? (
           <>
-            <div style={{ display: "flex", alignItems: "center", margin: "0 0 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px" }}>
               <div className="stk-slab" style={{ fontWeight: 700, fontSize: 21 }}>Which whole company is worth more?</div>
-              {worthStreak > 1 ? (
-                <span className="stk-chip" style={{ marginLeft: "auto", cursor: "default" }}>streak {worthStreak}</span>
+              <span className="stk-chip" data-worthstreak style={{ marginLeft: "auto", cursor: "default" }}>streak {worthRun.streak}</span>
+              {worthBest() > 0 ? (
+                <span className="stk-chip" style={{ cursor: "default", background: "rgba(0,0,0,0.16)" }}>best {worthBest()}</span>
               ) : null}
             </div>
             <div style={{ display: "flex", gap: 14 }}>
-              {[worthRound.a, worthRound.b].map((id) => {
+              {[worthRun.left, worthRun.right].map((id, slot) => {
                 const c = COMPANIES[id];
-                const other = COMPANIES[id === worthRound.a ? worthRound.b : worthRound.a];
+                const other = COMPANIES[id === worthRun.left ? worthRun.right : worthRun.left];
                 const isHigher = c.cap > other.cap;
-                const picked = worthRound.picked;
+                const picked = worthRun.picked;
+                const revealed = slot === 0 || picked !== null;
                 const state = !picked ? "idle" : isHigher ? "right" : id === picked ? "wrong" : "dim";
                 return (
                   <div
-                    key={id}
+                    key={`${id}-${slot}`}
                     className="stk-card"
                     data-worth={id}
                     data-c={isHigher ? 1 : 0}
@@ -285,25 +330,36 @@ export default function StackPractice() {
                     <div className="stk-slab" style={{ fontWeight: 700, fontSize: 18, marginTop: 10 }}>{c.name}</div>
                     <div style={{ fontSize: 12.5, color: FELT.cardDim, marginTop: 3 }}>{c.blurb}</div>
                     <div className="stk-slab" style={{ fontWeight: 700, fontSize: 17, marginTop: 12, minHeight: 22, color: state === "right" ? FELT.upInk : FELT.cardInk }}>
-                      {picked ? moneyBig(c.cap) : ""}
+                      {revealed ? moneyBig(c.cap) : "?"}
                     </div>
                   </div>
                 );
               })}
             </div>
-            {worthRound.picked ? (
+            {worthRun.picked && !worthRun.over &&
+            COMPANIES[worthRun.picked].cap > COMPANIES[worthRun.picked === worthRun.left ? worthRun.right : worthRun.left].cap
+              ? resultBar(lastPaid ? `+${money(ARCADE_PAY)} and a Buy card` : "Right.")
+              : null}
+            {worthRun.over ? (
               <>
-                {resultBar(
-                  COMPANIES[worthRound.picked].cap > COMPANIES[worthRound.picked === worthRound.a ? worthRound.b : worthRound.a].cap
-                    ? lastPaid ? `+${money(ARCADE_PAY)} and a Buy card` : "Right."
-                    : `It was ${COMPANIES[COMPANIES[worthRound.a].cap > COMPANIES[worthRound.b].cap ? worthRound.a : worthRound.b].name}.`,
-                )}
-                <button className="stk-btn green" data-again style={{ width: "100%", marginTop: 12 }} onClick={() => setWorthRound(newWorthRound())}>
+                <div
+                  data-worthover
+                  style={{
+                    borderRadius: 13, padding: "14px 16px", marginTop: 4, textAlign: "center",
+                    background: "rgba(0,0,0,0.25)", color: FELT.ink,
+                  }}
+                >
+                  <div className="stk-slab" style={{ fontWeight: 700, fontSize: 20 }}>Run over</div>
+                  <div className="stk-slab" style={{ fontWeight: 700, fontSize: 15, marginTop: 4 }}>
+                    streak {worthRun.streak} · best {worthBest()}
+                  </div>
+                </div>
+                <button className="stk-btn green" data-again style={{ width: "100%", marginTop: 12 }} onClick={() => setWorthRun(newWorthRun())}>
                   Play again
                 </button>
               </>
             ) : null}
-            <button className="stk-btn quiet" data-backarc style={{ width: "100%", marginTop: 10 }} onClick={() => setWorthRound(null)}>
+            <button className="stk-btn quiet" data-backarc style={{ width: "100%", marginTop: 10 }} onClick={() => setWorthRun(null)}>
               Back
             </button>
           </>

@@ -324,7 +324,7 @@ await page.screenshot({ path: SHOTS + "practice-axes.png" });
 await page.locator("[data-backarc]").click();
 await page.waitForTimeout(300);
 
-// ---- worth more: pick the higher cap, caps reveal
+// ---- worth more: right answers chain, wrong ends the run
 await page.locator("[data-playworth]").click();
 await page.waitForTimeout(400);
 await page.locator('[data-worth][data-c="1"]').click();
@@ -333,6 +333,26 @@ const worthText = await page.evaluate(() => document.body.innerText);
 if (!/(trillion|billion)/.test(worthText)) fail("worth more did not reveal company sizes");
 else ok("worth more reveals whole-company worth");
 await page.screenshot({ path: SHOTS + "worthmore.png" });
+await page.waitForTimeout(1900); // the chain advances on its own after the reveal
+const streakTxt = (await page.locator("[data-worthstreak]").textContent()) ?? "";
+const mysteryBack = await page.evaluate(() => document.body.innerText.includes("?"));
+if (!/streak 1/.test(streakTxt) || !mysteryBack) fail("worth more chain did not advance: " + streakTxt);
+else ok("right answer auto-loads the next company (streak 1, new mystery)");
+await page.locator('[data-worth][data-c="0"]').click();
+await page.waitForTimeout(1700);
+if (!(await has("[data-worthover]"))) fail("wrong answer did not end the run");
+else ok("wrong answer ends the run with the streak");
+
+// ---- desk chart time horizons
+await page.goto(BASE + "/stack/desk");
+await page.waitForTimeout(500);
+const oneD = await page.evaluate(() => document.querySelector("[data-worthchart]")?.textContent ?? "");
+await page.locator('[data-range="ALL"]').click();
+await page.waitForTimeout(300);
+const allR = await page.evaluate(() => document.querySelector("[data-worthchart]")?.textContent ?? "");
+if (!/yesterday|today/.test(oneD) || !/days ago|today/.test(allR)) fail("chart ranges broken: " + oneD.slice(0, 60));
+else ok("worth chart ranges toggle (1D default, ALL widens)");
+await page.screenshot({ path: SHOTS + "desk-ranges.png" });
 
 // ---- home banner after ticks
 await page.goto(BASE + "/stack");

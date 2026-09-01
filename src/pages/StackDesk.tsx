@@ -44,8 +44,14 @@ function seriesFor(s: StackState): { worth: number[]; putin: number[] } {
   return { worth, putin };
 }
 
+const CHART_RANGES: [string, number][] = [["1D", 2], ["1W", 7], ["1M", 30], ["1Y", 365], ["ALL", Infinity]];
+
 function WorthChart(props: { state: StackState }) {
-  const { worth, putin } = useMemo(() => seriesFor(props.state), [props.state]);
+  const [range, setRange] = useState("1D");
+  const full = useMemo(() => seriesFor(props.state), [props.state]);
+  const win = Math.min(CHART_RANGES.find(([r]) => r === range)?.[1] ?? Infinity, full.worth.length);
+  const worth = full.worth.slice(-win);
+  const putin = full.putin.slice(-win);
   const all = worth.concat(putin);
   const hi = Math.max(...all, 1);
   const lo = Math.min(...all, 0);
@@ -57,11 +63,31 @@ function WorthChart(props: { state: StackState }) {
   const line = (arr: number[]) => arr.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const diff = worth[worth.length - 1] - putin[putin.length - 1];
   const yTicks = [hi, (lo + hi) / 2, lo].map((v) => ({ y: y(v), label: "$" + Math.round(v) }));
-  const days = props.state.day;
+  const shown = worth.length;
   const axisText = { fontSize: 9.5, fontWeight: 600, fill: "rgba(242,233,210,0.6)", fontFamily: '"Roboto Slab", Georgia, serif' } as const;
+  const leftLabel = shown <= 2 ? "yesterday" : `${shown - 1} days ago`;
   return (
     <div className="stk-glass" data-worthchart>
-      <div className="stk-slab" style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 4 }}>Your stocks over time</div>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+        <div className="stk-slab" style={{ fontWeight: 700, fontSize: 15.5 }}>Your stocks</div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 3 }}>
+          {CHART_RANGES.map(([r]) => (
+            <span
+              key={r}
+              data-range={r}
+              onClick={() => setRange(r)}
+              className="stk-slab"
+              style={{
+                fontSize: 10.5, fontWeight: 700, padding: "3px 7px", borderRadius: 7, cursor: "pointer",
+                background: range === r ? FELT.gold : "rgba(0,0,0,0.22)",
+                color: range === r ? FELT.cardInk : FELT.inkDim,
+              }}
+            >
+              {r}
+            </span>
+          ))}
+        </div>
+      </div>
       <div style={{ fontSize: 12.5, color: FELT.inkDim, marginBottom: 8 }}>
         {money(worth[worth.length - 1])} on {money(putin[putin.length - 1])} put in
         {Math.abs(diff) > 0.005 ? (
@@ -76,9 +102,9 @@ function WorthChart(props: { state: StackState }) {
           </g>
         ))}
         <line x1={46} x2={332} y1={92} y2={92} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
-        <text x={46} y={106} textAnchor="start" {...axisText}>day 1</text>
-        {days > 2 ? <text x={189} y={106} textAnchor="middle" {...axisText}>{`day ${Math.round(days / 2)}`}</text> : null}
-        <text x={332} y={106} textAnchor="end" {...axisText}>{`today · day ${days}`}</text>
+        {shown > 1 ? <text x={46} y={106} textAnchor="start" {...axisText}>{leftLabel}</text> : null}
+        {shown > 3 ? <text x={189} y={106} textAnchor="middle" {...axisText}>{`${Math.round((shown - 1) / 2)} days ago`}</text> : null}
+        <text x={332} y={106} textAnchor="end" {...axisText}>{`today · day ${props.state.day}`}</text>
         <polyline fill="none" stroke="rgba(242,233,210,0.55)" strokeWidth={2} strokeDasharray="6 5" points={line(putin)} />
         <polyline fill="none" stroke="#8fd8a8" strokeWidth={2.5} points={line(worth)} />
         {worth.length === 1 ? <circle cx={189} cy={y(worth[0])} r={3.5} fill="#8fd8a8" /> : null}
