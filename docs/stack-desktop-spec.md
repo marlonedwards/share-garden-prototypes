@@ -180,6 +180,13 @@ Same working pay numbers. Phone later.
 - ONE agent implements everything: model layer (deck, chests,
   lots, market), pages, components, content module, walk suite.
   No parallel UI agents, no stitching.
+- CHECKPOINT: after the static home and Desk layouts exist, a
+  screenshot round goes to Marlon for a look-pass BEFORE lessons,
+  cards, and chests get wired. Build pauses on his notes.
+- Landing: Stack is game one ("Learn stocks daily."), Tally moves
+  to second.
+- No sound in v1. The spring animations carry the juice; sound is
+  a later polish pass.
 - Tally process: this spec is the contract; a Playwright walk
   suite drives every acceptance check below; an Opus-style
   critique pass reviews against the Tally bar before Marlon sees
